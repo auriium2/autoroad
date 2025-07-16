@@ -84,14 +84,14 @@ export function NodeGraph() {
   });
 
   return (
-    <div ref={containerRef} className="h-full w-full min-h-screen overflow-x-auto overflow-y-hidden rounded-md border-border bg-muted/30 relative">
+    <div ref={containerRef} className="h-full w-full max-h-[90vh] overflow-x-auto overflow-y-hidden rounded-md border border-border bg-muted/30 relative">
       <div
         ref={contentRef}
-        className="relative h-full min-h-screen"
+        className="relative h-full"
         style={{
           width: `${totalWidth}px`,
           height: "100%",
-          minHeight: "100vh",
+          paddingBottom: "16px"
         }}
       >
         {/* Section backgrounds */}
