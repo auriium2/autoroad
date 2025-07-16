@@ -30,7 +30,6 @@ export function NodeHoverCard({
   containerRef,
   scrollLeft,
   viewportWidth,
-  viewportHeight,
   totalWidth,
   onMouseEnter,
   onMouseLeave,

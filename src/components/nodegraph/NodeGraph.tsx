@@ -6,19 +6,16 @@ import { Node as GraphNode } from "@/components/nodegraph/GraphNode";
 import { GraphEdges } from "@/components/nodegraph/GraphEdges";
 import { NodeHoverCard } from "@/components/nodegraph/NodeHoverCard";
 import { AddNodeDropdown } from "@/components/AddNodeDropdown";
-import { useGraphClassStore, PositionedGraphClass } from "./types";
+import { useGraphClassStore } from "./types";
 import {
   edges,
   sections,
   availableNodes,
   nodeDetails,
   specialSection,
-
 } from "@/debug";
 
-
 export function NodeGraph() {
-
   const currentGraphClasses = useGraphClassStore((state) => state.classes);
 
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -26,32 +23,21 @@ export function NodeGraph() {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const [scrollLeft, setScrollLeft] = React.useState(0);
   const [hoveredNode, setHoveredNode] = React.useState<number | null>(null);
-  const [hoveredNodeRect, setHoveredNodeRect] = React.useState<DOMRect | null>(
-    null,
-  );
-  const [hoveredSection, setHoveredSection] = React.useState<number | null>(
-    null,
-  );
+  const [hoveredNodeRect, setHoveredNodeRect] = React.useState<DOMRect | null>(null);
+  const [hoveredSection, setHoveredSection] = React.useState<number | null>(null);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
-  // Fixed dimensions
-  const nodeGraphHeight = 600; // Fixed height for consistent rendering
+  // Removed fixed nodeGraphHeight for dynamic height
 
-  const [dropdownPosition, setDropdownPosition] = React.useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedNode, setSelectedNode] = React.useState<typeof availableNodes[number] | null>(null);
-
-  // Monitor scroll position
-
 
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const handleScroll = () => setScrollLeft(container.scrollLeft);
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   React.useEffect(() => {
@@ -63,7 +49,6 @@ export function NodeGraph() {
     return () => document.removeEventListener("mousedown", h);
   }, [dropdownOpen]);
 
-
   // Section width calculation
   const sectionWidth = 200; // Width of each section
   const sectionPadding = 10; // Padding between sections
@@ -71,165 +56,134 @@ export function NodeGraph() {
   const nodeHeight = 40; // Height of each node
   const nodeMargin = 20; // Margin between nodes
 
-  // Calculate total width of the node graph content
-  const totalWidth =
-    (sections.length + 1) * (sectionWidth + sectionPadding) +
-    sectionPadding * 2; // +1 for special section
+  // Combine special section and regular sections for easier mapping
+  const allSections = [specialSection, ...sections];
+  const totalSections = allSections.length;
 
-  // Nodes data
+  // Calculate total width of the node graph content
+  const totalWidth = totalSections * (sectionWidth + sectionPadding * 2);
+
   // Processed nodes with positions
   const positionedNodes = currentGraphClasses.map((graphClass) => {
-    const x = graphClass.section * (sectionWidth + sectionPadding) + sectionWidth / 2 - nodeWidth / 2 + sectionPadding;
+    // If section is "special", its index is 0, otherwise find its index in sections and add 1
+    const sectionIdx = graphClass.section === "special"
+      ? 0
+      : sections.findIndex(s => s.id === graphClass.section) + 1;
+
+    const x = sectionIdx * (sectionWidth + sectionPadding * 2) + sectionWidth / 2 - nodeWidth / 2;
 
     // Calculate y position based on placement in section
     const nodesInSameSection = currentGraphClasses.filter((n) => n.section === graphClass.section);
     const nodeIndexInSection = nodesInSameSection.findIndex((n) => n.id === graphClass.id);
     const y =
       nodeIndexInSection * (nodeHeight + nodeMargin) +
-      40 + // Padding from the top
+      56 + // Padding from the top (header height)
       nodeHeight / 2;
 
-
-    return { x, y, width: nodeWidth, height: nodeHeight, ...graphClass };
+    return { x, y, width: nodeWidth, height: nodeHeight, ...graphClass, sectionIdx };
   });
 
   return (
-    <div ref={containerRef} className="h-full w-full overflow-x-auto overflow-y-hidden border-t border-border bg-muted/30 relative">
+    <div ref={containerRef} className="h-full w-full min-h-screen overflow-x-auto overflow-y-hidden rounded-md border-border bg-muted/30 relative">
       <div
         ref={contentRef}
-        className="relative h-full"
+        className="relative h-full min-h-screen"
         style={{
           width: `${totalWidth}px`,
-          height: `${nodeGraphHeight}px`,
+          height: "100%",
+          minHeight: "100vh",
         }}
       >
         {/* Section backgrounds */}
-        {/* Special section */}
-        <div
-          className={`absolute top-0 bottom-0 border-r border-border ${
-            hoveredSection === 0
-              ? "bg-muted/70 transition-colors duration-150"
-              : "bg-transparent"
-          }`}
-          style={{
-            left: 0,
-            width: sectionWidth + sectionPadding * 2,
-          }}
-          onMouseEnter={() => setHoveredSection(0)}
-          onMouseLeave={() => setHoveredSection(null)}
-        >
-          <div className="h-7 flex items-center px-3 text-xs font-medium text-muted-foreground">
-            {specialSection.title}
-          </div>
-        </div>
-
-        {/* Regular sections */}
-        {sections.map((section, index) => (
+        {allSections.map((section, idx) => (
           <div
             key={section.id}
-            className={`absolute top-0 bottom-0 border-r border-border ${
-              hoveredSection === index + 1
-                ? "bg-muted/70 transition-colors duration-150"
-                : "bg-transparent"
-            }`}
+            className={`absolute border-r border-border transition-colors duration-150`}
             style={{
-              left: (index + 1) * (sectionWidth + sectionPadding),
+              left: idx * (sectionWidth + sectionPadding * 2),
+              top: 0,
               width: sectionWidth + sectionPadding * 2,
+              height: "100%",
+              minHeight: "100vh",
+              background:
+                hoveredSection === idx
+                  ? "rgba(243, 244, 246, 0.7)" // bg-muted/70
+                  : "transparent",
+              zIndex: 1,
+              cursor: "pointer",
             }}
-            onMouseEnter={() => setHoveredSection(index + 1)}
+            onMouseEnter={() => setHoveredSection(idx)}
             onMouseLeave={() => setHoveredSection(null)}
-          >
-            <div className="h-7 flex items-center px-3 text-xs font-medium text-muted-foreground">
-              {section.title}
-            </div>
-          </div>
+          />
         ))}
+
+        {/* Section headers row */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: `repeat(${totalSections}, ${sectionWidth + sectionPadding * 2}px)`,
+            width: `${totalWidth}px`,
+            position: "relative",
+            zIndex: 2,
+          }}
+        >
+          {allSections.map((section, idx) => (
+            <div
+              key={section.id}
+              className="flex items-center w-full h-14"
+              style={{
+                padding: "0 12px",
+                position: "relative",
+                zIndex: 3,
+              }}
+            >
+              <div className="flex-1 flex justify-center items-center relative w-full h-10">
+                <span className="inline-block bg-white border border-border px-2 py-0.5 font-semibold text-xs text-muted-foreground text-center w-auto truncate shadow-sm">
+                  {section.title}
+                </span>
+                <button
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded-full border border-border bg-white text-muted-foreground hover:bg-muted hover:text-foreground transition z-10"
+                  onClick={(e) => {
+                    setDropdownOpen((prev) => {
+                      if (prev) {
+                        setDropdownPosition(null);
+                        return false;
+                      }
+                      const rect = (
+                        e.target as HTMLElement
+                      ).getBoundingClientRect();
+                      const contentRect =
+                        contentRef.current?.getBoundingClientRect();
+                      if (contentRect) {
+                        const x =
+                          rect.left -
+                          contentRect.left +
+                          rect.width +
+                          8 +
+                          scrollLeft;
+                        const y = rect.top - contentRect.top;
+                        setDropdownPosition({ x, y });
+                      }
+                      return true;
+                    });
+                  }}
+                  title={`Add node to ${section.title} section`}
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Render connections */}
         <GraphEdges
           positionedNodes={positionedNodes}
           edges={edges}
           sectionWidth={sectionWidth}
-          viewportHeight={nodeGraphHeight}
+          viewportHeight={containerRef.current?.clientHeight || window.innerHeight}
           totalWidth={totalWidth}
         />
-
-        {/* Persistent Plus Icons for each section - Upper Right Corner */}
-        {/* Special section plus icon */}
-        <div
-          key="special-section-plus"
-          className="absolute top-2 w-5 h-5 rounded-full border cursor-pointer transition-all duration-200 flex items-center justify-center bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:scale-110 hover:shadow-md z-[15]"
-          style={{
-            left: sectionWidth - 28, // Position from left (section width - icon width - padding)
-          }}
-          onClick={(e) => {
-            setDropdownOpen((prev) => {
-              // If already open, close it
-              if (prev) {
-                setDropdownPosition(null);
-                return false;
-              }
-              // Open and set position
-              const rect = (
-                e.target as HTMLElement
-              ).getBoundingClientRect();
-              const contentRect =
-                contentRef.current?.getBoundingClientRect();
-              if (contentRect) {
-                const x =
-                  rect.left -
-                  contentRect.left +
-                  rect.width +
-                  8 +
-                  scrollLeft;
-                const y = rect.top - contentRect.top;
-                setDropdownPosition({ x, y });
-              }
-              return true;
-            });
-          }}
-          title={`Add node to ${specialSection.title} section`}
-        >
-          <Plus className="h-2.5 w-2.5" />
-        </div>
-
-        {/* Regular section plus icons */}
-        {sections.map((section, index) => (
-          <div
-            key={`section-plus-${section.id}`}
-            className="absolute top-2 w-5 h-5 rounded-full border cursor-pointer transition-all duration-200 flex items-center justify-center bg-background border-border text-muted-foreground hover:bg-muted hover:border-border hover:text-foreground hover:scale-110 hover:shadow-md z-[15]"
-            style={{
-              left: (index + 1) * sectionWidth + sectionWidth - 28, // +1 to account for special section, position from right edge
-            }}
-            onClick={(e) => {
-              setDropdownOpen((prev) => {
-                if (prev) {
-                  setDropdownPosition(null);
-                  return false;
-                }
-                const rect = (
-                  e.target as HTMLElement
-                ).getBoundingClientRect();
-                const contentRect =
-                  contentRef.current?.getBoundingClientRect();
-                if (contentRect) {
-                  const x =
-                    rect.left -
-                    contentRect.left +
-                    rect.width +
-                    8 +
-                    scrollLeft;
-                  const y = rect.top - contentRect.top;
-                  setDropdownPosition({ x, y });
-                }
-                return true;
-              });
-            }}
-            title={`Add node to ${section.title} section`}
-          >
-            <Plus className="h-2.5 w-2.5" />
-          </div>
-        ))}
 
         <AddNodeDropdown
           dropdownOpen={dropdownOpen}
@@ -244,11 +198,10 @@ export function NodeGraph() {
           scrollLeft={scrollLeft}
           viewportWidth={containerRef.current?.clientWidth || 0}
           totalWidth={totalWidth}
-          viewportHeight={nodeGraphHeight}
           dropdownRef={dropdownRef as React.RefObject<HTMLDivElement>}
         />
 
-        {/* Render nodes with reduced z-index */}
+        {/* Render nodes */}
         {positionedNodes.map((node) => {
           const isSpecial = node.section === "special";
           const isHovered = hoveredNode === node.id;
@@ -279,11 +232,8 @@ export function NodeGraph() {
             containerRef={containerRef as React.RefObject<HTMLDivElement>}
             scrollLeft={scrollLeft}
             viewportWidth={containerRef.current?.clientWidth || 0}
-            viewportHeight={nodeGraphHeight}
             totalWidth={totalWidth}
-            onMouseEnter={() => {
-              // Keep hover card visible
-            }}
+            onMouseEnter={() => {}}
             onMouseLeave={() => {
               setHoveredNode(null);
               setHoveredNodeRect(null);

@@ -205,7 +205,6 @@ export function AddNodeDropdown({
   scrollLeft,
   viewportWidth,
   totalWidth,
-  viewportHeight,
   dropdownRef,
 }: AddNodeDropdownProps) {
   const filteredNodes = useNodeFiltering(availableNodes, searchTerm);
@@ -220,7 +219,7 @@ export function AddNodeDropdown({
       className="node-dropdown absolute bg-card border border-border rounded-lg shadow-xl z-[9999] min-w-[320px] max-w-[400px] transition-all duration-200"
       style={{
         position: 'fixed' as const,
-        left: `${dropdownPosition.x}px`, 
+        left: `${dropdownPosition.x}px`,
         top: `${dropdownPosition.y}px`,
       }}
     >
