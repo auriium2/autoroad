@@ -85,7 +85,9 @@ def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, pla
     if pd.isna(not_offered_year):
         return True
     # Block if the academic year matches
-    return str(academic_year) != str(not_offered_year)
+    ret = str(academic_year) != str(not_offered_year)
+    return ret
+
 
 # Current school year finder
 def find_current_school_year():
