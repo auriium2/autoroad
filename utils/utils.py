@@ -154,7 +154,7 @@ def parse_prerequisites(prereq_str):
 
 # Semester validation
 
-def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, planning_year_start: int) -> bool:
+def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, planning_year_start: int, musician: bool = False) -> bool:
     # Determine the semester year and academic year string
     semester_ok = True
     if semester % 3 == 1:  # Fall semester
@@ -177,6 +177,8 @@ def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, pla
     else:
         year_ok = str(academic_year) != str(not_offered_year)
 
+    if not musician and df.loc[class_idx, 'subject_id'].lower().startswith('21m'): #stupid cheating
+        return False
     return semester_ok and year_ok
 
 

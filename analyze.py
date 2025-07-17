@@ -34,103 +34,17 @@ requirements_df = pd.DataFrame([
     for key, req in result.items()
 ])
 
+filtered_requirements = requirements_df[requirements_df['key'].str.contains('6', na=False)]
+print("Requirements with '6' in their key:")
+print(filtered_requirements['key'])
 
+two = requirements_df.set_index("key").loc['major2'].reqs
+twoa = requirements_df.set_index("key").loc['major2a'].reqs
+sixthree = requirements_df.set_index("key").loc['major6-3new'].reqs
+sixfive = requirements_df.set_index("key").loc['major6-2new'].reqs
+girs = requirements_df.set_index("key").loc['girs'].reqs
 
-#print(requirements_df[['key','reqs']].set_index('key').head(5))
-#pprint(requirements_df["key"].head(10))
-# print("DS")
-# pprint(requirements_df["reqs"].head(1).item())
-#print(requirements_df[~requirements_df['reqs'].apply(lambda a: isinstance(a, list))])
-twoa = requirements_df.set_index("key").loc['major2'].reqs
-ogirs = requirements_df.set_index("key").loc['girs'].reqs
-girs = [
-{'connection-type': 'all', 'threshold-desc': 'select all', 'reqs': [{'req': 'GIR:PHY1'}, {'req': 'GIR:PHY2'}, {'req': 'GIR:CAL1'}, {'req': 'GIR:CAL2'}, {'req': 'GIR:CHEM'}, {'req': 'GIR:BIOL'}], 'title': 'Science Requirement'}
-]
-
-girs.append(
-
-    {
-      "connection-type": "all",
-      "desc": "Hass is for retards",
-      "reqs": [
-        {
-          "connection-type": "all",
-          "reqs": [
-            {
-              "threshold": {
-                "cutoff": 8,
-                "criterion": "subjects",
-                "type": "GTE"
-              },
-              "req": "HASS",
-              "threshold-desc": "select any 8 subjects"
-            },
-            {
-              "req": "HASS-A",
-              "threshold-desc": "have one hass a"
-            },
-            {
-              "req": "HASS-S"
-            },
-            {
-              "req": "HASS-H"
-            }
-          ],
-          "threshold-desc": "select all"
-        },
-        {
-          "threshold": {
-            "cutoff": 2,
-            "criterion": "subjects",
-            "type": "GTE"
-          },
-          "connection-type": "any",
-          "reqs": [
-            {
-              "req": "CI-H"
-            },
-            {
-              "req": "CI-HW"
-            }
-          ],
-          "threshold-desc": "select any 2"
-        }
-      ],
-      "threshold-desc": "select all",
-      "title": "Humanities, Arts, and Social Sciences (HASS) Requirement"
-    }
-)
-
-# girs.append(
-#     {'connection-type': 'all', 'reqs': [{'req': 'GIR:CAL1'}, {'req': 'GIR:CAL2'}], 'title': 'Math Requirement'}
-# )
-
-# girs.append({
-#     'connection-type': 'all',
-#     'reqs': [
-#         {'threshold': {'cutoff': 8, 'criterion': 'subjects', 'type': 'GTE'}, 'req': 'HASS', 'threshold-desc': 'select any 8 subjects'}
-#     ],
-#     'title': 'Humanities, Arts, and Social Sciences (HASS) Requirement'
-# })
-# girs = {
-#     'connection-type': 'all',
-#     'reqs': [
-#         {'req': 'HASS'}
-#     ],
-#     'title': 'Humanities, Arts, and Social Sciences (HASS) Requirement'
-# }
-
-
-# girs.append(
-#     {'connection-type': 'all', 'reqs': [
-#         {'threshold': {'cutoff': 8, 'criterion': 'subjects', 'type': 'GTE'}, 'req': 'HASS', 'threshold-desc': 'select any 8 subjects'},
-#         {'req': 'HASS-A'}, {'req': 'HASS-S'}, {'req': 'HASS-H'}
-#     ], 'title': 'Humanities, Arts, and Social Sciences (HASS) Requirement'}
-# )
-#
-print(f"girs: {girs}")
-print(f"ogirs: {ogirs[2]}")
-
+pprint(twoa)
 
 courses_df = courses_df[courses_df['is_historical'].isna()]
 assert isinstance(courses_df, pd.DataFrame), "Why would it not be a dataframe"
@@ -144,50 +58,25 @@ assert isinstance(units, pd.Series), "units should be a series"
 assert isinstance(hours, pd.Series), "hours should be a series"
 assert isinstance(prereqs, pd.Series), "prereqs should be a series"
 
-#print(courses_df["not_offered_year"].head(10))
-#print(prereqs.head(1).item())
+planning_year_start, planning_year_end = map(int, planning_year.split('-'))
 
-# eightidx = classes[classes == "2.C01"].index[0]
-# print(units[eightidx])
-# for course_code in ["2.C01", "6.C01"]:
-#     if course_code in courses_df['subject_id'].values:
-#         course_id = courses_df[courses_df['subject_id'] == course_code].index[0]
-#         valid_semesters = [s for s in range(1, 13)
-#                            if is_valid_class_semester(course_id, s, courses_df, planning_year_start)]
-#         print(f"Valid semesters for {course_code}: {valid_semesters}")
-
-#pprint(girs)
-#pprint(twoa)
-# coreq_courses = courses_df[courses_df['prerequisites'].str.contains("Freshmen", na=False)]
-# print("Courses with 'item:' in prerequisites:")
-# print(coreq_courses[['subject_id', 'prerequisites']])
-
-# strare = ["18.01A"]
-# for course in strare:
-#     prereq_str = courses_df[courses_df['subject_id'] == course]['prerequisites'].values
-#     if prereq_str.size > 0 and not pd.isna(prereq_str[0]):
-#         print(f"Prerequisites for {course}:")
-#         print(prereq_str[0])
-#         #pprint(f"parsed output is:")
-#     else:
-#         print(f"Prerequisites for {course}: are None")
-
-# requirements = {}
-#
-#print("twoa:", twoa)
-#print("girs:", girs)
-
+# ccidx = courses_df[courses_df["subject_id"]=="4.648"].index[0]
+# print(int(ccidx))
+# print(planning_year_start)
+# print(is_valid_class_semester(int(ccidx), 3, courses_df, planning_year_start))
 
 # %%
 
 model = cp_model.CpModel()
 
-C = 48;
+C = 60;
 C_IAP = 12;
 H = 60;
-PlanningHorizon = 12
+PLANNING_HORIZON = 12
+MUSICIAN = False
 
-planning_year_start, planning_year_end = map(int, planning_year.split('-'))
+
+
 
 take: dict[tuple[int, int], cp_model.IntVar] = {}
 for c, el in classes.items():
@@ -200,7 +89,7 @@ for c, el in classes.items():
 
 print(f"total number of base decision variables is {len(take)}")
 
-semCred = {s: model.NewIntVar(0, C_IAP if (s - 2) % 3 == 0 and s <= 11 else C, f"semCred_{s}") for s in range(1,13)}
+semCred = {s: model.NewIntVar(0, 48 if s == 1 else (C_IAP if (s - 2) % 3 == 0 and s <= 11 else C), f"semCred_{s}") for s in range(1,PLANNING_HORIZON + 1)}
 semHrs  = {s: model.NewIntVar(0, H, f"semHrs_{s}")  for s in range(1,13)}
 
 def generic_satisfied(course_code: str, generic_attr: str, split: str, use_right: bool = True)-> cp_model.IntVar:
@@ -379,7 +268,7 @@ def add_requirement_constraints(model: CpModel, take: dict[tuple[int, int], cp_m
 
 group_vars = {}
 add_requirement_constraints(model, take, twoa, courses_df, planning_year_start, group_vars)
-add_requirement_constraints(model, take, ogirs, courses_df, planning_year_start, group_vars)
+add_requirement_constraints(model, take, girs, courses_df, planning_year_start, group_vars)
 
 
 # HANDLE PREREQUISITES HERE
@@ -431,7 +320,7 @@ def process_prereq_condition(model, condition, take, courses_df, course_idx, sem
         prereq_indices = courses_df.index[courses_df['subject_id'] == condition].tolist()
         if not prereq_indices:
             # Course not found, assume satisfied
-            print(f"course of {condition} is not present in the database! Something went wrong")
+            #print(f"course of {condition} is not present in the database! Something went wrong")
             #
             return model.NewConstant(0)
 
@@ -518,7 +407,7 @@ class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
 
 # Objective
 printer = VarArraySolutionPrinter(take, group_vars, units)
-finish_time = sum(s * take[idx, s] for idx in classes.index for s in range(1, 13) if is_valid_class_semester(idx, s, courses_df, planning_year_start))
+finish_time = sum((s // 3) * take[idx, s] for idx in classes.index for s in range(1, 13) if is_valid_class_semester(idx, s, courses_df, planning_year_start))
 model.Minimize(finish_time) #  + overload_pen
 
 #Solve
@@ -535,6 +424,9 @@ if res == cp_model.INFEASIBLE:
     print('infeasible solution found!')
 if res == cp_model.MODEL_INVALID:
     print('constraint failure!')
+
+
+
 
 # print(f"Solution:")
 # for (c, s), v in take.items():
@@ -553,6 +445,10 @@ def export_take_blocks_to_road(solver, take, courses_df, output_file):
     selected_subjects = []
     for (c, s), v in take.items():
         if solver.Value(v) != 0:
+
+            if "hass_attribute" in courses_df.columns and not pd.isna(courses_df.loc[c, "hass_attribute"]):
+                print(f"HASS Subject: {courses_df.loc[c, 'subject_id']} - {courses_df.loc[c, 'title']}")
+                print(f"HASS Attribute: {courses_df.loc[c, 'hass_attribute']}")
             selected_subjects.append({
                 "subject_id": courses_df.loc[c, "subject_id"],
                 "semester": s,
@@ -573,6 +469,8 @@ def export_take_blocks_to_road(solver, take, courses_df, output_file):
         if os.path.exists(output_file):
             os.remove(output_file)
 
+            import time
+            time.sleep(0.2)
         with open(output_file, "w") as f:
             json.dump(road_data, f, indent=4)
 
