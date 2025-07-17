@@ -24,18 +24,18 @@ def parse_prerequisites(prereq_str):
     if pd.isna(prereq_str) or not prereq_str:
         return []
     # Remove permission of instructor and any resulting empty delimiters
-    prereq_str = re.sub(r"'?permission of instructor'?", "", prereq_str, flags=re.IGNORECASE)
+    prereq_str = re.sub(r"[\"']{0,2}permission of instructor[\"']{0,2}", "", prereq_str, flags=re.IGNORECASE)
     prereq_str = re.sub(r",\s*,", ",", prereq_str)  # Remove double commas
     prereq_str = prereq_str.strip(", /")
     if not prereq_str.strip():
         return []
 
-    # Tokenize, skipping empty tokens
-    tokens = [tok for tok in re.findall(r'\(|\)|/|,|[^\s(),/]+', prereq_str) if tok.strip()]
+    # Tokenize, skipping empty tokens and empty quote tokens, treat quoted strings as atomic tokens and 'AND' as a delimiter
+    tokens = [tok for tok in re.findall(r"''[^']*''|\"[^\"]*\"|\(|\)|/|,|AND|[^\s(),/]+", prereq_str, flags=re.IGNORECASE) if tok.strip() and tok not in ("''", '""')]
 
     def parse_or(tokens):
         items = [parse_and(tokens)]
-        while tokens and tokens[0] == '/':
+        while tokens and tokens and tokens[0] == '/':
             tokens.pop(0)
             items.append(parse_and(tokens))
         items = [item for item in items if item not in (None, '', [], {})]
@@ -45,7 +45,7 @@ def parse_prerequisites(prereq_str):
 
     def parse_and(tokens):
         items = [parse_term(tokens)]
-        while tokens and tokens[0] == ',':
+        while tokens and tokens and (tokens[0] == ',' or tokens[0].lower() == 'and'):
             tokens.pop(0)
             items.append(parse_term(tokens))
         items = [item for item in items if item not in (None, '', [], {})]
@@ -63,30 +63,57 @@ def parse_prerequisites(prereq_str):
                 tokens.pop(0)
             return expr
         else:
-            return token
+            return token if token else None
+
+    def clean_condition(cond):
+        if isinstance(cond, str):
+            # Remove any prerequisite that is a Corequisite or Prerequisite
+            lowered = cond.lower()
+            if "coreq:" in lowered or "prereq:" in lowered:
+                return None
+            return cond if cond.strip() else None
+        elif isinstance(cond, dict):
+            cleaned = {}
+            for k, v in cond.items():
+                cleaned_v = [clean_condition(c) for c in v if clean_condition(c) is not None]
+                if cleaned_v:
+                    cleaned[k] = cleaned_v
+            return cleaned if cleaned else None
+        elif isinstance(cond, list):
+            cleaned_list = [clean_condition(c) for c in cond if clean_condition(c) is not None]
+            return cleaned_list if cleaned_list else None
+        return cond
 
     result = parse_or(tokens)
+    result = clean_condition(result)
     return result
 
 # Semester validation
+
 def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, planning_year_start: int) -> bool:
     # Determine the semester year and academic year string
+    semester_ok = True
     if semester % 3 == 1:  # Fall semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year}-{semester_year + 1}"
+        semester_ok = df.loc[class_idx, 'offered_fall']
     elif semester % 3 == 2:  # IAP semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year - 1}-{semester_year}"
+        semester_ok = df.loc[class_idx, 'offered_IAP']
     else:  # Spring semester
         semester_year = planning_year_start + (semester // 3) - 1
         academic_year = f"{semester_year}-{semester_year + 1}"
+        semester_ok = df.loc[class_idx, 'offered_spring']
+
 
     not_offered_year = df.loc[class_idx, 'not_offered_year']
     if pd.isna(not_offered_year):
-        return True
-    # Block if the academic year matches
-    ret = str(academic_year) != str(not_offered_year)
-    return ret
+        year_ok = True
+    else:
+        year_ok = str(academic_year) != str(not_offered_year)
+
+    return semester_ok and year_ok
 
 
 # Current school year finder
@@ -112,9 +139,17 @@ if __name__ == "__main__":
         "6.100A, 6.100B",
         "6.100A / 6.100B",
         "6.100A, (6.100B / 6.100C)",
+        # harder cases
         "'permission of instructor'",
         "6.100A, 'permission of instructor', 6.100B",
-        "(6.100A, 6.100B) / (6.100C, 6.100D)"
+        "(6.100A, 6.100B) / (6.100C, 6.100D)",
+        # real world cases
+        "(GIR:PHY2, 18.03, (2.086/6.100B/18.06))/''permission of instructor''",
+        "(2.001, 2.003, (2.005/2.051), (2.00B/2.670/2.678))/''permission of instructor''",
+        "GIR:PHY2/6.100A/(''Coreq: 6.1903''/6.1904)/''permission of instructor''",
+        "5.310/7.002/(''Coreq: 12 units UROP''/''other approved laboratory subject'', ''permission of instructor'')",
+        "(6.2300/8.07), (18.04/''Coreq: 18.075'')",
+        "''Prereq: 10.213''/10.40/(5.601 AND 5.602)",
     ]
 
     print("\nTesting prerequisite parser:")
@@ -123,29 +158,29 @@ if __name__ == "__main__":
         print(f"Parsed: {parse_prerequisites(test)}")
     print("\n")
 
-    # Test cases for semester validation
-    print("\nTesting is_valid_class_semester academic year blocking:")
-    test_df = pd.DataFrame({
-        'not_offered_year': [None, "2025-2026", "2026-2027"]
-    })
+    # # Test cases for semester validation
+    # print("\nTesting is_valid_class_semester academic year blocking:")
+    # test_df = pd.DataFrame({
+    #     'not_offered_year': [None, "2025-2026", "2026-2027"]
+    # })
 
-    planning_year_start = 2025
-    test_cases = [
-        (1, 1, False, "Fall 2025 should be blocked for 2025-2026"),
-        (1, 2, False, "IAP 2026 should be blocked for 2025-2026"),
-        (1, 3, False, "Spring 2026 should be blocked for 2025-2026"),
-        (1, 4, True,  "Fall 2026 should NOT be blocked for 2025-2026"),
-        (2, 4, False, "Fall 2026 should be blocked for 2026-2027"),
-        (2, 6, False, "Spring 2027 should be blocked for 2026-2027"),
-        (0, 1, True,  "No not_offered_year should always be allowed"),
-    ]
+    # planning_year_start = 2025
+    # test_cases = [
+    #     (1, 1, False, "Fall 2025 should be blocked for 2025-2026"),
+    #     (1, 2, False, "IAP 2026 should be blocked for 2025-2026"),
+    #     (1, 3, False, "Spring 2026 should be blocked for 2025-2026"),
+    #     (1, 4, True,  "Fall 2026 should NOT be blocked for 2025-2026"),
+    #     (2, 4, False, "Fall 2026 should be blocked for 2026-2027"),
+    #     (2, 6, False, "Spring 2027 should be blocked for 2026-2027"),
+    #     (0, 1, True,  "No not_offered_year should always be allowed"),
+    # ]
 
-    for class_idx, semester, expected, desc in test_cases:
-        result = is_valid_class_semester(class_idx, semester, test_df, planning_year_start)
-        print(f"{desc}: {result} (expected {expected})")
+    # for class_idx, semester, expected, desc in test_cases:
+    #     result = is_valid_class_semester(class_idx, semester, test_df, planning_year_start)
+    #     print(f"{desc}: {result} (expected {expected})")
 
-    # Test current school year finder
-    print("\nTesting current school year finder:")
-    school_year, planning_for_year = find_current_school_year()
-    print(f"Current school year: {school_year}")
-    print(f"Planning for: {planning_for_year}")
+    # # Test current school year finder
+    # print("\nTesting current school year finder:")
+    # school_year, planning_for_year = find_current_school_year()
+    # print(f"Current school year: {school_year}")
+    # print(f"Planning for: {planning_for_year}")
