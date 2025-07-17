@@ -1,4 +1,3 @@
-
 # %%
 import requests
 import pulp
@@ -35,37 +34,74 @@ requirements_df = pd.DataFrame([
 ])
 
 #print(requirements_df[['key','reqs']].set_index('key').head(5))
-pprint(requirements_df["key"].head(1).item())
-print("DS")
-pprint(requirements_df["reqs"].head(1).item())
+#pprint(requirements_df["key"].head(10))
+# print("DS")
+# pprint(requirements_df["reqs"].head(1).item())
 #print(requirements_df[~requirements_df['reqs'].apply(lambda a: isinstance(a, list))])
+twoa = requirements_df.set_index("key").loc['major2a'].reqs
+
+courses_df = courses_df[courses_df['is_historical'].isna()]
+assert isinstance(courses_df, pd.DataFrame), "Why would it not be a dataframe"
+classes = courses_df['subject_id'];
+units = courses_df['total_units'];
+hours = courses_df['in_class_hours'].fillna(0) + courses_df['out_of_class_hours'].fillna(0)
+prereqs = courses_df['prerequisites']
+
+assert isinstance(classes, pd.Series), "classes is a series"
+assert isinstance(units, pd.Series), "units should be a series"
+assert isinstance(hours, pd.Series), "hours should be a series"
+assert isinstance(prereqs, pd.Series), "prereqs should be a series"
+
+#print(courses_df["not_offered_year"].head(10))
+#print(prereqs.head(1).item())
+
+requirements = {}
+# %%
+model = cp_model.CpModel()
+
+C = 100;
+H = 60;
+planning_year_start, planning_year_end = map(int, planning_year.split('-'))
+
+take: dict[tuple[int, int], cp_model.IntVar] = {}
+for c, el in classes.items():
+    assert isinstance(c, int), "c must be an int"
+    for s in range(1, 13):
+        if not is_valid_class_semester(c,s,courses_df,planning_year_start):
+            continue
+        take[c, s] = model.NewBoolVar(f"take_{c}_{s}")
+
+semCred = {s: model.NewIntVar(0, 18, f"semCred_{s}") for s in range(1,13)}
+semHrs  = {s: model.NewIntVar(0, 40, f"semHrs_{s}")  for s in range(1,13)}
+
+
+# HANDLE REQUIREMENTS HERE 
 
 # %%
-
-# %%
-# spawn off a billion dummy variables, ugh
-def add_requirement_constraints(model: CpModel, take, req_val, courses_df, planning_year_start):
+def add_requirement_constraints(model: CpModel, take: dict[tuple[int, int], cp_model.IntVar], req_val, courses_df, planning_year_start: int, group_vars: dict = None):
+    if group_vars is None:
+        group_vars = {}
     def process_requirement(req_item):
         if 'req' in req_item and not 'plain-string' in req_item: #leaf case
+            print(f"leaf node of {req_item}")
             course_code = req_item['req']
             if course_code in courses_df['subject_id'].values:
-                # Create a variable representing if this course is taken in any valid semester
                 course_id = courses_df[courses_df['subject_id'] == course_code].index[0]
-                req_satisfied = model.NewBoolVar(f"req_{course_code}_satisfied")
+                req_satisfied = model.NewBoolVar(f"req_course_{course_code}_satisfied")
 
-                # Course is satisfied if it's taken in any semester
                 valid_semesters = [s for s in range(1, 13)
                                    if (course_id, s) in take and
                                    is_valid_class_semester(course_id, s, courses_df, planning_year_start)]
-                
+
                 if valid_semesters:
-                    model.Add(req_satisfied == sum(take[course_id, s] for s in valid_semesters) >= 1)
+                    sum_taken = sum(take[course_id, s] for s in valid_semesters)
+                    model.Add(sum_taken >= 1).OnlyEnforceIf(req_satisfied)
+                    model.Add(sum_taken < 1).OnlyEnforceIf(req_satisfied.Not())
                 else:
                     model.Add(req_satisfied == 0)  # Cannot be satisfied if no valid semesters
 
                 return req_satisfied
             else:
-                # Course not found - create dummy variable set to false
                 dummy_var = model.NewBoolVar(f"dummy_{course_code}")
                 model.Add(dummy_var == 0)
                 return dummy_var
@@ -79,26 +115,32 @@ def add_requirement_constraints(model: CpModel, take, req_val, courses_df, plann
                     sub_req_vars.append(sub_var)
 
             # Create a variable for this requirement group
-            group_var = model.NewBoolVar(f"req_group_{'title' in req_item and req_item['title'] or 'unnamed'}")
+            group_name = req_item.get('title', 'unnamed')
+            group_var = model.NewBoolVar(f"req_group_{group_name}")
+            group_vars[group_name] = group_var
 
             if 'threshold' in req_item: #We don't really handle the LTE case very well, this assumes cutoff is GTE
                 threshold = req_item['threshold']['cutoff']
-                model.Add(group_var == (sum(sub_req_vars) >= threshold))
+                sum_subs = sum(sub_req_vars)
+                model.Add(sum_subs >= threshold).OnlyEnforceIf(group_var)
+                model.Add(sum_subs < threshold).OnlyEnforceIf(group_var.Not())
             elif 'connection-type' in req_item and req_item['connection-type'] == 'all':
                 if not sub_req_vars:
                     model.Add(group_var == 1)
                 else:
-                    model.Add(group_var == min(sub_req_vars))
+                    model.AddMinEquality(group_var, sub_req_vars)
             elif 'connection-type' in req_item and req_item['connection-type'] == 'any':
                 # Any one of the sub-requirements must be satisfied
+                print(f"anyof for {req_item}")
                 if sub_req_vars:
-                    model.Add(group_var == max(sub_req_vars))
+                    model.AddMaxEquality(group_var, sub_req_vars)
                 else:
                     model.Add(group_var == 0)  # Empty 'any' cannot be satisfied
             else:
                 # Default to 'all' if not specified
+                print(f"anyof for {req_item}")
                 if sub_req_vars:
-                    model.Add(group_var == min(sub_req_vars))
+                    model.AddMinEquality(group_var, sub_req_vars)
                 else:
                     model.Add(group_var == 1)
 
@@ -130,50 +172,12 @@ def add_requirement_constraints(model: CpModel, take, req_val, courses_df, plann
         req_var = process_requirement(req_val)
         if req_var is not None:
             model.Add(req_var == 1)
+    return group_vars
 
-
-
-# %%
-courses_df = courses_df[courses_df['is_historical'].isna()]
-
-classes = courses_df['subject_id'];
-units = courses_df['total_units'];
-hours = courses_df['in_class_hours'].fillna(0) + courses_df['out_of_class_hours'].fillna(0)
-prereqs = courses_df['prerequisites']
-
-assert isinstance(classes, pd.Series), "classes is a series"
-assert isinstance(units, pd.Series), "units should be a series"
-assert isinstance(hours, pd.Series), "hours should be a series"
-assert isinstance(prereqs, pd.Series), "prereqs should be a series"
-assert isinstance(courses_df, pd.DataFrame), "Why would it not be a dataframe"
-
-#print(courses_df["not_offered_year"].head(10))
-
-print(prereqs.head(1).item())
-
-requirements = {}
-# %%
-model = cp_model.CpModel()
-
-C = 100;
-H = 60;
-planning_year_start, planning_year_end = map(int, planning_year.split('-'))
-
-take = {}
-for c, el in classes.items():
-    assert isinstance(c, int), "c must be an int"
-    for s in range(1, 13):
-        if not is_valid_class_semester(c,s,courses_df,planning_year_start):
-            continue
-        take[c, s] = model.NewBoolVar(f"take_{c}_{s}")
-
-semCred = {s: model.NewIntVar(0, 18, f"semCred_{s}") for s in range(1,13)}
-semHrs  = {s: model.NewIntVar(0, 40, f"semHrs_{s}")  for s in range(1,13)}
-
-
+add_requirement_constraints(model, take, twoa, courses_df, planning_year_start)
 
 # HANDLE PREREQUISITES HERE
-
+# %%
 def add_prerequisite_constraints(model, take, courses_df, planning_year_start):
 
     for course_idx, prereq_str in courses_df['prerequisites'].items():
@@ -241,7 +245,9 @@ def process_prereq_condition(model, condition, take, courses_df, course_idx, sem
                              is_valid_class_semester(prereq_idx, s, courses_df, planning_year_start)]
 
         if earlier_semesters:
-            model.Add(prereq_var == sum(take[prereq_idx, s] for s in earlier_semesters) >= 1)
+            sum_taken = sum(take[prereq_idx, s] for s in earlier_semesters)
+            model.Add(sum_taken >= 1).OnlyEnforceIf(prereq_var)
+            model.Add(sum_taken < 1).OnlyEnforceIf(prereq_var.Not())
         else:
             model.Add(prereq_var == 0)  # Cannot be satisfied if no valid earlier semesters
 
@@ -276,25 +282,25 @@ def process_prereq_condition(model, condition, take, courses_df, course_idx, sem
 
 
 
-for course_idx, prereq_str in courses_df['prerequisites'].items():
-    if pd.isna(prereq_str) or not prereq_str:
-        continue  # Skip courses without prerequisites
+# for course_idx, prereq_str in courses_df['prerequisites'].items():
+#     if pd.isna(prereq_str) or not prereq_str:
+#         continue  # Skip courses without prerequisites
 
-    # Parse the prerequisite expression
-    parsed_prereqs = parse_prerequisites(prereq_str)
+#     # Parse the prerequisite expression
+#     parsed_prereqs = parse_prerequisites(prereq_str)
 
-    # For each valid semester the course might be taken
-    for semester in range(1, 13):
-        if not is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
-            continue
+#     # For each valid semester the course might be taken
+#     for semester in range(1, 13):
+#         if not is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
+#             continue
 
-        # If we take this course, its prerequisites must be satisfied
-        prereq_satisfied = process_prereq_condition(
-            model, parsed_prereqs, take, courses_df, course_idx, semester, planning_year_start
-        )
+#         # If we take this course, its prerequisites must be satisfied
+#         prereq_satisfied = process_prereq_condition(
+#             model, parsed_prereqs, take, courses_df, course_idx, semester, planning_year_start
+#         )
 
-        # Only allow taking the course if prerequisites are satisfied
-        model.Add(prereq_satisfied >= take[course_idx, semester])
+#         # Only allow taking the course if prerequisites are satisfied
+#         model.Add(prereq_satisfied >= take[course_idx, semester])
 
 # slack variables
 # overCred = {s: model.NewIntVar(0, 18, f"softCreditOverload_{s}") for s in range(1,13)}
@@ -337,15 +343,52 @@ for course_idx, prereq_str in courses_df['prerequisites'].items():
 #     model.Add(sum(take[c,s] for c in letter_set for s in range(1,9) if is_valid_class_semester(c, s, courses_df, planning_year_start)) >= 1)
 # for c in hum_spec:
 #     model.Add(sum(take[c,s] for s in range(1,9) if is_valid_class_semester(c, s, courses_df, planning_year_start)) == 1)
+# %%
 
+class VarArraySolutionPrinter(cp_model.CpSolverSolutionCallback):
+    """Print intermediate solutions, showing all nonzero variables in take and all group_vars."""
+
+    def __init__(self, take: dict[tuple[int, int], cp_model.IntVar], group_vars: dict = None):
+        cp_model.CpSolverSolutionCallback.__init__(self)
+        self.take = take
+        self.group_vars = group_vars if group_vars is not None else {}
+        self.__solution_count = 0
+
+    def on_solution_callback(self) -> None:
+        self.__solution_count += 1
+        print(f"Solution {self.__solution_count}:")
+        for (c, s), v in self.take.items():
+            if self.Value(v) != 0:
+                print(f"take[{c}, {s}] = {self.Value(v)}")
+        if self.group_vars:
+            print("Group Vars:")
+            for name, var in self.group_vars.items():
+                print(f"group_var[{name}] = {self.Value(var)}")
+        print()
+
+    @property
+    def solution_count(self) -> int:
+        return self.__solution_count
+
+# %%
 # Objective
-finish_time = sum(s * take[c, s] for c in classes for s in range(1, 9) if is_valid_class_semester(c, s, courses_df, planning_year_start))
+printer = VarArraySolutionPrinter(take)
+finish_time = sum(s * take[idx, s] for idx in classes.index for s in range(1, 9) if is_valid_class_semester(idx, s, courses_df, planning_year_start))
 # overload_pen = PenCred * sum(overCred[s] for s in range(1,9)) \
 #              + PenHrs  * sum(overHrs[s]  for s in range(1,9))
 model.Minimize(finish_time) #  + overload_pen
 
 # Solve
 solver = cp_model.CpSolver()
-solver.parameters.max_time_in_seconds = 10
+solver.parameters.enumerate_all_solutions = True
+solver.parameters.max_time_in_seconds = 20
+res = solver.Solve(model, printer)
+print(res)
+# %%
+
+model = cp_model.CpModel()
+x = model.NewBoolVar('x')
+model.Minimize(x)
+solver = cp_model.CpSolver()
 res = solver.Solve(model)
-#
+print(str(res))  # Should print 3 (OPTIMAL) or 2 (FEASIBLE)

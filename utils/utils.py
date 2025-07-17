@@ -12,7 +12,11 @@ class NodeType(Enum):
 
 class Node:
     type: NodeType # 0 for leaf 1 for AND 2 for OR
-    contents: list[Node]
+    contents: list['Node']
+
+    def __init__(self, type: NodeType, contents: list['Node']):
+        self.type = type
+        self.contents = contents
 # %%
 
 # Prerequisite handling stuff
