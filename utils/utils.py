@@ -62,6 +62,9 @@ def parse_prerequisites(prereq_str):
             if tokens and tokens[0] == ')':
                 tokens.pop(0)
             return expr
+        elif token == ')':
+            # Ignore stray closing parenthesis
+            return None
         else:
             return token if token else None
 
@@ -69,8 +72,69 @@ def parse_prerequisites(prereq_str):
         if isinstance(cond, str):
             # Remove any prerequisite that is a Corequisite or Prerequisite
             lowered = cond.lower()
-            if "coreq:" in lowered or "prereq:" in lowered:
-                return None
+            # Remove generic text requirements
+            generic_texts = [ # I need to fix this lol
+                "coreq:",
+                "prereq:",
+                "other approved laboratory subject",
+                "some familiarity",
+                "permission",
+                "placement test",
+                "placement exam",
+                "fluency in a",
+                "intermediate subject",
+                "intermediate level subject",
+                "two mathematics subjects",
+                "two subjects in anthropology",
+                "one intermediate subject",
+                "one intermediate level subject",
+                "one intermediate spanish subject",
+                "one intermediate subject in spanish",
+                "one intermediate subject in french",
+                "one subject in literature",
+                "two subjects in literature",
+                "comparative media studies",
+                "writing sample",
+                "one subject in writing",
+                "a fiction workshop",
+                "as specified for particular field",
+                "history",
+                "media",
+                "music",
+                "theater",
+                "film",
+                "philosophy subject",
+                "permission of advisor",
+                "permission of department",
+                "permission of director",
+                "permission of the director",
+                "permission of instrctor",  # typo variant
+                "physical chemistry",
+                "other introductory astronomy course",
+                "a subject on waves",
+                "Graduate-level fluid mechanics",
+                "'read the book Disciplined Entrepreneurship'", #shut yo atomic habits ass up
+                "'Knowledge of differentiation'",
+                "'elementary integration'"
+                "'Culture'",
+                "'Women'",
+                "'Sexuality'",
+                "Freshmen need permission of instructor",
+                "'above'",
+                "'One philsophy subject'",
+                "'Two subjects in philosophy'",
+                "'one subject on probability'",
+                "'Any two subjects in philosophy'",
+                "based", #parsing error? based
+
+                "'introductory subject in thermodynamics'",
+                "'Graduate-level fluid mechanics'",
+                "'Undergraduate mathematics'",
+                "'One philsophy subject'"
+
+            ]
+            if any(txt in lowered for txt in generic_texts):
+                return None #"GIR:SOCIALSKILLS"
             return cond if cond.strip() else None
         elif isinstance(cond, dict):
             cleaned = {}
