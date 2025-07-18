@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { Node as GraphNode } from "@/components/nodegraph/GraphNode";
 import { GraphEdges } from "@/components/nodegraph/GraphEdges";
 import { NodeHoverCard } from "@/components/nodegraph/NodeHoverCard";
-import { AddNodeDropdown } from "@/components/AddNodeDropdown";
+import { AddNodeDropdown } from "@/components/dropdown/AddNodeDropdown";
 import { useGraphClassStore } from "./types";
 import {
   edges,
@@ -31,11 +31,16 @@ export function NodeGraph() {
   const [dropdownPosition, setDropdownPosition] = React.useState<{ x: number; y: number } | null>(null);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedNode, setSelectedNode] = React.useState<typeof availableNodes[number] | null>(null);
+  const [viewportHeight, setViewportHeight] = React.useState<number>(0);
 
   React.useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const handleScroll = () => setScrollLeft(container.scrollLeft);
+    const handleScroll = () => {
+      setScrollLeft(container.scrollLeft);
+      setDropdownOpen(false);
+      setDropdownPosition(null);
+    };
     container.addEventListener("scroll", handleScroll);
     return () => container.removeEventListener("scroll", handleScroll);
   }, []);
@@ -56,6 +61,21 @@ export function NodeGraph() {
   const nodeHeight = 40; // Height of each node
   const nodeMargin = 20; // Margin between nodes
 
+  React.useEffect(() => {
+    function updateHeight() {
+      if (containerRef.current) {
+        setViewportHeight(containerRef.current.clientHeight);
+      } else if (typeof window !== "undefined") {
+        setViewportHeight(window.innerHeight);
+      }
+    }
+    updateHeight();
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", updateHeight);
+      return () => window.removeEventListener("resize", updateHeight);
+    }
+  }, []);
+
   // Combine special section and regular sections for easier mapping
   const allSections = [specialSection, ...sections];
   const totalSections = allSections.length;
@@ -65,22 +85,31 @@ export function NodeGraph() {
 
   // Processed nodes with positions
   const positionedNodes = currentGraphClasses.map((graphClass) => {
+    // Convert section to number if needed
+    const sectionNum = typeof graphClass.section === "string" ? parseInt(graphClass.section, 10) : graphClass.section;
     // If section is "special", its index is 0, otherwise find its index in sections and add 1
-    const sectionIdx = graphClass.section === "special"
+    const sectionIdx = sectionNum === -1
       ? 0
-      : sections.findIndex(s => s.id === graphClass.section) + 1;
+      : sections.findIndex(s => s.id === sectionNum) + 1;
 
     const x = sectionIdx * (sectionWidth + sectionPadding * 2) + sectionWidth / 2 - nodeWidth / 2;
 
     // Calculate y position based on placement in section
-    const nodesInSameSection = currentGraphClasses.filter((n) => n.section === graphClass.section);
-    const nodeIndexInSection = nodesInSameSection.findIndex((n) => n.id === graphClass.id);
+    const nodesInSameSection = currentGraphClasses.filter((n) => {
+      const nSectionNum = typeof n.section === "string" ? parseInt(n.section, 10) : n.section;
+      return nSectionNum === sectionNum;
+    });
+    const nodeIdNum = typeof graphClass.id === "string" ? parseInt(graphClass.id, 10) : graphClass.id;
+    const nodeIndexInSection = nodesInSameSection.findIndex((n) => {
+      const nIdNum = typeof n.id === "string" ? parseInt(n.id, 10) : n.id;
+      return nIdNum === nodeIdNum;
+    });
     const y =
       nodeIndexInSection * (nodeHeight + nodeMargin) +
       56 + // Padding from the top (header height)
       nodeHeight / 2;
 
-    return { x, y, width: nodeWidth, height: nodeHeight, ...graphClass, sectionIdx };
+    return { x, y, width: nodeWidth, height: nodeHeight, ...graphClass, sectionIdx, id: nodeIdNum, section: sectionNum };
   });
 
   return (
@@ -106,8 +135,12 @@ export function NodeGraph() {
               height: "100%",
               minHeight: "100vh",
               background:
-                hoveredSection === idx
-                  ? "rgba(243, 244, 246, 0.7)" // bg-muted/70
+                idx === 0 // Special section is always at index 0
+                  ? hoveredSection === idx
+                    ? "rgba(209, 213, 219, 0.9)" // Slightly darker when hovered
+                    : "rgba(209, 213, 219, 0.3)" // Slightly darker default
+                  : hoveredSection === idx
+                  ? "rgba(243, 244, 246, 0.3)" // bg-muted/70 when hovered
                   : "transparent",
               zIndex: 1,
               cursor: "pointer",
@@ -149,21 +182,10 @@ export function NodeGraph() {
                         setDropdownPosition(null);
                         return false;
                       }
-                      const rect = (
-                        e.target as HTMLElement
-                      ).getBoundingClientRect();
-                      const contentRect =
-                        contentRef.current?.getBoundingClientRect();
-                      if (contentRect) {
-                        const x =
-                          rect.left -
-                          contentRect.left +
-                          rect.width +
-                          8 +
-                          scrollLeft;
-                        const y = rect.top - contentRect.top;
-                        setDropdownPosition({ x, y });
-                      }
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = rect.right + 8;
+                      const y = rect.top;
+                      setDropdownPosition({ x, y });
                       return true;
                     });
                   }}
@@ -181,7 +203,7 @@ export function NodeGraph() {
           positionedNodes={positionedNodes}
           edges={edges}
           sectionWidth={sectionWidth}
-          viewportHeight={containerRef.current?.clientHeight || window.innerHeight}
+          viewportHeight={viewportHeight}
           totalWidth={totalWidth}
         />
 
@@ -198,12 +220,13 @@ export function NodeGraph() {
           scrollLeft={scrollLeft}
           viewportWidth={containerRef.current?.clientWidth || 0}
           totalWidth={totalWidth}
+          viewportHeight={viewportHeight}
           dropdownRef={dropdownRef as React.RefObject<HTMLDivElement>}
         />
 
         {/* Render nodes */}
         {positionedNodes.map((node) => {
-          const isSpecial = node.section === "special";
+          const isSpecial = node.section === -1;
           const isHovered = hoveredNode === node.id;
           return (
             <GraphNode

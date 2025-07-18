@@ -13,24 +13,32 @@ interface NodeHoverCardProps {
     title: string;
     description: string;
     type: string;
-    status: string;
+    status: Status;
     connections: number;
     lastUpdated: string;
   };
   containerRef: React.RefObject<HTMLDivElement>;
   scrollLeft: number;
-  viewportWidth: number;
-  viewportHeight: number;
   totalWidth: number;
 }
+
+type Status = "Active" | "Locked" | "Disabled" | "Pending";
+
+// CSS classes could be extracted to a separate file
+const cardClassName =
+  "absolute z-[30] bg-card border border-border rounded-lg shadow-xl p-4 min-w-[180px] max-w-[320px] overflow-x-auto break-words animate-in fade-in-0 zoom-in-95 duration-200";
+
+// Constants for magic numbers
+const CARD_DEFAULT_WIDTH = 280;
+const CARD_DEFAULT_HEIGHT = 200;
+const NODE_CIRCLE_RADIUS = 20;
+const MIN_VISIBLE_PADDING = 20;
 
 export function NodeHoverCard({
   node,
   details,
   containerRef,
   scrollLeft,
-  viewportWidth,
-  totalWidth,
   onMouseEnter,
   onMouseLeave,
 }: NodeHoverCardProps & {
@@ -38,81 +46,109 @@ export function NodeHoverCard({
   onMouseLeave: () => void;
 }) {
   const cardRef = React.useRef<HTMLDivElement>(null);
-  const [cardSize, setCardSize] = React.useState({ width: 280, height: 200 });
+  const [cardSize, setCardSize] = React.useState({
+    width: CARD_DEFAULT_WIDTH,
+    height: CARD_DEFAULT_HEIGHT,
+  });
 
   React.useLayoutEffect(() => {
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
-      setCardSize({
-        width: rect.width,
-        height: rect.height,
-      });
+        setCardSize({
+          width: rect.width,
+          height: rect.height,
+        });
     }
   }, [details]);
 
-  const getHoverCardPosition = () => {
-    const cardWidth = cardSize.width;
-    const cardHeight = cardSize.height;
-    const circleRadius = 20;
+  const getStatusClass = (status: Status) => {
+    switch (status) {
+      case "Active":
+        return "text-green-600";
+      case "Locked":
+        return "text-yellow-600";
+      case "Disabled":
+        return "text-red-600";
+      default:
+        return "text-yellow-600";
+    }
+  };
 
-    // Node position relative to the total canvas
+  const getStatusBackgroundClass = (status: Status) => {
+    switch (status) {
+      case "Active":
+        return "bg-green-500";
+      case "Locked":
+        return "bg-yellow-500";
+      case "Disabled":
+        return "bg-red-500";
+      default:
+        return "bg-yellow-500";
+    }
+  };
+
+  const getHoverCardPosition = () => {
+    const { width: cardWidth, height: cardHeight } = cardSize;
     const nodeRelativeX = node.x;
     const nodeRelativeY = node.y;
 
-    // Calculate card position relative to the node
-    let cardX = nodeRelativeX + circleRadius + 20;
+    let cardX = nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING;
     let cardY = nodeRelativeY;
 
-    // Calculate visible bounds
-    const visibleLeft = scrollLeft + 20;
-    const visibleRight = scrollLeft + viewportWidth - 20;
+    const visibleLeft = scrollLeft + MIN_VISIBLE_PADDING;
+    const containerWidth = containerRef.current?.clientWidth || 0;
+    const visibleRight = scrollLeft + containerWidth - MIN_VISIBLE_PADDING;
 
-    // Calculate available space on both sides
-    const spaceRight = visibleRight - (nodeRelativeX + circleRadius + 20);
-    const spaceLeft = nodeRelativeX - circleRadius - 20 - visibleLeft;
+    const spaceRight = visibleRight - (nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING);
+    const spaceLeft = nodeRelativeX - NODE_CIRCLE_RADIUS - MIN_VISIBLE_PADDING - visibleLeft;
 
     if (spaceRight >= cardWidth) {
       // Place card to the right of the node
-      cardX = nodeRelativeX + circleRadius + 20;
+      cardX = nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING;
     } else if (spaceLeft >= cardWidth) {
       // Place card to the left of the node
-      cardX = nodeRelativeX - cardWidth - circleRadius - 20;
+      cardX = nodeRelativeX - cardWidth - NODE_CIRCLE_RADIUS - MIN_VISIBLE_PADDING;
     } else if (spaceRight >= spaceLeft) {
       // Not enough space on either side, but more on the right
-      cardX = Math.max(visibleLeft, nodeRelativeX + circleRadius + 20);
+      cardX = Math.max(visibleLeft, nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING);
     } else {
       // Not enough space on either side, but more on the left
       cardX = Math.max(
         visibleLeft,
-        nodeRelativeX - cardWidth - circleRadius - 20,
+        nodeRelativeX - cardWidth - NODE_CIRCLE_RADIUS - MIN_VISIBLE_PADDING,
       );
-    }
 
-    // Vertical positioning
-    if (cardY - cardHeight / 2 < 20) {
-      cardY = 20 + cardHeight / 2;
-    } else if (
-      cardY + cardHeight / 2 >
-      containerRef.current?.clientHeight - 20
-    ) {
-      cardY = (containerRef.current?.clientHeight || 0) - 20 - cardHeight / 2;
-    }
+  }
 
-    return {
-      cardStyle: {
-        left: cardX,
-        top: cardY,
-        transform: "translateY(-50%)",
-      },
-    };
+  // Vertical positioning
+  if (cardY - cardHeight / 2 < MIN_VISIBLE_PADDING) {
+    cardY = MIN_VISIBLE_PADDING + cardHeight / 2;
+  } else if (
+    cardY + cardHeight / 2 >
+    (containerRef.current?.clientHeight || 0) - MIN_VISIBLE_PADDING
+  ) {
+    cardY =
+      (containerRef.current?.clientHeight || 0) -
+      MIN_VISIBLE_PADDING -
+      cardHeight / 2;
+  }
+
+  return {
+    cardStyle: {
+      left: cardX,
+      top: cardY,
+      transform: "translateY(-50%)",
+    },
   };
+};
+
 
   const { cardStyle } = getHoverCardPosition();
 
   return (
     <div
       ref={cardRef}
-      className="absolute z-[30] bg-card border border-border rounded-lg shadow-xl p-4 min-w-[180px] max-w-[320px] overflow-x-auto break-words animate-in fade-in-0 zoom-in-95 duration-200"
+      className={cardClassName}
       style={cardStyle}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -135,15 +171,7 @@ export function NodeHoverCard({
           <div>
             <span className="text-muted-foreground">Status:</span>
             <div
-              className={`font-medium ${
-                details.status === "Active"
-                  ? "text-green-600"
-                  : details.status === "Locked"
-                    ? "text-yellow-600"
-                    : details.status === "Disabled"
-                      ? "text-red-600"
-                      : "text-yellow-600"
-              }`}
+              className={`font-medium ${getStatusClass(details.status)}`}
             >
               {details.status}
             </div>
@@ -165,15 +193,9 @@ export function NodeHoverCard({
         <div className="pt-2 border-t border-border">
           <div className="flex items-center gap-2">
             <div
-              className={`w-2 h-2 rounded-full ${
-                details.status === "Active"
-                  ? "bg-green-500"
-                  : details.status === "Locked"
-                    ? "bg-yellow-500"
-                    : details.status === "Disabled"
-                      ? "bg-red-500"
-                      : "bg-yellow-500"
-              }`}
+              className={`w-2 h-2 rounded-full ${getStatusBackgroundClass(
+                details.status
+              )}`}
             ></div>
             <span className="text-xs text-muted-foreground">
               {details.status === "Active"

@@ -18,12 +18,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { SimpleSelect } from "@/components/ui/simple-select";
 import { Download, Rocket, Lock, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NodeGraph } from "./components/nodegraph/NodeGraph";
-
-// Import sections for node disabled check
-import { sections } from "@/debug";
 
 export default function Dashboard() {
   // Info alert dismissed state
@@ -41,7 +39,7 @@ export default function Dashboard() {
   const hasDisabledNodes = false
   return (
     <SidebarProvider>
-      <div className="flex w-screen h-screen overflow-x-hidden overflow-y-hidden">
+      <div className="flex w-screen h-screen">
         <AppSidebar />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 relative z-10">
@@ -75,6 +73,22 @@ export default function Dashboard() {
                 <p className="text-muted-foreground">
                   Integer Programming Test
                 </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <SimpleSelect
+                  className="w-40"
+                  placeholder="Select Year"
+                  options={[
+                    { value: "freshman", label: "Freshman" },
+                    { value: "sophomore", label: "Sophomore" },
+                    { value: "junior", label: "Junior" },
+                    { value: "senior", label: "Senior" },
+                  ]}
+                  onValueChange={(value) => console.log("Selected:", value)}
+                />
+                <Button size="sm" variant="outline">
+                  Optimize!
+                </Button>
               </div>
             </div>
 
