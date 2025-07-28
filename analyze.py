@@ -43,6 +43,55 @@ twoa = requirements_df.set_index("key").loc['major2a'].reqs
 sixthree = requirements_df.set_index("key").loc['major6-3new'].reqs
 sixfive = requirements_df.set_index("key").loc['major6-2new'].reqs
 girs = requirements_df.set_index("key").loc['girs'].reqs
+sixmod = []
+sixmod.append({'connection-type': 'all',
+  'reqs': [{'connection-type': 'any',
+            'reqs': [{'req': '6.100A'}, {'req': '6.100L'}],
+            'threshold-desc': 'select either'},
+           {'connection-type': 'any',
+            'reqs': [{'req': '6.120A'}, {'req': '6.1200'}],
+            'threshold-desc': 'select either'},
+           {'req': '6.1210'},
+           {'connection-type': 'any',
+            'reqs': [{'req': '6.1903'}, {'req': '6.1904'}],
+            'threshold-desc': 'select either'}],
+  'threshold-desc': 'select all',
+  'title': 'Fundamental'})
+sixmod.append({'connection-type': 'all',
+ 'reqs': [{'connection-type': 'any',
+           'reqs': [{'req': '6.S084'}, {'req': '18.C06'}, {'req': '18.06'}],
+           'threshold-desc': 'select any'},
+          {'connection-type': 'any',
+           'reqs': [{'req': '6.3700'}, {'req': '6.3800'}, {'req': '18.05'}],
+           'threshold-desc': 'select any'}],
+ 'threshold-desc': 'select all',
+ 'title': 'Math'})
+sixmod.append({'connection-type': 'all',
+ 'reqs': [{'req': '6.1910'},
+          {'req': '6.2000'},
+          {'req': '6.3100'},
+          {'req': '6.9000'}],
+ 'threshold-desc': 'select all',
+ 'title': 'System Design'})
+sixmod.append({'connection-type': 'any',
+ 'reqs': [{'req': '6.1100'},
+          {'req': '6.1820'},
+          {'req': '6.2040'},
+          {'req': '6.2050'},
+          {'req': '6.2060'},
+          {'req': '6.2220'},
+          {'req': '6.2221'},
+          {'req': '6.2370'},
+          {'req': '6.2410'},
+          {'req': '6.2600'},
+          {'req': '6.4200'},
+          {'req': '6.4420'},
+          {'req': '6.4510'},
+          {'req': '6.4550'},
+          {'req': '6.4860'}],
+ 'threshold': {'criterion': 'subjects', 'cutoff': 1, 'type': 'GTE'},
+ 'threshold-desc': 'select any',
+ 'title': 'PLAB'})
 
 pprint(twoa)
 
