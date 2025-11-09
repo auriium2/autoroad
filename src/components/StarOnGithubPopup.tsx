@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const GITHUB_REPO_URL = "https://github.com/your-org/your-repo"; // <-- Replace with your repo
+const GITHUB_REPO_URL = "https://github.com/your-org/your-repo";
 
 const githubIcon = (
   <svg
@@ -25,7 +25,11 @@ const githubIcon = (
 );
 
 export function StarOnGithubPopup() {
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => {
+    // Only access localStorage on client side
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('starPopupDismissed') !== 'true';
+  });
 
   if (!visible) return null;
 
@@ -43,7 +47,12 @@ export function StarOnGithubPopup() {
         <button
           aria-label="Close"
           className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setVisible(false)}
+          onClick={() => { 
+            setVisible(false); 
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('starPopupDismissed', 'true');
+            }
+          }}
           title="Dismiss"
           style={{
             background: "none",

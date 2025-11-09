@@ -1,50 +1,50 @@
 "use client";
 
 import * as React from "react";
+import { useNodeDetails } from "@/hooks/useNodeDetails";
+import type { CourseNode } from "@/stores/roadStore";
 
-// Improved NodeHoverCard component using its own props interface
-interface NodeHoverCardProps {
-  node: {
-    id: number;
-    x: number;
-    y: number;
-  };
-  details: {
-    title: string;
-    description: string;
-    type: string;
-    status: Status;
-    connections: number;
-    lastUpdated: string;
-  };
+// Improved CourseNodeHoverCard component using its own props interface
+interface CourseNodeHoverCardProps {
+  nodeId: string;
   containerRef: React.RefObject<HTMLDivElement>;
   scrollLeft: number;
   totalWidth: number;
+  viewportWidth: number;
 }
 
 type Status = "Active" | "Locked" | "Disabled" | "Pending";
 
 // CSS classes could be extracted to a separate file
 const cardClassName =
-  "absolute z-[30] bg-card border border-border rounded-lg shadow-xl p-4 min-w-[180px] max-w-[320px] overflow-x-auto break-words animate-in fade-in-0 zoom-in-95 duration-200";
+  "absolute z-[30] bg-[oklch(0.2_0.015_264)] backdrop-blur-xl border border-[oklch(0.9_0.01_264_/_0.15)] rounded-xl shadow-xl p-4 min-w-[180px] max-w-[320px] overflow-x-auto break-words animate-in fade-in-0 zoom-in-95 duration-200";
 
-// Constants for magic numbers
 const CARD_DEFAULT_WIDTH = 280;
 const CARD_DEFAULT_HEIGHT = 200;
 const NODE_CIRCLE_RADIUS = 20;
 const MIN_VISIBLE_PADDING = 20;
 
-export function NodeHoverCard({
-  node,
-  details,
+export function CourseNodeHoverCard({
+  nodeId,
   containerRef,
   scrollLeft,
+  viewportWidth,
   onMouseEnter,
   onMouseLeave,
-}: NodeHoverCardProps & {
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
+}: CourseNodeHoverCardProps & {
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }) {
+  // Fetch node details using SWR
+  const { nodeDetails, isLoading } = useNodeDetails(nodeId);
+  const details = React.useMemo(() => nodeDetails || {
+    title: `Loading ${nodeId}...`,
+    description: "Details are being loaded",
+    type: "Unknown",
+    status: "Pending" as Status,
+    connections: 0,
+    lastUpdated: "Loading..."
+  }, [nodeDetails, nodeId]);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = React.useState({
     width: CARD_DEFAULT_WIDTH,
@@ -61,7 +61,7 @@ export function NodeHoverCard({
     }
   }, [details]);
 
-  const getStatusClass = (status: Status) => {
+  const getStatusClass = (status: Status | string) => {
     switch (status) {
       case "Active":
         return "text-green-600";
@@ -74,7 +74,7 @@ export function NodeHoverCard({
     }
   };
 
-  const getStatusBackgroundClass = (status: Status) => {
+  const getStatusBackgroundClass = (status: Status | string) => {
     switch (status) {
       case "Active":
         return "bg-green-500";
@@ -89,14 +89,25 @@ export function NodeHoverCard({
 
   const getHoverCardPosition = () => {
     const { width: cardWidth, height: cardHeight } = cardSize;
-    const nodeRelativeX = node.x;
-    const nodeRelativeY = node.y;
+    
+    // Get node position from DOM
+    const nodeElement = document.querySelector(`[data-node-circle="${nodeId}"]`);
+    if (!nodeElement || !containerRef.current) {
+      return { cardStyle: { left: 0, top: 0, display: 'none' } };
+    }
+    
+    const nodeRect = nodeElement.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const scrollTop = containerRef.current?.scrollTop || 0;
+    
+    const nodeRelativeX = nodeRect.left - containerRect.left + scrollLeft + nodeRect.width / 2;
+    const nodeRelativeY = nodeRect.top - containerRect.top + scrollTop + nodeRect.height / 2;
 
     let cardX = nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING;
     let cardY = nodeRelativeY;
 
     const visibleLeft = scrollLeft + MIN_VISIBLE_PADDING;
-    const containerWidth = containerRef.current?.clientWidth || 0;
+    const containerWidth = viewportWidth || containerRef.current?.clientWidth || 0;
     const visibleRight = scrollLeft + containerWidth - MIN_VISIBLE_PADDING;
 
     const spaceRight = visibleRight - (nodeRelativeX + NODE_CIRCLE_RADIUS + MIN_VISIBLE_PADDING);
@@ -150,8 +161,8 @@ export function NodeHoverCard({
       ref={cardRef}
       className={cardClassName}
       style={cardStyle}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onMouseEnter={onMouseEnter || (() => {})}
+      onMouseLeave={onMouseLeave || (() => {})}
     >
       <div className="space-y-3">
         <div className="border-b border-border pb-2">

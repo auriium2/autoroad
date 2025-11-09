@@ -2,59 +2,100 @@
 
 import * as React from "react";
 import { Edge } from "@/stores/roadStore";
-import { PositionedNode } from "./DisplayGraph";
 
-interface GraphEdgesProps {
-  positionedNodes: PositionedNode[];
+interface CourseEdgesProps {
   edges: Edge[];
   containerRef: React.RefObject<HTMLDivElement>;
 }
 
-export function GraphEdges({
-  positionedNodes,
+export function CourseEdges({
   edges,
   containerRef,
-}: GraphEdgesProps) {
+}: CourseEdgesProps) {
   const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
+  const [updateKey, setUpdateKey] = React.useState(0);
+  const [isUpdating, setIsUpdating] = React.useState(false);
 
   React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const updateDimensions = () => {
+      setIsUpdating(true);
+      
       if (containerRef.current) {
         setDimensions({
           width: containerRef.current.scrollWidth,
           height: containerRef.current.scrollHeight,
         });
       }
+      // Force re-render by updating key
+      setUpdateKey(k => k + 1);
+      
+      // Reset after a short delay to allow layout to settle
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsUpdating(false);
+      }, 50);
     };
 
-    updateDimensions();
+    const timer = setTimeout(updateDimensions, 100);
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, [containerRef, positionedNodes]);
+    const container = containerRef.current;
+    container?.addEventListener('scroll', updateDimensions);
+    
+    // Use ResizeObserver to detect layout changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
+    });
+    
+    if (container) {
+      resizeObserver.observe(container);
+    }
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', updateDimensions);
+      container?.removeEventListener('scroll', updateDimensions);
+      resizeObserver.disconnect();
+    };
+  }, [containerRef, edges]);
 
   if (dimensions.width === 0 || dimensions.height === 0) return null;
 
+  const containerRect = containerRef.current?.getBoundingClientRect();
+  if (!containerRect) return null;
+
+  const scrollLeft = containerRef.current?.scrollLeft || 0;
+  const scrollTop = containerRef.current?.scrollTop || 0;
+
   return (
     <svg
-      className="absolute top-0 left-0 pointer-events-none"
+      key={updateKey}
+      className="absolute top-0 left-0 pointer-events-none transition-opacity duration-100"
       style={{
         width: `${dimensions.width}px`,
         height: `${dimensions.height}px`,
         zIndex: 0,
+        opacity: isUpdating ? 0 : 1,
       }}
     >
       <g>
         {edges.map((edge, idx) => {
-          const fromNode = positionedNodes.find(n => n.id === edge.from_id);
-          const toNode = positionedNodes.find(n => n.id === edge.to_id);
+          // Get node elements directly from DOM
+          const fromElement = document.querySelector(`[data-node-circle="${edge.from_id}"]`);
+          const toElement = document.querySelector(`[data-node-circle="${edge.to_id}"]`);
 
-          if (!fromNode || !toNode) return null;
+          if (!fromElement || !toElement) return null;
 
-          // Start and end points
-          const fromX = fromNode.x;
-          const fromY = fromNode.y;
-          const toX = toNode.x;
-          const toY = toNode.y;
+          const fromRect = fromElement.getBoundingClientRect();
+          const toRect = toElement.getBoundingClientRect();
+
+          // Calculate center points: viewport position - container position + scroll offset
+          const fromX = fromRect.left - containerRect.left + fromRect.width / 2 + scrollLeft;
+          const fromY = fromRect.top - containerRect.top + fromRect.height / 2 + scrollTop;
+          const toX = toRect.left - containerRect.left + toRect.width / 2 + scrollLeft;
+          const toY = toRect.top - containerRect.top + toRect.height / 2 + scrollTop;
 
           // Calculate distance
           const dx = toX - fromX;

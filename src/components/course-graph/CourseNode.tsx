@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Lock, X } from "lucide-react";
-import { CourseNode } from "@/stores/roadStore";
+import type { CourseNode } from "@/stores/roadStore";
 
 interface NodeProps {
   node: CourseNode;
@@ -12,7 +12,7 @@ interface NodeProps {
   onMouseLeave: () => void;
 }
 
-export function Node({
+export function CourseNode({
   node,
   isSpecial = false,
   isHovered = false,
@@ -25,7 +25,7 @@ export function Node({
   let borderColor = "border-border";
   let bgColor = "bg-card";
   let textColor = "text-foreground";
-  let icon = "D";
+  let icon: string | React.ReactElement = "D";
 
   if (isSpecial) {
     borderColor = "border-primary";
