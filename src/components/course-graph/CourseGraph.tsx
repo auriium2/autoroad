@@ -22,6 +22,7 @@ export function CourseGraph() {
 
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
+  const nodeRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Load data on mount - try API first, fallback to demo data
   React.useEffect(() => {
@@ -109,7 +110,17 @@ export function CourseGraph() {
               {/* Nodes container - centered vertically with flex */}
               <div className="flex-1 flex flex-col items-center justify-center gap-16 py-8">
                 {sectionNodes.map((node) => (
-                  <div key={node.id} data-node-id={node.id}>
+                  <div 
+                    key={node.id} 
+                    data-node-id={node.id}
+                    ref={(el) => {
+                      if (el) {
+                        nodeRefs.current.set(node.id, el);
+                      } else {
+                        nodeRefs.current.delete(node.id);
+                      }
+                    }}
+                  >
                     <CourseNodeComponent
                       node={node}
                       isSpecial={isSpecialSection}
@@ -129,6 +140,7 @@ export function CourseGraph() {
       <CourseEdges
         edges={edges}
         containerRef={containerRef}
+        nodeRefs={nodeRefs}
       />
 
       {/* Hover card */}

@@ -6,92 +6,83 @@ import { Edge } from "@/stores/roadStore";
 interface CourseEdgesProps {
   edges: Edge[];
   containerRef: React.RefObject<HTMLDivElement>;
+  nodeRefs: React.RefObject<Map<string, HTMLDivElement>>;
 }
 
 export function CourseEdges({
   edges,
   containerRef,
+  nodeRefs,
 }: CourseEdgesProps) {
-  const [dimensions, setDimensions] = React.useState({ width: 0, height: 0 });
-  const [updateKey, setUpdateKey] = React.useState(0);
-  const [isUpdating, setIsUpdating] = React.useState(false);
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
 
+  // Update on scroll
   React.useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    const updateDimensions = () => {
-      setIsUpdating(true);
-      
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.scrollWidth,
-          height: containerRef.current.scrollHeight,
-        });
-      }
-      // Force re-render by updating key
-      setUpdateKey(k => k + 1);
-      
-      // Reset after a short delay to allow layout to settle
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        setIsUpdating(false);
-      }, 50);
-    };
-
-    const timer = setTimeout(updateDimensions, 100);
-    window.addEventListener('resize', updateDimensions);
     const container = containerRef.current;
-    container?.addEventListener('scroll', updateDimensions);
+    if (!container) return;
+
+    const handleUpdate = () => forceUpdate();
     
-    // Use ResizeObserver to detect layout changes
-    const resizeObserver = new ResizeObserver(() => {
-      updateDimensions();
-    });
-    
-    if (container) {
-      resizeObserver.observe(container);
-    }
+    container.addEventListener('scroll', handleUpdate);
+    window.addEventListener('resize', handleUpdate);
     
     return () => {
-      clearTimeout(timer);
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', updateDimensions);
-      container?.removeEventListener('scroll', updateDimensions);
+      container.removeEventListener('scroll', handleUpdate);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [containerRef]);
+
+  // Update when layout changes using ResizeObserver
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      forceUpdate();
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
       resizeObserver.disconnect();
     };
-  }, [containerRef, edges]);
+  }, [containerRef]);
 
-  if (dimensions.width === 0 || dimensions.height === 0) return null;
+  if (!containerRef.current) return null;
 
-  const containerRect = containerRef.current?.getBoundingClientRect();
-  if (!containerRect) return null;
-
-  const scrollLeft = containerRef.current?.scrollLeft || 0;
-  const scrollTop = containerRef.current?.scrollTop || 0;
+  const containerRect = containerRef.current.getBoundingClientRect();
+  const scrollLeft = containerRef.current.scrollLeft;
+  const scrollTop = containerRef.current.scrollTop;
+  const width = containerRef.current.scrollWidth;
+  const height = containerRef.current.scrollHeight;
 
   return (
     <svg
-      key={updateKey}
-      className="absolute top-0 left-0 pointer-events-none transition-opacity duration-100"
+      ref={svgRef}
+      className="absolute top-0 left-0 pointer-events-none"
       style={{
-        width: `${dimensions.width}px`,
-        height: `${dimensions.height}px`,
+        width: `${width}px`,
+        height: `${height}px`,
         zIndex: 0,
-        opacity: isUpdating ? 0 : 1,
       }}
     >
       <g>
         {edges.map((edge, idx) => {
-          // Get node elements directly from DOM
-          const fromElement = document.querySelector(`[data-node-circle="${edge.from_id}"]`);
-          const toElement = document.querySelector(`[data-node-circle="${edge.to_id}"]`);
+          const fromNode = nodeRefs.current?.get(edge.from_id);
+          const toNode = nodeRefs.current?.get(edge.to_id);
 
-          if (!fromElement || !toElement) return null;
+          if (!fromNode || !toNode) return null;
 
-          const fromRect = fromElement.getBoundingClientRect();
-          const toRect = toElement.getBoundingClientRect();
+          const fromCircle = fromNode.querySelector('[data-node-circle]');
+          const toCircle = toNode.querySelector('[data-node-circle]');
 
-          // Calculate center points: viewport position - container position + scroll offset
+          if (!fromCircle || !toCircle) return null;
+
+          const fromRect = fromCircle.getBoundingClientRect();
+          const toRect = toCircle.getBoundingClientRect();
+
+          // Calculate center points relative to container
           const fromX = fromRect.left - containerRect.left + fromRect.width / 2 + scrollLeft;
           const fromY = fromRect.top - containerRect.top + fromRect.height / 2 + scrollTop;
           const toX = toRect.left - containerRect.left + toRect.width / 2 + scrollLeft;

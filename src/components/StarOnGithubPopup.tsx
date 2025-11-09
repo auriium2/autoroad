@@ -25,13 +25,19 @@ const githubIcon = (
 );
 
 export function StarOnGithubPopup() {
-  const [visible, setVisible] = useState(() => {
-    // Only access localStorage on client side
-    if (typeof window === 'undefined') return true;
-    return localStorage.getItem('starPopupDismissed') !== 'true';
-  });
+  const [visible, setVisible] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-  if (!visible) return null;
+  React.useEffect(() => {
+    // Check localStorage only after mount to avoid hydration mismatch
+    const isDismissed = localStorage.getItem('starPopupDismissed') === 'true';
+    if (isDismissed) {
+      setVisible(false);
+    }
+    setMounted(true);
+  }, []);
+
+  if (!visible || !mounted) return null;
 
   return (
     <div
