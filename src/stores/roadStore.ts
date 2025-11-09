@@ -56,6 +56,7 @@ interface GraphStore {
   addNode: (node: CourseNode) => Promise<void>;
   removeNode: (id: string) => Promise<void>;
   updateNode: (id: string, updates: Partial<CourseNode>) => Promise<void>;
+  updateNodeLocal: (id: string, updates: Partial<CourseNode>) => void;
   
   setEdges: (edges: Edge[]) => void;
   
@@ -181,6 +182,24 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       set({ error: error instanceof ApiError ? error.message : 'Failed to update node' });
       throw error;
     }
+  },
+
+  updateNodeLocal: (id, updates) => {
+    const { nodes } = get();
+    
+    // Update only local state, no API call
+    set({
+      nodes: nodes.map(n => n.id === id ? { ...n, ...updates } : n),
+    });
+
+    // Save to localStorage
+    localStorageApi.save({
+      nodes: get().nodes,
+      edges: get().edges,
+      sections: get().sections,
+      specialSection: get().specialSection,
+      availableNodes: get().availableNodes,
+    });
   },
 
   setEdges: (edges) => set({ edges }),

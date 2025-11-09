@@ -21,7 +21,7 @@ import { Button } from "./components/ui/button";
 import { SimpleSelect } from "./components/ui/simple-select";
 import { Download, Rocket, Lock, X, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "./components/ui/alert";
-import { CourseGraph } from "./components/course-graph";
+import { CourseGraphFlow } from "./components/course-graph/CourseGraphFlow";
 import { optimizeRoad } from "./services/optimizationService";
 import { useGraphStore } from "./stores/roadStore";
 
@@ -199,7 +199,7 @@ export default function Dashboard() {
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">
-              <CourseGraph />
+              <CourseGraphFlow />
             </div>
           </div>
         </SidebarInset>

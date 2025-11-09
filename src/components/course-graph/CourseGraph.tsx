@@ -4,6 +4,7 @@ import * as React from "react";
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
 import { CourseEdges } from "@/components/course-graph/CourseEdges";
 import { CourseNodeHoverCard } from "@/components/course-graph/CourseNodeHoverCard";
+import { ColumnContextMenu } from "@/components/course-graph/ColumnContextMenu";
 import { useGraphStore, CourseNode as CourseNodeType, Section } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -23,6 +24,16 @@ export function CourseGraph() {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
   const nodeRefs = React.useRef<Map<string, HTMLDivElement>>(new Map());
+  
+  const [contextMenu, setContextMenu] = React.useState<{
+    x: number;
+    y: number;
+    sectionId: number;
+    sectionTitle: string;
+  } | null>(null);
+  
+  const [draggedNode, setDraggedNode] = React.useState<CourseNodeType | null>(null);
+  const [dragOverSection, setDragOverSection] = React.useState<number | null>(null);
 
   // Load data on mount - try API first, fallback to demo data
   React.useEffect(() => {
@@ -54,6 +65,80 @@ export function CourseGraph() {
     });
     return grouped;
   }, [nodes, allSections]);
+
+  // Get actions from store
+  const { addNode, updateNodeLocal } = useGraphStore();
+
+  // Handle right-click on column
+  const handleColumnContextMenu = (e: React.MouseEvent, section: Section) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      sectionId: section.id,
+      sectionTitle: section.title,
+    });
+  };
+
+  // Handle add node from context menu
+  const handleAddNodeToSection = (sectionId: number) => {
+    const newNode: CourseNodeType = {
+      id: `node_${Date.now()}`,
+      label: `New Course`,
+      section: sectionId,
+      locked: true,
+      user_added: true,
+    };
+    addNode(newNode);
+  };
+
+  // Handle node drag start
+  const handleNodeDragStart = (e: React.DragEvent, node: CourseNodeType) => {
+    if (node.locked) {
+      setDraggedNode(node);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', node.id);
+    }
+  };
+
+  // Handle node drag end
+  const handleNodeDragEnd = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedNode(null);
+    setDragOverSection(null);
+  };
+
+  // Handle drag over section
+  const handleDragOver = (e: React.DragEvent, sectionId: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedNode && sectionId !== draggedNode.section) {
+      setDragOverSection(sectionId);
+    }
+  };
+
+  // Handle drag leave
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the column entirely
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+      setDragOverSection(null);
+    }
+  };
+
+  // Handle drop
+  const handleDrop = (e: React.DragEvent, sectionId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (draggedNode && sectionId !== draggedNode.section) {
+      // Update local state only, no API call
+      updateNodeLocal(draggedNode.id, { section: sectionId });
+    }
+    
+    setDraggedNode(null);
+    setDragOverSection(null);
+  };
 
 
 
@@ -93,12 +178,20 @@ export function CourseGraph() {
           return (
             <div
               key={section.id}
-              className="flex flex-col border-r border-border"
+              className="flex flex-col border-r border-border relative transition-colors duration-200"
               style={{
                 minWidth: "180px",
                 flex: "0 0 180px",
-                background: isSpecialSection ? "rgba(100, 116, 139, 0.15)" : "transparent",
+                background: isSpecialSection 
+                  ? "rgba(100, 116, 139, 0.15)" 
+                  : dragOverSection === section.id 
+                    ? "rgba(59, 130, 246, 0.2)" 
+                    : "transparent",
               }}
+              onContextMenu={(e) => handleColumnContextMenu(e, section)}
+              onDragOver={(e) => handleDragOver(e, section.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, section.id)}
             >
               {/* Section header */}
               <div className="sticky top-0 z-10 h-14 flex items-center justify-center px-2 pt-4">
@@ -113,12 +206,20 @@ export function CourseGraph() {
                   <div 
                     key={node.id} 
                     data-node-id={node.id}
+                    draggable={node.locked}
+                    onDragStart={(e) => handleNodeDragStart(e, node)}
+                    onDragEnd={handleNodeDragEnd}
                     ref={(el) => {
                       if (el) {
                         nodeRefs.current.set(node.id, el);
                       } else {
                         nodeRefs.current.delete(node.id);
                       }
+                    }}
+                    className="transition-opacity duration-150"
+                    style={{
+                      cursor: node.locked ? 'grab' : 'default',
+                      opacity: draggedNode?.id === node.id ? 0.4 : 1,
                     }}
                   >
                     <CourseNodeComponent
@@ -153,6 +254,18 @@ export function CourseGraph() {
           totalWidth={containerRef.current?.scrollWidth || 0}
           onMouseEnter={() => {}}
           onMouseLeave={() => setHoveredNode(null)}
+        />
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ColumnContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          sectionId={contextMenu.sectionId}
+          sectionTitle={contextMenu.sectionTitle}
+          onAddNode={() => handleAddNodeToSection(contextMenu.sectionId)}
+          onClose={() => setContextMenu(null)}
         />
       )}
     </div>

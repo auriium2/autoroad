@@ -1,0 +1,37 @@
+/* Override React Flow styles to ensure edges are visible */
+.react-flow__edge-path {
+  stroke: inherit;
+  stroke-width: inherit;
+}
+
+.react-flow__edge {
+  pointer-events: all;
+}
+
+/* Ensure arrow markers are visible */
+.react-flow__arrowhead {
+  fill: inherit;
+}
+
+.react-flow__edges {
+  z-index: 1 !important;
+}
+
+.react-flow__nodes {
+  z-index: 2 !important;
+}
+
+/* Make sure viewport has proper background */
+.react-flow__viewport {
+  background: transparent;
+}
+
+/* Ensure pane doesn't block edges */
+.react-flow__pane {
+  z-index: 0;
+}
+
+/* Make sure markers/defs are rendered */
+svg.react-flow__edges defs {
+  display: block;
+}
