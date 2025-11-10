@@ -19,15 +19,27 @@ export function CourseNode({
   onMouseEnter,
   onMouseLeave,
 }: NodeProps) {
-  const { label, locked, disabled } = node;
+  const { label, locked, disabled, section } = node;
+
+  // Check if node is in "Must Take" column
+  const isMustTake = section === -2;
 
   // Determine node styling based on state
   let borderColor = "border-border";
   let bgColor = "bg-card";
   let textColor = "text-foreground";
   let icon: string | React.ReactElement = "D";
+  let glowStyle = {};
 
-  if (isSpecial) {
+  if (isMustTake) {
+    // Must Take nodes: purple glow
+    borderColor = "border-purple-500";
+    bgColor = "bg-purple-950/40";
+    textColor = "text-purple-300";
+    glowStyle = {
+      boxShadow: "0 0 20px rgba(168, 85, 247, 0.6), 0 0 40px rgba(168, 85, 247, 0.3)",
+    };
+  } else if (isSpecial) {
     borderColor = "border-primary";
     bgColor = "bg-primary/10";
   } else if (locked) {
@@ -48,6 +60,7 @@ export function CourseNode({
       <div
         data-node-circle={node.id}
         className={`w-10 h-10 rounded-full border-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${borderColor} ${bgColor}`}
+        style={glowStyle}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         role="button"

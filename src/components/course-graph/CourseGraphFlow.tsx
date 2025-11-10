@@ -281,6 +281,11 @@ function CourseGraphFlowInner() {
         return null;
       }
 
+      // Don't render edges if either node is in "Must Take" column (section -2)
+      if (fromNode.section === -2 || toNode.section === -2) {
+        return null;
+      }
+
       const fromX = allSections.findIndex(s => s.id === fromNode?.section);
       const toX = allSections.findIndex(s => s.id === toNode?.section);
       const isLongDistance = Math.abs(toX - fromX) > 1;
