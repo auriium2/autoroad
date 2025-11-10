@@ -70,25 +70,44 @@ const nodeTypes: NodeTypes = {
 function ColumnHeaders({ sections }: { sections: Section[] }) {
   const COLUMN_WIDTH = 200;
   const { getViewport } = useReactFlow();
-  const [viewport, setViewport] = React.useState(getViewport());
+  const backgroundRef = React.useRef<HTMLDivElement>(null);
+  const dividersRef = React.useRef<HTMLDivElement>(null);
+  const headersRef = React.useRef<HTMLDivElement>(null);
 
-  // Update viewport on changes
+  // Update viewport on changes - direct DOM manipulation for sync
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      setViewport(getViewport());
-    }, 16); // ~60fps
-    return () => clearInterval(interval);
+    let rafId: number;
+    
+    const updateViewport = () => {
+      const viewport = getViewport();
+      
+      // Update all three elements directly
+      if (backgroundRef.current) {
+        backgroundRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
+      }
+      if (dividersRef.current) {
+        dividersRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
+      }
+      if (headersRef.current) {
+        headersRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
+      }
+      
+      rafId = requestAnimationFrame(updateViewport);
+    };
+    
+    rafId = requestAnimationFrame(updateViewport);
+    return () => cancelAnimationFrame(rafId);
   }, [getViewport]);
 
   return (
     <>
       {/* Column backgrounds */}
       <div 
+        ref={backgroundRef}
         style={{ 
           position: 'absolute',
           top: 0,
-          left: viewport.x,
-          transform: `scale(${viewport.zoom})`,
+          left: 0,
           transformOrigin: 'top left',
           pointerEvents: 'none',
           zIndex: 0,
@@ -135,11 +154,11 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
       {/* Column divider lines */}
       <div 
+        ref={dividersRef}
         style={{ 
           position: 'absolute',
           top: 0,
-          left: viewport.x,
-          transform: `scale(${viewport.zoom})`,
+          left: 0,
           transformOrigin: 'top left',
           pointerEvents: 'none',
           zIndex: 1,
@@ -175,11 +194,11 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
       {/* Column headers */}
       <div 
+        ref={headersRef}
         style={{ 
           position: 'absolute',
           top: 0,
-          left: viewport.x,
-          transform: `scale(${viewport.zoom})`,
+          left: 0,
           transformOrigin: 'top left',
           display: 'flex',
           gap: 0,
@@ -345,7 +364,22 @@ function CourseGraphFlowInner() {
     }
   }, [loadingState, fetchRoadData, storeNodes.length]);
 
+  // Handle drop from sidebar
+  const onDrop = React.useCallback((event: React.DragEvent) => {
+    event.preventDefault();
 
+    try {
+      const nodeData = JSON.parse(event.dataTransfer.getData('application/json'));
+      addNode(nodeData);
+    } catch (error) {
+      console.error('Failed to parse dropped node data:', error);
+    }
+  }, [addNode]);
+
+  const onDragOver = React.useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
 
   if (loadingState === 'loading' && storeNodes.length === 0) {
     return (
@@ -371,7 +405,12 @@ function CourseGraphFlowInner() {
   const numColumns = allSections.length;
   
   return (
-    <div className="h-full w-full rounded-md border border-border bg-muted/30 relative" style={{ overflow: 'hidden' }}>
+    <div 
+      className="h-full w-full rounded-md border border-border bg-muted/30 relative" 
+      style={{ overflow: 'hidden' }}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

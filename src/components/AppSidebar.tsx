@@ -180,7 +180,7 @@ function ObjectivesTab() {
 
 // Course Search tab component
 function CourseSearchTab() {
-  const { nodes: storeNodes, addNode } = useGraphStore();
+  const { addNode } = useGraphStore();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
 

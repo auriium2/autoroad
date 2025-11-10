@@ -35,3 +35,30 @@
 svg.react-flow__edges defs {
   display: block;
 }
+
+/* Fix cursor for pane and nodes */
+.react-flow__pane {
+  cursor: default !important;
+}
+
+.react-flow__pane.dragging,
+.react-flow__pane:active {
+  cursor: grabbing !important;
+}
+
+/* Fix cursor for draggable vs non-draggable nodes */
+.react-flow__node {
+  cursor: pointer !important;
+}
+
+.react-flow__node.dragging {
+  cursor: grabbing !important;
+}
+
+.react-flow__node.draggable {
+  cursor: grab !important;
+}
+
+.react-flow__node.draggable:active {
+  cursor: grabbing !important;
+}
