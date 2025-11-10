@@ -1,14 +1,13 @@
 import { create } from 'zustand';
-import { roadApi, localStorage as localStorageApi, ApiError } from '@/services/api';
+import { localStorage as localStorageApi, ApiError } from '@/services/api';
 
 // Course node representing a single class
 export interface CourseNode {
   id: string;
   label: string;
   section: number; // Which semester/section this belongs to
-  locked?: boolean;
+  userControlled?: boolean; // If true, user added/can drag this node
   disabled?: boolean;
-  user_added?: boolean;
 }
 
 // Edge between two courses (prerequisite relationship)
@@ -35,7 +34,7 @@ export interface AvailableNode {
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 interface GraphStore {
-  // Data
+  // Data - user's current course selection state
   nodes: CourseNode[];
   edges: Edge[];
   sections: Section[];
@@ -103,85 +102,56 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   // Node actions with optimistic updates
   addNode: async (node) => {
-    const { userId, nodes } = get();
+    const { nodes } = get();
     
-    // Optimistic update
+    // Update state
     set({ nodes: [...nodes, node] });
 
-    try {
-      await roadApi.addNode(node, userId || undefined);
-      // Save to localStorage as backup
-      localStorageApi.save({
-        nodes: get().nodes,
-        edges: get().edges,
-        sections: get().sections,
-        specialSection: get().specialSection,
-        availableNodes: get().availableNodes,
-      });
-    } catch (error) {
-      // Rollback on error
-      set({ nodes: nodes.filter(n => n.id !== node.id) });
-      set({ error: error instanceof ApiError ? error.message : 'Failed to add node' });
-      throw error;
-    }
+    // Save to localStorage
+    localStorageApi.save({
+      nodes: get().nodes,
+      edges: get().edges,
+      sections: get().sections,
+      specialSection: get().specialSection,
+      availableNodes: get().availableNodes,
+    });
   },
 
   removeNode: async (id) => {
-    const { userId, nodes, edges } = get();
-    
-    // Store for rollback
-    const previousNodes = nodes;
-    const previousEdges = edges;
+    const { nodes, edges } = get();
 
-    // Optimistic update
+    // Update state
     set({
       nodes: nodes.filter(n => n.id !== id),
       edges: edges.filter(e => e.from_id !== id && e.to_id !== id),
     });
 
-    try {
-      await roadApi.removeNode(id, userId || undefined);
-      localStorageApi.save({
-        nodes: get().nodes,
-        edges: get().edges,
-        sections: get().sections,
-        specialSection: get().specialSection,
-        availableNodes: get().availableNodes,
-      });
-    } catch (error) {
-      // Rollback on error
-      set({ nodes: previousNodes, edges: previousEdges });
-      set({ error: error instanceof ApiError ? error.message : 'Failed to remove node' });
-      throw error;
-    }
+    // Save to localStorage
+    localStorageApi.save({
+      nodes: get().nodes,
+      edges: get().edges,
+      sections: get().sections,
+      specialSection: get().specialSection,
+      availableNodes: get().availableNodes,
+    });
   },
 
   updateNode: async (id, updates) => {
-    const { userId, nodes } = get();
-    
-    // Store for rollback
-    const previousNodes = nodes;
+    const { nodes } = get();
 
-    // Optimistic update
+    // Update state
     set({
       nodes: nodes.map(n => n.id === id ? { ...n, ...updates } : n),
     });
 
-    try {
-      await roadApi.updateNode(id, updates, userId || undefined);
-      localStorageApi.save({
-        nodes: get().nodes,
-        edges: get().edges,
-        sections: get().sections,
-        specialSection: get().specialSection,
-        availableNodes: get().availableNodes,
-      });
-    } catch (error) {
-      // Rollback on error
-      set({ nodes: previousNodes });
-      set({ error: error instanceof ApiError ? error.message : 'Failed to update node' });
-      throw error;
-    }
+    // Save to localStorage
+    localStorageApi.save({
+      nodes: get().nodes,
+      edges: get().edges,
+      sections: get().sections,
+      specialSection: get().specialSection,
+      availableNodes: get().availableNodes,
+    });
   },
 
   updateNodeLocal: (id, updates) => {
@@ -223,90 +193,56 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     });
   },
 
-  // Fetch road data from API with localStorage fallback
+  // Load road data from localStorage
   fetchRoadData: async () => {
-    const { userId } = get();
-    
     set({ loadingState: 'loading', error: null });
 
-    try {
-      // Try to fetch from API
-      const data = await roadApi.fetchRoadData(userId || undefined);
-      
-      set({
-        nodes: data.nodes,
-        edges: data.edges,
-        sections: data.sections,
-        specialSection: data.specialSection,
-        availableNodes: data.availableNodes,
-        loadingState: 'success',
-      });
-
-      // Save to localStorage
-      localStorageApi.save(data);
-    } catch (error) {
-      console.error('Failed to fetch from API, trying localStorage...', error);
-      
-      // Fallback to localStorage
-      const cached = localStorageApi.load();
-      
-      if (cached) {
-        set({
-          nodes: cached.nodes,
-          edges: cached.edges,
-          sections: cached.sections,
-          specialSection: cached.specialSection,
-          availableNodes: cached.availableNodes,
-          loadingState: 'success',
-        });
-      } else {
-        // If no cached data, load initial/demo data
-        get().loadInitialData();
-        set({
-          loadingState: 'error',
-          error: error instanceof ApiError ? error.message : 'Failed to load road data',
-        });
+    // TEMPORARY: Clear old localStorage data with old schema
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('autoroad_data');
+      if (stored && stored.includes('"locked"')) {
+        console.log('Clearing old localStorage data with outdated schema...');
+        window.localStorage.removeItem('autoroad_data');
       }
     }
-  },
 
-  // Save road data to API
-  saveRoadData: async () => {
-    const { userId, nodes, edges, sections, specialSection, availableNodes } = get();
+    // Load from localStorage
+    const cached = localStorageApi.load();
     
-    set({ isSaving: true, error: null });
-
-    try {
-      await roadApi.saveRoadData(
-        { nodes, edges, sections, specialSection, availableNodes },
-        userId || undefined
-      );
-
-      // Also save to localStorage
-      localStorageApi.save({ nodes, edges, sections, specialSection, availableNodes });
-      
-      set({ isSaving: false });
-    } catch (error) {
+    if (cached) {
       set({
-        isSaving: false,
-        error: error instanceof ApiError ? error.message : 'Failed to save road data',
+        nodes: cached.nodes,
+        edges: cached.edges,
+        sections: cached.sections,
+        specialSection: cached.specialSection,
+        availableNodes: cached.availableNodes,
+        loadingState: 'success',
       });
-      throw error;
+    } else {
+      // If no cached data, load initial/demo data
+      get().loadInitialData();
+      set({ loadingState: 'success' });
     }
   },
 
-  // Optimize road schedule
+  // Save is automatic through localStorage in add/remove/update methods
+  saveRoadData: async () => {
+    const { nodes, edges, sections, specialSection, availableNodes } = get();
+    
+    // Just save to localStorage
+    localStorageApi.save({ nodes, edges, sections, specialSection, availableNodes });
+  },
+
+  // Optimize road schedule - sends current state to API for optimization
   optimizeRoad: async (constraints) => {
-    const { sections, specialSection } = get();
+    const { nodes, edges, sections, specialSection, availableNodes } = get();
     
     set({ loadingState: 'loading', error: null });
 
     try {
-      const result = await roadApi.optimizeRoad({
-        sections,
-        specialSection,
-        constraints: constraints || {},
-      });
+      // Send current state to optimizer
+      const currentState = { nodes, edges, sections, specialSection, availableNodes };
+      const result = await roadApi.optimizeRoad(currentState, constraints);
 
       if (result.success && result.data) {
         set({
@@ -317,7 +253,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
           loadingState: 'success',
         });
 
-        // Save to localStorage
+        // Save optimized result to localStorage
         localStorageApi.save(result.data);
 
         return { success: true };
@@ -357,7 +293,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         { id: "0", label: "18.01", section: -1 },
         { id: "1", label: "6.100", section: 0 },
         { id: "2", label: "6.1200", section: 1 },
-        { id: "3", label: "6.120a", section: 1, locked: true },
+        { id: "3", label: "6.120a", section: 1, userControlled: true },
         { id: "4", label: "6.1010", section: 2 },
         { id: "5", label: "6.1020", section: 3 },
         { id: "6", label: "6.1030", section: 3 },

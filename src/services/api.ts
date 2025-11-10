@@ -2,6 +2,7 @@ import { CourseNode, Edge, Section, AvailableNode } from '@/stores/roadStore';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 
 // Types for API responses
 export interface RoadData {
@@ -81,92 +82,153 @@ async function fetchWithRetry<T>(
   throw new Error('Max retries exceeded');
 }
 
-// API methods
+// Fireroad API types
+export interface FireroadCourse {
+  subject_id: string;
+  title: string;
+  total_units: number;
+  description?: string;
+  prerequisites?: string;
+  corequisites?: string;
+  is_variable_units?: boolean;
+  offered_fall?: boolean;
+  offered_spring?: boolean;
+  offered_IAP?: boolean;
+  offered_summer?: boolean;
+  public?: boolean;
+  level?: string;
+  // Full response fields
+  lecture_units?: number;
+  lab_units?: number;
+  preparation_units?: number;
+  in_class_hours?: number;
+  out_of_class_hours?: number;
+  joint_subjects?: string[];
+  equivalent_subjects?: string[];
+  meets_with_subjects?: string[];
+  instructors?: string[];
+  // Ratings
+  rating?: number[];
+  enrollment?: number[];
+  // Attributes
+  gir_attribute?: string;
+  hass_attribute?: string;
+  communication_requirement?: string;
+}
+
+export interface FireroadSearchParams {
+  type?: 'contains' | 'matches' | 'starts' | 'ends';
+  gir?: string;
+  hass?: string;
+  ci?: boolean;
+  offered?: 'fall' | 'spring' | 'IAP' | 'summer';
+  level?: 'undergrad' | 'grad';
+  full?: boolean;
+}
+
+// Course details interface (normalized from Fireroad)
+export interface CourseDetails {
+  id: string;
+  name: string;
+  description: string;
+  units: number;
+  prerequisites: string;
+  corequisites: string;
+  terms_offered: string[];
+  instructors: string[];
+  level?: string;
+  gir_attribute?: string;
+  hass_attribute?: string;
+}
+
+// Helper to normalize Fireroad course to our format
+function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
+  const terms_offered = [];
+  if (course.offered_fall) terms_offered.push('Fall');
+  if (course.offered_spring) terms_offered.push('Spring');
+  if (course.offered_IAP) terms_offered.push('IAP');
+  if (course.offered_summer) terms_offered.push('Summer');
+
+  return {
+    id: course.subject_id,
+    name: course.title,
+    description: course.description || '',
+    units: course.total_units,
+    prerequisites: course.prerequisites || '',
+    corequisites: course.corequisites || '',
+    terms_offered,
+    instructors: course.instructors || [],
+    level: course.level,
+    gir_attribute: course.gir_attribute,
+    hass_attribute: course.hass_attribute,
+  };
+}
+
+// Fireroad API methods
+export const fireroadApi = {
+  /**
+   * Search for courses using Fireroad API
+   */
+  async searchCourses(
+    query: string,
+    params?: FireroadSearchParams
+  ): Promise<FireroadCourse[]> {
+    const searchParams = new URLSearchParams();
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.gir) searchParams.append('gir', params.gir);
+    if (params?.hass) searchParams.append('hass', params.hass);
+    if (params?.ci) searchParams.append('ci', 'true');
+    if (params?.offered) searchParams.append('offered', params.offered);
+    if (params?.level) searchParams.append('level', params.level);
+    if (params?.full) searchParams.append('full', 'true');
+
+    const url = `${FIREROAD_API_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
+    return fetchWithRetry<FireroadCourse[]>(url);
+  },
+
+  /**
+   * Get all courses in a department
+   */
+  async getCoursesByDepartment(dept: string, full = false): Promise<FireroadCourse[]> {
+    const params = full ? '?full=true' : '';
+    return fetchWithRetry<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/dept/${dept}${params}`);
+  },
+
+  /**
+   * Get detailed course information
+   */
+  async getCourseDetails(subjectId: string): Promise<CourseDetails> {
+    const course = await fetchWithRetry<FireroadCourse>(
+      `${FIREROAD_API_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
+    );
+    return normalizeFireroadCourse(course);
+  },
+
+  /**
+   * Get all courses (use sparingly, returns entire catalog)
+   */
+  async getAllCourses(full = false): Promise<FireroadCourse[]> {
+    const params = full ? '?full=true' : '';
+    return fetchWithRetry<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/all${params}`);
+  },
+};
+
+// API methods for our backend
 export const roadApi = {
   /**
-   * Fetch road data for a user
+   * Optimize road schedule - takes current user state and returns optimized arrangement
    */
-  async fetchRoadData(userId?: string): Promise<RoadData> {
-    const url = userId 
-      ? `${API_BASE_URL}/road?userId=${userId}`
-      : `${API_BASE_URL}/road`;
-    
-    return fetchWithRetry<RoadData>(url);
-  },
-
-  /**
-   * Save road data
-   */
-  async saveRoadData(data: Partial<RoadData>, userId?: string): Promise<ApiResponse<RoadData>> {
-    const url = userId
-      ? `${API_BASE_URL}/road?userId=${userId}`
-      : `${API_BASE_URL}/road`;
-
-    return fetchWithRetry<ApiResponse<RoadData>>(url, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  /**
-   * Optimize road schedule
-   */
-  async optimizeRoad(request: OptimizeRequest): Promise<ApiResponse<RoadData>> {
+  async optimizeRoad(currentState: RoadData, constraints?: {
+    maxUnitsPerSemester?: number;
+    minUnitsPerSemester?: number;
+    preferredTimes?: string[];
+  }): Promise<ApiResponse<RoadData>> {
     return fetchWithRetry<ApiResponse<RoadData>>(`${API_BASE_URL}/optimize`, {
       method: 'POST',
-      body: JSON.stringify(request),
-    });
-  },
-
-  /**
-   * Fetch available courses
-   */
-  async fetchAvailableCourses(): Promise<AvailableNode[]> {
-    return fetchWithRetry<AvailableNode[]>(`${API_BASE_URL}/courses`);
-  },
-
-  /**
-   * Add a node to the road
-   */
-  async addNode(node: CourseNode, userId?: string): Promise<ApiResponse<CourseNode>> {
-    const url = userId
-      ? `${API_BASE_URL}/nodes?userId=${userId}`
-      : `${API_BASE_URL}/nodes`;
-
-    return fetchWithRetry<ApiResponse<CourseNode>>(url, {
-      method: 'POST',
-      body: JSON.stringify(node),
-    });
-  },
-
-  /**
-   * Remove a node from the road
-   */
-  async removeNode(nodeId: string, userId?: string): Promise<ApiResponse<void>> {
-    const url = userId
-      ? `${API_BASE_URL}/nodes/${nodeId}?userId=${userId}`
-      : `${API_BASE_URL}/nodes/${nodeId}`;
-
-    return fetchWithRetry<ApiResponse<void>>(url, {
-      method: 'DELETE',
-    });
-  },
-
-  /**
-   * Update a node
-   */
-  async updateNode(
-    nodeId: string,
-    updates: Partial<CourseNode>,
-    userId?: string
-  ): Promise<ApiResponse<CourseNode>> {
-    const url = userId
-      ? `${API_BASE_URL}/nodes/${nodeId}?userId=${userId}`
-      : `${API_BASE_URL}/nodes/${nodeId}`;
-
-    return fetchWithRetry<ApiResponse<CourseNode>>(url, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
+      body: JSON.stringify({
+        currentState,
+        constraints: constraints || {},
+      }),
     });
   },
 };

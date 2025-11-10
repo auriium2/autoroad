@@ -277,7 +277,7 @@ function CourseGraphFlowInner() {
           onMouseEnter: () => {},
           onMouseLeave: () => {},
         },
-        draggable: node.locked || false,
+        draggable: node.userControlled || false,
       };
     });
 
@@ -328,7 +328,7 @@ function CourseGraphFlowInner() {
 
   // Handle node drag end
   const onNodeDragStop = React.useCallback((_event: React.MouseEvent, node: Node) => {
-    if (!node.data.locked) return;
+    if (!node.data.userControlled) return;
 
     // Determine which column the node is in based on x position
     const COLUMN_WIDTH = 200;
@@ -364,21 +364,50 @@ function CourseGraphFlowInner() {
     }
   }, [loadingState, fetchRoadData, storeNodes.length]);
 
+  const { screenToFlowPosition } = useReactFlow();
+
   // Handle drop from sidebar
-  const onDrop = React.useCallback((event: React.DragEvent) => {
+  const onDrop = React.useCallback(async (event: React.DragEvent) => {
     event.preventDefault();
 
     try {
-      const nodeData = JSON.parse(event.dataTransfer.getData('application/json'));
-      addNode(nodeData);
+      const data = event.dataTransfer.getData('application/json');
+      
+      if (!data) {
+        console.error('No drag data found');
+        return;
+      }
+      
+      const nodeData = JSON.parse(data);
+      
+      // Get the position where the user dropped the node
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      // Determine which column based on x position
+      const COLUMN_WIDTH = 200;
+      const sectionIndex = Math.round((position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
+      const clampedIndex = Math.max(0, Math.min(sectionIndex, allSections.length - 1));
+      const section = allSections[clampedIndex];
+
+      // Add the node with the correct section
+      const newNode = {
+        ...nodeData,
+        section: section.id,
+      };
+      
+      await addNode(newNode);
+      console.log('Node added successfully at position:', position, 'section:', section.title);
     } catch (error) {
-      console.error('Failed to parse dropped node data:', error);
+      console.error('Failed to add dropped node:', error);
     }
-  }, [addNode]);
+  }, [addNode, screenToFlowPosition, allSections]);
 
   const onDragOver = React.useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+    event.dataTransfer.dropEffect = 'move';
   }, []);
 
   if (loadingState === 'loading' && storeNodes.length === 0) {
@@ -408,8 +437,6 @@ function CourseGraphFlowInner() {
     <div 
       className="h-full w-full rounded-md border border-border bg-muted/30 relative" 
       style={{ overflow: 'hidden' }}
-      onDrop={onDrop}
-      onDragOver={onDragOver}
     >
       <ReactFlow
         nodes={nodes}
@@ -417,13 +444,15 @@ function CourseGraphFlowInner() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onDrop={onDrop}
+        onDragOver={onDragOver}
         nodeTypes={nodeTypes}
         fitView={false}
         minZoom={0.8}
         maxZoom={1.5}
         nodesDraggable
         nodesConnectable={false}
-        elementsSelectable={false}
+        elementsSelectable={true}
         zoomOnScroll={false}
         panOnScroll
         panOnDrag

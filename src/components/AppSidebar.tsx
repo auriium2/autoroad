@@ -18,6 +18,9 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useGraphStore } from "@/stores/roadStore";
+import { useSearchCourses } from "@/hooks/useCourseData";
+import { CourseTooltip } from "@/components/CourseTooltip";
+import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
 
 // Objectives tab component
 function ObjectivesTab() {
@@ -183,40 +186,40 @@ function CourseSearchTab() {
   const { addNode } = useGraphStore();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
+  const dragPreviewRef = React.useRef<HTMLDivElement>(null);
 
-  // Sample course data - in production this would come from an API
-  const allCourses = [
-    { id: "6.1200", label: "6.1200", department: "6", name: "Mathematics for Computer Science" },
-    { id: "6.1010", label: "6.1010", department: "6", name: "Fundamentals of Programming" },
-    { id: "6.1020", label: "6.1020", department: "6", name: "Software Construction" },
-    { id: "6.1800", label: "6.1800", department: "6", name: "Computer Systems Engineering" },
-    { id: "6.3700", label: "6.3700", department: "6", name: "Introduction to Probability" },
-    { id: "18.01", label: "18.01", department: "18", name: "Single Variable Calculus" },
-    { id: "18.02", label: "18.02", department: "18", name: "Multivariable Calculus" },
-    { id: "18.03", label: "18.03", department: "18", name: "Differential Equations" },
-  ];
+  // Use TanStack Query hook for course search
+  const { data: courses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
 
   const departments = ["all", "6", "18"];
 
-  const filteredCourses = allCourses.filter(course => {
-    const matchesSearch = course.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         course.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDepartment = selectedDepartment === "all" || course.department === selectedDepartment;
-    return matchesSearch && matchesDepartment;
-  });
-
-  const handleDragStart = (e: React.DragEvent, course: typeof allCourses[0]) => {
+  const handleDragStart = (e: React.DragEvent, course: typeof courses[0]) => {
     e.dataTransfer.setData("application/json", JSON.stringify({
-      id: `${course.id}_${Date.now()}`,
-      label: course.id,
+      id: `${course.subject_id}_${Date.now()}`,
+      label: course.subject_id,
       section: -2, // Default to "Must Take" column
-      locked: true,
-      user_added: true,
+      userControlled: true,
     }));
+
+    // Use the permanent drag preview element
+    if (dragPreviewRef.current) {
+      e.dataTransfer.setDragImage(dragPreviewRef.current, 40, 40);
+    }
   };
 
   return (
     <div className="flex flex-col h-full p-4 space-y-4">
+      {/* Hidden drag preview element */}
+      <div 
+        ref={dragPreviewRef}
+        className="fixed pointer-events-none"
+        style={{ left: '-9999px', top: '-9999px' }}
+      >
+        <div className="w-20 h-20 rounded-full border-2 border-yellow-500 bg-yellow-950/20 flex items-center justify-center">
+          <div className="text-yellow-200 text-xs font-bold">📚</div>
+        </div>
+      </div>
+
       {/* Search Input */}
       <div className="space-y-2">
         <Label htmlFor="course-search" className="text-sm font-medium">
@@ -256,27 +259,46 @@ function CourseSearchTab() {
         <div className="text-xs text-muted-foreground mb-2">
           Drag courses to add them to the graph
         </div>
-        {filteredCourses.map((course) => (
-          <div
-            key={course.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, course)}
-            className="p-3 border border-border rounded-lg cursor-move hover:bg-muted/50 transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="font-medium text-sm">{course.id}</div>
-                <div className="text-xs text-muted-foreground line-clamp-2">
-                  {course.name}
+        {isLoading && (
+          <div className="text-center text-sm text-muted-foreground py-8">
+            Loading courses...
+          </div>
+        )}
+        {isError && (
+          <div className="text-center text-sm text-destructive py-8">
+            Failed to load courses
+          </div>
+        )}
+        {!isLoading && !isError && courses.map((course) => {
+          // Guard against missing data
+          if (!course || !course.subject_id || !course.title) {
+            console.warn('Invalid course data:', course);
+            return null;
+          }
+          
+          return (
+            <CourseTooltip key={course.subject_id} courseId={course.subject_id}>
+              <div
+                draggable
+                onDragStart={(e) => handleDragStart(e, course)}
+                className="p-3 border border-border rounded-lg cursor-move hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{course.subject_id}</div>
+                    <div className="text-xs text-muted-foreground line-clamp-2">
+                      {course.title}
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full border-2 border-border bg-card flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2">
+                    D
+                  </div>
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-full border-2 border-border bg-card flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2">
-                D
-              </div>
-            </div>
-          </div>
-        ))}
-        {filteredCourses.length === 0 && (
+            </CourseTooltip>
+          );
+        })}
+        {!isLoading && !isError && courses.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-8">
             No courses found
           </div>

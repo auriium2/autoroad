@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Lock, X } from "lucide-react";
 import type { CourseNode } from "@/stores/roadStore";
+import { CourseTooltip } from "@/components/CourseTooltip";
 
 interface NodeProps {
   node: CourseNode;
@@ -19,16 +20,18 @@ export function CourseNode({
   onMouseEnter,
   onMouseLeave,
 }: NodeProps) {
-  const { label, locked, disabled, section } = node;
+  const { label, userControlled, disabled, section } = node;
 
   // Check if node is in "Must Take" column
   const isMustTake = section === -2;
+
+  // Determine icon based on userControlled flag
+  const icon: string | React.ReactElement = userControlled ? <Lock className="h-3 w-3" /> : "D";
 
   // Determine node styling based on state
   let borderColor = "border-border";
   let bgColor = "bg-card";
   let textColor = "text-foreground";
-  let icon: string | React.ReactElement = "D";
   let glowStyle = {};
 
   if (isMustTake) {
@@ -42,34 +45,35 @@ export function CourseNode({
   } else if (isSpecial) {
     borderColor = "border-primary";
     bgColor = "bg-primary/10";
-  } else if (locked) {
-    borderColor = "border-yellow-500";
-    bgColor = "bg-yellow-50 dark:bg-yellow-950/20";
-    textColor = "text-yellow-700 dark:text-yellow-400";
-    icon = <Lock className="h-3 w-3" />;
   } else if (disabled) {
     borderColor = "border-red-500";
     bgColor = "bg-red-50 dark:bg-red-950/20";
     textColor = "text-red-700 dark:text-red-400";
-    icon = <X className="h-3 w-3" />;
+  } else if (userControlled) {
+    // User-controlled nodes: yellow border
+    borderColor = "border-yellow-500";
+    bgColor = "bg-yellow-950/20";
+    textColor = "text-yellow-200";
   }
 
   return (
     <div className="flex flex-col items-center">
       {/* Circle node */}
-      <div
-        data-node-circle={node.id}
-        className={`w-10 h-10 rounded-full border-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${borderColor} ${bgColor}`}
-        style={glowStyle}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        role="button"
-        tabIndex={0}
-      >
-        <div className={`text-xs font-bold ${textColor}`}>
-          {typeof icon === 'string' ? icon : icon}
+      <CourseTooltip courseId={label}>
+        <div
+          data-node-circle={node.id}
+          className={`w-10 h-10 rounded-full border-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${borderColor} ${bgColor}`}
+          style={glowStyle}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          role="button"
+          tabIndex={0}
+        >
+          <div className={`text-xs font-bold ${textColor}`}>
+            {typeof icon === 'string' ? icon : icon}
+          </div>
         </div>
-      </div>
+      </CourseTooltip>
 
       {/* Label below */}
       <div className={`text-xs font-medium text-center mt-2 ${textColor}`}>
