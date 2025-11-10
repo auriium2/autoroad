@@ -103,9 +103,9 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
             style={{
               position: 'absolute',
               left: index * COLUMN_WIDTH,
-              top: 0,
+              top: -2000,
               width: 1,
-              height: '100%',
+              height: 10000,
               backgroundColor: 'rgba(255, 255, 255, 0.1)',
             }}
           />
@@ -115,9 +115,9 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
           style={{
             position: 'absolute',
             left: sections.length * COLUMN_WIDTH,
-            top: 0,
+            top: -2000,
             width: 1,
-            height: '100%',
+            height: 10000,
             backgroundColor: 'rgba(255, 255, 255, 0.1)',
           }}
         />
@@ -257,13 +257,22 @@ function CourseGraphFlowInner() {
 
   // Handle node drag end
   const onNodeDragStop = React.useCallback((_event: React.MouseEvent, node: Node) => {
+    if (!node.data.locked) return;
+
     // Determine which column the node is in based on x position
     const COLUMN_WIDTH = 200;
-    const sectionIndex = Math.round(node.position.x / COLUMN_WIDTH);
-    const section = allSections[sectionIndex];
+    // Nodes are positioned at column centers: 100, 300, 500, etc. (index * 200 + 100)
+    // To find which column: (x - 100) / 200, then round to nearest
+    const sectionIndex = Math.round((node.position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
+    const clampedIndex = Math.max(0, Math.min(sectionIndex, allSections.length - 1));
+    const section = allSections[clampedIndex];
 
-    if (section && node.data.section !== section.id && node.data.locked) {
+    if (section && node.data.section !== section.id) {
+      // Update the section in the store, which will trigger a re-render with correct positioning
       updateNodeLocal(node.id, { section: section.id });
+    } else {
+      // Same section, but need to snap back to center - force a re-render
+      updateNodeLocal(node.id, { section: node.data.section });
     }
   }, [allSections, updateNodeLocal]);
 
@@ -349,7 +358,7 @@ function CourseGraphFlowInner() {
         onPaneContextMenu={handlePaneContextMenu}
         nodeTypes={nodeTypes}
         fitView={false}
-        minZoom={0.5}
+        minZoom={0.8}
         maxZoom={1.5}
         nodesDraggable
         nodesConnectable={false}
