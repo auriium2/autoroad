@@ -83,7 +83,7 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
   return (
     <>
-      {/* Column divider lines */}
+      {/* Column backgrounds */}
       <div 
         style={{ 
           position: 'absolute',
@@ -93,6 +93,57 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
           transformOrigin: 'top left',
           pointerEvents: 'none',
           zIndex: 0,
+          width: sections.length * COLUMN_WIDTH,
+          height: '100%',
+        }}
+      >
+        {sections.map((section, index) => {
+          // Must Take column (id: -2) - purple hazard overlay
+          if (section.id === -2) {
+            return (
+              <div
+                key={`bg-${section.id}`}
+                style={{
+                  position: 'absolute',
+                  left: index * COLUMN_WIDTH,
+                  top: -2000,
+                  width: COLUMN_WIDTH,
+                  height: 10000,
+                  background: 'repeating-linear-gradient(45deg, rgba(168, 85, 247, 0.08), rgba(168, 85, 247, 0.08) 20px, rgba(168, 85, 247, 0.12) 20px, rgba(168, 85, 247, 0.12) 40px), rgba(255, 255, 255, 0.03)',
+                }}
+              />
+            );
+          }
+          // ASEs column (id: -1) - lighter grey background
+          if (section.id === -1) {
+            return (
+              <div
+                key={`bg-${section.id}`}
+                style={{
+                  position: 'absolute',
+                  left: index * COLUMN_WIDTH,
+                  top: -2000,
+                  width: COLUMN_WIDTH,
+                  height: 10000,
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                }}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
+
+      {/* Column divider lines */}
+      <div 
+        style={{ 
+          position: 'absolute',
+          top: 0,
+          left: viewport.x,
+          transform: `scale(${viewport.zoom})`,
+          transformOrigin: 'top left',
+          pointerEvents: 'none',
+          zIndex: 1,
           width: sections.length * COLUMN_WIDTH,
           height: '100%',
         }}
@@ -178,10 +229,12 @@ function CourseGraphFlowInner() {
     sectionTitle: string;
   } | null>(null);
 
-  // Build sections array
+  // Build sections array with Must Take and ASEs as first two columns
   const allSections: Section[] = React.useMemo(() => {
-    return specialSection ? [specialSection, ...sections] : sections;
-  }, [specialSection, sections]);
+    const mustTakeSection: Section = { id: -2, title: 'Must Take' };
+    const asesSection: Section = { id: -1, title: 'ASEs' };
+    return [mustTakeSection, asesSection, ...sections];
+  }, [sections]);
 
   // Convert store nodes to React Flow nodes
   React.useEffect(() => {
