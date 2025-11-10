@@ -20,7 +20,6 @@ import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
 
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
-import { ColumnContextMenu } from "@/components/course-graph/ColumnContextMenu";
 import { useGraphStore, CourseNode as CourseNodeType, Section } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -222,12 +221,7 @@ function CourseGraphFlowInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
-  const [contextMenu, setContextMenu] = React.useState<{
-    x: number;
-    y: number;
-    sectionId: number;
-    sectionTitle: string;
-  } | null>(null);
+
 
   // Build sections array with Must Take and ASEs as first two columns
   const allSections: Section[] = React.useMemo(() => {
@@ -338,53 +332,24 @@ function CourseGraphFlowInner() {
   React.useEffect(() => {
     const loadData = async () => {
       try {
+        // Add 1 second delay for testing
+        await new Promise(resolve => setTimeout(resolve, 1000));
         await fetchRoadData();
       } catch (error) {
         console.error('Failed to load road data:', error);
       }
     };
 
-    if (loadingState === 'idle') {
+    if (loadingState === 'loading' && storeNodes.length === 0) {
       loadData();
     }
-  }, [loadingState, fetchRoadData]);
+  }, [loadingState, fetchRoadData, storeNodes.length]);
 
-  // Handle right-click on background
-  const handlePaneContextMenu = React.useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
 
-    // Determine which section was clicked based on x position
-    const COLUMN_WIDTH = 200;
-    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const sectionIndex = Math.floor(x / COLUMN_WIDTH);
-    const section = allSections[sectionIndex];
-
-    if (section) {
-      setContextMenu({
-        x: event.clientX,
-        y: event.clientY,
-        sectionId: section.id,
-        sectionTitle: section.title,
-      });
-    }
-  }, [allSections]);
-
-  // Handle add node
-  const handleAddNodeToSection = (sectionId: number) => {
-    const newNode: CourseNodeType = {
-      id: `node_${Date.now()}`,
-      label: `New Course`,
-      section: sectionId,
-      locked: true,
-      user_added: true,
-    };
-    addNode(newNode);
-  };
 
   if (loadingState === 'loading' && storeNodes.length === 0) {
     return (
-      <div className="h-full w-full rounded-md border border-border bg-muted/30">
+      <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
         <LoadingSpinner message="Loading your course schedule..." />
       </div>
     );
@@ -392,7 +357,7 @@ function CourseGraphFlowInner() {
 
   if (loadingState === 'error' && storeNodes.length === 0 && error) {
     return (
-      <div className="h-full w-full rounded-md border border-border bg-muted/30">
+      <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
         <ErrorDisplay
           error={error}
           onRetry={() => fetchRoadData()}
@@ -413,7 +378,6 @@ function CourseGraphFlowInner() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
-        onPaneContextMenu={handlePaneContextMenu}
         nodeTypes={nodeTypes}
         fitView={false}
         minZoom={0.8}
@@ -442,17 +406,6 @@ function CourseGraphFlowInner() {
 
       {/* Column headers and dividers that move with viewport */}
       <ColumnHeaders sections={allSections} />
-
-      {contextMenu && (
-        <ColumnContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          sectionId={contextMenu.sectionId}
-          sectionTitle={contextMenu.sectionTitle}
-          onAddNode={() => handleAddNodeToSection(contextMenu.sectionId)}
-          onClose={() => setContextMenu(null)}
-        />
-      )}
     </div>
   );
 }

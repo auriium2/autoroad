@@ -91,7 +91,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   sections: [],
   specialSection: null,
   availableNodes: [],
-  loadingState: 'idle',
+  loadingState: 'loading',
   error: null,
   isSaving: false,
   userId: null,
