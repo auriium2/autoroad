@@ -340,7 +340,7 @@ function CourseGraphFlowInner() {
   const numColumns = allSections.length;
   
   return (
-    <div className="h-full w-full rounded-md border border-border bg-muted/30 relative">
+    <div className="h-full w-full rounded-md border border-border bg-muted/30 relative" style={{ overflow: 'hidden' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -359,10 +359,10 @@ function CourseGraphFlowInner() {
         panOnScroll
         panOnDrag
         translateExtent={[
-          [-50, -Infinity],
-          [numColumns * COLUMN_WIDTH + 50, Infinity]
+          [0, -Infinity],
+          [numColumns * COLUMN_WIDTH, Infinity]
         ]}
-        defaultViewport={{ x: 20, y: 20, zoom: 1 }}
+        defaultViewport={{ x: 0, y: 20, zoom: 1 }}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'transparent' }}
       >
