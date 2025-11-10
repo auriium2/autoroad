@@ -28,17 +28,16 @@ import { ErrorDisplay } from "@/components/ErrorDisplay";
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () => void; onMouseLeave: () => void } }) {
   return (
-    <div style={{ position: 'relative', width: '40px', height: '40px' }}>
-      {/* Handles at center of the 40px circle */}
+    <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
+      {/* Handles at edges of the circle - centered vertically on the 40px circle */}
       <Handle
         type="target"
         position={Position.Left}
         style={{ 
           background: 'transparent',
           border: 'none',
-          left: '0',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          left: '0px', // Left edge of circle
+          top: '20px', // Center of 40px circle
         }}
       />
       <Handle
@@ -47,20 +46,17 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
         style={{ 
           background: 'transparent',
           border: 'none',
-          right: '0',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          left: '40px', // Right edge of circle (40px width)
+          top: '20px', // Center of 40px circle
         }}
       />
-      <div style={{ position: 'absolute', top: '0', left: '0' }}>
-        <CourseNodeComponent
-          node={data}
-          isSpecial={data.section === -1}
-          isHovered={false}
-          onMouseEnter={data.onMouseEnter}
-          onMouseLeave={data.onMouseLeave}
-        />
-      </div>
+      <CourseNodeComponent
+        node={data}
+        isSpecial={data.section === -1}
+        isHovered={false}
+        onMouseEnter={data.onMouseEnter}
+        onMouseLeave={data.onMouseLeave}
+      />
     </div>
   );
 }
@@ -191,21 +187,24 @@ function CourseGraphFlowInner() {
   React.useEffect(() => {
     const COLUMN_WIDTH = 200;
     const NODE_SPACING = 120;
-    const COLUMN_START_Y = 100;
-    const NODE_WIDTH = 80; // Account for full node width (circle + label)
-    const COLUMN_CENTER = COLUMN_WIDTH / 2;
+    const VIEWPORT_CENTER_Y = 400; // Approximate center of viewport
 
     const flowNodes: Node[] = storeNodes.map((node, index) => {
       const sectionIndex = allSections.findIndex(s => s.id === node.section);
       const nodesInSection = storeNodes.filter(n => n.section === node.section);
       const nodeIndexInSection = nodesInSection.findIndex(n => n.id === node.id);
+      
+      // Calculate total height of nodes in this section
+      const totalNodesHeight = (nodesInSection.length - 1) * NODE_SPACING;
+      // Start Y position to center the group vertically
+      const startY = VIEWPORT_CENTER_Y - (totalNodesHeight / 2);
 
       return {
         id: node.id,
         type: 'courseNode',
         position: {
-          x: sectionIndex * COLUMN_WIDTH + COLUMN_CENTER - 20, // Center the 40px node
-          y: COLUMN_START_Y + nodeIndexInSection * NODE_SPACING,
+          x: sectionIndex * COLUMN_WIDTH + (COLUMN_WIDTH / 2),
+          y: startY + nodeIndexInSection * NODE_SPACING,
         },
         data: {
           ...node,
