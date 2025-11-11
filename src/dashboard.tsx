@@ -22,8 +22,8 @@ import { SimpleSelect } from "./components/ui/simple-select";
 import { Download, Loader2 } from "lucide-react";
 import { CourseGraphFlow } from "./components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "./components/DashboardAlerts";
-import { optimizeRoad } from "./services/optimizationService";
 import { useGraphStore } from "./stores/roadStore";
+import { Toaster } from "./components/ui/toaster";
 
 
 export default function Dashboard() {
@@ -142,6 +142,7 @@ export default function Dashboard() {
           </div>
         </SidebarInset>
         <StarOnGithubPopup />
+        <Toaster />
       </div>
     </SidebarProvider>
   );

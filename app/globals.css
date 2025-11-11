@@ -159,4 +159,18 @@
   }
 }
 
+@layer components {
+  .animate-toast-progress {
+    animation: toast-progress linear var(--toast-duration, 6000ms) forwards;
+  }
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
 
