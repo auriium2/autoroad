@@ -6,14 +6,22 @@ import { ToastAction } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 
 const GITHUB_REPO_URL = "https://github.com/your-org/your-repo";
+const STAR_TOAST_SESSION_KEY = "starToastShownInSession";
 
 export function StarOnGithubPopup() {
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const dismissed = window.localStorage.getItem("starToastDismissed") === "true";
-    if (dismissed) return;
+  const hasRequestedToastRef = React.useRef(false);
 
-    const { dismiss } = showToast({
+  React.useEffect(() => {
+    if (typeof window === "undefined" || hasRequestedToastRef.current) return;
+    hasRequestedToastRef.current = true;
+
+    const dismissed = window.localStorage.getItem("starToastDismissed") === "true";
+    const shownThisSession = sessionStorage.getItem(STAR_TOAST_SESSION_KEY) === "true";
+    if (dismissed || shownThisSession) return;
+
+    sessionStorage.setItem(STAR_TOAST_SESSION_KEY, "true");
+
+    showToast({
       title: "Enjoying Autoroad?",
       description: "Star the repo on GitHub to support future improvements.",
       duration: 7000,
@@ -41,8 +49,6 @@ export function StarOnGithubPopup() {
         }
       },
     });
-
-    return () => dismiss();
   }, []);
 
   return null;

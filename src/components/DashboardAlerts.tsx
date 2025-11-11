@@ -4,25 +4,14 @@ import * as React from "react";
 import { useGraphStore } from "@/stores/roadStore";
 import { toast as showToast } from "@/hooks/useToast";
 
-interface AlertConfig {
-  id: string;
+interface BasicToastConfig {
   type: "info" | "warning" | "error";
   title: string;
   description: React.ReactNode;
-  show: boolean;
   durationMs?: number;
-  signature: string;
 }
 
-interface DashboardAlertsProps {
-  optimizationError: string | null;
-  onDismissError: () => void;
-}
-
-export function DashboardAlerts({
-  optimizationError,
-  onDismissError,
-}: DashboardAlertsProps) {
+export function DashboardAlerts() {
   const hasChangesSinceOptimization = useGraphStore(
     (state) => state.hasChangesSinceOptimization
   );
@@ -31,7 +20,7 @@ export function DashboardAlerts({
   const welcomeShownRef = React.useRef(false);
 
   const showOrReplaceToast = React.useCallback(
-    (id: string, config: Omit<AlertConfig, "id" | "show" | "signature">) => {
+    (id: string, config: BasicToastConfig) => {
       toastRefs.current[id]?.dismiss();
       toastRefs.current[id] = showToast({
         title: config.title,
@@ -40,15 +29,12 @@ export function DashboardAlerts({
         duration: config.durationMs ?? 6000,
         onOpenChange: (open) => {
           if (!open) {
-            if (id === "optimization-error") {
-              onDismissError();
-            }
             delete toastRefs.current[id];
           }
         },
       });
     },
-    [onDismissError]
+    []
   );
 
   React.useEffect(() => {
@@ -77,20 +63,6 @@ export function DashboardAlerts({
       delete toastRefs.current["user-controlled-nodes"];
     }
   }, [hasChangesSinceOptimization, showOrReplaceToast]);
-
-  React.useEffect(() => {
-    if (optimizationError) {
-      showOrReplaceToast("optimization-error", {
-        type: "error",
-        title: "Optimization failed",
-        description: optimizationError,
-        durationMs: 8000,
-      });
-    } else if (toastRefs.current["optimization-error"]) {
-      toastRefs.current["optimization-error"]?.dismiss();
-      delete toastRefs.current["optimization-error"];
-    }
-  }, [optimizationError, showOrReplaceToast]);
 
   return null;
 }

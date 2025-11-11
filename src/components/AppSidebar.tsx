@@ -40,7 +40,16 @@ const TABS: TabConfig[] = [
   },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  selectedYear?: string;
+  onSelectedYearChange?: (value?: string) => void;
+}
+
+export function AppSidebar({
+  selectedYear,
+  onSelectedYearChange,
+  ...props
+}: AppSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<string>("courses");
 
   // Find the active tab component
@@ -75,7 +84,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       
       <SidebarContent className="overflow-hidden">
-        <ActiveComponent />
+        {activeTab === "parameters" ? (
+          <ParametersTab
+            selectedYear={selectedYear}
+            onSelectedYearChange={onSelectedYearChange}
+          />
+        ) : (
+          <ActiveComponent />
+        )}
       </SidebarContent>
     </Sidebar>
   );

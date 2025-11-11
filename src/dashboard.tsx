@@ -18,24 +18,19 @@ import {
   SidebarTrigger,
 } from "./components/ui/sidebar";
 import { Button } from "./components/ui/button";
-import { SimpleSelect } from "./components/ui/simple-select";
 import { Download, Loader2 } from "lucide-react";
 import { CourseGraphFlow } from "./components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "./components/DashboardAlerts";
 import { useGraphStore } from "./stores/roadStore";
 import { Toaster } from "./components/ui/toaster";
-
+import { toast as showToast } from "@/hooks/useToast";
 
 export default function Dashboard() {
-  // Clear localStorage on mount for debugging
-  React.useEffect(() => {
-    localStorage.clear();
-    console.log('localStorage cleared for debugging');
-  }, []);
-
   const [isOptimizing, setIsOptimizing] = React.useState(false);
-  const [optimizationError, setOptimizationError] = React.useState<string | null>(null);
   const [selectedYear, setSelectedYear] = React.useState<string | undefined>(undefined);
+  const handleYearChange = React.useCallback((value?: string) => {
+    setSelectedYear(value);
+  }, []);
 
   // Get optimize function from store
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
@@ -44,7 +39,6 @@ export default function Dashboard() {
   const handleOptimize = async () => {
     try {
       setIsOptimizing(true);
-      setOptimizationError(null);
 
       const result = await optimizeRoadFromStore({
         maxUnitsPerSemester: 60,
@@ -53,12 +47,22 @@ export default function Dashboard() {
       });
 
       if (!result.success) {
-        setOptimizationError(result.error || 'Optimization failed');
+        showToast({
+          title: "Optimization failed",
+          description: result.error || "Optimization failed",
+          variant: "destructive",
+          duration: 1000,
+        });
       }
 
     } catch (error) {
       console.error('Error during optimization:', error);
-      setOptimizationError(error instanceof Error ? error.message : 'Unknown error occurred');
+      showToast({
+        title: "Optimization failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+        duration: 8000,
+      });
     } finally {
       setIsOptimizing(false);
     }
@@ -66,7 +70,10 @@ export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="flex w-screen h-screen">
-        <AppSidebar />
+        <AppSidebar
+          selectedYear={selectedYear}
+          onSelectedYearChange={handleYearChange}
+        />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/50 px-4 relative z-10 glass dark:glass-dark">
             <div className="flex items-center gap-2">
@@ -98,19 +105,7 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold tracking-tight">Autoroad</h1>
 
               </div>
-              <div className="flex items-center gap-2">
-                <SimpleSelect
-                  className="w-40"
-                  placeholder="Select Year"
-                  options={[
-                    { value: "freshman", label: "Freshman" },
-                    { value: "sophomore", label: "Sophomore" },
-                    { value: "junior", label: "Junior" },
-                    { value: "senior", label: "Senior" },
-                  ]}
-                  onValueChange={setSelectedYear}
-                  value={selectedYear}
-                />
+              <div className="flex items-center">
                 <Button
                   size="sm"
                   variant="outline"
@@ -130,10 +125,7 @@ export default function Dashboard() {
             </div>
 
             {/* Alerts */}
-            <DashboardAlerts
-              optimizationError={optimizationError}
-              onDismissError={() => setOptimizationError(null)}
-            />
+            <DashboardAlerts />
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">

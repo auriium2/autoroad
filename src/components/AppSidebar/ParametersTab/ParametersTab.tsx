@@ -1,7 +1,23 @@
 import * as React from "react";
 import { Label } from "@/components/ui/label";
+import { SimpleSelect } from "@/components/ui/simple-select";
 
-export function ParametersTab() {
+const YEAR_OPTIONS = [
+  { value: "freshman", label: "Freshman" },
+  { value: "sophomore", label: "Sophomore" },
+  { value: "junior", label: "Junior" },
+  { value: "senior", label: "Senior" },
+] satisfies { value: string; label: string }[];
+
+interface ParametersTabProps {
+  selectedYear?: string;
+  onSelectedYearChange?: (value?: string) => void;
+}
+
+export function ParametersTab({
+  selectedYear,
+  onSelectedYearChange,
+}: ParametersTabProps) {
   const [maxUnits, setMaxUnits] = React.useState(60);
   const [minUnits, setMinUnits] = React.useState(36);
   const [preferredSemesterLoad, setPreferredSemesterLoad] = React.useState(48);
@@ -9,6 +25,22 @@ export function ParametersTab() {
   return (
     <div className="flex flex-col h-full p-4 space-y-6">
       <div className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">
+            Optimize Toward Year
+          </Label>
+          <SimpleSelect
+            className="w-full"
+            placeholder="Select Year"
+            options={YEAR_OPTIONS}
+            value={selectedYear}
+            onValueChange={(value) => onSelectedYearChange?.(value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Use this to focus optimization on a specific academic year.
+          </p>
+        </div>
+
         <div>
           <Label htmlFor="max-units" className="text-sm font-medium">
             Maximum Units Per Semester

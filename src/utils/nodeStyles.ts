@@ -15,7 +15,7 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
 
   // Check if node is in "Must Take" column (section -2)
   const isMustTake = section === -2;
-  
+
   // Check if node is in "ASEs" column (section -1)
   const isASE = section === -1;
 
@@ -31,7 +31,7 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
     boxShadow = "0 0 20px rgba(168, 85, 247, 0.6), 0 0 40px rgba(168, 85, 247, 0.3)";
   } else if (userControlled) {
     // User-controlled nodes: blue glow (keep border as-is for future use)
-    bgColor = "bg-primary/20";
+    bgColor = "bg-card";
     boxShadow = "0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)";
   } else if (isASE) {
     // ASEs nodes: white/gray styling
