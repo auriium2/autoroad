@@ -19,9 +19,9 @@ import {
 } from "./components/ui/sidebar";
 import { Button } from "./components/ui/button";
 import { SimpleSelect } from "./components/ui/simple-select";
-import { Download, Rocket, Lock, X, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "./components/ui/alert";
+import { Download, Loader2 } from "lucide-react";
 import { CourseGraphFlow } from "./components/course-graph/CourseGraphFlow";
+import { DashboardAlerts } from "./components/DashboardAlerts";
 import { optimizeRoad } from "./services/optimizationService";
 import { useGraphStore } from "./stores/roadStore";
 
@@ -33,23 +33,9 @@ export default function Dashboard() {
     console.log('localStorage cleared for debugging');
   }, []);
 
-  // Info alert dismissed state
-  const [infoAlertDismissed, setInfoAlertDismissed] = React.useState(false);
   const [isOptimizing, setIsOptimizing] = React.useState(false);
   const [optimizationError, setOptimizationError] = React.useState<string | null>(null);
   const [selectedYear, setSelectedYear] = React.useState<string | undefined>(undefined);
-
-  // Get store data
-  const { nodes, sections, loadRoadData } = useGraphStore();
-
-  // Check if any nodes are disabled or locked
-  const hasDisabledNodes = React.useMemo(() => {
-    return nodes.some((node) => node.disabled === true);
-  }, [nodes]);
-
-  const hasLockedNodes = React.useMemo(() => {
-    return nodes.some((node) => node.locked === true);
-  }, [nodes]);
 
   // Get optimize function from store
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
@@ -89,7 +75,7 @@ export default function Dashboard() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">Autoroad</BreadcrumbLink>
+                    <BreadcrumbLink href="#">auriium.xyz</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
@@ -143,65 +129,11 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Alerts constrained with max height and internal scroll */}
-            {hasDisabledNodes || hasLockedNodes || optimizationError || !infoAlertDismissed ? (
-              <div className="space-y-2">
-                {hasDisabledNodes && (
-                  <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 py-2 px-3 text-sm">
-                    <Lock className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                      <strong>Warning:</strong> You&apos;ve added disabled classes
-                      to a semester! Make sure to click the optimize button to
-                      see if they can be included.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                {/*
-                {hasLockedNodes && (
-                  <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 py-2 px-3 text-sm">
-                    <Lock className="h-4 w-4 text-yellow-600" />
-                    <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-                      <strong>Notice:</strong> You&apos;ve locked some classes in place.
-                      The optimizer will respect these constraints.
-                    </AlertDescription>
-                  </Alert>
-                )}*/}
-
-                {optimizationError && (
-                  <Alert className="border-red-500 bg-red-50 dark:bg-red-950/20 py-2 px-3 text-sm">
-                    <X className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-800 dark:text-red-200">
-                      <strong>Error:</strong> {optimizationError}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {!infoAlertDismissed && (
-                  <Alert className="border-blue-500 bg-blue-50 dark:bg-blue-950/20 relative pr-10 py-2 px-3 text-sm">
-                    <Rocket className="h-4 w-4 text-blue-600" />
-                    <AlertDescription className="text-blue-800 dark:text-blue-200">
-                      <strong>Welcome!</strong> This is the Autoroad dashboard.
-                      Here you can plan your semesters and optimize your
-                      schedule.
-                    </AlertDescription>
-                    <button
-                      onClick={() => setInfoAlertDismissed(true)}
-                      className="absolute top-0.5 right-0.5 text-muted-foreground hover:text-foreground transition-colors"
-                      aria-label="Close"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        fontSize: 20,
-                        cursor: "pointer",
-                        lineHeight: 1,
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </Alert>
-                )}
-              </div>
-            ) : null}
+            {/* Alerts */}
+            <DashboardAlerts
+              optimizationError={optimizationError}
+              onDismissError={() => setOptimizationError(null)}
+            />
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">

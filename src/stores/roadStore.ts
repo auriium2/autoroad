@@ -18,6 +18,9 @@ interface GraphStore {
   error: string | null;
   isSaving: boolean;
 
+  // Change tracking
+  hasChangesSinceOptimization: boolean;
+
   // User info
   userId: string | null;
 
@@ -65,6 +68,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   loadingState: 'loading',
   error: null,
   isSaving: false,
+  hasChangesSinceOptimization: false,
   userId: null,
 
   // User actions
@@ -76,8 +80,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   addNode: async (node) => {
     const { nodes } = get();
     
-    // Update state
-    set({ nodes: [...nodes, node] });
+    // Update state and mark changes if user-controlled
+    set({ 
+      nodes: [...nodes, node],
+      hasChangesSinceOptimization: node.userControlled ? true : get().hasChangesSinceOptimization
+    });
 
     // Save to localStorage
     localStorageApi.save({
@@ -128,10 +135,16 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   updateNodeLocal: (id, updates) => {
     const { nodes } = get();
+    const node = nodes.find(n => n.id === id);
+    
+    // If updating section (moving node) and node is user-controlled, mark changes
+    const isMoving = updates.section !== undefined && node?.section !== updates.section;
+    const shouldMarkChanges = isMoving && node?.userControlled;
     
     // Update only local state, no API call
     set({
       nodes: nodes.map(n => n.id === id ? { ...n, ...updates } : n),
+      hasChangesSinceOptimization: shouldMarkChanges ? true : get().hasChangesSinceOptimization,
     });
 
     // Save to localStorage
@@ -223,6 +236,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
           sections: result.data.sections,
           specialSection: result.data.specialSection,
           loadingState: 'success',
+          hasChangesSinceOptimization: false, // Reset tracking after successful optimization
         });
 
         // Save optimized result to localStorage

@@ -225,17 +225,16 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 }
 
 function CourseGraphFlowInner() {
-  const {
-    nodes: storeNodes,
-    edges: storeEdges,
-    sections,
-    specialSection,
-    loadingState,
-    error,
-    fetchRoadData,
-    addNode,
-    updateNodeLocal,
-  } = useGraphStore();
+  // Use Zustand selectors for optimal performance - only re-render when specific data changes
+  const storeNodes = useGraphStore(state => state.nodes);
+  const storeEdges = useGraphStore(state => state.edges);
+  const sections = useGraphStore(state => state.sections);
+  const specialSection = useGraphStore(state => state.specialSection);
+  const loadingState = useGraphStore(state => state.loadingState);
+  const error = useGraphStore(state => state.error);
+  const fetchRoadData = useGraphStore(state => state.fetchRoadData);
+  const addNode = useGraphStore(state => state.addNode);
+  const updateNodeLocal = useGraphStore(state => state.updateNodeLocal);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);

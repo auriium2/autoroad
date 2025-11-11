@@ -52,14 +52,14 @@ function ObjectivesTab() {
 
   const handleAddObjective = () => {
     if (!newObjectiveTitle.trim()) return;
-    
+
     const newObjective = {
       id: Date.now(),
       title: newObjectiveTitle,
       progress: 0,
       constraints: [],
     };
-    
+
     setObjectives([...objectives, newObjective]);
     setNewObjectiveTitle("");
     setShowAddMenu(false);
@@ -107,8 +107,8 @@ function ObjectivesTab() {
       <div className="flex-1 overflow-y-auto space-y-3">
         {objectives.map((objective) => {
           const fulfilledCount = objective.constraints.filter(c => c.fulfilled).length;
-          const progress = objective.constraints.length > 0 
-            ? (fulfilledCount / objective.constraints.length) * 100 
+          const progress = objective.constraints.length > 0
+            ? (fulfilledCount / objective.constraints.length) * 100
             : 0;
 
           return (
@@ -184,7 +184,8 @@ function ObjectivesTab() {
 
 // Course Search tab component
 function CourseSearchTab() {
-  const { addNode } = useGraphStore();
+  // Use Zustand selector for optimal performance
+  const addNode = useGraphStore(state => state.addNode);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
   const [isDragging, setIsDragging] = React.useState(false);
@@ -201,16 +202,16 @@ function CourseSearchTab() {
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      
+
       setDragPosition({ x: e.clientX, y: e.clientY });
-      
+
       // Get the React Flow viewport to account for panning/zooming
       const flowViewport = document.querySelector('.react-flow__viewport');
       const canvas = document.querySelector('.react-flow');
       if (!canvas || !flowViewport) return;
-      
+
       const canvasRect = canvas.getBoundingClientRect();
-      
+
       // Check if cursor is actually over the graph
       const isInBounds = (
         e.clientX >= canvasRect.left &&
@@ -218,13 +219,13 @@ function CourseSearchTab() {
         e.clientY >= canvasRect.top &&
         e.clientY <= canvasRect.bottom
       );
-      
+
       setIsOverGraph(isInBounds);
-      
+
       if (!isInBounds) return; // Don't calculate section if not over graph
-      
+
       const relativeX = e.clientX - canvasRect.left;
-      
+
       // Get the viewport transform to account for panning
       const transform = window.getComputedStyle(flowViewport).transform;
       let panX = 0;
@@ -235,14 +236,14 @@ function CourseSearchTab() {
           panX = values[4] || 0; // translateX is at index 4
         }
       }
-      
+
       // Adjust for pan offset
       const flowX = relativeX - panX;
-      
+
       // Simple column detection (200px per column)
       const COLUMN_WIDTH = 200;
       const columnIndex = Math.floor(flowX / COLUMN_WIDTH);
-      
+
       // Map column index to section ID
       // Column 0: Must Take (-2), Column 1: ASEs (-1), Column 2+: semester sections (0, 1, 2, ...)
       let sectionId: number;
@@ -253,7 +254,7 @@ function CourseSearchTab() {
       } else {
         sectionId = columnIndex - 2; // Semester sections start at column 2
       }
-      
+
       setCurrentSection(sectionId);
     };
 
@@ -275,7 +276,7 @@ function CourseSearchTab() {
     });
   }, [currentSection]);
 
-  const handleDragStart = (e: React.DragEvent, course: typeof courses[0]) => {
+  const handleDragStart = React.useCallback((e: React.DragEvent, course: typeof courses[0]) => {
     e.dataTransfer.setData("application/json", JSON.stringify({
       id: `${course.subject_id}_${Date.now()}`,
       courseId: course.subject_id,
@@ -287,28 +288,28 @@ function CourseSearchTab() {
     const img = new Image();
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(img, 0, 0);
-    
+
     setIsDragging(true);
     setDragPosition({ x: e.clientX, y: e.clientY });
-  };
+  }, []);
 
-  const handleDragEnd = () => {
+  const handleDragEnd = React.useCallback(() => {
     setIsDragging(false);
     setIsOverGraph(false);
-  };
+  }, []);
 
   return (
     <div className="flex flex-col h-full p-4 space-y-4">
       {/* Custom drag preview that follows cursor - only show when over graph */}
       {isDragging && isOverGraph && (
-        <div 
+        <div
           className="fixed pointer-events-none z-50"
-          style={{ 
-            left: `${dragPosition.x - 20}px`, 
+          style={{
+            left: `${dragPosition.x - 20}px`,
             top: `${dragPosition.y - 20}px`,
           }}
         >
-          <div 
+          <div
             className={`w-10 h-10 rounded-full border-2 ${dragPreviewStyle.borderColor} ${dragPreviewStyle.bgColor} flex items-center justify-center shadow-sm transition-colors duration-150`}
             style={{ boxShadow: dragPreviewStyle.boxShadow }}
           >
@@ -372,7 +373,7 @@ function CourseSearchTab() {
             console.warn('Invalid course data:', course);
             return null;
           }
-          
+
           return (
             <div
               key={course.subject_id}
@@ -492,18 +493,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar variant="sidebar" className="z-40" {...props}>
       <SidebarHeader>
         {/* Tabs */}
+
         <div className="flex border-b">
-          <button
-            onClick={() => setActiveTab("objectives")}
-            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
-              activeTab === "objectives"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Target className="h-3 w-3 inline mr-1" />
-            Objectives
-          </button>
           <button
             onClick={() => setActiveTab("courses")}
             className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
@@ -516,6 +507,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             Courses
           </button>
           <button
+            onClick={() => setActiveTab("objectives")}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+              activeTab === "objectives"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Target className="h-3 w-3 inline mr-1" />
+            Objectives
+          </button>
+          <button
             onClick={() => setActiveTab("parameters")}
             className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === "parameters"
@@ -526,6 +528,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Sliders className="h-3 w-3 inline mr-1" />
             Parameters
           </button>
+
+
         </div>
       </SidebarHeader>
       <SidebarContent className="overflow-hidden">

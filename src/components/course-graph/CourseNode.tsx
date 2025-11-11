@@ -14,7 +14,7 @@ interface NodeProps {
   onMouseLeave: () => void;
 }
 
-export function CourseNode({
+const CourseNodeComponent = React.memo(function CourseNode({
   node,
   isSpecial = false,
   isHovered = false,
@@ -28,15 +28,16 @@ export function CourseNode({
   // Optimizer-controlled: Sparkles icon (automatically placed by optimizer)
   const icon: string | React.ReactElement = userControlled ? <User className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />;
 
-  // Get node styling from shared utility
-  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({
-    section,
-    userControlled,
-    disabled,
-    isSpecial,
-  });
+  // Get node styling from shared utility - memoize expensive computation
+  const { borderColor, bgColor, textColor, boxShadow } = React.useMemo(
+    () => getNodeStyle({ section, userControlled, disabled, isSpecial }),
+    [section, userControlled, disabled, isSpecial]
+  );
 
-  const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
+  const glowStyle = React.useMemo(
+    () => (boxShadow !== "none" ? { boxShadow } : {}),
+    [boxShadow]
+  );
 
   return (
     <div className="flex flex-col items-center">
@@ -63,4 +64,6 @@ export function CourseNode({
       </div>
     </div>
   );
-}
+});
+
+export { CourseNodeComponent as CourseNode };
