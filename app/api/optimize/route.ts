@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const tempDir = path.join(process.cwd(), 'temp');
     try {
       await fs.mkdir(tempDir, { recursive: true });
-    } catch (err) {
+    } catch {
       // Directory might already exist
     }
     

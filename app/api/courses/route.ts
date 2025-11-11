@@ -7,7 +7,7 @@ import * as path from 'path';
 const execAsync = promisify(exec);
 
 // Cache the courses data to avoid repeated fetching
-let coursesCache: any = null;
+let coursesCache: unknown = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 3600000; // 1 hour in milliseconds
 
@@ -24,7 +24,7 @@ export async function GET() {
     const tempDir = path.join(process.cwd(), 'temp');
     try {
       await fs.mkdir(tempDir, { recursive: true });
-    } catch (err) {
+    } catch {
       // Directory might already exist
     }
     
@@ -38,7 +38,7 @@ export async function GET() {
     // Check if the script exists, if not create it
     try {
       await fs.access(pythonScript);
-    } catch (err) {
+    } catch {
       // Create a simple script to fetch courses
       const scriptContent = `
 import requests

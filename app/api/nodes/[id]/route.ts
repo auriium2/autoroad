@@ -1,93 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import * as path from 'path';
+import { CourseDetails } from '@/services/api';
 
-const execAsync = promisify(exec);
-
-// Mock course data for development (in production this would come from a database or external API)
-const mockCourseData: Record<string, any> = {
+// Mock course data matching Fireroad API structure
+const mockCourseData: Record<string, CourseDetails> = {
   "0": {
-    title: "18.01 - Calculus",
-    description: "Single Variable Calculus",
-    type: "ASE",
-    status: "Active",
-    connections: 1,
-    lastUpdated: "2 minutes ago",
+    id: "18.01",
+    name: "Single Variable Calculus",
+    description: "Differentiation and integration of functions of one variable, with applications.",
     units: 12,
-    prerequisites: [],
+    prerequisites: "",
+    corequisites: "",
+    terms_offered: ["Fall", "Spring"],
+    instructors: [],
+    offered_fall: true,
+    offered_spring: true,
   },
   "1": {
-    title: "6.100A - Introduction to Programming",
-    description: "Introduction to computer programming and algorithm development",
-    type: "Course",
-    status: "Active", 
-    connections: 1,
-    lastUpdated: "1 minute ago",
-    units: 12,
-    prerequisites: [],
+    id: "6.100A",
+    name: "Introduction to CS and Programming in Python",
+    description: "Introduction to computer science and programming for students with little or no programming experience.",
+    units: 6,
+    prerequisites: "",
+    corequisites: "",
+    terms_offered: ["Fall"],
+    instructors: [],
+    offered_fall: true,
   },
   "2": {
-    title: "6.1200 - Mathematics for Computer Science",
-    description: "Elementary discrete mathematics for science and engineering",
-    type: "Course",
-    status: "Active",
-    connections: 2,
-    lastUpdated: "30 seconds ago",
+    id: "6.1200",
+    name: "Mathematics for Computer Science",
+    description: "Elementary discrete mathematics for science and engineering, with applications to computer science.",
     units: 12,
-    prerequisites: ["1"],
+    prerequisites: "Calculus I (GIR)",
+    corequisites: "",
+    terms_offered: ["Fall", "Spring"],
+    instructors: [],
+    offered_fall: true,
+    offered_spring: true,
   },
   "3": {
-    title: "6.120A - Discrete Mathematics",
-    description: "Advanced discrete mathematics topics",
-    type: "Course",
-    status: "Locked",
-    connections: 1,
-    lastUpdated: "45 seconds ago",
+    id: "6.120A",
+    name: "Discrete Mathematics and Proof for Computer Science",
+    description: "Discrete mathematics with a focus on computer science applications.",
     units: 12,
-    prerequisites: ["1"],
+    prerequisites: "",
+    corequisites: "",
+    terms_offered: ["Spring"],
+    instructors: [],
+    offered_spring: true,
   },
 };
 
 /**
  * Fetch course data from FireRoad API (or return mock data)
  */
-async function fetchCourseData(courseId: string): Promise<any> {
+async function fetchCourseData(courseId: string): Promise<CourseDetails> {
   // For now, return mock data
   if (mockCourseData[courseId]) {
     return mockCourseData[courseId];
   }
   
-  // In a production environment, this would call the FireRoad API
-  try {
-    // This is a placeholder for a real API call
-    // const response = await fetch(`https://fireroad.mit.edu/courses/${courseId}`);
-    // const data = await response.json();
-    // return data;
-    
-    // For now, return a generic response for unknown courses
-    return {
-      title: `Course ${courseId}`,
-      description: "No description available",
-      type: "Course",
-      status: "Unknown",
-      connections: 0,
-      lastUpdated: "Unknown",
-      units: 12,
-      prerequisites: [],
-    };
-  } catch (error) {
-    console.error(`Error fetching data for course ${courseId}:`, error);
-    throw error;
-  }
+  // Return generic course data matching Fireroad structure
+  return {
+    id: courseId,
+    name: `Course ${courseId}`,
+    description: "No description available",
+    units: 12,
+    prerequisites: "",
+    corequisites: "",
+    terms_offered: [],
+    instructors: [],
+  };
 }
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     // Fetch course data (either from mock data or API)
     const courseData = await fetchCourseData(id);
