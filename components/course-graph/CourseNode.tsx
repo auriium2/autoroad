@@ -7,48 +7,31 @@ import { getNodeStyle } from "@/lib/nodeStyles";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 
-interface NodeProps {
-  node: CourseNode;
-  isSpecial?: boolean;
-  isHovered?: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-  disableTooltip?: boolean;
-}
-
-const CourseNodeComponent = React.memo(function CourseNode({
+function CourseNodeComponent({ 
   node,
   isSpecial = false,
   isHovered = false,
   onMouseEnter,
   onMouseLeave,
   disableTooltip = false,
-}: NodeProps) {
+}: { node: CourseNode; isSpecial?: boolean; isHovered?: boolean; onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean }) {
   const { courseId, userControlled, disabled, section } = node;
 
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
   const units = courseDetails?.units || 12; // Default to 12 if not available
 
-  // Get node styling from shared utility - memoize expensive computation
-  const { borderColor, bgColor, textColor, boxShadow } = React.useMemo(
-    () => getNodeStyle({ section, userControlled, disabled, isSpecial }),
-    [section, userControlled, disabled, isSpecial]
-  );
+  // Get node styling from shared utility
+  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled, isSpecial });
 
-  const glowStyle = React.useMemo(
-    () => (boxShadow !== "none" ? { boxShadow } : {}),
-    [boxShadow]
-  );
+  const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
 
   // Get term-based border gradient
-  const termHighlight = React.useMemo(() => {
-    return getTermBorderHighlight({
-      offeredFall: courseDetails?.offered_fall,
-      offeredSpring: courseDetails?.offered_spring,
-      offeredIAP: courseDetails?.offered_IAP,
-    });
-  }, [courseDetails?.offered_fall, courseDetails?.offered_spring, courseDetails?.offered_IAP]);
+  const termHighlight = getTermBorderHighlight({
+    offeredFall: courseDetails?.offered_fall,
+    offeredSpring: courseDetails?.offered_spring,
+    offeredIAP: courseDetails?.offered_IAP,
+  });
 
   return (
     <div className="flex flex-col items-center">
@@ -100,6 +83,6 @@ const CourseNodeComponent = React.memo(function CourseNode({
       </div>
     </div>
   );
-});
+}
 
 export { CourseNodeComponent as CourseNode };

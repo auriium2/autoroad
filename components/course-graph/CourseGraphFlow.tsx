@@ -10,7 +10,6 @@ import ReactFlow, {
   useEdgesState,
   NodeTypes,
   MarkerType,
-  Panel,
   useReactFlow,
   ReactFlowProvider,
   Handle,
@@ -231,7 +230,6 @@ function CourseGraphFlowInner() {
   const storeNodes = useGraphStore(state => state.nodes);
   const storeEdges = useGraphStore(state => state.edges);
   const sections = useGraphStore(state => state.sections);
-  const specialSection = useGraphStore(state => state.specialSection);
   const loadingState = useGraphStore(state => state.loadingState);
   const error = useGraphStore(state => state.error);
   const fetchRoadData = useGraphStore(state => state.fetchRoadData);
@@ -250,23 +248,23 @@ function CourseGraphFlowInner() {
   } | null>(null);
 
   // Context menu handlers
-  const handlePin = React.useCallback((nodeId: string) => {
+  const handlePin = (nodeId: string) => {
     updateNodeLocal(nodeId, { nodeStatus: 'pin' });
     setContextMenu(null);
-  }, [updateNodeLocal]);
+  };
 
-  const handleBanish = React.useCallback((nodeId: string) => {
+  const handleBanish = (nodeId: string) => {
     updateNodeLocal(nodeId, { nodeStatus: 'banish' });
     setContextMenu(null);
-  }, [updateNodeLocal]);
+  };
 
-  const handleRemoveNode = React.useCallback(async (nodeId: string) => {
+  const handleRemoveNode = async (nodeId: string) => {
     await removeNode(nodeId);
     setContextMenu(null);
-  }, [removeNode]);
+  };
 
   // Handle right-click on node
-  const onNodeContextMenu = React.useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeContextMenu = (event: React.MouseEvent, node: Node) => {
     event.preventDefault();
     
     // Only show context menu for user-controlled nodes
@@ -279,7 +277,7 @@ function CourseGraphFlowInner() {
       x: event.clientX,
       y: event.clientY,
     });
-  }, []);
+  };
 
   // Close context menu on click outside
   React.useEffect(() => {
@@ -293,6 +291,7 @@ function CourseGraphFlowInner() {
 
 
   // Build sections array with Must Take and ASEs as first two columns
+  // Note: Memoized because used as dependency in useEffect hooks below
   const allSections: Section[] = React.useMemo(() => {
     const mustTakeSection: Section = { id: -2, title: 'Must Take' };
     const asesSection: Section = { id: -1, title: 'ASEs' };
@@ -378,7 +377,7 @@ function CourseGraphFlowInner() {
   }, [storeEdges, storeNodes, allSections, setEdges]);
 
   // Handle node drag end
-  const onNodeDragStop = React.useCallback((_event: React.MouseEvent, node: Node) => {
+  const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
     if (!node.data.userControlled) return;
 
     // Determine which column the node is in based on x position
@@ -396,7 +395,7 @@ function CourseGraphFlowInner() {
       // Same section, but need to snap back to center - force a re-render
       updateNodeLocal(node.id, { section: node.data.section });
     }
-  }, [allSections, updateNodeLocal]);
+  };
 
   // Load data on mount
   React.useEffect(() => {
@@ -418,7 +417,7 @@ function CourseGraphFlowInner() {
   const { screenToFlowPosition } = useReactFlow();
 
   // Handle drop from sidebar
-  const onDrop = React.useCallback(async (event: React.DragEvent) => {
+  const onDrop = async (event: React.DragEvent) => {
     event.preventDefault();
 
     try {
@@ -454,12 +453,12 @@ function CourseGraphFlowInner() {
     } catch (error) {
       console.error('Failed to add dropped node:', error);
     }
-  }, [addNode, screenToFlowPosition, allSections]);
+  };
 
-  const onDragOver = React.useCallback((event: React.DragEvent) => {
+  const onDragOver = (event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-  }, []);
+  };
 
   if (loadingState === 'loading' && storeNodes.length === 0) {
     return (

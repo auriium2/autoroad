@@ -2,17 +2,7 @@
 
 import * as React from "react";
 import { useCourseDetails } from "@/hooks/useCourseData";
-import type { CourseNode } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
-
-// Improved CourseNodeHoverCard component using its own props interface
-interface CourseNodeHoverCardProps {
-  nodeId: string;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  scrollLeft: number;
-  totalWidth: number;
-  viewportWidth: number;
-}
 
 type Status = "Active" | "Locked" | "Disabled" | "Pending";
 
@@ -32,7 +22,12 @@ export function CourseNodeHoverCard({
   viewportWidth,
   onMouseEnter,
   onMouseLeave,
-}: CourseNodeHoverCardProps & {
+}: {
+  nodeId: string;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  scrollLeft: number;
+  totalWidth: number;
+  viewportWidth: number;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
@@ -44,26 +39,21 @@ export function CourseNodeHoverCard({
   // Fetch course details
   const { data: courseDetails } = useCourseDetails(courseId);
   
-  const details = React.useMemo(() => {
-    if (!courseDetails) {
-      return {
-        title: `Loading ${courseId}...`,
-        description: "Details are being loaded",
-        type: "Unknown",
-        status: "Pending" as Status,
-        connections: 0,
-        lastUpdated: "Loading..."
-      };
-    }
-    
-    return {
-      title: `${courseDetails.id} - ${courseDetails.name}`,
-      description: courseDetails.description,
-      type: "Course",
-      status: "Active" as Status,
-      connections: 0,
-      lastUpdated: "Now"
-    };
+  // Note: Memoized because used as dependency in useLayoutEffect below
+  const details = React.useMemo(() => !courseDetails ? {
+    title: `Loading ${courseId}...`,
+    description: "Details are being loaded",
+    type: "Unknown",
+    status: "Pending" as Status,
+    connections: 0,
+    lastUpdated: "Loading..."
+  } : {
+    title: `${courseDetails.id} - ${courseDetails.name}`,
+    description: courseDetails.description,
+    type: "Course",
+    status: "Active" as Status,
+    connections: 0,
+    lastUpdated: "Now"
   }, [courseDetails, courseId]);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = React.useState({

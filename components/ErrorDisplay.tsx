@@ -2,17 +2,11 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
-interface ErrorDisplayProps {
-  error: string;
-  onRetry?: () => void;
-  title?: string;
-}
-
 export function ErrorDisplay({ 
   error, 
   onRetry, 
   title = "Something went wrong" 
-}: ErrorDisplayProps) {
+}: { error: string; onRetry?: () => void; title?: string }) {
   return (
     <div className="flex items-center justify-center h-full p-8">
       <Alert variant="destructive" className="max-w-lg">

@@ -1,11 +1,6 @@
 import { Loader2 } from "lucide-react";
 
-interface LoadingSpinnerProps {
-  message?: string;
-  size?: "sm" | "md" | "lg";
-}
-
-export function LoadingSpinner({ message = "Loading...", size = "md" }: LoadingSpinnerProps) {
+export function LoadingSpinner({ message = "Loading...", size = "md" }: { message?: string; size?: "sm" | "md" | "lg" }) {
   const sizeClasses = {
     sm: "h-4 w-4",
     md: "h-8 w-8",

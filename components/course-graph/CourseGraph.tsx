@@ -18,7 +18,6 @@ export function CourseGraph() {
     loadingState,
     error,
     fetchRoadData,
-    loadInitialData,
   } = useGraphStore();
 
   const containerRef = React.useRef<HTMLDivElement>(null);

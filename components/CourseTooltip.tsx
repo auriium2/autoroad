@@ -10,13 +10,7 @@ import {
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { Loader2 } from "lucide-react";
 
-interface CourseTooltipProps {
-  courseId: string;
-  children: React.ReactNode;
-  disabled?: boolean;
-}
-
-export function CourseTooltip({ courseId, children, disabled = false }: CourseTooltipProps) {
+export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const { data: courseDetails, isLoading, isError } = useCourseDetails(isOpen ? courseId : null);
 
