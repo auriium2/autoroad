@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useNodeDetails } from "@/hooks/useNodeDetails";
+import { useCourseDetails } from "@/hooks/useCourseData";
 import type { CourseNode } from "@/stores/roadStore";
+import { useGraphStore } from "@/stores/roadStore";
 
 // Improved CourseNodeHoverCard component using its own props interface
 interface CourseNodeHoverCardProps {
@@ -35,16 +36,35 @@ export function CourseNodeHoverCard({
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }) {
-  // Fetch node details using SWR
-  const { nodeDetails, isLoading } = useNodeDetails(nodeId);
-  const details = React.useMemo(() => nodeDetails || {
-    title: `Loading ${nodeId}...`,
-    description: "Details are being loaded",
-    type: "Unknown",
-    status: "Pending" as Status,
-    connections: 0,
-    lastUpdated: "Loading..."
-  }, [nodeDetails, nodeId]);
+  // Get node from store to find courseId
+  const nodes = useGraphStore(state => state.nodes);
+  const node = nodes.find(n => n.id === nodeId);
+  const courseId = node?.courseId || nodeId;
+  
+  // Fetch course details
+  const { data: courseDetails } = useCourseDetails(courseId);
+  
+  const details = React.useMemo(() => {
+    if (!courseDetails) {
+      return {
+        title: `Loading ${courseId}...`,
+        description: "Details are being loaded",
+        type: "Unknown",
+        status: "Pending" as Status,
+        connections: 0,
+        lastUpdated: "Loading..."
+      };
+    }
+    
+    return {
+      title: `${courseDetails.id} - ${courseDetails.name}`,
+      description: courseDetails.description,
+      type: "Course",
+      status: "Active" as Status,
+      connections: 0,
+      lastUpdated: "Now"
+    };
+  }, [courseDetails, courseId]);
   const cardRef = React.useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = React.useState({
     width: CARD_DEFAULT_WIDTH,
