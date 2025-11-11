@@ -59,6 +59,8 @@ export function useSearchCourses(query: string, department?: string) {
     },
     enabled: true,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 }
 
@@ -242,5 +244,7 @@ export function useCourseDetails(courseId: string | null) {
     },
     enabled: !!courseId, // Only fetch when courseId is provided
     staleTime: 10 * 60 * 1000, // Course details change rarely, cache for 10 minutes
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 }

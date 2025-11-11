@@ -41,45 +41,30 @@ export class ApiError extends Error {
   }
 }
 
-// Generic fetch wrapper with error handling and retries
-async function fetchWithRetry<T>(
+// Generic fetch wrapper with error handling
+// Note: Retries are handled by TanStack Query when these functions are called from hooks
+async function apiFetch<T>(
   url: string,
-  options: RequestInit = {},
-  retries = 3,
-  delay = 1000
+  options: RequestInit = {}
 ): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-      });
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new ApiError(
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`,
-          response.status,
-          errorData
-        );
-      }
-
-      return await response.json();
-    } catch (error) {
-      // If it's the last retry or not a network error, throw
-      if (i === retries - 1 || !(error instanceof TypeError)) {
-        throw error;
-      }
-      
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-    }
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+      response.status,
+      errorData
+    );
   }
 
-  throw new Error('Max retries exceeded');
+  return await response.json();
 }
 
 // Fireroad API types
@@ -183,7 +168,7 @@ export const fireroadApi = {
     if (params?.full) searchParams.append('full', 'true');
 
     const url = `${FIREROAD_API_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
-    return fetchWithRetry<FireroadCourse[]>(url);
+    return apiFetch<FireroadCourse[]>(url);
   },
 
   /**
@@ -191,14 +176,14 @@ export const fireroadApi = {
    */
   async getCoursesByDepartment(dept: string, full = false): Promise<FireroadCourse[]> {
     const params = full ? '?full=true' : '';
-    return fetchWithRetry<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/dept/${dept}${params}`);
+    return apiFetch<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/dept/${dept}${params}`);
   },
 
   /**
    * Get detailed course information
    */
   async getCourseDetails(subjectId: string): Promise<CourseDetails> {
-    const course = await fetchWithRetry<FireroadCourse>(
+    const course = await apiFetch<FireroadCourse>(
       `${FIREROAD_API_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
     );
     return normalizeFireroadCourse(course);
@@ -209,7 +194,7 @@ export const fireroadApi = {
    */
   async getAllCourses(full = false): Promise<FireroadCourse[]> {
     const params = full ? '?full=true' : '';
-    return fetchWithRetry<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/all${params}`);
+    return apiFetch<FireroadCourse[]>(`${FIREROAD_API_URL}/courses/all${params}`);
   },
 };
 
@@ -223,7 +208,7 @@ export const roadApi = {
     minUnitsPerSemester?: number;
     preferredTimes?: string[];
   }): Promise<ApiResponse<RoadData>> {
-    return fetchWithRetry<ApiResponse<RoadData>>(`${API_BASE_URL}/optimize`, {
+    return apiFetch<ApiResponse<RoadData>>(`${API_BASE_URL}/optimize`, {
       method: 'POST',
       body: JSON.stringify({
         currentState,

@@ -1,4 +1,4 @@
-import useSWR from 'swr';
+import { useQuery } from '@tanstack/react-query';
 
 export interface NodeDetail {
   title: string;
@@ -76,7 +76,7 @@ const mockNodeDetails: Record<string, NodeDetail> = {
   },
 };
 
-// Fetcher function for SWR
+// Fetcher function for TanStack Query
 const fetchNodeDetails = async (nodeId: string): Promise<NodeDetail> => {
   try {
     // Make an API call to fetch node details
@@ -106,21 +106,21 @@ const fetchNodeDetails = async (nodeId: string): Promise<NodeDetail> => {
 };
 
 export function useNodeDetails(nodeId: string) {
-  const { data, error, isLoading, mutate } = useSWR(
-    nodeId ? `node-${nodeId}` : null,
-    () => nodeId ? fetchNodeDetails(nodeId) : null,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000, // 1 minute
-      errorRetryCount: 3,
-    }
-  );
+  const { data, error, isLoading, refetch } = useQuery({
+    queryKey: ['node', nodeId],
+    queryFn: () => fetchNodeDetails(nodeId),
+    enabled: !!nodeId,
+    staleTime: 60000, // 1 minute
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
 
   return {
     nodeDetails: data,
     isLoading,
-    isError: error,
-    refresh: () => mutate(),
+    isError: !!error,
+    refresh: refetch,
   };
 }
