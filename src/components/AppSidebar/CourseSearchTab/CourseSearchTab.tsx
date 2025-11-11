@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, User } from "lucide-react";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,9 @@ export function CourseSearchTab() {
             className={`w-10 h-10 rounded-full border-2 ${dragPreviewStyle.borderColor} ${dragPreviewStyle.bgColor} flex items-center justify-center shadow-sm transition-colors duration-150`}
             style={{ boxShadow: dragPreviewStyle.boxShadow }}
           >
-            <User className={`h-3 w-3 ${dragPreviewStyle.textColor}`} />
+            <div className={`text-xs font-bold ${dragPreviewStyle.textColor}`}>
+              12
+            </div>
           </div>
         </div>
       )}
@@ -132,7 +134,7 @@ export function CourseSearchTab() {
                     onDragEnd={handleDragEnd}
                     className="w-8 h-8 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2 cursor-move transition-all duration-200"
                   >
-                    <User className="h-3 w-3" />
+                    12
                   </div>
                 </CourseTooltip>
               </div>

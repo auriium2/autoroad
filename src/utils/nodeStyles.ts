@@ -25,11 +25,14 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
   let boxShadow = "none";
 
   if (isMustTake) {
-    // Must Take nodes: purple glow
-    borderColor = "border-purple-500";
+    // Must Take nodes: purple glow (keep border as-is for future use)
     bgColor = "bg-purple-950/40";
     textColor = "text-purple-300";
     boxShadow = "0 0 20px rgba(168, 85, 247, 0.6), 0 0 40px rgba(168, 85, 247, 0.3)";
+  } else if (userControlled) {
+    // User-controlled nodes: blue glow (keep border as-is for future use)
+    bgColor = "bg-primary/20";
+    boxShadow = "0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)";
   } else if (isASE) {
     // ASEs nodes: white/gray styling
     borderColor = "border-gray-300 dark:border-gray-600";
@@ -47,12 +50,6 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
     borderColor = "border-red-500";
     bgColor = "bg-red-50 dark:bg-red-950/20";
     textColor = "text-red-700 dark:text-red-400";
-    boxShadow = "none";
-  } else if (userControlled) {
-    // User-controlled nodes: yellow border
-    borderColor = "border-yellow-500";
-    bgColor = "bg-yellow-950/20";
-    textColor = "text-yellow-200";
     boxShadow = "none";
   }
 

@@ -53,7 +53,7 @@ export function DashboardAlerts({
           schedule while respecting your changes.
         </>
       ),
-      dismissible: false,
+      dismissible: true,
       show: hasChangesSinceOptimization,
     },
     {

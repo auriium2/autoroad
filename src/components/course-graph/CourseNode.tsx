@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { User, Sparkles } from "lucide-react";
 import type { CourseNode } from "@/stores/roadStore";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle } from "@/utils/nodeStyles";
+import { useCourseDetails } from "@/hooks/useCourseData";
 
 interface NodeProps {
   node: CourseNode;
@@ -23,10 +23,9 @@ const CourseNodeComponent = React.memo(function CourseNode({
 }: NodeProps) {
   const { courseId, userControlled, disabled, section } = node;
 
-  // Determine icon based on userControlled flag
-  // User-controlled: User icon (manually placed by user)
-  // Optimizer-controlled: Sparkles icon (automatically placed by optimizer)
-  const icon: string | React.ReactElement = userControlled ? <User className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />;
+  // Fetch course details to get units
+  const { data: courseDetails } = useCourseDetails(courseId);
+  const units = courseDetails?.units || 12; // Default to 12 if not available
 
   // Get node styling from shared utility - memoize expensive computation
   const { borderColor, bgColor, textColor, boxShadow } = React.useMemo(
@@ -53,7 +52,7 @@ const CourseNodeComponent = React.memo(function CourseNode({
           tabIndex={0}
         >
           <div className={`text-xs font-bold ${textColor}`}>
-            {typeof icon === 'string' ? icon : icon}
+            {units}
           </div>
         </div>
       </CourseTooltip>
