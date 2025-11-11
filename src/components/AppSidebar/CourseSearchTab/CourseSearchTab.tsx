@@ -7,6 +7,7 @@ import { useSearchCourses } from "@/hooks/useCourseData";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle } from "@/utils/nodeStyles";
 import { useCourseDrag } from "./useCourseDrag";
+import { getTermBorderHighlight } from "@/utils/termBorderHighlight";
 
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -115,6 +116,18 @@ export function CourseSearchTab() {
             return null;
           }
 
+          const termHighlight = getTermBorderHighlight({
+            offeredFall: course.offered_fall,
+            offeredSpring: course.offered_spring,
+            offeredIAP: course.offered_IAP,
+          });
+          
+          const dragProps = {
+            draggable: true,
+            onDragStart: (e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, course),
+            onDragEnd: handleDragEnd,
+          };
+
           return (
             <div
               key={course.subject_id}
@@ -129,12 +142,32 @@ export function CourseSearchTab() {
                 </div>
                 <CourseTooltip courseId={course.subject_id}>
                   <div
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, course)}
-                    onDragEnd={handleDragEnd}
-                    className="w-8 h-8 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2 cursor-move transition-all duration-200"
+                    {...dragProps}
+                    className="relative w-8 h-8 rounded-full flex-shrink-0 ml-2 cursor-move transition-all duration-200"
                   >
-                    12
+                    <div className="absolute inset-0 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold">
+                      {course.total_units ?? 12}
+                    </div>
+                    {termHighlight && (
+                      <svg
+                        className="pointer-events-none absolute inset-0"
+                        viewBox="0 0 32 32"
+                        preserveAspectRatio="xMidYMid meet"
+                      >
+                        <circle
+                          cx="16"
+                          cy="16"
+                          r="13"
+                          fill="none"
+                          stroke="rgba(255,255,255,0.35)"
+                          strokeWidth="2"
+                          pathLength={1}
+                          strokeDasharray={termHighlight.dasharray}
+                          strokeDashoffset={termHighlight.dashoffset}
+                          strokeLinecap="butt"
+                        />
+                      </svg>
+                    )}
                   </div>
                 </CourseTooltip>
               </div>

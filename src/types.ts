@@ -23,6 +23,10 @@ export interface CourseNode {
   section: number; // Which semester/section this belongs to
   userControlled?: boolean; // If true, user added/can drag this node
   disabled?: boolean; // If true, node is disabled and cannot be taken
+  // Term availability (fetched from course details)
+  offeredFall?: boolean;
+  offeredSpring?: boolean;
+  offeredIAP?: boolean;
 }
 
 /**

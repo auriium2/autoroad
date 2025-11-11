@@ -124,6 +124,9 @@ export interface CourseDetails {
   level?: string;
   gir_attribute?: string;
   hass_attribute?: string;
+  offered_fall?: boolean;
+  offered_spring?: boolean;
+  offered_IAP?: boolean;
 }
 
 // Helper to normalize Fireroad course to our format
@@ -132,7 +135,6 @@ function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
   if (course.offered_fall) terms_offered.push('Fall');
   if (course.offered_spring) terms_offered.push('Spring');
   if (course.offered_IAP) terms_offered.push('IAP');
-  if (course.offered_summer) terms_offered.push('Summer');
 
   return {
     id: course.subject_id,
@@ -146,6 +148,9 @@ function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
     level: course.level,
     gir_attribute: course.gir_attribute,
     hass_attribute: course.hass_attribute,
+    offered_fall: course.offered_fall,
+    offered_spring: course.offered_spring,
+    offered_IAP: course.offered_IAP,
   };
 }
 
