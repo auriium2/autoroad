@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Lock, X } from "lucide-react";
+import { User, Sparkles } from "lucide-react";
 import type { CourseNode } from "@/stores/roadStore";
 import { CourseTooltip } from "@/components/CourseTooltip";
+import { getNodeStyle } from "@/utils/nodeStyles";
 
 interface NodeProps {
   node: CourseNode;
@@ -22,39 +23,20 @@ export function CourseNode({
 }: NodeProps) {
   const { label, userControlled, disabled, section } = node;
 
-  // Check if node is in "Must Take" column
-  const isMustTake = section === -2;
-
   // Determine icon based on userControlled flag
-  const icon: string | React.ReactElement = userControlled ? <Lock className="h-3 w-3" /> : "D";
+  // User-controlled: User icon (manually placed by user)
+  // Optimizer-controlled: Sparkles icon (automatically placed by optimizer)
+  const icon: string | React.ReactElement = userControlled ? <User className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />;
 
-  // Determine node styling based on state
-  let borderColor = "border-border";
-  let bgColor = "bg-card";
-  let textColor = "text-foreground";
-  let glowStyle = {};
+  // Get node styling from shared utility
+  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({
+    section,
+    userControlled,
+    disabled,
+    isSpecial,
+  });
 
-  if (isMustTake) {
-    // Must Take nodes: purple glow
-    borderColor = "border-purple-500";
-    bgColor = "bg-purple-950/40";
-    textColor = "text-purple-300";
-    glowStyle = {
-      boxShadow: "0 0 20px rgba(168, 85, 247, 0.6), 0 0 40px rgba(168, 85, 247, 0.3)",
-    };
-  } else if (isSpecial) {
-    borderColor = "border-primary";
-    bgColor = "bg-primary/10";
-  } else if (disabled) {
-    borderColor = "border-red-500";
-    bgColor = "bg-red-50 dark:bg-red-950/20";
-    textColor = "text-red-700 dark:text-red-400";
-  } else if (userControlled) {
-    // User-controlled nodes: yellow border
-    borderColor = "border-yellow-500";
-    bgColor = "bg-yellow-950/20";
-    textColor = "text-yellow-200";
-  }
+  const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
 
   return (
     <div className="flex flex-col items-center">

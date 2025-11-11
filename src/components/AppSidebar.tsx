@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Target, Search, Plus, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Target, Search, Plus, ChevronDown, ChevronRight, X, User } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ import { useGraphStore } from "@/stores/roadStore";
 import { useSearchCourses } from "@/hooks/useCourseData";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
+import { getNodeStyle } from "@/utils/nodeStyles";
 
 // Objectives tab component
 function ObjectivesTab() {
@@ -186,12 +187,93 @@ function CourseSearchTab() {
   const { addNode } = useGraphStore();
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
-  const dragPreviewRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragPosition, setDragPosition] = React.useState({ x: 0, y: 0 });
+  const [currentSection, setCurrentSection] = React.useState(-2); // Track current hovered section
+  const [isOverGraph, setIsOverGraph] = React.useState(false); // Track if cursor is over the graph
 
   // Use TanStack Query hook for course search
   const { data: courses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
 
   const departments = ["all", "6", "18"];
+
+  // Track mouse movement during drag using document event listener
+  React.useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      
+      setDragPosition({ x: e.clientX, y: e.clientY });
+      
+      // Get the React Flow viewport to account for panning/zooming
+      const flowViewport = document.querySelector('.react-flow__viewport');
+      const canvas = document.querySelector('.react-flow');
+      if (!canvas || !flowViewport) return;
+      
+      const canvasRect = canvas.getBoundingClientRect();
+      
+      // Check if cursor is actually over the graph
+      const isInBounds = (
+        e.clientX >= canvasRect.left &&
+        e.clientX <= canvasRect.right &&
+        e.clientY >= canvasRect.top &&
+        e.clientY <= canvasRect.bottom
+      );
+      
+      setIsOverGraph(isInBounds);
+      
+      if (!isInBounds) return; // Don't calculate section if not over graph
+      
+      const relativeX = e.clientX - canvasRect.left;
+      
+      // Get the viewport transform to account for panning
+      const transform = window.getComputedStyle(flowViewport).transform;
+      let panX = 0;
+      if (transform && transform !== 'none') {
+        const matrix = transform.match(/matrix\(([^)]+)\)/);
+        if (matrix) {
+          const values = matrix[1].split(',').map(parseFloat);
+          panX = values[4] || 0; // translateX is at index 4
+        }
+      }
+      
+      // Adjust for pan offset
+      const flowX = relativeX - panX;
+      
+      // Simple column detection (200px per column)
+      const COLUMN_WIDTH = 200;
+      const columnIndex = Math.floor(flowX / COLUMN_WIDTH);
+      
+      // Map column index to section ID
+      // Column 0: Must Take (-2), Column 1: ASEs (-1), Column 2+: semester sections (0, 1, 2, ...)
+      let sectionId: number;
+      if (columnIndex === 0) {
+        sectionId = -2; // Must Take
+      } else if (columnIndex === 1) {
+        sectionId = -1; // ASEs
+      } else {
+        sectionId = columnIndex - 2; // Semester sections start at column 2
+      }
+      
+      setCurrentSection(sectionId);
+    };
+
+    if (isDragging) {
+      document.addEventListener('dragover', handleMouseMove as any);
+      return () => {
+        document.removeEventListener('dragover', handleMouseMove as any);
+      };
+    }
+  }, [isDragging]);
+
+  // Compute drag preview style based on current section
+  const dragPreviewStyle = React.useMemo(() => {
+    return getNodeStyle({
+      section: currentSection,
+      userControlled: true, // Dragged nodes are always user-controlled
+      disabled: false,
+      isSpecial: false,
+    });
+  }, [currentSection]);
 
   const handleDragStart = (e: React.DragEvent, course: typeof courses[0]) => {
     e.dataTransfer.setData("application/json", JSON.stringify({
@@ -201,24 +283,39 @@ function CourseSearchTab() {
       userControlled: true,
     }));
 
-    // Use the permanent drag preview element
-    if (dragPreviewRef.current) {
-      e.dataTransfer.setDragImage(dragPreviewRef.current, 40, 40);
-    }
+    // Hide the default drag image by using an empty transparent image
+    const img = new Image();
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    e.dataTransfer.setDragImage(img, 0, 0);
+    
+    setIsDragging(true);
+    setDragPosition({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setIsOverGraph(false);
   };
 
   return (
     <div className="flex flex-col h-full p-4 space-y-4">
-      {/* Hidden drag preview element */}
-      <div 
-        ref={dragPreviewRef}
-        className="fixed pointer-events-none"
-        style={{ left: '-9999px', top: '-9999px' }}
-      >
-        <div className="w-20 h-20 rounded-full border-2 border-yellow-500 bg-yellow-950/20 flex items-center justify-center">
-          <div className="text-yellow-200 text-xs font-bold">📚</div>
+      {/* Custom drag preview that follows cursor - only show when over graph */}
+      {isDragging && isOverGraph && (
+        <div 
+          className="fixed pointer-events-none z-50"
+          style={{ 
+            left: `${dragPosition.x - 20}px`, 
+            top: `${dragPosition.y - 20}px`,
+          }}
+        >
+          <div 
+            className={`w-10 h-10 rounded-full border-2 ${dragPreviewStyle.borderColor} ${dragPreviewStyle.bgColor} flex items-center justify-center shadow-sm transition-colors duration-150`}
+            style={{ boxShadow: dragPreviewStyle.boxShadow }}
+          >
+            <User className={`h-3 w-3 ${dragPreviewStyle.textColor}`} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Search Input */}
       <div className="space-y-2">
@@ -277,25 +374,29 @@ function CourseSearchTab() {
           }
           
           return (
-            <CourseTooltip key={course.subject_id} courseId={course.subject_id}>
-              <div
-                draggable
-                onDragStart={(e) => handleDragStart(e, course)}
-                className="p-3 border border-border rounded-lg cursor-move hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{course.subject_id}</div>
-                    <div className="text-xs text-muted-foreground line-clamp-2">
-                      {course.title}
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 rounded-full border-2 border-border bg-card flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2">
-                    D
+            <div
+              key={course.subject_id}
+              className="p-3 border border-border rounded-lg transition-colors"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{course.subject_id}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-2">
+                    {course.title}
                   </div>
                 </div>
+                <CourseTooltip courseId={course.subject_id}>
+                  <div
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, course)}
+                    onDragEnd={handleDragEnd}
+                    className="w-8 h-8 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2 cursor-move transition-all duration-200"
+                  >
+                    D
+                  </div>
+                </CourseTooltip>
               </div>
-            </CourseTooltip>
+            </div>
           );
         })}
         {!isLoading && !isError && courses.length === 0 && (

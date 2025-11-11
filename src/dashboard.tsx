@@ -27,6 +27,12 @@ import { useGraphStore } from "./stores/roadStore";
 
 
 export default function Dashboard() {
+  // Clear localStorage on mount for debugging
+  React.useEffect(() => {
+    localStorage.clear();
+    console.log('localStorage cleared for debugging');
+  }, []);
+
   // Info alert dismissed state
   const [infoAlertDismissed, setInfoAlertDismissed] = React.useState(false);
   const [isOptimizing, setIsOptimizing] = React.useState(false);
