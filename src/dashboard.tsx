@@ -79,7 +79,7 @@ export default function Dashboard() {
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>
-                    <BreadcrumbPage>Autoroad</BreadcrumbPage>
+                    <BreadcrumbPage>autoroad</BreadcrumbPage>
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
