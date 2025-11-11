@@ -14,7 +14,7 @@ export function transformBackendToFrontend(backendData: any) {
     title: semester.title,
     nodes: semester.courses.map((course: any) => ({
       id: course.subject_id,
-      label: course.subject_id,
+      courseId: course.subject_id,
       locked: course.locked || false,
       disabled: course.disabled || false,
       section: index,
@@ -119,9 +119,9 @@ export function generateEdgesFromPrerequisites(courseData: any[]): Edge[] {
  */
 export function formatAvailableNodes(courseData: any[]): AvailableNode[] {
   return courseData.map(course => ({
-    id: course.subject_id,
-    name: course.title || course.subject_id,
-    category: course.department || 'Unknown',
-    description: course.description || `Course ${course.subject_id}`
+    courseId: course.subject_id,
+    title: course.title || course.subject_id,
+    department: course.department || 'Unknown',
+    units: course.units || course.total_units || 12
   }));
 }

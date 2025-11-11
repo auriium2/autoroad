@@ -84,7 +84,7 @@ export function CourseGraph() {
   const handleAddNodeToSection = (sectionId: number) => {
     const newNode: CourseNodeType = {
       id: `node_${Date.now()}`,
-      label: `New Course`,
+      courseId: `New Course`,
       section: sectionId,
       locked: true,
       user_added: true,

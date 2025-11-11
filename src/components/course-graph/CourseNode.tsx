@@ -21,7 +21,7 @@ export function CourseNode({
   onMouseEnter,
   onMouseLeave,
 }: NodeProps) {
-  const { label, userControlled, disabled, section } = node;
+  const { courseId, userControlled, disabled, section } = node;
 
   // Determine icon based on userControlled flag
   // User-controlled: User icon (manually placed by user)
@@ -41,7 +41,7 @@ export function CourseNode({
   return (
     <div className="flex flex-col items-center">
       {/* Circle node */}
-      <CourseTooltip courseId={label}>
+      <CourseTooltip courseId={courseId}>
         <div
           data-node-circle={node.id}
           className={`w-10 h-10 rounded-full border-2 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center ${borderColor} ${bgColor}`}
@@ -57,9 +57,9 @@ export function CourseNode({
         </div>
       </CourseTooltip>
 
-      {/* Label below */}
+      {/* Course ID label below */}
       <div className={`text-xs font-medium text-center mt-2 ${textColor}`}>
-        {label}
+        {courseId}
       </div>
     </div>
   );

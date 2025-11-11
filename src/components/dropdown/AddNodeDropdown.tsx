@@ -3,15 +3,7 @@
 import React from "react";
 import { Search, X, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-
-// Types
-interface AvailableNode {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
+import type { AvailableNode } from "@/types";
 
 interface AddNodeDropdownProps {
   dropdownOpen: boolean;
@@ -36,9 +28,9 @@ function useNodeFiltering(availableNodes: AvailableNode[], searchTerm: string): 
 
     return availableNodes.filter(
       (node) =>
-        node.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.description.toLowerCase().includes(searchTerm.toLowerCase()),
+        node.courseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        node.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        node.department.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [searchTerm, availableNodes]);
 }
@@ -47,10 +39,10 @@ function useNodeGrouping(filteredNodes: AvailableNode[]): Record<string, Availab
   return React.useMemo(() => {
     const groups: Record<string, AvailableNode[]> = {};
     filteredNodes.forEach((node) => {
-      if (!groups[node.category]) {
-        groups[node.category] = [];
+      if (!groups[node.department]) {
+        groups[node.department] = [];
       }
-      groups[node.category].push(node);
+      groups[node.department].push(node);
     });
     return groups;
   }, [filteredNodes]);
@@ -130,10 +122,10 @@ export function AddNodeDropdown({
                 <div className="space-y-1">
                   {nodes.map((node) => (
                     <div
-                      key={node.id}
+                      key={node.courseId}
                       onClick={() => setSelectedNode(node)}
                       className={`p-2 rounded-md cursor-pointer transition-all duration-150 ${
-                        selectedNode?.id === node.id
+                        selectedNode?.courseId === node.courseId
                           ? "bg-primary/10 border border-primary/30 text-primary"
                           : "hover:bg-accent/50 text-foreground"
                       }`}
@@ -142,20 +134,20 @@ export function AddNodeDropdown({
                         <div className="flex-1 min-w-0">
                           <div
                             className={`font-medium text-sm truncate ${
-                              selectedNode?.id === node.id ? "text-primary" : "text-foreground"
+                              selectedNode?.courseId === node.courseId ? "text-primary" : "text-foreground"
                             }`}
                           >
-                            {node.name}
+                            {node.courseId}
                           </div>
                           <div
                             className={`text-xs mt-1 line-clamp-2 ${
-                              selectedNode?.id === node.id ? "text-primary/70" : "text-muted-foreground"
+                              selectedNode?.courseId === node.courseId ? "text-primary/70" : "text-muted-foreground"
                             }`}
                           >
-                            {node.description}
+                            {node.title} • {node.units} units
                           </div>
                         </div>
-                        {selectedNode?.id === node.id && (
+                        {selectedNode?.courseId === node.courseId && (
                           <div className="ml-2 flex-shrink-0">
                             <div className="w-2 h-2 rounded-full bg-primary"></div>
                           </div>
@@ -176,7 +168,7 @@ export function AddNodeDropdown({
           <div className="text-xs text-muted-foreground">
             Selected:{" "}
             <span className="font-medium text-foreground">
-              {selectedNode.name}
+              {selectedNode.courseId} - {selectedNode.title}
             </span>
           </div>
         </div>

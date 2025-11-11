@@ -1,37 +1,9 @@
 import { create } from 'zustand';
 import { localStorage as localStorageApi, ApiError } from '@/services/api';
+import type { CourseNode, Edge, Section, AvailableNode, LoadingState } from '@/types';
 
-// Course node representing a single class
-export interface CourseNode {
-  id: string;
-  label: string;
-  section: number; // Which semester/section this belongs to
-  userControlled?: boolean; // If true, user added/can drag this node
-  disabled?: boolean;
-}
-
-// Edge between two courses (prerequisite relationship)
-export interface Edge {
-  from_id: string;
-  to_id: string;
-}
-
-// Section (semester)
-export interface Section {
-  id: number;
-  title: string;
-}
-
-// Available node for adding
-export interface AvailableNode {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
-
-// Loading state
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+// Re-export types for backward compatibility
+export type { CourseNode, Edge, Section, AvailableNode, LoadingState };
 
 interface GraphStore {
   // Data - user's current course selection state
@@ -290,17 +262,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         title: "ASEs",
       },
       nodes: [
-        { id: "0", label: "18.01", section: -1 },
-        { id: "1", label: "6.100", section: 0 },
-        { id: "2", label: "6.1200", section: 1 },
-        { id: "3", label: "6.120a", section: 1, userControlled: true },
-        { id: "4", label: "6.1010", section: 2 },
-        { id: "5", label: "6.1020", section: 3 },
-        { id: "6", label: "6.1030", section: 3 },
-        { id: "7", label: "6.1040", section: 3 },
-        { id: "8", label: "6.1050", section: 4 },
-        { id: "9", label: "6.1060", section: 5 },
-        { id: "10", label: "6.1070", section: 5 },
+        { id: "0", courseId: "18.01", section: -1 },
+        { id: "1", courseId: "6.100", section: 0 },
+        { id: "2", courseId: "6.1200", section: 1 },
+        { id: "3", courseId: "6.120a", section: 1, userControlled: true },
+        { id: "4", courseId: "6.1010", section: 2 },
+        { id: "5", courseId: "6.1020", section: 3 },
+        { id: "6", courseId: "6.1030", section: 3 },
+        { id: "7", courseId: "6.1040", section: 3 },
+        { id: "8", courseId: "6.1050", section: 4 },
+        { id: "9", courseId: "6.1060", section: 5 },
+        { id: "10", courseId: "6.1070", section: 5 },
       ],
       edges: [
         { from_id: "1", to_id: "2" },
@@ -314,20 +286,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         { from_id: "3", to_id: "9" },
         { from_id: "2", to_id: "9" },
       ],
-      availableNodes: [
-        {
-          id: "auth-1",
-          name: "OAuth Authentication",
-          category: "Authentication",
-          description: "Implement OAuth 2.0 authentication flow",
-        },
-        {
-          id: "auth-2",
-          name: "JWT Validation",
-          category: "Authentication",
-          description: "Validate JSON Web Tokens",
-        },
-      ],
+      availableNodes: [],
     };
 
     set(data);

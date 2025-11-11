@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Target, Search, Plus, ChevronDown, ChevronRight, X, User } from "lucide-react";
+import { Target, Search, Plus, ChevronDown, ChevronRight, X, User, Sliders } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -278,7 +278,7 @@ function CourseSearchTab() {
   const handleDragStart = (e: React.DragEvent, course: typeof courses[0]) => {
     e.dataTransfer.setData("application/json", JSON.stringify({
       id: `${course.subject_id}_${Date.now()}`,
-      label: course.subject_id,
+      courseId: course.subject_id,
       section: -2, // Default to "Must Take" column
       userControlled: true,
     }));
@@ -392,7 +392,7 @@ function CourseSearchTab() {
                     onDragEnd={handleDragEnd}
                     className="w-8 h-8 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold flex-shrink-0 ml-2 cursor-move transition-all duration-200"
                   >
-                    D
+                    <User className="h-3 w-3" />
                   </div>
                 </CourseTooltip>
               </div>
@@ -409,43 +409,127 @@ function CourseSearchTab() {
   );
 }
 
+// Parameters tab component
+function ParametersTab() {
+  const [maxUnits, setMaxUnits] = React.useState(60);
+  const [minUnits, setMinUnits] = React.useState(36);
+  const [preferredSemesterLoad, setPreferredSemesterLoad] = React.useState(48);
+
+  return (
+    <div className="flex flex-col h-full p-4 space-y-6">
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="max-units" className="text-sm font-medium">
+            Maximum Units Per Semester
+          </Label>
+          <div className="flex items-center gap-3 mt-2">
+            <input
+              id="max-units"
+              type="range"
+              min="12"
+              max="72"
+              step="3"
+              value={maxUnits}
+              onChange={(e) => setMaxUnits(Number(e.target.value))}
+              className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-sm font-medium w-12 text-right">{maxUnits}</span>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="min-units" className="text-sm font-medium">
+            Minimum Units Per Semester
+          </Label>
+          <div className="flex items-center gap-3 mt-2">
+            <input
+              id="min-units"
+              type="range"
+              min="12"
+              max="60"
+              step="3"
+              value={minUnits}
+              onChange={(e) => setMinUnits(Number(e.target.value))}
+              className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-sm font-medium w-12 text-right">{minUnits}</span>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="preferred-load" className="text-sm font-medium">
+            Preferred Semester Load
+          </Label>
+          <div className="flex items-center gap-3 mt-2">
+            <input
+              id="preferred-load"
+              type="range"
+              min="12"
+              max="72"
+              step="3"
+              value={preferredSemesterLoad}
+              onChange={(e) => setPreferredSemesterLoad(Number(e.target.value))}
+              className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-sm font-medium w-12 text-right">{preferredSemesterLoad}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground">
+          These parameters will be used when you click the Optimize button to automatically arrange your courses.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [activeTab, setActiveTab] = React.useState<"objectives" | "courses">("objectives");
+  const [activeTab, setActiveTab] = React.useState<"objectives" | "courses" | "parameters">("objectives");
 
   return (
     <Sidebar variant="sidebar" className="z-40" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-3 border-b">
-          <div className="text-lg font-semibold">Autoroad</div>
-        </div>
         {/* Tabs */}
         <div className="flex border-b">
           <button
             onClick={() => setActiveTab("objectives")}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === "objectives"
                 ? "text-foreground border-b-2 border-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Target className="h-4 w-4 inline mr-2" />
+            <Target className="h-3 w-3 inline mr-1" />
             Objectives
           </button>
           <button
             onClick={() => setActiveTab("courses")}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
               activeTab === "courses"
                 ? "text-foreground border-b-2 border-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Search className="h-4 w-4 inline mr-2" />
+            <Search className="h-3 w-3 inline mr-1" />
             Courses
+          </button>
+          <button
+            onClick={() => setActiveTab("parameters")}
+            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+              activeTab === "parameters"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Sliders className="h-3 w-3 inline mr-1" />
+            Parameters
           </button>
         </div>
       </SidebarHeader>
       <SidebarContent className="overflow-hidden">
-        {activeTab === "objectives" ? <ObjectivesTab /> : <CourseSearchTab />}
+        {activeTab === "objectives" ? <ObjectivesTab /> : activeTab === "courses" ? <CourseSearchTab /> : <ParametersTab />}
       </SidebarContent>
     </Sidebar>
   );

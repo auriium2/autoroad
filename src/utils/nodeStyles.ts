@@ -3,26 +3,14 @@
  * Used by both CourseNode component and drag preview
  */
 
-export interface NodeStyleConfig {
-  borderColor: string;
-  bgColor: string;
-  textColor: string;
-  boxShadow: string;
-}
-
-export interface NodeProperties {
-  section: number;
-  userControlled?: boolean;
-  disabled?: boolean;
-  isSpecial?: boolean;
-}
+import type { NodeStyleConfig, NodeStyleProperties } from '@/types';
 
 /**
  * Computes the styling for a course node based on its properties
  * @param node - The node properties to compute styling for
  * @returns The computed style configuration
  */
-export function getNodeStyle(node: NodeProperties): NodeStyleConfig {
+export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
   const { section, userControlled, disabled, isSpecial } = node;
 
   // Check if node is in "Must Take" column (section -2)
