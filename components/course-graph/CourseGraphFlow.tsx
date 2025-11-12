@@ -349,9 +349,32 @@ function CourseGraphFlowInner() {
         return null;
       }
 
+      // Check if prerequisite is incorrectly placed (same or later section than dependent)
+      const isIncorrectOrder = fromNode.section >= toNode.section;
+
       const fromX = allSections.findIndex(s => s.id === fromNode?.section);
       const toX = allSections.findIndex(s => s.id === toNode?.section);
       const isLongDistance = Math.abs(toX - fromX) > 1;
+
+      // Determine edge color based on order and distance
+      let strokeColor: string;
+      let strokeWidth: number;
+      let strokeDasharray: string | undefined;
+
+      if (isIncorrectOrder) {
+        // Red tint for incorrectly placed prerequisites
+        strokeColor = 'rgba(239, 68, 68, 0.8)';
+        strokeWidth = 2;
+        strokeDasharray = undefined;
+      } else if (isLongDistance) {
+        strokeColor = 'rgba(209, 213, 219, 0.4)';
+        strokeWidth = 1.5;
+        strokeDasharray = '5 5';
+      } else {
+        strokeColor = 'rgba(156, 163, 175, 0.7)';
+        strokeWidth = 2;
+        strokeDasharray = undefined;
+      }
 
       return {
         id: `edge-${edge.from_id}-${edge.to_id}`,
@@ -360,15 +383,15 @@ function CourseGraphFlowInner() {
         type: 'default', // Bezier curves
         animated: false,
         style: {
-          stroke: isLongDistance ? 'rgba(209, 213, 219, 0.4)' : 'rgba(156, 163, 175, 0.7)',
-          strokeWidth: isLongDistance ? 1.5 : 2,
-          strokeDasharray: isLongDistance ? '5 5' : undefined,
+          stroke: strokeColor,
+          strokeWidth: strokeWidth,
+          strokeDasharray: strokeDasharray,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 10,
           height: 10,
-          color: isLongDistance ? 'rgba(209, 213, 219, 0.4)' : 'rgba(156, 163, 175, 0.7)',
+          color: strokeColor,
         },
       };
     }).filter(Boolean) as FlowEdge[];

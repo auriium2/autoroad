@@ -182,6 +182,13 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   fetchRoadData: async () => {
     set({ loadingState: 'loading', error: null });
 
+    // DEBUG: Clear localStorage on every page load (remove this in production)
+    const DEBUG_CLEAR_ON_RELOAD = true;
+    if (DEBUG_CLEAR_ON_RELOAD && typeof window !== 'undefined') {
+      console.log('DEBUG: Clearing localStorage on page reload...');
+      window.localStorage.removeItem('autoroad_data');
+    }
+
     // TEMPORARY: Clear old localStorage data with old schema
     if (typeof window !== 'undefined') {
       const stored = window.localStorage.getItem('autoroad_data');

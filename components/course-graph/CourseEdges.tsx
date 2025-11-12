@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Edge } from "@/stores/roadStore";
+import { Edge, useGraphStore } from "@/stores/roadStore";
 
 interface CourseEdgesProps {
   edges: Edge[];
@@ -16,6 +16,9 @@ export function CourseEdges({
 }: CourseEdgesProps) {
   const svgRef = React.useRef<SVGSVGElement>(null);
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+
+  // Get nodes from store to check section positions
+  const storeNodes = useGraphStore(state => state.nodes);
 
   // Update on scroll
   React.useEffect(() => {
@@ -69,13 +72,13 @@ export function CourseEdges({
     >
       <g>
         {edges.map((edge, idx) => {
-          const fromNode = nodeRefs.current?.get(edge.from_id);
-          const toNode = nodeRefs.current?.get(edge.to_id);
+          const fromNodeElement = nodeRefs.current?.get(edge.from_id);
+          const toNodeElement = nodeRefs.current?.get(edge.to_id);
 
-          if (!fromNode || !toNode) return null;
+          if (!fromNodeElement || !toNodeElement) return null;
 
-          const fromCircle = fromNode.querySelector('[data-node-circle]');
-          const toCircle = toNode.querySelector('[data-node-circle]');
+          const fromCircle = fromNodeElement.querySelector('[data-node-circle]');
+          const toCircle = toNodeElement.querySelector('[data-node-circle]');
 
           if (!fromCircle || !toCircle) return null;
 
@@ -100,7 +103,12 @@ export function CourseEdges({
           const offsetToX = toX - (dx / distance) * circleRadius;
           const offsetToY = toY - (dy / distance) * circleRadius;
 
-          // Determine edge style based on distance
+          // Check if prerequisite is incorrectly placed (same or later section than dependent)
+          const fromNode = storeNodes.find(n => n.id === edge.from_id);
+          const toNode = storeNodes.find(n => n.id === edge.to_id);
+          const isIncorrectOrder = fromNode && toNode && fromNode.section >= toNode.section;
+
+          // Determine edge style based on distance and prerequisite order
           const horizontalDistance = Math.abs(dx);
           const isLongDistance = horizontalDistance > 300;
           
@@ -109,7 +117,11 @@ export function CourseEdges({
           let opacity = 0.6;
           let isDashed = false;
 
-          if (isLongDistance) {
+          if (isIncorrectOrder) {
+            // Red tint for incorrectly placed prerequisites
+            strokeColor = "#ef4444";
+            opacity = 0.8;
+          } else if (isLongDistance) {
             strokeColor = "#d1d5db";
             strokeWidth = 1.5;
             opacity = 0.4;
