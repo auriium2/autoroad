@@ -20,11 +20,11 @@ export function CourseSearchTab() {
 
   const departments = ["all", "6", "18"];
 
-  // Create a custom drag preview element that matches graph node size (40x40)
+  // Create a custom drag preview element that matches graph node size (36x36)
   const createDragPreview = (courseId: string, units: number) => {
     const preview = document.createElement('div');
-    preview.style.width = '40px';
-    preview.style.height = '40px';
+    preview.style.width = '36px';
+    preview.style.height = '36px';
     preview.style.borderRadius = '50%';
     preview.style.border = '2px solid rgb(59, 130, 246)'; // border-primary
     preview.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
@@ -49,7 +49,7 @@ export function CourseSearchTab() {
     const preview = createDragPreview(course.subject_id, course.total_units ?? 12);
     
     // Set the custom drag image (centered on cursor)
-    e.dataTransfer.setDragImage(preview, 20, 20);
+    e.dataTransfer.setDragImage(preview, 18, 18);
     
     // Clean up the preview element after a short delay
     setTimeout(() => {
@@ -141,7 +141,7 @@ export function CourseSearchTab() {
                     draggable
                     onDragStart={(e) => handleCourseStart(e, course)}
                     onDragEnd={handleDragEnd}
-                    className="relative w-10 h-10 rounded-full flex-shrink-0 ml-2 cursor-move transition-all duration-200"
+                    className="relative w-9 h-9 rounded-full flex-shrink-0 ml-2 cursor-move transition-all duration-200"
                   >
                     <div className="absolute inset-0 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold">
                       {course.total_units ?? 12}
@@ -149,13 +149,13 @@ export function CourseSearchTab() {
                     {termHighlight && (
                       <svg
                         className="pointer-events-none absolute inset-0"
-                        viewBox="0 0 40 40"
+                        viewBox="0 0 36 36"
                         preserveAspectRatio="xMidYMid meet"
                       >
                         <circle
-                          cx="20"
-                          cy="20"
-                          r="18"
+                          cx="18"
+                          cy="18"
+                          r="16"
                           fill="none"
                           stroke="rgba(255,255,255,0.35)"
                           strokeWidth="2"

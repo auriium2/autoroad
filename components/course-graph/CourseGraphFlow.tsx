@@ -22,13 +22,13 @@ import { CourseNode as CourseNodeComponent } from "@/components/course-graph/Cou
 import { useGraphStore, CourseNode as CourseNodeType, Section } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
-import { Pin, Ban, Trash2 } from "lucide-react";
+import { Pin, Ban, Trash2, Unlink } from "lucide-react";
 
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean } }) {
   return (
     <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
-      {/* Handles at edges of the circle - centered vertically on the 40px circle */}
+      {/* Handles at edges of the circle - centered vertically on the 36px circle */}
       <Handle
         type="target"
         position={Position.Left}
@@ -36,7 +36,7 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
           background: 'transparent',
           border: 'none',
           left: '0px', // Left edge of circle
-          top: '20px', // Center of 40px circle
+          top: '18px', // Center of 36px circle
         }}
       />
       <Handle
@@ -45,8 +45,8 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
         style={{ 
           background: 'transparent',
           border: 'none',
-          left: '40px', // Right edge of circle (40px width)
-          top: '20px', // Center of 40px circle
+          left: '36px', // Right edge of circle (36px width)
+          top: '18px', // Center of 36px circle
         }}
       />
       <CourseNodeComponent
@@ -253,6 +253,11 @@ function CourseGraphFlowInner() {
     setContextMenu(null);
   };
 
+  const handleSolo = (nodeId: string) => {
+    updateNodeLocal(nodeId, { nodeStatus: 'solo' });
+    setContextMenu(null);
+  };
+
   const handleBanish = (nodeId: string) => {
     updateNodeLocal(nodeId, { nodeStatus: 'banish' });
     setContextMenu(null);
@@ -346,6 +351,17 @@ function CourseGraphFlowInner() {
 
       // Don't render edges if either node is in "Must Take" column (section -2)
       if (fromNode.section === -2 || toNode.section === -2) {
+        return null;
+      }
+
+      // Don't render edges if either node is banished
+      if (fromNode.nodeStatus === 'banish' || toNode.nodeStatus === 'banish') {
+        return null;
+      }
+
+      // Don't render edges FROM solo nodes (they don't require dependencies)
+      // but still show edges TO solo nodes (other things can depend on them)
+      if (toNode.nodeStatus === 'solo') {
         return null;
       }
 
@@ -574,6 +590,18 @@ function CourseGraphFlowInner() {
               <Pin className="w-4 h-4" />
               <span>Pin (default)</span>
               {currentStatus === 'pin' && (
+                <span className="ml-auto text-xs text-muted-foreground">✓</span>
+              )}
+            </button>
+
+            <button
+              className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => handleSolo(contextMenu.nodeId)}
+              disabled={currentStatus === 'solo'}
+            >
+              <Unlink className="w-4 h-4" />
+              <span>Pin + Independent</span>
+              {currentStatus === 'solo' && (
                 <span className="ml-auto text-xs text-muted-foreground">✓</span>
               )}
             </button>

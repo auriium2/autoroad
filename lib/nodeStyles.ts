@@ -30,9 +30,11 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
     textColor = "text-purple-300";
     boxShadow = "0 0 20px rgba(168, 85, 247, 0.6), 0 0 40px rgba(168, 85, 247, 0.3)";
   } else if (userControlled) {
-    // User-controlled nodes: blue glow (keep border as-is for future use)
-    bgColor = "bg-card";
-    boxShadow = "0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)";
+    // User-controlled nodes: very dark blue
+    borderColor = "border-blue-700";
+    bgColor = "bg-blue-950/50";
+    textColor = "text-blue-300";
+    boxShadow = "none";
   } else if (isASE) {
     // ASEs nodes: white/gray styling
     borderColor = "border-gray-300 dark:border-gray-600";

@@ -82,7 +82,7 @@ export default function Dashboard() {
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="#">auriium.xyz</BreadcrumbLink>
+                    <BreadcrumbLink href="https://auriium.xyz">auriium.xyz</BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="hidden md:block" />
                   <BreadcrumbItem>

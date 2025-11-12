@@ -124,9 +124,9 @@ export function useCourseDetails(courseId: string | null) {
             units: 6,
             prerequisites: "",
             corequisites: "",
-            terms_offered: ["Fall", "Spring"],
+            terms_offered: ["Fall"],
             offered_fall: true,
-            offered_spring: true,
+            offered_spring: false,
             instructors: ["Prof. Devadas"],
           },
           "6.1010": {
