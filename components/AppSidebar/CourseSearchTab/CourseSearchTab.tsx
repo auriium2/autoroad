@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSearchCourses } from "@/hooks/useCourseData";
 import { CourseTooltip } from "@/components/CourseTooltip";
-import { getNodeStyle } from "@/lib/nodeStyles";
 import { useCourseDrag } from "./useCourseDrag";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 
@@ -16,50 +15,53 @@ export function CourseSearchTab() {
   // Use TanStack Query hook for course search
   const { data: courses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
 
-  // Use custom drag hook
-  const {
-    isDragging,
-    dragPosition,
-    currentSection,
-    isOverGraph,
-    handleDragStart,
-    handleDragEnd,
-  } = useCourseDrag();
+  // Use simplified drag hook
+  const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "6", "18"];
 
-  // Compute drag preview style based on current section
-  const dragPreviewStyle = React.useMemo(() => {
-    return getNodeStyle({
-      section: currentSection,
-      userControlled: true, // Dragged nodes are always user-controlled
-      disabled: false,
-      isSpecial: false,
-    });
-  }, [currentSection]);
+  // Create a custom drag preview element that matches graph node size (40x40)
+  const createDragPreview = (courseId: string, units: number) => {
+    const preview = document.createElement('div');
+    preview.style.width = '40px';
+    preview.style.height = '40px';
+    preview.style.borderRadius = '50%';
+    preview.style.border = '2px solid rgb(59, 130, 246)'; // border-primary
+    preview.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+    preview.style.display = 'flex';
+    preview.style.alignItems = 'center';
+    preview.style.justifyContent = 'center';
+    preview.style.fontSize = '12px';
+    preview.style.fontWeight = 'bold';
+    preview.style.color = 'rgb(147, 197, 253)';
+    preview.style.position = 'fixed';
+    preview.style.top = '-9999px';
+    preview.style.left = '-9999px';
+    preview.style.pointerEvents = 'none';
+    preview.textContent = String(units);
+    
+    document.body.appendChild(preview);
+    return preview;
+  };
+
+  const handleCourseStart = (e: React.DragEvent, course: any) => {
+    // Create custom drag preview
+    const preview = createDragPreview(course.subject_id, course.total_units ?? 12);
+    
+    // Set the custom drag image (centered on cursor)
+    e.dataTransfer.setDragImage(preview, 20, 20);
+    
+    // Clean up the preview element after a short delay
+    setTimeout(() => {
+      document.body.removeChild(preview);
+    }, 0);
+    
+    // Call the original drag start handler
+    handleDragStart(e, course);
+  };
 
   return (
     <div className="flex flex-col h-full p-4 space-y-4">
-      {/* Custom drag preview that follows cursor - only show when over graph */}
-      {isDragging && isOverGraph && (
-        <div
-          className="fixed pointer-events-none z-50"
-          style={{
-            left: `${dragPosition.x - 20}px`,
-            top: `${dragPosition.y - 20}px`,
-          }}
-        >
-          <div
-            className={`w-10 h-10 rounded-full border-2 ${dragPreviewStyle.borderColor} ${dragPreviewStyle.bgColor} flex items-center justify-center shadow-sm transition-colors duration-150`}
-            style={{ boxShadow: dragPreviewStyle.boxShadow }}
-          >
-            <div className={`text-xs font-bold ${dragPreviewStyle.textColor}`}>
-              12
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Search Input */}
       <div className="space-y-2">
         <Label htmlFor="course-search" className="text-sm font-medium">
@@ -121,19 +123,13 @@ export function CourseSearchTab() {
             offeredSpring: course.offered_spring,
             offeredIAP: 'offered_IAP' in course ? course.offered_IAP : undefined,
           });
-          
-          const dragProps = {
-            draggable: true,
-            onDragStart: (e: React.DragEvent<HTMLDivElement>) => handleDragStart(e, course),
-            onDragEnd: handleDragEnd,
-          };
 
           return (
             <div
               key={course.subject_id}
               className="p-3 border border-border rounded-lg transition-colors"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="font-medium text-sm">{course.subject_id}</div>
                   <div className="text-xs text-muted-foreground line-clamp-2">
@@ -142,8 +138,10 @@ export function CourseSearchTab() {
                 </div>
                 <CourseTooltip courseId={course.subject_id}>
                   <div
-                    {...dragProps}
-                    className="relative w-8 h-8 rounded-full flex-shrink-0 ml-2 cursor-move transition-all duration-200"
+                    draggable
+                    onDragStart={(e) => handleCourseStart(e, course)}
+                    onDragEnd={handleDragEnd}
+                    className="relative w-10 h-10 rounded-full flex-shrink-0 ml-2 cursor-move transition-all duration-200"
                   >
                     <div className="absolute inset-0 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold">
                       {course.total_units ?? 12}
@@ -151,13 +149,13 @@ export function CourseSearchTab() {
                     {termHighlight && (
                       <svg
                         className="pointer-events-none absolute inset-0"
-                        viewBox="0 0 32 32"
+                        viewBox="0 0 40 40"
                         preserveAspectRatio="xMidYMid meet"
                       >
                         <circle
-                          cx="16"
-                          cy="16"
-                          r="13"
+                          cx="20"
+                          cy="20"
+                          r="18"
                           fill="none"
                           stroke="rgba(255,255,255,0.35)"
                           strokeWidth="2"
