@@ -14,13 +14,13 @@ from typing import Any
 
 import requests
 
+from courses.requirements.parser import RequirementParseError, parse_requirement
 from courses.requirements.types import (
     RequirementCourse,
     RequirementGroup,
     RequirementNode,
     RequirementPlainString,
 )
-from courses.requirements.parser import RequirementParseError, parse_requirement
 
 
 def fetch_fireroad_requirements() -> dict[str, Any]:

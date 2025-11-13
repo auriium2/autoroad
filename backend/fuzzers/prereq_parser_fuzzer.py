@@ -19,8 +19,8 @@ except ImportError:
     print("Error: 'requests' library not found. Please run 'uv pip install -e .' in the backend directory to install dependencies.")
     exit(1)
 
-from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
 from courses.prerequisites.parser import is_valid_course_id, parse_fireroad, prereq_to_string
+from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
 
 
 def fetch_fireroad_courses():
