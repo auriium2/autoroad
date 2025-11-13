@@ -9,6 +9,7 @@ dependencies = [
     "ortools>=9.0.0",
     "basedpyright>=1.33.0",
     "pyarrow>=22.0.0",
+    "fastapi>=0.121.1",
 ]
 
 [project.optional-dependencies]
