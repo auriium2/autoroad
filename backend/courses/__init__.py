@@ -34,6 +34,11 @@ from .prerequisites import (
     PrereqNode,
     PrerequisiteEvaluator,
     EvaluationResult,
+    mark_invalid_prerequisites,
+    remove_invalid_prerequisites,
+    validate_and_prune as prereq_validate_and_prune,
+    validate_course_exists as prereq_validate_course_exists,
+    ValidationResult as PrereqValidationResult,
 )
 
 __all__ = [
@@ -61,4 +66,9 @@ __all__ = [
     "PrereqNode",
     "PrerequisiteEvaluator",
     "EvaluationResult",
+    "mark_invalid_prerequisites",
+    "remove_invalid_prerequisites",
+    "prereq_validate_and_prune",
+    "prereq_validate_course_exists",
+    "PrereqValidationResult",
 ]
