@@ -7,20 +7,31 @@ import { getNodeStyle } from "@/lib/nodeStyles";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 
-function CourseNodeComponent({
-  node,
-  isSpecial = false,
-  isHovered = false,
-  onMouseEnter,
-  onMouseLeave,
-  disableTooltip = false,
-}: { node: CourseNode & { optimizerAgreed?: boolean }; isSpecial?: boolean; isHovered?: boolean; onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean }) {
-  const { courseId, userControlled, disabled, section, nodeStatus } = node;
+type CourseNodeComponentProps = {
+  node: CourseNode & { optimizerAgreed?: boolean };
+  isSpecial?: boolean;
+  isHovered?: boolean;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+  disableTooltip?: boolean;
+};
+
+function CourseNodeComponent(props: CourseNodeComponentProps) {
+  const {
+    node,
+    isSpecial = false,
+    isHovered = false,
+    onMouseEnter,
+    onMouseLeave,
+    disableTooltip = false,
+  } = props;
+
+  const { courseId, userControlled, disabled, section, nodeStatus: markerStatus } = node;
   const optimizerAgreed = (node as any).optimizerAgreed;
 
   // Check node status
-  const isBanished = nodeStatus === 'banish';
-  const isSolo = nodeStatus === 'solo';
+  const isBanished = markerStatus === 'banish';
+  const isSolo = markerStatus === 'solo';
 
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);

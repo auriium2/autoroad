@@ -7,6 +7,8 @@ dependencies = [
     "requests>=2.32.0",
     "pandas>=2.0.0",
     "ortools>=9.0.0",
+    "basedpyright>=1.33.0",
+    "pyarrow>=22.0.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +21,9 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["prerequisites", "requirements", "scripts", "utils"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

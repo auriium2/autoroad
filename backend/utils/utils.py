@@ -1,8 +1,10 @@
 # %%
-import pandas as pd
 import re
 from datetime import datetime
 from enum import Enum
+
+import pandas as pd
+
 
 class NodeType(Enum):
     LEAF = 0

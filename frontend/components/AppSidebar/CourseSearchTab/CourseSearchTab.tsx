@@ -12,10 +12,7 @@ export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
 
-  // Use TanStack Query hook for course search
   const { data: courses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
-
-  // Use simplified drag hook
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "6", "18"];
@@ -39,7 +36,7 @@ export function CourseSearchTab() {
     preview.style.left = '-9999px';
     preview.style.pointerEvents = 'none';
     preview.textContent = String(units);
-    
+
     document.body.appendChild(preview);
     return preview;
   };
@@ -47,15 +44,15 @@ export function CourseSearchTab() {
   const handleCourseStart = (e: React.DragEvent, course: any) => {
     // Create custom drag preview
     const preview = createDragPreview(course.subject_id, course.total_units ?? 12);
-    
+
     // Set the custom drag image (centered on cursor)
     e.dataTransfer.setDragImage(preview, 18, 18);
-    
+
     // Clean up the preview element after a short delay
     setTimeout(() => {
       document.body.removeChild(preview);
     }, 0);
-    
+
     // Call the original drag start handler
     handleDragStart(e, course);
   };

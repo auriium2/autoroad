@@ -1,5 +1,5 @@
 from ortools.sat.python import cp_model
-from ortools.sat.python.cp_model import CpModel
+
 # %%
 model = cp_model.CpModel()
 x = model.NewBoolVar('x')

@@ -1,15 +1,16 @@
 # %%
-import requests
-import pulp
+import concurrent.futures
 import pprint
+from pprint import pprint
+
 import pandas as pd
+import requests
 from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import CpModel
-from datetime import datetime
-import re
-from pprint import pprint
-from ..utils.utils import parse_prerequisites, find_current_school_year,is_valid_class_semester
-import concurrent.futures
+
+from ..utils.utils import find_current_school_year, is_valid_class_semester, parse_prerequisites
+
+
 # %%
 def fetch_requirement(key):
     resp = requests.get(f"https://fireroad.mit.edu/requirements/get_json/{key}")
@@ -99,8 +100,8 @@ pprint(sixthree)
 
 courses_df = courses_df[courses_df['is_historical'].isna()]
 assert isinstance(courses_df, pd.DataFrame), "Why would it not be a dataframe"
-classes = courses_df['subject_id'];
-units = courses_df['total_units'];
+classes = courses_df['subject_id']
+units = courses_df['total_units']
 hours = courses_df['in_class_hours'].fillna(0) + courses_df['out_of_class_hours'].fillna(0)
 prereqs = courses_df['prerequisites']
 
@@ -120,9 +121,9 @@ print(int(ccidx))
 
 model = cp_model.CpModel()
 
-C = 60;
-C_IAP = 12;
-H = 60;
+C = 60
+C_IAP = 12
+H = 60
 PLANNING_HORIZON = 12
 MUSICIAN = False
 
@@ -177,7 +178,7 @@ def hass_any_satisfied()-> cp_model.IntVar:
         return courses_df.index[courses_df["hass_attribute"].isin(["HASS-A", "HASS-E", "HASS-H", "HASS-S"])].tolist()
 
     generic = get_courses_for_hass(courses_df)
-    req_satisfied = model.NewBoolVar(f"req_hass_root_satisfied")
+    req_satisfied = model.NewBoolVar("req_hass_root_satisfied")
 
     sum_taken = sum([take[c, s] for c in generic for s in range(1,13) if (c, s) in take])
     model.Add(sum_taken >= 8).OnlyEnforceIf(req_satisfied)
@@ -199,7 +200,7 @@ def add_requirement_constraints(model: CpModel, take: dict[tuple[int, int], cp_m
     missing_courses = {}  # Track missing courses separately from infeasible requirements
     solution_status = {"is_feasible": True, "reasons": [], "flexible_requirements": {}}
     def process_requirement(req_item, counter=[0], parent_path="root"):
-        if ('req' in req_item and not 'plain-string' in req_item): #leaf case
+        if ('req' in req_item and 'plain-string' not in req_item): #leaf case
             #print(f"leaf for {req_item}")
             course_code = req_item['req']
             if course_code in courses_df['subject_id'].values:
@@ -292,7 +293,7 @@ def add_requirement_constraints(model: CpModel, take: dict[tuple[int, int], cp_m
 
                 # First, define a helper function to count leaf courses recursively
                 def count_leaf_courses(requirement):
-                    if 'req' in requirement and not 'plain-string' in requirement:
+                    if 'req' in requirement and 'plain-string' not in requirement:
                         # This is a leaf course requirement
                         course_code = requirement['req']
                         # Check if course exists in the database
@@ -491,7 +492,7 @@ def add_requirement_constraints(model: CpModel, take: dict[tuple[int, int], cp_m
 
                         # Now check if at least 2 tracks have enough courses
                         if len(track_has_enough) >= 2:
-                            track_sum = model.NewIntVar(0, len(track_has_enough), f"sum_tracks_with_2_courses")
+                            track_sum = model.NewIntVar(0, len(track_has_enough), "sum_tracks_with_2_courses")
                             model.Add(track_sum == sum(track_has_enough))
 
                             # The requirement is satisfied if at least 2 tracks have enough courses
