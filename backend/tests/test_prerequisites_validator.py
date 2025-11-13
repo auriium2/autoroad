@@ -2,16 +2,16 @@
 Unit tests for prerequisites validator.
 """
 
-import pandas as pd
+import pandas as pd  # type: ignore[import-untyped]
 import pytest
 
 from courses import (
     PrereqCourse,
     PrereqGroup,
     mark_invalid_prerequisites,
-    remove_invalid_prerequisites,
     prereq_validate_and_prune,
     prereq_validate_course_exists,
+    remove_invalid_prerequisites,
 )
 
 
@@ -52,6 +52,7 @@ class TestMarkInvalidPrerequisites:
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
         assert result.was_pruned == False
+        assert isinstance(result, PrereqCourse)
         assert result.course_id == '6.100A'
 
     def test_invalid_course_pruned(self, valid_courses_df):
@@ -60,6 +61,7 @@ class TestMarkInvalidPrerequisites:
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
         assert result.was_pruned == True
+        assert isinstance(result, PrereqCourse)
         assert result.course_id == 'INVALID.COURSE'
 
     def test_and_group_with_all_valid(self, valid_courses_df):
@@ -166,6 +168,7 @@ class TestMarkInvalidPrerequisites:
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
         assert result.was_pruned == False
+        assert isinstance(result, PrereqGroup)
         assert result.items[0].was_pruned == False
         assert result.items[1].was_pruned == False
 
@@ -179,6 +182,7 @@ class TestRemoveInvalidPrerequisites:
         result = remove_invalid_prerequisites(prereq, valid_courses_df)
 
         assert result is not None
+        assert isinstance(result, PrereqCourse)
         assert result.course_id == '6.100A'
 
     def test_invalid_course_removed(self, valid_courses_df):
@@ -201,8 +205,9 @@ class TestRemoveInvalidPrerequisites:
         result = remove_invalid_prerequisites(prereq, valid_courses_df)
 
         assert result is not None
+        assert isinstance(result, PrereqGroup)
         assert len(result.items) == 2
-        assert all(item.course_id in ['6.100A', '6.1200'] for item in result.items)
+        assert all(isinstance(item, PrereqCourse) and item.course_id in ['6.100A', '6.1200'] for item in result.items)
 
     def test_single_item_group_simplified(self, valid_courses_df):
         """Test that single-item groups are simplified."""
@@ -353,7 +358,7 @@ class TestWarningsAndMetadata:
                 PrereqCourse(course_id='INVALID.B'),
             )
         )
-        removed_courses = []
+        removed_courses: list[str] = []
         mark_invalid_prerequisites(prereq, valid_courses_df, removed_courses)
 
         assert len(removed_courses) == 2
@@ -369,7 +374,7 @@ class TestWarningsAndMetadata:
                 PrereqCourse(course_id='INVALID.COURSE'),
             )
         )
-        warnings = []
+        warnings: list[str] = []
         mark_invalid_prerequisites(prereq, valid_courses_df, warnings=warnings)
 
         assert len(warnings) > 0

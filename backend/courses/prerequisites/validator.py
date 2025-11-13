@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from .types import PrereqNode, PrereqCourse, PrereqGroup
+from .types import PrereqCourse, PrereqGroup, PrereqNode
 
 
 @dataclass
@@ -44,10 +44,10 @@ def validate_course_exists(course_id: str, courses_df: Any) -> bool:
         return True
     if course_id.startswith("CI-"):
         return True
-    
+
     if courses_df is not None and hasattr(courses_df, 'subject_id'):
         return course_id in courses_df['subject_id'].values
-    
+
     return False
 
 
@@ -76,7 +76,7 @@ def mark_invalid_prerequisites(
         removed_courses = []
     if warnings is None:
         warnings = []
-    
+
     if isinstance(prereq, PrereqCourse):
         if validate_course_exists(prereq.course_id, courses_df):
             return prereq
@@ -87,31 +87,31 @@ def mark_invalid_prerequisites(
                 course_id=prereq.course_id,
                 was_pruned=True
             )
-    
+
     if isinstance(prereq, PrereqGroup):
         marked_items: list[PrereqNode] = []
         valid_children_count = 0
-        
+
         for item in prereq.items:
             marked = mark_invalid_prerequisites(item, courses_df, removed_courses, warnings)
             marked_items.append(marked)
             if not (hasattr(marked, 'was_pruned') and marked.was_pruned):
                 valid_children_count += 1
-        
+
         is_group_infeasible = valid_children_count < prereq.threshold
-        
+
         if is_group_infeasible:
             warnings.append(
                 f"Prerequisite group is infeasible: "
                 f"threshold requires {prereq.threshold} valid items but only {valid_children_count}/{len(marked_items)} are valid"
             )
-        
+
         return PrereqGroup(
             threshold=prereq.threshold,
             items=tuple(marked_items),
             was_pruned=is_group_infeasible
         )
-    
+
     return prereq
 
 
@@ -140,7 +140,7 @@ def remove_invalid_prerequisites(
         removed_courses = []
     if warnings is None:
         warnings = []
-    
+
     if isinstance(prereq, PrereqCourse):
         if validate_course_exists(prereq.course_id, courses_df):
             return prereq
@@ -148,43 +148,43 @@ def remove_invalid_prerequisites(
             removed_courses.append(prereq.course_id)
             warnings.append(f"Removed unavailable course: {prereq.course_id}")
             return None
-    
+
     if isinstance(prereq, PrereqGroup):
         pruned_items: list[PrereqNode] = []
         valid_children_count = 0
-        
+
         for item in prereq.items:
             pruned = remove_invalid_prerequisites(item, courses_df, removed_courses, warnings)
             if pruned is not None:
                 pruned_items.append(pruned)
                 if not (hasattr(pruned, 'was_pruned') and pruned.was_pruned):
                     valid_children_count += 1
-        
+
         original_count = len(prereq.items)
         remaining_count = len(pruned_items)
-        
+
         is_infeasible = valid_children_count < prereq.threshold
-        
+
         if is_infeasible:
             warnings.append(
                 f"Prerequisite group is infeasible: "
                 f"threshold requires {prereq.threshold} valid items but only {valid_children_count}/{remaining_count} are valid"
             )
             return None
-        
+
         if remaining_count == 1:
             return pruned_items[0]
-        
+
         some_children_affected = (remaining_count < original_count) or any(
             hasattr(item, 'was_pruned') and item.was_pruned for item in pruned_items
         )
-        
+
         return PrereqGroup(
             threshold=prereq.threshold,
             items=tuple(pruned_items),
             was_pruned=some_children_affected
         )
-    
+
     return prereq
 
 
@@ -206,12 +206,12 @@ def validate_and_prune(
     """
     removed_courses: list[str] = []
     warnings: list[str] = []
-    
+
     if remove_invalid:
         pruned_tree = remove_invalid_prerequisites(prereq, courses_df, removed_courses, warnings)
     else:
         pruned_tree = mark_invalid_prerequisites(prereq, courses_df, removed_courses, warnings)
-    
+
     return ValidationResult(
         pruned_tree=pruned_tree,
         removed_courses=removed_courses,

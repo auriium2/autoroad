@@ -3,7 +3,8 @@
 
 import pandas as pd
 import requests
-from courses import parse_requirement, validate_and_prune, RequirementGroup
+
+from courses import RequirementGroup, parse_requirement, validate_and_prune
 
 # Fetch courses data
 print("Fetching courses data from Fireroad...")
@@ -25,7 +26,7 @@ req = parse_requirement(major_data)
 print("Validating requirements...")
 result = validate_and_prune(req, courses_df, remove_invalid=False)
 
-print(f"\nValidation complete:")
+print("\nValidation complete:")
 print(f"  Removed courses: {len(result.removed_courses)}")
 print(f"  Is feasible: {result.is_feasible}")
 print(f"  Warnings: {len(result.warnings)}")
@@ -54,15 +55,15 @@ if electives:
             else:
                 valid += 1
         return valid, invalid
-    
+
     valid_count, invalid_count = count_valid_invalid(electives)
-    
+
     # Count valid direct children
     valid_direct_children = sum(
-        1 for item in electives.items 
+        1 for item in electives.items
         if not (hasattr(item, 'was_pruned') and item.was_pruned)
     )
-    
+
     print("\n" + "="*80)
     print("ELECTIVES ANALYSIS")
     print("="*80)
@@ -72,12 +73,12 @@ if electives:
     print(f"Threshold: {electives.threshold}")
     print(f"\nDirect children: {len(electives.items)}")
     print(f"Valid direct children: {valid_direct_children}/{len(electives.items)}")
-    print(f"\nAll leaf courses (recursive):")
+    print("\nAll leaf courses (recursive):")
     print(f"  Valid: {valid_count}")
     print(f"  Invalid: {invalid_count}")
     print(f"  Total: {valid_count + invalid_count}")
     print(f"\n⚠️  Was pruned (infeasible): {electives.was_pruned}")
-    
+
     if electives.was_pruned:
         print("\n❌ PROBLEM: Electives marked as infeasible")
         print("This is incorrect - with 'all' connection type, only direct children matter,")

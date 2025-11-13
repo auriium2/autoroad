@@ -10,7 +10,7 @@ that the feasibility logic correctly implements FireRoad's semantics:
 """
 
 import pandas as pd
-import requests
+
 from courses import (
     RequirementCourse,
     RequirementGroup,
@@ -38,7 +38,7 @@ test1 = RequirementGroup(
     req_id='test1'
 )
 result1 = mark_invalid_requirements(test1, courses_df)
-print(f"Expected: was_pruned=False")
+print("Expected: was_pruned=False")
 print(f"Actual:   was_pruned={result1.was_pruned}")
 assert result1.was_pruned == False, "FAIL: 'all' with all valid should be feasible"
 print("✅ PASS")
@@ -54,7 +54,7 @@ test2 = RequirementGroup(
     req_id='test2'
 )
 result2 = mark_invalid_requirements(test2, courses_df)
-print(f"Expected: was_pruned=True (all children required, but one is invalid)")
+print("Expected: was_pruned=True (all children required, but one is invalid)")
 print(f"Actual:   was_pruned={result2.was_pruned}")
 assert result2.was_pruned == True, "FAIL: 'all' with invalid child should be infeasible"
 print("✅ PASS")
@@ -70,7 +70,7 @@ test3 = RequirementGroup(
     req_id='test3'
 )
 result3 = mark_invalid_requirements(test3, courses_df)
-print(f"Expected: was_pruned=False (at least one valid child)")
+print("Expected: was_pruned=False (at least one valid child)")
 print(f"Actual:   was_pruned={result3.was_pruned}")
 assert result3.was_pruned == False, "FAIL: 'any' with at least one valid should be feasible"
 print("✅ PASS")
@@ -86,7 +86,7 @@ test4 = RequirementGroup(
     req_id='test4'
 )
 result4 = mark_invalid_requirements(test4, courses_df)
-print(f"Expected: was_pruned=True (no valid children)")
+print("Expected: was_pruned=True (no valid children)")
 print(f"Actual:   was_pruned={result4.was_pruned}")
 assert result4.was_pruned == True, "FAIL: 'any' with no valid children should be infeasible"
 print("✅ PASS")
@@ -103,7 +103,7 @@ test5 = RequirementGroup(
     req_id='test5'
 )
 result5 = mark_invalid_requirements(test5, courses_df)
-print(f"Expected: was_pruned=False (threshold met: 2 valid subjects available)")
+print("Expected: was_pruned=False (threshold met: 2 valid subjects available)")
 print(f"Actual:   was_pruned={result5.was_pruned}")
 assert result5.was_pruned == False, "FAIL: threshold met should be feasible"
 print("✅ PASS")
@@ -120,7 +120,7 @@ test6 = RequirementGroup(
     req_id='test6'
 )
 result6 = mark_invalid_requirements(test6, courses_df)
-print(f"Expected: was_pruned=True (threshold not met: only 1 valid subject available)")
+print("Expected: was_pruned=True (threshold not met: only 1 valid subject available)")
 print(f"Actual:   was_pruned={result6.was_pruned}")
 assert result6.was_pruned == True, "FAIL: threshold not met should be infeasible"
 print("✅ PASS")
@@ -150,12 +150,12 @@ test7 = RequirementGroup(
     req_id='test7'
 )
 result7 = mark_invalid_requirements(test7, courses_df)
-print(f"Expected: was_pruned=False")
-print(f"Reasoning:")
-print(f"  - Parent has connection_type='all' (requires all 2 direct children)")
-print(f"  - Child group 1: 'any' with 1/2 valid courses → FEASIBLE")
-print(f"  - Child group 2: 'any' with 1/2 valid courses → FEASIBLE")
-print(f"  - Both direct children are feasible → parent is FEASIBLE")
+print("Expected: was_pruned=False")
+print("Reasoning:")
+print("  - Parent has connection_type='all' (requires all 2 direct children)")
+print("  - Child group 1: 'any' with 1/2 valid courses → FEASIBLE")
+print("  - Child group 2: 'any' with 1/2 valid courses → FEASIBLE")
+print("  - Both direct children are feasible → parent is FEASIBLE")
 print(f"Actual:   was_pruned={result7.was_pruned}")
 assert result7.was_pruned == False, "FAIL: nested 'all' should check direct children, not leaves"
 print("✅ PASS - This confirms 'all' applies to DIRECT CHILDREN, not leaf courses")
@@ -184,12 +184,12 @@ test8 = RequirementGroup(
     req_id='test8'
 )
 result8 = mark_invalid_requirements(test8, courses_df)
-print(f"Expected: was_pruned=True")
-print(f"Reasoning:")
-print(f"  - Parent has connection_type='all' (requires all 2 direct children)")
-print(f"  - Child group 1: 'any' with 1/1 valid courses → FEASIBLE")
-print(f"  - Child group 2: 'any' with 0/2 valid courses → INFEASIBLE")
-print(f"  - One direct child is infeasible → parent is INFEASIBLE")
+print("Expected: was_pruned=True")
+print("Reasoning:")
+print("  - Parent has connection_type='all' (requires all 2 direct children)")
+print("  - Child group 1: 'any' with 1/1 valid courses → FEASIBLE")
+print("  - Child group 2: 'any' with 0/2 valid courses → INFEASIBLE")
+print("  - One direct child is infeasible → parent is INFEASIBLE")
 print(f"Actual:   was_pruned={result8.was_pruned}")
 assert result8.was_pruned == True, "FAIL: 'all' with infeasible child should be infeasible"
 print("✅ PASS")

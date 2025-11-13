@@ -27,10 +27,10 @@ def is_valid_course_id(s: str) -> bool:
     Check if a string is a valid course ID (e.g., "18.01", "6.100A") or GIR.
     """
     s = s.strip()
-    
+
     if s.startswith("GIR:"):
         return True
-    
+
     # Standard course format: <department>.<number>
     # Department can be letters or numbers (e.g., 18, 6, MAS)
     # Number can have letters (e.g., 100A, C06)
@@ -68,7 +68,7 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
     for token in tokens:
         if token.startswith("''") or token.startswith('"'):
             continue
-        
+
         if token in ['(', ')', ',', '/']:
             filtered.append(token)
         elif is_valid_course_id(token):
@@ -76,13 +76,13 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
 
     if not filtered:
         return []
-    
+
     while filtered and filtered[0] in [',', '/']:
         filtered.pop(0)
-    
+
     while filtered and filtered[-1] in [',', '/']:
         filtered.pop()
-    
+
     cleaned = []
     if filtered:
         cleaned.append(filtered[0])
@@ -90,7 +90,7 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
             if filtered[i] in [',', '/'] and cleaned[-1] in [',', '/']:
                 continue
             cleaned.append(filtered[i])
-    
+
     return cleaned
 
 def parse_fireroad(prereq_str: str) -> PrereqNode:
@@ -118,13 +118,13 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
     """
     if not prereq_str or not prereq_str.strip():
         return PrereqGroup(threshold=0, items=())
-    
+
     tokens = tokenize(prereq_str)
     tokens = filter_junk_tokens(tokens)
-    
+
     if not tokens:
         return PrereqGroup(threshold=0, items=())
-    
+
     index = [0]
 
     def peek() -> str:
@@ -144,33 +144,33 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
     def parse_or() -> PrereqNode:
         """Parse OR expression: term / term / ..."""
         items: list[PrereqNode] = [parse_and()]
-        
+
         while peek() == '/':
             consume()
             items.append(parse_and())
-        
+
         if len(items) == 1:
             return items[0]
-        
+
         return PrereqGroup(threshold=1, items=tuple(items))
-    
+
     def parse_and() -> PrereqNode:
         """Parse AND expression: term , term , ..."""
         items: list[PrereqNode] = [parse_term()]
-        
+
         while peek() == ',':
             consume()
             items.append(parse_term())
-        
+
         if len(items) == 1:
             return items[0]
-        
+
         return PrereqGroup(threshold=0, items=tuple(items))
 
     def parse_term() -> PrereqNode:
         """Parse a term: course_id or ( expr )"""
         token = peek()
-        
+
         if token == '(':
             consume()
             expr = parse_expr()
@@ -179,15 +179,15 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
             else:
                 raise ValueError("Mismatched parentheses: expected ')'")
             return expr
-        
+
         if token in [')', ',', '/']:
             raise ValueError(f"Unexpected token: {token}")
-        
+
         course_id = consume()
         if not is_valid_course_id(course_id):
             raise ValueError(f"Invalid course ID: {course_id}")
         return PrereqCourse(course_id=course_id)
-    
+
     return parse_expr()
 
 
@@ -203,21 +203,21 @@ def prereq_to_string(prereq: PrereqNode) -> str:
     """
     if isinstance(prereq, PrereqCourse):
         return prereq.course_id
-    
+
     if not isinstance(prereq, PrereqGroup):
         raise TypeError(f"Unknown node type: {type(prereq)}")
-    
+
     if not prereq.items:
         return ''
-    
+
     item_strings = [
         f'({prereq_to_string(item)})' if isinstance(item, PrereqGroup) else prereq_to_string(item)
         for item in prereq.items
     ]
-    
+
     if prereq.threshold == len(prereq.items):
         return ' AND '.join(item_strings)
     if prereq.threshold == 1:
         return ' OR '.join(item_strings)
-    
+
     return f"{prereq.threshold} of: [{', '.join(item_strings)}]"

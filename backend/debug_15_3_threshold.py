@@ -3,11 +3,11 @@
 
 import pandas as pd
 import requests
+
 from courses import (
+    RequirementGroup,
     parse_requirement,
     validate_and_prune,
-    mark_invalid_requirements,
-    RequirementGroup,
 )
 
 # Fetch courses data
@@ -45,7 +45,7 @@ if restricted:
     print(f"Threshold: {restricted.threshold}")
     print(f"Was pruned: {restricted.was_pruned}")
     print(f"\nDirect children ({len(restricted.items)}):")
-    
+
     for i, child in enumerate(restricted.items, 1):
         if isinstance(child, RequirementGroup):
             print(f"\n  Child {i}: {child.title or child.req_id}")
@@ -53,11 +53,11 @@ if restricted:
             print(f"    Threshold: {child.threshold}")
             print(f"    Was pruned: {child.was_pruned}")
             print(f"    Num items: {len(child.items)}")
-            
+
             # Check if this child is valid
             if child.was_pruned:
-                print(f"    ⚠️  This child is INFEASIBLE")
-                
+                print("    ⚠️  This child is INFEASIBLE")
+
                 # Why is it infeasible?
                 if child.threshold:
                     # Count valid children
@@ -67,23 +67,23 @@ if restricted:
                     )
                     print(f"    Threshold requires: {child.threshold.cutoff}")
                     print(f"    Valid children: {valid_count}/{len(child.items)}")
-                    
+
                     if valid_count >= child.threshold.cutoff:
-                        print(f"    🔍 BUG: Threshold IS met but marked infeasible!")
+                        print("    🔍 BUG: Threshold IS met but marked infeasible!")
             else:
-                print(f"    ✅ This child is feasible")
-    
+                print("    ✅ This child is feasible")
+
     # Summary
     print("\n" + "="*80)
     valid_direct = sum(
         1 for item in restricted.items
         if not (hasattr(item, 'was_pruned') and item.was_pruned)
     )
-    print(f"Summary:")
+    print("Summary:")
     print(f"  Required threshold: {restricted.threshold.cutoff if restricted.threshold else 'N/A'}")
     print(f"  Valid direct children: {valid_direct}/{len(restricted.items)}")
     print(f"  Should be feasible: {valid_direct >= (restricted.threshold.cutoff if restricted.threshold else len(restricted.items))}")
     print(f"  Actually marked: {'infeasible' if restricted.was_pruned else 'feasible'}")
-    
+
     if restricted.was_pruned and valid_direct >= (restricted.threshold.cutoff if restricted.threshold else len(restricted.items)):
         print("\n  ❌ BUG DETECTED: Group marked infeasible despite meeting threshold!")

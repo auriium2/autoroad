@@ -22,11 +22,11 @@ from .types import (
     PrereqNode,
 )
 from .validator import (
+    ValidationResult,
     mark_invalid_prerequisites,
     remove_invalid_prerequisites,
     validate_and_prune,
     validate_course_exists,
-    ValidationResult,
 )
 
 __all__ = [

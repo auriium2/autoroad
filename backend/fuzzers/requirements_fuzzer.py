@@ -11,15 +11,16 @@ This script:
 import json
 from collections import Counter, defaultdict
 from typing import Any
+
 import requests
 
 from courses import (
-    RequirementParseError,
-    parse_requirement,
     RequirementCourse,
     RequirementGroup,
     RequirementNode,
+    RequirementParseError,
     RequirementPlainString,
+    parse_requirement,
 )
 
 

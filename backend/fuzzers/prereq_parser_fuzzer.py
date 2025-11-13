@@ -20,12 +20,12 @@ except ImportError:
     exit(1)
 
 from courses import (
-    is_valid_course_id,
-    parse_fireroad,
-    prereq_to_string,
     PrereqCourse,
     PrereqGroup,
     PrereqNode,
+    is_valid_course_id,
+    parse_fireroad,
+    prereq_to_string,
 )
 
 

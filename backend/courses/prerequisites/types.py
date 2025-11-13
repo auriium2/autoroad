@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Union
 
+
 @dataclass(frozen=True)
 class PrereqCourse:
     """A single course prerequisite."""
