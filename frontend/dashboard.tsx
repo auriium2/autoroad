@@ -32,8 +32,9 @@ export default function Dashboard() {
     setSelectedYear(value);
   }, []);
 
-  // Get optimize function from store
+  // Get optimize function and progress from store
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
+  const optimizationProgress = useGraphStore(state => state.optimizationProgress);
 
   // Handle optimization
   const handleOptimize = async () => {
@@ -44,7 +45,7 @@ export default function Dashboard() {
         maxUnitsPerSemester: 60,
         minUnitsPerSemester: 36,
         preferredTimes: selectedYear ? [selectedYear] : undefined
-      });
+      }, true); // Show progress during optimization
 
       if (!result.success) {
         showToast({
@@ -52,6 +53,12 @@ export default function Dashboard() {
           description: result.error || "Optimization failed",
           variant: "destructive",
           duration: 1000,
+        });
+      } else {
+        showToast({
+          title: "Optimization complete",
+          description: "Your schedule has been optimized!",
+          duration: 3000,
         });
       }
 
@@ -115,7 +122,7 @@ export default function Dashboard() {
                   {isOptimizing ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Optimizing...
+                      {optimizationProgress?.message || "Optimizing..."}
                     </>
                   ) : (
                     "Optimize!"

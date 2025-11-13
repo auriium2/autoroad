@@ -14,8 +14,9 @@ function CourseNodeComponent({
   onMouseEnter,
   onMouseLeave,
   disableTooltip = false,
-}: { node: CourseNode; isSpecial?: boolean; isHovered?: boolean; onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean }) {
+}: { node: CourseNode & { optimizerAgreed?: boolean }; isSpecial?: boolean; isHovered?: boolean; onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean }) {
   const { courseId, userControlled, disabled, section, nodeStatus } = node;
+  const optimizerAgreed = (node as any).optimizerAgreed;
 
   // Check node status
   const isBanished = nodeStatus === 'banish';
@@ -108,12 +109,30 @@ function CourseNodeComponent({
                 cy="18"
                 r="16"
                 fill="none"
-                stroke="rgba(255,255,255,0.25)"
-                strokeWidth="2"
+                stroke={userControlled ? "rgba(147, 197, 253, 0.8)" : "rgba(255,255,255,0.35)"}
+                strokeWidth="3"
                 pathLength={1}
                 strokeDasharray={termHighlight.dasharray}
                 strokeDashoffset={termHighlight.dashoffset}
                 strokeLinecap="butt"
+              />
+            </svg>
+          )}
+
+          {/* Double ring indicator when optimizer agrees with marker placement */}
+          {optimizerAgreed && !isBanished && !isSolo && (
+            <svg
+              className="pointer-events-none absolute inset-0"
+              viewBox="0 0 36 36"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <circle
+                cx="18"
+                cy="18"
+                r="14"
+                fill="none"
+                stroke="rgba(34, 197, 94, 0.6)"
+                strokeWidth="1.5"
               />
             </svg>
           )}

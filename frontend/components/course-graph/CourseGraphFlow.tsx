@@ -32,7 +32,7 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
       <Handle
         type="target"
         position={Position.Left}
-        style={{ 
+        style={{
           background: 'transparent',
           border: 'none',
           left: '0px', // Left edge of circle
@@ -42,7 +42,7 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
       <Handle
         type="source"
         position={Position.Right}
-        style={{ 
+        style={{
           background: 'transparent',
           border: 'none',
           left: '36px', // Right edge of circle (36px width)
@@ -78,10 +78,10 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
   // Update viewport on changes - direct DOM manipulation for sync
   React.useEffect(() => {
     let rafId: number;
-    
+
     const updateViewport = () => {
       const viewport = getViewport();
-      
+
       // Update all three elements directly
       if (backgroundRef.current) {
         backgroundRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
@@ -92,10 +92,10 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
       if (headersRef.current) {
         headersRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
       }
-      
+
       rafId = requestAnimationFrame(updateViewport);
     };
-    
+
     rafId = requestAnimationFrame(updateViewport);
     return () => cancelAnimationFrame(rafId);
   }, [getViewport]);
@@ -103,9 +103,9 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
   return (
     <>
       {/* Column backgrounds */}
-      <div 
+      <div
         ref={backgroundRef}
-        style={{ 
+        style={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -154,9 +154,9 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
       </div>
 
       {/* Column divider lines */}
-      <div 
+      <div
         ref={dividersRef}
-        style={{ 
+        style={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -194,9 +194,9 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
       </div>
 
       {/* Column headers */}
-      <div 
+      <div
         ref={headersRef}
-        style={{ 
+        style={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -236,6 +236,7 @@ function CourseGraphFlowInner() {
   const addNode = useGraphStore(state => state.addNode);
   const updateNodeLocal = useGraphStore(state => state.updateNodeLocal);
   const removeNode = useGraphStore(state => state.removeNode);
+  const isOptimizing = useGraphStore(state => state.isOptimizing);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -271,9 +272,9 @@ function CourseGraphFlowInner() {
   // Handle right-click on node
   const onNodeContextMenu = (event: React.MouseEvent, node: Node) => {
     event.preventDefault();
-    
-    // Only show context menu for user-controlled nodes
-    if (!node.data.userControlled) {
+
+    // Only show context menu for user-controlled nodes, and not during optimization
+    if (!node.data.userControlled || isOptimizing) {
       return;
     }
 
@@ -313,7 +314,7 @@ function CourseGraphFlowInner() {
       const sectionIndex = allSections.findIndex(s => s.id === node.section);
       const nodesInSection = storeNodes.filter(n => n.section === node.section);
       const nodeIndexInSection = nodesInSection.findIndex(n => n.id === node.id);
-      
+
       // Calculate total height of nodes in this section
       const totalNodesHeight = (nodesInSection.length - 1) * NODE_SPACING;
       // Start Y position to center the group vertically
@@ -417,7 +418,7 @@ function CourseGraphFlowInner() {
 
   // Handle node drag end
   const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
-    if (!node.data.userControlled) return;
+    if (!node.data.userControlled || isOptimizing) return;
 
     // Determine which column the node is in based on x position
     const COLUMN_WIDTH = 200;
@@ -461,14 +462,14 @@ function CourseGraphFlowInner() {
 
     try {
       const data = event.dataTransfer.getData('application/json');
-      
+
       if (!data) {
         console.error('No drag data found');
         return;
       }
-      
+
       const nodeData = JSON.parse(data);
-      
+
       // Get the position where the user dropped the node
       const position = screenToFlowPosition({
         x: event.clientX,
@@ -486,7 +487,7 @@ function CourseGraphFlowInner() {
         ...nodeData,
         section: section.id,
       };
-      
+
       await addNode(newNode);
       console.log('Node added successfully at position:', position, 'section:', section.title);
     } catch (error) {
@@ -521,10 +522,10 @@ function CourseGraphFlowInner() {
 
   const COLUMN_WIDTH = 200;
   const numColumns = allSections.length;
-  
+
   return (
-    <div 
-      className="h-full w-full rounded-md border border-border bg-muted/30 relative" 
+    <div
+      className="h-full w-full rounded-md border border-border bg-muted/30 relative"
       style={{ overflow: 'hidden' }}
     >
       <ReactFlow
@@ -540,7 +541,7 @@ function CourseGraphFlowInner() {
         fitView={false}
         minZoom={0.8}
         maxZoom={1.5}
-        nodesDraggable
+        nodesDraggable={!isOptimizing}
         nodesConnectable={false}
         elementsSelectable={true}
         zoomOnScroll={false}
@@ -565,17 +566,22 @@ function CourseGraphFlowInner() {
       {/* Column headers and dividers that move with viewport */}
       <ColumnHeaders sections={allSections} />
 
+      {/* Optimization overlay - disable interactions */}
+      {isOptimizing && (
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-[100] pointer-events-none" />
+      )}
+
       {/* Context menu */}
       {contextMenu && (() => {
         const node = storeNodes.find(n => n.id === contextMenu.nodeId);
         if (!node) return null;
-        
+
         const currentStatus = node.nodeStatus || 'pin';
-        
+
         return (
           <div
             className="fixed bg-card border border-border rounded-md shadow-lg p-1 min-w-[180px]"
-            style={{ 
+            style={{
               top: contextMenu.y,
               left: contextMenu.x,
               zIndex: 10000,
@@ -625,7 +631,7 @@ function CourseGraphFlowInner() {
               onClick={() => handleRemoveNode(contextMenu.nodeId)}
             >
               <Trash2 className="w-4 h-4" />
-              <span>Remove node</span>
+              <span>Remove marker</span>
             </button>
           </div>
         );

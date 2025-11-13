@@ -68,7 +68,7 @@ export function NodeContextMenu({
             onSelect={onRemove}
           >
             <Trash2 className="w-4 h-4" />
-            <span>Remove node</span>
+            <span>Remove marker</span>
           </ContextMenu.Item>
         </ContextMenu.Content>
       </ContextMenu.Portal>

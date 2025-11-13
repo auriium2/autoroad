@@ -10,7 +10,29 @@ export const ASE: string = "ASEs";
 // ============================================================================
 
 /**
- * Course node representing a single class in the schedule
+ * Marker - User-defined course placement
+ * These are courses that the user explicitly places in specific semesters
+ * They serve as constraints for the optimizer
+ */
+export interface Marker {
+  id: string; // Unique marker identifier
+  courseId: string; // Course subject ID (e.g., "6.1200", "18.01")
+  section: number; // Which semester this is pinned to
+  status: 'pin' | 'banish' | 'solo'; // pin (default), banish (exclude), or solo (no deps)
+}
+
+/**
+ * Optimizer-derived node - Course placement suggested by the optimizer
+ * These come from the backend optimizer as (semester, courseId) pairs
+ */
+export interface OptimizerNode {
+  courseId: string; // Course subject ID
+  section: number; // Which semester the optimizer placed it in
+}
+
+/**
+ * Course node representing a single class in the schedule (unified view)
+ * This is used for rendering - combines markers and optimizer nodes
  * 
  * Field naming:
  * - `id`: Unique identifier for this specific node instance in the graph (e.g., "0", "1", "6.1200_1734567890")
@@ -21,9 +43,9 @@ export interface CourseNode {
   id: string; // Unique node instance identifier
   courseId: string; // Course subject ID (e.g., "6.1200", "18.01")
   section: number; // Which semester/section this belongs to
-  userControlled?: boolean; // If true, user added/can drag this node
+  userControlled?: boolean; // If true, user added/can drag this node (marker)
   disabled?: boolean; // If true, node is disabled and cannot be taken
-  nodeStatus?: 'pin' | 'banish' | 'solo'; // User preference: pin (default), banish (exclude), or solo (pin without dependencies)
+  nodeStatus?: 'pin' | 'banish' | 'solo'; // User preference for markers
   // Term availability (fetched from course details)
   offeredFall?: boolean;
   offeredSpring?: boolean;

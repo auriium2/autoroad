@@ -12,9 +12,9 @@ interface BasicToastConfig {
 }
 
 export function DashboardAlerts() {
-  const hasChangesSinceOptimization = useGraphStore(
-    (state) => state.hasChangesSinceOptimization
-  );
+  // Note: hasChangesSinceOptimization removed in refactor - markers system handles this
+  const markers = useGraphStore((state) => state.markers);
+  const hasMarkers = markers.length > 0;
 
   const toastRefs = React.useRef<Record<string, { dismiss: () => void }>>({});
   const welcomeShownRef = React.useRef(false);
@@ -50,19 +50,19 @@ export function DashboardAlerts() {
   }, [showOrReplaceToast]);
 
   React.useEffect(() => {
-    if (hasChangesSinceOptimization) {
-      showOrReplaceToast("user-controlled-nodes", {
+    if (hasMarkers) {
+      showOrReplaceToast("user-markers", {
         type: "info",
-        title: "Manual changes detected",
+        title: "Manual placements detected",
         description:
-          "You’ve moved or added courses manually. Run Optimize to see updated suggestions that respect your tweaks.",
+          "You've pinned courses manually. Run Optimize to see suggestions that respect your constraints.",
         durationMs: 5000,
       });
-    } else if (toastRefs.current["user-controlled-nodes"]) {
-      toastRefs.current["user-controlled-nodes"]?.dismiss();
-      delete toastRefs.current["user-controlled-nodes"];
+    } else if (toastRefs.current["user-markers"]) {
+      toastRefs.current["user-markers"]?.dismiss();
+      delete toastRefs.current["user-markers"];
     }
-  }, [hasChangesSinceOptimization, showOrReplaceToast]);
+  }, [hasMarkers, showOrReplaceToast]);
 
   return null;
 }
