@@ -5,11 +5,13 @@ Unit tests for requirements validator.
 import pandas as pd  # type: ignore[import-untyped]
 import pytest
 
-from courses import (
+from courses.requirements.types import (
     RequirementCourse,
     RequirementGroup,
     RequirementPlainString,
     RequirementThreshold,
+)
+from courses.requirements.validator import (
     mark_invalid_requirements,
     remove_invalid_requirements,
     validate_and_prune,

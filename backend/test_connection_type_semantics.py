@@ -11,12 +11,12 @@ that the feasibility logic correctly implements FireRoad's semantics:
 
 import pandas as pd
 
-from courses import (
+from courses.requirements.types import (
     RequirementCourse,
     RequirementGroup,
     RequirementThreshold,
-    mark_invalid_requirements,
 )
+from courses.requirements.validator import mark_invalid_requirements
 
 # Create a minimal courses dataframe for testing
 courses_df = pd.DataFrame({

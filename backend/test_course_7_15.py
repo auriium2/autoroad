@@ -4,12 +4,9 @@
 import pandas as pd
 import requests
 
-from courses import (
-    RequirementCourse,
-    RequirementGroup,
-    parse_requirement,
-    validate_and_prune,
-)
+from courses.requirements.types import RequirementCourse, RequirementGroup
+from courses.requirements.parser import parse_requirement
+from courses.requirements.validator import validate_and_prune
 
 # Fetch courses data
 print("Fetching courses data from Fireroad...")

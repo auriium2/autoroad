@@ -5,13 +5,12 @@ Unit tests for prerequisites validator.
 import pandas as pd  # type: ignore[import-untyped]
 import pytest
 
-from courses import (
-    PrereqCourse,
-    PrereqGroup,
+from courses.prerequisites.types import PrereqCourse, PrereqGroup
+from courses.prerequisites.validator import (
     mark_invalid_prerequisites,
-    prereq_validate_and_prune,
-    prereq_validate_course_exists,
     remove_invalid_prerequisites,
+    validate_and_prune as prereq_validate_and_prune,
+    validate_course_exists as prereq_validate_course_exists,
 )
 
 

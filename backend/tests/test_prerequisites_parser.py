@@ -4,13 +4,8 @@ Unit tests for prerequisite parser.
 
 import pytest
 
-from courses import (
-    PrereqCourse,
-    PrereqGroup,
-    is_valid_course_id,
-    parse_fireroad,
-    prereq_to_string,
-)
+from courses.prerequisites.types import PrereqCourse, PrereqGroup
+from courses.prerequisites.parser import is_valid_course_id, parse_fireroad, prereq_to_string
 from courses.prerequisites.parser import (
     filter_junk_tokens,
     tokenize,

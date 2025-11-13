@@ -4,5 +4,6 @@
 # debugging and tooling
 - run python with uv
 - check types with basedpyright
-- if you do analysis that would produce lots of data, consider writing it to the temp/ folder at the root of the project
-- if you do an analysis that you feel should be iterated on, consider also writing it to the temp/ folder
+
+# python specific
+- don't add __init__ files please

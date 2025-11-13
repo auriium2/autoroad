@@ -4,12 +4,14 @@ Unit tests for requirements parser.
 
 import pytest
 
-from courses import (
+from courses.requirements.types import (
     RequirementCourse,
     RequirementGroup,
-    RequirementParseError,
     RequirementPlainString,
     RequirementThreshold,
+)
+from courses.requirements.parser import (
+    RequirementParseError,
     parse_requirement,
     parse_requirement_list,
     requirement_to_string,

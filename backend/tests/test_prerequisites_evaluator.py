@@ -4,7 +4,8 @@ Unit tests for prerequisite evaluator.
 
 import pytest
 
-from courses import PrereqCourse, PrereqGroup, PrerequisiteEvaluator
+from courses.prerequisites.types import PrereqCourse, PrereqGroup
+from courses.prerequisites.evaluator import PrerequisiteEvaluator
 
 
 class TestBasicEvaluation:
