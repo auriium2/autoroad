@@ -48,7 +48,7 @@ export function transformBackendToFrontend(backendData: unknown) {
  */
 export function transformFrontendToBackend(frontendData: {
   sections: Section[];
-  specialSection?: Section;
+
   constraints?: unknown;
 }) {
   const { sections, constraints = {} } = frontendData;

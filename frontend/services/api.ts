@@ -9,13 +9,11 @@ export interface RoadData {
   nodes: CourseNode[];
   edges: Edge[];
   sections: Section[];
-  specialSection: Section | null;
   availableNodes: AvailableNode[];
 }
 
 export interface OptimizeRequest {
   sections: Section[];
-  specialSection: Section | null;
   constraints: {
     maxUnitsPerSemester?: number;
     minUnitsPerSemester?: number;

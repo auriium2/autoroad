@@ -112,12 +112,20 @@ function extractCourseIds(prereqTree: PrereqNode | null): string[] {
   }
 }
 
+// Lazy cache for prerequisites - only fetches what we need
+const prerequisiteCache = new Map<string, string[]>();
+
 /**
  * Get all prerequisite course IDs for a given course
- * This queries the course details and extracts prerequisites
+ * Uses lazy caching - fetches from API on first access, then caches
  */
 export async function getPrerequisites(courseId: string): Promise<string[]> {
-  // TODO: Fetch from API/cache
+  // Check cache first
+  if (prerequisiteCache.has(courseId)) {
+    return prerequisiteCache.get(courseId)!;
+  }
+
+  // TODO: Fetch from Fireroad API
   // For now, use hardcoded data matching our fake course data
   const prereqMap: Record<string, string> = {
     '6.1200': '6.100',
@@ -135,10 +143,25 @@ export async function getPrerequisites(courseId: string): Promise<string[]> {
   };
 
   const prereqString = prereqMap[courseId];
-  if (!prereqString) return [];
+  if (!prereqString) {
+    // Cache empty result
+    prerequisiteCache.set(courseId, []);
+    return [];
+  }
 
   const prereqTree = parsePrerequisites(prereqString);
-  return extractCourseIds(prereqTree);
+  const prerequisites = extractCourseIds(prereqTree);
+  
+  // Cache the result
+  prerequisiteCache.set(courseId, prerequisites);
+  return prerequisites;
+}
+
+/**
+ * Clear the prerequisite cache (useful for testing or if data becomes stale)
+ */
+export function clearPrerequisiteCache(): void {
+  prerequisiteCache.clear();
 }
 
 /**

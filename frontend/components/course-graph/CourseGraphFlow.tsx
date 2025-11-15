@@ -19,10 +19,12 @@ import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
 
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
-import { useGraphStore, CourseNode as CourseNodeType, Section } from "@/stores/roadStore";
+import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
+import { computePrerequisiteEdges } from "@/lib/prerequisites";
+import type { Edge as StoreEdge } from "@/types";
 
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean } }) {
@@ -227,8 +229,8 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
 function CourseGraphFlowInner() {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
-  const storeNodes = useGraphStore(state => state.nodes);
-  const storeEdges = useGraphStore(state => state.edges);
+  const markers = useGraphStore(state => state.markers);
+  const optimizerNodes = useGraphStore(state => state.optimizerNodes);
   const sections = useGraphStore(state => state.sections);
   const loadingState = useGraphStore(state => state.loadingState);
   const error = useGraphStore(state => state.error);
@@ -240,6 +242,69 @@ function CourseGraphFlowInner() {
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // Compute display nodes from markers + optimizer nodes
+  const storeNodes = React.useMemo(() => {
+    // Build a map of optimizer nodes by (courseId, section) for overlap detection
+    const optimizerMap = new Map<string, OptimizerNode>();
+    for (const on of optimizerNodes) {
+      const key = `${on.courseId}_${on.section}`;
+      optimizerMap.set(key, on);
+    }
+    
+    // Markers become nodes with userControlled=true
+    const markerNodes: CourseNodeType[] = markers.map((marker) => {
+      const key = `${marker.courseId}_${marker.section}`;
+      const hasOptimizerOverlap = optimizerMap.has(key) && marker.status !== 'banish';
+      
+      return {
+        id: marker.id,
+        courseId: marker.courseId,
+        section: marker.section,
+        userControlled: true,
+        nodeStatus: marker.status,
+        ...(hasOptimizerOverlap ? { optimizerAgreed: true } : {}),
+      } as CourseNodeType & { optimizerAgreed?: boolean };
+    });
+    
+    // Filter out optimizer nodes that overlap with non-banish markers
+    const markerKeys = new Set(
+      markers
+        .filter(m => m.status !== 'banish')
+        .map(m => `${m.courseId}_${m.section}`)
+    );
+    
+    const optimizerOnlyNodes: CourseNodeType[] = optimizerNodes
+      .filter(on => {
+        const key = `${on.courseId}_${on.section}`;
+        return !markerKeys.has(key);
+      })
+      .map((on, index) => ({
+        id: `optimizer_${on.courseId}_${on.section}_${index}`,
+        courseId: on.courseId,
+        section: on.section,
+        userControlled: false,
+      }));
+    
+    return [...markerNodes, ...optimizerOnlyNodes];
+  }, [markers, optimizerNodes]);
+  
+  // Compute edges asynchronously whenever storeNodes changes
+  const [storeEdges, setStoreEdges] = React.useState<StoreEdge[]>([]);
+  
+  React.useEffect(() => {
+    let cancelled = false;
+    
+    computePrerequisiteEdges(storeNodes).then(newEdges => {
+      if (!cancelled) {
+        setStoreEdges(newEdges);
+      }
+    });
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [storeNodes]);
 
   // Context menu state
   const [contextMenu, setContextMenu] = React.useState<{
@@ -449,10 +514,10 @@ function CourseGraphFlowInner() {
       }
     };
 
-    if (loadingState === 'loading' && storeNodes.length === 0) {
+    if (loadingState === 'loading' && markers.length === 0 && optimizerNodes.length === 0) {
       loadData();
     }
-  }, [loadingState, fetchRoadData, storeNodes.length]);
+  }, [loadingState, fetchRoadData, markers.length, optimizerNodes.length]);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -500,7 +565,7 @@ function CourseGraphFlowInner() {
     event.dataTransfer.dropEffect = 'move';
   };
 
-  if (loadingState === 'loading' && storeNodes.length === 0) {
+  if (loadingState === 'loading' && markers.length === 0 && optimizerNodes.length === 0) {
     return (
       <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
         <LoadingSpinner message="Loading your course schedule..." />
@@ -508,7 +573,7 @@ function CourseGraphFlowInner() {
     );
   }
 
-  if (loadingState === 'error' && storeNodes.length === 0 && error) {
+  if (loadingState === 'error' && markers.length === 0 && optimizerNodes.length === 0 && error) {
     return (
       <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
         <ErrorDisplay
