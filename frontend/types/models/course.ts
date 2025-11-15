@@ -1,7 +1,7 @@
 export const ASE: string = "ASEs";
 
 export interface Marker {
-  id: string;
+  uuid: string;
   courseId: string;
   section: number;
   status: 'pin' | 'banish' | 'solo';
@@ -13,7 +13,7 @@ export interface OptimizerNode {
 }
 
 export interface CourseNode {
-  id: string;
+  uuid: string;
   courseId: string;
   section: number;
   userControlled?: boolean;

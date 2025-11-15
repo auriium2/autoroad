@@ -109,10 +109,10 @@ export function usePrerequisiteString(courseId: string | null) {
  * Hook to compute prerequisite edges for a graph of courses
  */
 export function usePrerequisiteEdges(nodes: CourseNode[]) {
-  // Create a stable key from the sorted course IDs and their node IDs
+  // Create a stable key from the sorted course IDs and their node uuids
   // Using useMemo to prevent recreating the key on every render
   const courseKey = React.useMemo(
-    () => nodes.map(n => `${n.courseId}:${n.id}`).sort().join(','),
+    () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
     [nodes]
   );
   
@@ -121,7 +121,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
     queryFn: async () => {
       console.log('[Performance] Fetching prerequisite edges for', nodes.length, 'nodes');
       const startTime = performance.now();
-      const edges: Array<{ from_id: string; to_id: string }> = [];
+      const edges: Array<{ fromUuid: string; toUuid: string }> = [];
 
       // Build a map of courseId -> node for quick lookup
       const courseToNode = new Map<string, CourseNode>();
@@ -144,8 +144,8 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
           // Only create edge if both courses are in the graph
           if (prereqNode) {
             edges.push({
-              from_id: prereqNode.id,
-              to_id: node.id,
+              fromUuid: prereqNode.uuid,
+              toUuid: node.uuid,
             });
           }
         }

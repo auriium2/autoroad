@@ -9,7 +9,6 @@ export interface NodeStyleProperties {
   section: number;
   userControlled?: boolean;
   disabled?: boolean;
-  isSpecial?: boolean;
 }
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';

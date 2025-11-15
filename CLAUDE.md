@@ -5,5 +5,11 @@
 - run python with uv, and use uv for dependency management.
 - check types with basedpyright
 
+# codestyle
+- maps should use the naming convention key2value. For example, if you have a map that maps course IDs to course names, it should be named courseId2courseName.
+
 # python specific
 - don't add __init__ files please
+
+# web specific
+- when writing divs, if the div 

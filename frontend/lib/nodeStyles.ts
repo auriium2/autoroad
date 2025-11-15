@@ -11,7 +11,7 @@ import type { NodeStyleConfig, NodeStyleProperties } from '@/types';
  * @returns The computed style configuration
  */
 export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
-  const { section, userControlled, disabled, isSpecial } = node;
+  const { section, userControlled, disabled } = node;
 
   // Check if node is in "Must Take" column (section -2)
   const isMustTake = section === -2;
@@ -40,12 +40,6 @@ export function getNodeStyle(node: NodeStyleProperties): NodeStyleConfig {
     borderColor = "border-gray-300 dark:border-gray-600";
     bgColor = "bg-gray-50 dark:bg-gray-900/40";
     textColor = "text-gray-700 dark:text-gray-300";
-    boxShadow = "none";
-  } else if (isSpecial) {
-    // Special nodes: primary color
-    borderColor = "border-primary";
-    bgColor = "bg-primary/10";
-    textColor = "text-foreground";
     boxShadow = "none";
   } else if (disabled) {
     // Disabled nodes: red styling

@@ -27,7 +27,7 @@ import { usePrerequisiteEdges } from "@/hooks/usePrerequisites";
 import type { Edge as StoreEdge } from "@/types";
 
 // Custom node component wrapper for React Flow
-function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () => void; onMouseLeave: () => void; disableTooltip?: boolean } }) {
+function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) {
   return (
     <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
       {/* Handles at edges of the circle - centered vertically on the 36px circle */}
@@ -53,10 +53,6 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { onMouseEnter: () =>
       />
       <CourseNodeComponent
         node={data}
-        isSpecial={data.section === -1}
-        isHovered={false}
-        onMouseEnter={data.onMouseEnter}
-        onMouseLeave={data.onMouseLeave}
         disableTooltip={data.disableTooltip}
       />
     </div>
@@ -69,7 +65,7 @@ const nodeTypes: NodeTypes = {
 
 
 
-// Column headers and dividers that move with the viewport  
+// Column headers and dividers that move with the viewport
 function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: { x: number; y: number; zoom: number } }) {
   const COLUMN_WIDTH = 200;
   const transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
@@ -110,8 +106,7 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
           // ASEs column (id: -1) - lighter grey background
           if (section.id === -1) {
             return (
-              <div
-                key={`bg-${section.id}`}
+              <div key={`bg-${section.id}`}
                 style={{
                   position: 'absolute',
                   left: index * COLUMN_WIDTH,
@@ -199,11 +194,32 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
   );
 }
 
+const ALL_SECTIONS: Section[] = [
+  { id: -2, title: 'Must Take' },
+  { id: -1, title: 'ASEs' },
+  { id: 0, title: "Freshman Fall" },
+  { id: 1, title: "Freshman Spring" },
+  { id: 2, title: "Sophomore Fall" },
+  { id: 3, title: "Sophomore Spring" },
+  { id: 4, title: "Junior Fall" },
+  { id: 5, title: "Junior Spring" },
+  { id: 6, title: "Senior Fall" },
+  { id: 7, title: "Senior Spring" },
+  { id: 8, title: "5Y Fall" },
+  { id: 9, title: "5Y Spring" },
+
+
+];
+
+// Pre-compute section index map once
+const SECTION_INDEX_MAP = new Map(
+  ALL_SECTIONS.map((section, index) => [section.id, index])
+);
+
 function CourseGraphFlowInner() {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
   const markers = useGraphStore(state => state.markers);
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
-  const sections = useGraphStore(state => state.sections);
   const loadingState = useGraphStore(state => state.loadingState);
   const error = useGraphStore(state => state.error);
   const fetchRoadData = useGraphStore(state => state.fetchRoadData);
@@ -212,12 +228,9 @@ function CourseGraphFlowInner() {
   const removeMarker = useGraphStore(state => state.removeMarker);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
 
-  // TODO: Refactor this architecture - React Flow should handle dragging internally
-  // Current approach uses useEffect to sync state which is error-prone
-  // Consider: compute flowNodes with useMemo and let React Flow manage drag state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  
+
   // Track viewport for column headers
   const [viewport, setViewport] = React.useState({ x: 0, y: 20, zoom: 1 });
 
@@ -236,7 +249,7 @@ function CourseGraphFlowInner() {
       const hasOptimizerOverlap = optimizerMap.has(key) && marker.status !== 'banish';
 
       return {
-        id: marker.id,
+        uuid: marker.uuid,
         courseId: marker.courseId,
         section: marker.section,
         userControlled: true,
@@ -258,7 +271,7 @@ function CourseGraphFlowInner() {
         return !markerKeys.has(key);
       })
       .map((on, index) => ({
-        id: `optimizer_${on.courseId}_${on.section}_${index}`,
+        uuid: `optimizer_${on.courseId}_${on.section}_${index}`,
         courseId: on.courseId,
         section: on.section,
         userControlled: false,
@@ -269,7 +282,7 @@ function CourseGraphFlowInner() {
 
   // Create a stable key for storeNodes to prevent infinite loops
   const storeNodesKey = React.useMemo(
-    () => storeNodes.map(n => `${n.id}:${n.courseId}:${n.section}:${n.nodeStatus || ''}`).sort().join('|'),
+    () => storeNodes.map(n => `${n.uuid}:${n.courseId}:${n.section}:${n.nodeStatus || ''}`).sort().join('|'),
     [storeNodes]
   );
 
@@ -279,7 +292,7 @@ function CourseGraphFlowInner() {
 
   // Context menu state
   const [contextMenu, setContextMenu] = React.useState<{
-    nodeId: string;
+    nodeUuid: string;
     x: number;
     y: number;
   } | null>(null);
@@ -332,33 +345,31 @@ function CourseGraphFlowInner() {
 
 
 
-  // Build sections array with Must Take and ASEs as first two columns
-  // Note: Memoized because used as dependency in useEffect hooks below
-  const allSections: Section[] = React.useMemo(() => {
-    const mustTakeSection: Section = { id: -2, title: 'Must Take' };
-    const asesSection: Section = { id: -1, title: 'ASEs' };
-    return [mustTakeSection, asesSection, ...sections];
-  }, [sections]);
-
   // Convert store nodes to React Flow nodes
   React.useEffect(() => {
     const startTime = performance.now();
     const COLUMN_WIDTH = 200;
     const NODE_SPACING = 120;
-    const VIEWPORT_CENTER_Y = 400; // Approximate center of viewport
+    const VIEWPORT_CENTER_Y = 400;
 
-    const flowNodes: Node[] = storeNodes.map((node, index) => {
-      const sectionIndex = allSections.findIndex(s => s.id === node.section);
-      const nodesInSection = storeNodes.filter(n => n.section === node.section);
-      const nodeIndexInSection = nodesInSection.findIndex(n => n.id === node.id);
+    const nodesBySection = new Map<number, typeof storeNodes>();
+    for (const node of storeNodes) {
+      if (!nodesBySection.has(node.section)) {
+        nodesBySection.set(node.section, []);
+      }
+      nodesBySection.get(node.section)!.push(node);
+    }
 
-      // Calculate total height of nodes in this section
+    const result: Node[] = storeNodes.map((node) => {
+      const sectionIndex = SECTION_INDEX_MAP.get(node.section) ?? 0;
+      const nodesInSection = nodesBySection.get(node.section) || [];
+      const nodeIndexInSection = nodesInSection.findIndex(n => n.uuid === node.uuid);
+
       const totalNodesHeight = (nodesInSection.length - 1) * NODE_SPACING;
-      // Start Y position to center the group vertically
       const startY = VIEWPORT_CENTER_Y - (totalNodesHeight / 2);
 
       return {
-        id: node.id,
+        id: node.uuid,
         type: 'courseNode',
         position: {
           x: sectionIndex * COLUMN_WIDTH + (COLUMN_WIDTH / 2),
@@ -366,57 +377,49 @@ function CourseGraphFlowInner() {
         },
         data: {
           ...node,
-          onMouseEnter: () => {},
-          onMouseLeave: () => {},
-          disableTooltip: contextMenu?.nodeId === node.id,
+          disableTooltip: contextMenu?.nodeUuid === node.uuid,
         },
         draggable: node.userControlled || false,
       };
     });
 
-    setNodes(flowNodes);
+    setNodes(result);
     const endTime = performance.now();
     console.log(`[Performance] Converted ${storeNodes.length} nodes in ${(endTime - startTime).toFixed(2)}ms`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeNodesKey, allSections, contextMenu?.nodeId]); // Use stable key, storeNodes accessed via closure
+  }, [storeNodesKey, contextMenu?.nodeUuid]);
 
-  // Convert store edges to React Flow edges
-  // Create stable key for storeEdges
+  // Create stable key for edges
   const storeEdgesKey = React.useMemo(
-    () => storeEdges.map(e => `${e.from_id}-${e.to_id}`).sort().join('|'),
+    () => storeEdges.map(e => `${e.fromUuid}-${e.toUuid}`).sort().join('|'),
     [storeEdges]
   );
 
+  // Convert store edges to React Flow edges
   React.useEffect(() => {
-    const flowEdges: FlowEdge[] = storeEdges.map((edge) => {
-      const fromNode = storeNodes.find(n => n.id === edge.from_id);
-      const toNode = storeNodes.find(n => n.id === edge.to_id);
+    // Pre-compute node map for O(1) access
+    const nodesByUuid = new Map(storeNodes.map(n => [n.uuid, n]));
 
-      if (!fromNode || !toNode) {
-        return null;
-      }
+    const result = storeEdges.map((edge) => {
+      const fromNode = nodesByUuid.get(edge.fromUuid);
+      const toNode = nodesByUuid.get(edge.toUuid);
+
+      if (!fromNode || !toNode) return null;
 
       // Don't render edges if either node is in "Must Take" column (section -2)
-      if (fromNode.section === -2 || toNode.section === -2) {
-        return null;
-      }
+      if (fromNode.section === -2 || toNode.section === -2) return null;
 
       // Don't render edges if either node is banished
-      if (fromNode.nodeStatus === 'banish' || toNode.nodeStatus === 'banish') {
-        return null;
-      }
+      if (fromNode.nodeStatus === 'banish' || toNode.nodeStatus === 'banish') return null;
 
       // Don't render edges FROM solo nodes (they don't require dependencies)
-      // but still show edges TO solo nodes (other things can depend on them)
-      if (toNode.nodeStatus === 'solo') {
-        return null;
-      }
+      if (toNode.nodeStatus === 'solo') return null;
 
-      // Check if prerequisite is incorrectly placed (same or later section than dependent)
+      // Check if prerequisite is incorrectly placed
       const isIncorrectOrder = fromNode.section >= toNode.section;
 
-      const fromX = allSections.findIndex(s => s.id === fromNode?.section);
-      const toX = allSections.findIndex(s => s.id === toNode?.section);
+      const fromX = SECTION_INDEX_MAP.get(fromNode.section) ?? 0;
+      const toX = SECTION_INDEX_MAP.get(toNode.section) ?? 0;
       const isLongDistance = Math.abs(toX - fromX) > 1;
 
       // Determine edge color based on order and distance
@@ -425,7 +428,6 @@ function CourseGraphFlowInner() {
       let strokeDasharray: string | undefined;
 
       if (isIncorrectOrder) {
-        // Red tint for incorrectly placed prerequisites
         strokeColor = 'rgba(239, 68, 68, 0.8)';
         strokeWidth = 2;
         strokeDasharray = undefined;
@@ -440,10 +442,10 @@ function CourseGraphFlowInner() {
       }
 
       return {
-        id: `edge-${edge.from_id}-${edge.to_id}`,
-        source: String(edge.from_id),
-        target: String(edge.to_id),
-        type: 'default', // Bezier curves
+        id: `edge-${edge.fromUuid}-${edge.toUuid}`,
+        source: String(edge.fromUuid),
+        target: String(edge.toUuid),
+        type: 'default',
         animated: false,
         style: {
           stroke: strokeColor,
@@ -459,9 +461,9 @@ function CourseGraphFlowInner() {
       };
     }).filter(Boolean) as FlowEdge[];
 
-    setEdges(flowEdges);
+    setEdges(result);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeEdgesKey, storeNodesKey, allSections]); // Use stable keys, access arrays via closure
+  }, [storeEdgesKey, storeNodesKey]);
 
   // Handle node drag end
   const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
@@ -472,8 +474,8 @@ function CourseGraphFlowInner() {
     // Nodes are positioned at column centers: 100, 300, 500, etc. (index * 200 + 100)
     // To find which column: (x - 100) / 200, then round to nearest
     const sectionIndex = Math.round((node.position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
-    const clampedIndex = Math.max(0, Math.min(sectionIndex, allSections.length - 1));
-    const section = allSections[clampedIndex];
+    const clampedIndex = Math.max(0, Math.min(sectionIndex, ALL_SECTIONS.length - 1));
+    const section = ALL_SECTIONS[clampedIndex];
 
     if (section && node.data.section !== section.id) {
       // Update the section in the store, which will trigger a re-render with correct positioning
@@ -526,8 +528,8 @@ function CourseGraphFlowInner() {
       // Determine which column based on x position
       const COLUMN_WIDTH = 200;
       const sectionIndex = Math.round((position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
-      const clampedIndex = Math.max(0, Math.min(sectionIndex, allSections.length - 1));
-      const section = allSections[clampedIndex];
+      const clampedIndex = Math.max(0, Math.min(sectionIndex, ALL_SECTIONS.length - 1));
+      const section = ALL_SECTIONS[clampedIndex];
 
       // Add the marker with the correct section
       addMarker(nodeData.courseId, section.id, 'pin');
@@ -563,7 +565,7 @@ function CourseGraphFlowInner() {
   }
 
   const COLUMN_WIDTH = 200;
-  const numColumns = allSections.length;
+  const numColumns = ALL_SECTIONS.length;
 
   return (
     <div
@@ -607,7 +609,7 @@ function CourseGraphFlowInner() {
       </ReactFlow>
 
       {/* Column headers and dividers that move with viewport */}
-      <ColumnHeaders sections={allSections} viewport={viewport} />
+      <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
 
       {/* Optimization overlay - disable interactions */}
       {isOptimizing && (
@@ -616,7 +618,7 @@ function CourseGraphFlowInner() {
 
       {/* Context menu */}
       {contextMenu && (() => {
-        const node = storeNodes.find(n => n.id === contextMenu.nodeId);
+        const node = storeNodes.find(n => n.uuid === contextMenu.nodeUuid);
         if (!node) return null;
 
         const currentStatus = node.nodeStatus || 'pin';
@@ -633,7 +635,7 @@ function CourseGraphFlowInner() {
           >
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handlePin(contextMenu.nodeId)}
+              onClick={() => handlePin(contextMenu.nodeUuid)}
               disabled={currentStatus === 'pin'}
             >
               <Pin className="w-4 h-4" />
@@ -645,7 +647,7 @@ function CourseGraphFlowInner() {
 
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handleSolo(contextMenu.nodeId)}
+              onClick={() => handleSolo(contextMenu.nodeUuid)}
               disabled={currentStatus === 'solo'}
             >
               <Unlink className="w-4 h-4" />
@@ -657,7 +659,7 @@ function CourseGraphFlowInner() {
 
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handleBanish(contextMenu.nodeId)}
+              onClick={() => handleBanish(contextMenu.nodeUuid)}
               disabled={currentStatus === 'banish'}
             >
               <Ban className="w-4 h-4" />
@@ -671,7 +673,7 @@ function CourseGraphFlowInner() {
 
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
-              onClick={() => handleRemoveNode(contextMenu.nodeId)}
+              onClick={() => handleRemoveNode(contextMenu.nodeUuid)}
             >
               <Trash2 className="w-4 h-4" />
               <span>Remove marker</span>

@@ -9,20 +9,12 @@ import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 
 type CourseNodeComponentProps = {
   node: CourseNode & { optimizerAgreed?: boolean };
-  isSpecial?: boolean;
-  isHovered?: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
   disableTooltip?: boolean;
 };
 
 function CourseNodeComponent(props: CourseNodeComponentProps) {
   const {
     node,
-    isSpecial = false,
-    isHovered = false,
-    onMouseEnter,
-    onMouseLeave,
     disableTooltip = false,
   } = props;
 
@@ -38,7 +30,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const units = courseDetails?.units || 12; // Default to 12 if not available
 
   // Get node styling from shared utility
-  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled, isSpecial });
+  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
 
   const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
 
@@ -54,11 +46,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       {/* Circle node */}
       <CourseTooltip courseId={courseId} disabled={disableTooltip}>
         <div
-          data-node-circle={node.id}
+          data-node-circle={node.uuid}
           className="relative w-9 h-9 rounded-full cursor-pointer"
           style={glowStyle}
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
           role="button"
           tabIndex={0}
         >
@@ -89,8 +79,30 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
             </svg>
           )}
 
-          {/* Dashed circle ring for solo nodes */}
-          {isSolo && (
+          {/* Term highlight ring - solid for normal nodes, dashed for solo nodes */}
+          {termHighlight && !isBanished && (
+            <svg
+              className="pointer-events-none absolute inset-0"
+              viewBox="0 0 36 36"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <circle
+                cx="18"
+                cy="18"
+                r="16"
+                fill="none"
+                stroke={userControlled ? "rgba(147, 197, 253, 0.8)" : "rgba(255,255,255,0.35)"}
+                strokeWidth="3"
+                pathLength={1}
+                strokeDasharray={isSolo ? "4 4" : termHighlight.dasharray}
+                strokeDashoffset={isSolo ? "0" : termHighlight.dashoffset}
+                strokeLinecap={isSolo ? "round" : "butt"}
+              />
+            </svg>
+          )}
+
+          {/* Fallback dashed ring for solo nodes without term highlight */}
+          {isSolo && !termHighlight && !isBanished && (
             <svg
               className="pointer-events-none absolute inset-0"
               viewBox="0 0 36 36"
@@ -109,29 +121,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
             </svg>
           )}
 
-          {termHighlight && !isBanished && !isSolo && (
-            <svg
-              className="pointer-events-none absolute inset-0"
-              viewBox="0 0 36 36"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke={userControlled ? "rgba(147, 197, 253, 0.8)" : "rgba(255,255,255,0.35)"}
-                strokeWidth="3"
-                pathLength={1}
-                strokeDasharray={termHighlight.dasharray}
-                strokeDashoffset={termHighlight.dashoffset}
-                strokeLinecap="butt"
-              />
-            </svg>
-          )}
-
           {/* Double ring indicator when optimizer agrees with marker placement */}
-          {optimizerAgreed && !isBanished && !isSolo && (
+          {optimizerAgreed && !isBanished && (
             <svg
               className="pointer-events-none absolute inset-0"
               viewBox="0 0 36 36"

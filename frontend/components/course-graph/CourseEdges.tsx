@@ -72,8 +72,8 @@ export function CourseEdges({
     >
       <g>
         {edges.map((edge, idx) => {
-          const fromNodeElement = nodeRefs.current?.get(edge.from_id);
-          const toNodeElement = nodeRefs.current?.get(edge.to_id);
+          const fromNodeElement = nodeRefs.current?.get(edge.fromUuid);
+          const toNodeElement = nodeRefs.current?.get(edge.toUuid);
 
           if (!fromNodeElement || !toNodeElement) return null;
 
@@ -104,8 +104,8 @@ export function CourseEdges({
           const offsetToY = toY - (dy / distance) * circleRadius;
 
           // Check if prerequisite is incorrectly placed (same or later section than dependent)
-          const fromNode = storeNodes.find(n => n.id === edge.from_id);
-          const toNode = storeNodes.find(n => n.id === edge.to_id);
+          const fromNode = storeNodes.find(n => n.uuid === edge.fromUuid);
+          const toNode = storeNodes.find(n => n.uuid === edge.toUuid);
           const isIncorrectOrder = fromNode && toNode && fromNode.section >= toNode.section;
 
           // Determine edge style based on distance and prerequisite order

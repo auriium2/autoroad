@@ -78,7 +78,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     const { markers } = get();
 
     const newMarker: Marker = {
-      id: `marker_${courseId}_${Date.now()}`,
+      uuid: `marker_${courseId}_${Date.now()}`,
       courseId,
       section,
       status,
@@ -89,19 +89,19 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     });
   },
 
-  removeMarker: (id) => {
+  removeMarker: (uuid) => {
     const { markers } = get();
 
     set({
-      markers: markers.filter(m => m.id !== id),
+      markers: markers.filter(m => m.uuid !== uuid),
     });
   },
 
-  updateMarker: (id, updates) => {
+  updateMarker: (uuid, updates) => {
     const { markers } = get();
 
     set({
-      markers: markers.map(m => m.id === id ? { ...m, ...updates } : m),
+      markers: markers.map(m => m.uuid === uuid ? { ...m, ...updates } : m),
     });
   },
 
@@ -131,7 +131,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       const markers = cached.nodes
         ?.filter((n: CourseNode) => n.userControlled)
         .map((n: CourseNode) => ({
-          id: n.id,
+          uuid: n.uuid,
           courseId: n.courseId,
           section: n.section,
           status: n.nodeStatus || 'pin',
@@ -209,7 +209,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // Load sample data for development/demo
   loadInitialData: () => {
     const markers: Marker[] = [
-      { id: "marker_1", courseId: "6.120a", section: 1, status: 'pin' },
+      { uuid: "marker_1", courseId: "6.120a", section: 1, status: 'pin' },
     ];
 
     set({

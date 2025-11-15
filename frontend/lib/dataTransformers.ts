@@ -22,8 +22,8 @@ export function transformBackendToFrontend(backendData: unknown) {
   const edges: Edge[] = ((data.prerequisites as unknown[]) || []).map((prereq: unknown) => {
     const p = prereq as Record<string, unknown>;
     return {
-      from_id: String(p.course),
-      to_id: String(p.prerequisite)
+      fromUuid: String(p.course),
+      toUuid: String(p.prerequisite)
     };
   });
 
@@ -86,16 +86,16 @@ export function generateEdgesFromPrerequisites(courseData: unknown[]): Edge[] {
       if (Array.isArray(c.prerequisites)) {
         c.prerequisites.forEach((prereq: unknown) => {
           edges.push({
-            from_id: String(prereq),
-            to_id: sourceId
+            fromUuid: String(prereq),
+            toUuid: sourceId
           });
         });
       } else if (typeof c.prerequisites === 'object') {
         // Handle more complex prerequisite structure
         Object.keys(c.prerequisites as object).forEach(prereq => {
           edges.push({
-            from_id: prereq,
-            to_id: sourceId
+            fromUuid: prereq,
+            toUuid: sourceId
           });
         });
       }

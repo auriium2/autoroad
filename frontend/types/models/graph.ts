@@ -1,6 +1,6 @@
 export interface Edge {
-  from_id: string;
-  to_id: string;
+  fromUuid: string;
+  toUuid: string;
 }
 
 export interface Section {
