@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { fireroadApi, CourseDetails, FireroadCourse } from '@/services/api';
+import { fireroadApi, CourseDetails, FireroadCourse } from '@/services/fireroad';
 
 const USE_FIREROAD = false; // Toggle to switch between fake data and real API
 

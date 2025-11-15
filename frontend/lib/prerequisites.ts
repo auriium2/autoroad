@@ -1,6 +1,9 @@
 /**
  * Prerequisite parsing and evaluation
- * Inspired by MIT Courseroad's approach
+ * Based on the tested Python implementation in backend/courses/prerequisites
+ *
+ * This module contains PURE functions only - no API calls, no caching.
+ * For API-based prerequisite fetching, use hooks/usePrerequisites.ts
  *
  * Fireroad prerequisite format:
  * - Operators: "," (AND), "/" (OR)
@@ -13,8 +16,6 @@
  * - OR: "18.05/18.06"
  * - Complex: "(6.100A,6.1200)/(6.100L,6.1200)"
  */
-
-import type { CourseNode } from '@/types';
 
 // ============================================================================
 // Types
@@ -328,6 +329,18 @@ class PrerequisiteEvaluator {
   }
 }
 
+/**
+ * Evaluate prerequisites against a list of available courses
+ */
+export function evaluatePrerequisites(
+  prereqTree: PrereqNode,
+  availableCourses: string[],
+  allowReuse: boolean = true
+): EvaluationResult {
+  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse);
+  return evaluator.evaluate(prereqTree);
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -335,7 +348,7 @@ class PrerequisiteEvaluator {
 /**
  * Extract all course IDs from a prerequisite tree
  */
-function extractCourseIds(prereqTree: PrereqNode | null): string[] {
+export function extractCourseIds(prereqTree: PrereqNode | null): string[] {
   if (!prereqTree) return [];
 
   if (prereqTree.type === 'course') {
@@ -347,139 +360,4 @@ function extractCourseIds(prereqTree: PrereqNode | null): string[] {
   }
 
   return [];
-}
-
-// ============================================================================
-// Public API (maintaining compatibility with existing code)
-// ============================================================================
-
-// Lazy cache for prerequisites - only fetches what we need
-const prerequisiteCache = new Map<string, string[]>();
-
-/**
- * Get all prerequisite course IDs for a given course
- */
-export async function getPrerequisites(courseId: string): Promise<string[]> {
-  // Check cache first
-  if (prerequisiteCache.has(courseId)) {
-    return prerequisiteCache.get(courseId)!;
-  }
-
-  // TODO: Fetch from Fireroad API
-  // For now, use hardcoded data matching our fake course data
-  const prereqMap: Record<string, string> = {
-    '6.1200': '6.100',
-    '6.1010': '6.100/6.120a',
-    '6.1020': '6.1010',
-    '6.1030': '6.1200,6.1010',
-    '6.1040': '6.1020',
-    '6.1050': '6.1020,6.1030',
-    '6.1060': '6.1050',
-    '6.1070': '6.1010',
-    '6.3700': '18.01',
-    '18.02': '18.01',
-    '18.03': '18.02',
-    '6.1800': '6.1020',
-  };
-
-  const prereqString = prereqMap[courseId];
-  if (!prereqString) {
-    prerequisiteCache.set(courseId, []);
-    return [];
-  }
-
-  const prereqTree = parseFireroad(prereqString);
-  const prerequisites = extractCourseIds(prereqTree);
-
-  prerequisiteCache.set(courseId, prerequisites);
-  return prerequisites;
-}
-
-/**
- * Clear the prerequisite cache (useful for testing or if data becomes stale)
- */
-export function clearPrerequisiteCache(): void {
-  prerequisiteCache.clear();
-}
-
-/**
- * Compute edges for a graph based on prerequisites
- * Returns array of {from_id, to_id} edges
- */
-export async function computePrerequisiteEdges(
-  nodes: CourseNode[]
-): Promise<Array<{ from_id: string; to_id: string }>> {
-  const edges: Array<{ from_id: string; to_id: string }> = [];
-
-  // Build a map of courseId -> node for quick lookup
-  const courseToNode = new Map<string, CourseNode>();
-  for (const node of nodes) {
-    courseToNode.set(node.courseId, node);
-  }
-
-  // For each node, find its prerequisites and create edges
-  for (const node of nodes) {
-    const prereqs = await getPrerequisites(node.courseId);
-
-    for (const prereqCourseId of prereqs) {
-      const prereqNode = courseToNode.get(prereqCourseId);
-
-      // Only create edge if both courses are in the graph
-      if (prereqNode) {
-        edges.push({
-          from_id: prereqNode.id,
-          to_id: node.id,
-        });
-      }
-    }
-  }
-
-  return edges;
-}
-
-/**
- * Check if a course's prerequisites are satisfied by courses taken in earlier semesters
- */
-export async function checkCoursePlacement(
-  courseId: string,
-  section: number,
-  allNodes: CourseNode[]
-): Promise<{ satisfied: boolean; missing: string[] }> {
-  // Get the prerequisite string
-  const prereqMap: Record<string, string> = {
-    '6.1200': '6.100',
-    '6.1010': '6.100/6.120a',
-    '6.1020': '6.1010',
-    '6.1030': '6.1200,6.1010',
-    '6.1040': '6.1020',
-    '6.1050': '6.1020,6.1030',
-    '6.1060': '6.1050',
-    '6.1070': '6.1010',
-    '6.3700': '18.01',
-    '18.02': '18.01',
-    '18.03': '18.02',
-    '6.1800': '6.1020',
-  };
-
-  const prereqString = prereqMap[courseId];
-  if (!prereqString) {
-    return { satisfied: true, missing: [] };
-  }
-
-  // Parse the prerequisites
-  const prereqTree = parseFireroad(prereqString);
-
-  // Get courses taken in earlier semesters
-  const takenCourses = allNodes
-    .filter(n => n.section < section)
-    .map(n => n.courseId);
-
-  // Evaluate prerequisites
-  const evaluator = new PrerequisiteEvaluator(takenCourses, true);
-  const result = evaluator.evaluate(prereqTree);
-
-  return {
-    satisfied: result.satisfied,
-    missing: result.unsatisfiedReasons,
-  };
 }

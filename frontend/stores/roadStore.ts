@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { localStorage as localStorageApi, ApiError, roadApi } from '@/services/api';
+import { storage } from '@/lib/storage';
+import { ApiError } from '@/services/fireroad';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
-import { optimizerApi, type OptimizationConstraints, type OptimizationProgress } from '@/services/optimizerApi';
-import { computePrerequisiteEdges } from '@/lib/prerequisites';
+import { optimizerApi, type OptimizationConstraints, type OptimizationProgress } from '@/services/optimizer';
 
 // Re-export types for backward compatibility
 export type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode };
@@ -124,7 +124,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     }
 
     // Load from localStorage
-    const cached = localStorageApi.load();
+    const cached = storage.load();
 
     if (cached) {
       // Convert old format if needed

@@ -23,7 +23,7 @@ import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode } f
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
-import { computePrerequisiteEdges } from "@/lib/prerequisites";
+import { usePrerequisiteEdges } from "@/hooks/usePrerequisites";
 import type { Edge as StoreEdge } from "@/types";
 
 // Custom node component wrapper for React Flow
@@ -69,47 +69,20 @@ const nodeTypes: NodeTypes = {
 
 
 
-// Column headers and dividers that move with the viewport
-function ColumnHeaders({ sections }: { sections: Section[] }) {
+// Column headers and dividers that move with the viewport  
+function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: { x: number; y: number; zoom: number } }) {
   const COLUMN_WIDTH = 200;
-  const { getViewport } = useReactFlow();
-  const backgroundRef = React.useRef<HTMLDivElement>(null);
-  const dividersRef = React.useRef<HTMLDivElement>(null);
-  const headersRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    let rafId: number;
-
-    const updateViewport = () => {
-      const viewport = getViewport();
-
-      // Update all three elements directly
-      if (backgroundRef.current) {
-        backgroundRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
-      }
-      if (dividersRef.current) {
-        dividersRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
-      }
-      if (headersRef.current) {
-        headersRef.current.style.transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
-      }
-
-      rafId = requestAnimationFrame(updateViewport);
-    };
-
-    rafId = requestAnimationFrame(updateViewport);
-    return () => cancelAnimationFrame(rafId);
-  }, [getViewport]);
+  const transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
 
   return (
     <>
       {/* Column backgrounds */}
       <div
-        ref={backgroundRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
+          transform,
           transformOrigin: 'top left',
           pointerEvents: 'none',
           zIndex: 0,
@@ -156,11 +129,11 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
       {/* Column divider lines */}
       <div
-        ref={dividersRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
+          transform,
           transformOrigin: 'top left',
           pointerEvents: 'none',
           zIndex: 1,
@@ -196,11 +169,11 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
 
       {/* Column headers */}
       <div
-        ref={headersRef}
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
+          transform,
           transformOrigin: 'top left',
           display: 'flex',
           gap: 0,
@@ -239,8 +212,14 @@ function CourseGraphFlowInner() {
   const removeMarker = useGraphStore(state => state.removeMarker);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
 
+  // TODO: Refactor this architecture - React Flow should handle dragging internally
+  // Current approach uses useEffect to sync state which is error-prone
+  // Consider: compute flowNodes with useMemo and let React Flow manage drag state
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // Track viewport for column headers
+  const [viewport, setViewport] = React.useState({ x: 0, y: 20, zoom: 1 });
 
   // Compute display nodes from markers + optimizer nodes
   const storeNodes = React.useMemo(() => {
@@ -288,22 +267,15 @@ function CourseGraphFlowInner() {
     return [...markerNodes, ...optimizerOnlyNodes];
   }, [markers, optimizerNodes]);
 
+  // Create a stable key for storeNodes to prevent infinite loops
+  const storeNodesKey = React.useMemo(
+    () => storeNodes.map(n => `${n.id}:${n.courseId}:${n.section}:${n.nodeStatus || ''}`).sort().join('|'),
+    [storeNodes]
+  );
+
   // Compute edges asynchronously whenever storeNodes changes
-  const [storeEdges, setStoreEdges] = React.useState<StoreEdge[]>([]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-
-    computePrerequisiteEdges(storeNodes).then(newEdges => {
-      if (!cancelled) {
-        setStoreEdges(newEdges);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [storeNodes]);
+  // Fetch prerequisite edges using the hook
+  const { data: storeEdges = [] } = usePrerequisiteEdges(storeNodes);
 
   // Context menu state
   const [contextMenu, setContextMenu] = React.useState<{
@@ -370,6 +342,7 @@ function CourseGraphFlowInner() {
 
   // Convert store nodes to React Flow nodes
   React.useEffect(() => {
+    const startTime = performance.now();
     const COLUMN_WIDTH = 200;
     const NODE_SPACING = 120;
     const VIEWPORT_CENTER_Y = 400; // Approximate center of viewport
@@ -402,9 +375,18 @@ function CourseGraphFlowInner() {
     });
 
     setNodes(flowNodes);
-  }, [storeNodes, allSections, setNodes, contextMenu]);
+    const endTime = performance.now();
+    console.log(`[Performance] Converted ${storeNodes.length} nodes in ${(endTime - startTime).toFixed(2)}ms`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeNodesKey, allSections, contextMenu?.nodeId]); // Use stable key, storeNodes accessed via closure
 
   // Convert store edges to React Flow edges
+  // Create stable key for storeEdges
+  const storeEdgesKey = React.useMemo(
+    () => storeEdges.map(e => `${e.from_id}-${e.to_id}`).sort().join('|'),
+    [storeEdges]
+  );
+
   React.useEffect(() => {
     const flowEdges: FlowEdge[] = storeEdges.map((edge) => {
       const fromNode = storeNodes.find(n => n.id === edge.from_id);
@@ -478,7 +460,8 @@ function CourseGraphFlowInner() {
     }).filter(Boolean) as FlowEdge[];
 
     setEdges(flowEdges);
-  }, [storeEdges, storeNodes, allSections, setEdges]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeEdgesKey, storeNodesKey, allSections]); // Use stable keys, access arrays via closure
 
   // Handle node drag end
   const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
@@ -596,6 +579,7 @@ function CourseGraphFlowInner() {
         onNodeContextMenu={onNodeContextMenu}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onMove={(_, newViewport) => setViewport(newViewport)}
         nodeTypes={nodeTypes}
         fitView={false}
         minZoom={0.8}
@@ -623,7 +607,7 @@ function CourseGraphFlowInner() {
       </ReactFlow>
 
       {/* Column headers and dividers that move with viewport */}
-      <ColumnHeaders sections={allSections} />
+      <ColumnHeaders sections={allSections} viewport={viewport} />
 
       {/* Optimization overlay - disable interactions */}
       {isOptimizing && (
