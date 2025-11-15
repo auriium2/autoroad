@@ -24,7 +24,6 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
 import { usePrerequisiteEdges } from "@/hooks/usePrerequisites";
-import type { Edge as StoreEdge } from "@/types";
 
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) {

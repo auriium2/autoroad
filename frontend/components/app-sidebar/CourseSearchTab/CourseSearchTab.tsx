@@ -7,6 +7,7 @@ import { useSearchCourses } from "@/hooks/useCourseData";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { useCourseDrag } from "./useCourseDrag";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
+import type { FireroadCourse } from "@/services/fireroad";
 
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -41,7 +42,7 @@ export function CourseSearchTab() {
     return preview;
   };
 
-  const handleCourseStart = (e: React.DragEvent, course: any) => {
+  const handleCourseStart = (e: React.DragEvent, course: FireroadCourse) => {
     // Create custom drag preview
     const preview = createDragPreview(course.subject_id, course.total_units ?? 12);
 

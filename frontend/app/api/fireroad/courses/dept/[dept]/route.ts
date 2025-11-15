@@ -9,10 +9,10 @@ const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { dept: string } }
+  { params }: { params: Promise<{ dept: string }> }
 ) {
   try {
-    const { dept } = params;
+    const { dept } = await params;
     
     if (!dept) {
       return NextResponse.json(

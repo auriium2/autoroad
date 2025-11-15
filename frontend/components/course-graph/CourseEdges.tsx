@@ -17,8 +17,9 @@ export function CourseEdges({
   const svgRef = React.useRef<SVGSVGElement>(null);
   const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
 
-  // Get nodes from store to check section positions
-  const storeNodes = useGraphStore(state => state.nodes);
+  // Get markers and optimizer nodes from store to check section positions
+  const markers = useGraphStore(state => state.markers);
+  const optimizerNodes = useGraphStore(state => state.optimizerNodes);
 
   // Update on scroll
   React.useEffect(() => {
@@ -104,8 +105,13 @@ export function CourseEdges({
           const offsetToY = toY - (dy / distance) * circleRadius;
 
           // Check if prerequisite is incorrectly placed (same or later section than dependent)
-          const fromNode = storeNodes.find(n => n.uuid === edge.fromUuid);
-          const toNode = storeNodes.find(n => n.uuid === edge.toUuid);
+          // Combine markers and optimizer nodes to find the nodes
+          const allNodes = [
+            ...markers.map(m => ({ uuid: m.uuid, section: m.section })),
+            ...optimizerNodes.map((on, idx) => ({ uuid: `optimizer_${on.courseId}_${on.section}_${idx}`, section: on.section }))
+          ];
+          const fromNode = allNodes.find(n => n.uuid === edge.fromUuid);
+          const toNode = allNodes.find(n => n.uuid === edge.toUuid);
           const isIncorrectOrder = fromNode && toNode && fromNode.section >= toNode.section;
 
           // Determine edge style based on distance and prerequisite order

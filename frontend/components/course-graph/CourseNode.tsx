@@ -19,7 +19,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   } = props;
 
   const { courseId, userControlled, disabled, section, nodeStatus: markerStatus } = node;
-  const optimizerAgreed = (node as any).optimizerAgreed;
+  const optimizerAgreed = node.optimizerAgreed;
 
   // Check node status
   const isBanished = markerStatus === 'banish';
@@ -32,7 +32,12 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Get node styling from shared utility
   const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
 
-  const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
+  // Override with yellow glow for solo nodes (but keep blue colors)
+  const finalBoxShadow = isSolo 
+    ? "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)"
+    : boxShadow;
+
+  const glowStyle = finalBoxShadow !== "none" ? { boxShadow: finalBoxShadow } : {};
 
   // Get term-based border gradient
   const termHighlight = getTermBorderHighlight({
@@ -79,7 +84,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
             </svg>
           )}
 
-          {/* Term highlight ring - solid for normal nodes, dashed for solo nodes */}
+          {/* Term highlight ring */}
           {termHighlight && !isBanished && (
             <svg
               className="pointer-events-none absolute inset-0"
@@ -94,29 +99,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
                 stroke={userControlled ? "rgba(147, 197, 253, 0.8)" : "rgba(255,255,255,0.35)"}
                 strokeWidth="3"
                 pathLength={1}
-                strokeDasharray={isSolo ? "4 4" : termHighlight.dasharray}
-                strokeDashoffset={isSolo ? "0" : termHighlight.dashoffset}
-                strokeLinecap={isSolo ? "round" : "butt"}
-              />
-            </svg>
-          )}
-
-          {/* Fallback dashed ring for solo nodes without term highlight */}
-          {isSolo && !termHighlight && !isBanished && (
-            <svg
-              className="pointer-events-none absolute inset-0"
-              viewBox="0 0 36 36"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke="rgba(147, 197, 253, 0.5)"
-                strokeWidth="2"
-                strokeDasharray="4 4"
-                strokeLinecap="round"
+                strokeDasharray={termHighlight.dasharray}
+                strokeDashoffset={termHighlight.dashoffset}
+                strokeLinecap="butt"
               />
             </svg>
           )}

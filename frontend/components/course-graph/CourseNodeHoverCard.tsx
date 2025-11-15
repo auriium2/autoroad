@@ -32,9 +32,14 @@ export function CourseNodeHoverCard({
   onMouseLeave?: () => void;
 }) {
   // Get node from store to find courseId
-  const nodes = useGraphStore(state => state.nodes);
-  const node = nodes.find(n => n.id === nodeId);
-  const courseId = node?.courseId || nodeId;
+  const markers = useGraphStore(state => state.markers);
+  const optimizerNodes = useGraphStore(state => state.optimizerNodes);
+  
+  // Find the node in markers first, then optimizer nodes
+  const markerNode = markers.find(m => m.uuid === nodeId);
+  const optimizerNode = optimizerNodes.find((on, idx) => `optimizer_${on.courseId}_${on.section}_${idx}` === nodeId);
+  
+  const courseId = markerNode?.courseId || optimizerNode?.courseId || nodeId;
   
   // Fetch course details
   const { data: courseDetails } = useCourseDetails(courseId);
