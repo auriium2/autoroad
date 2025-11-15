@@ -7,9 +7,9 @@ import {
   SidebarContent,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { ObjectivesTab } from "./AppSidebar/ObjectivesTab/ObjectivesTab";
-import { CourseSearchTab } from "./AppSidebar/CourseSearchTab/CourseSearchTab";
-import { ParametersTab } from "./AppSidebar/ParametersTab/ParametersTab";
+import { ObjectivesTab } from "./ObjectivesTab/ObjectivesTab";
+import { CourseSearchTab } from "./CourseSearchTab/CourseSearchTab";
+import { ParametersTab } from "./ParametersTab/ParametersTab";
 
 // Tab configuration - makes it easy to add/remove/reorder tabs
 interface TabConfig {

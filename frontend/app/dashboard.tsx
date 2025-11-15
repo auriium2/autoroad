@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { AppSidebar } from "./components/AppSidebar";
-import { StarOnGithubPopup } from "./components/StarOnGithubPopup";
+import { AppSidebar } from "@/components/app-sidebar";
+import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,19 +10,19 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "./components/ui/breadcrumb";
-import { Separator } from "./components/ui/separator";
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "./components/ui/sidebar";
-import { Button } from "./components/ui/button";
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
-import { CourseGraphFlow } from "./components/course-graph/CourseGraphFlow";
-import { DashboardAlerts } from "./components/DashboardAlerts";
-import { useGraphStore } from "./stores/roadStore";
-import { Toaster } from "./components/ui/toaster";
+import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
+import { DashboardAlerts } from "@/components/DashboardAlerts";
+import { useGraphStore } from "@/stores/roadStore";
+import { Toaster } from "@/components/ui/toaster";
 import { toast as showToast } from "@/hooks/useToast";
 
 export default function Dashboard() {

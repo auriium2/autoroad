@@ -14,7 +14,6 @@ interface GraphStore {
   sections: Section[];
   availableNodes: AvailableNode[];
 
-  // Loading states
   loadingState: LoadingState;
   error: string | null;
   isSaving: boolean;
