@@ -77,7 +77,6 @@ function ColumnHeaders({ sections }: { sections: Section[] }) {
   const dividersRef = React.useRef<HTMLDivElement>(null);
   const headersRef = React.useRef<HTMLDivElement>(null);
 
-  // Update viewport on changes - direct DOM manipulation for sync
   React.useEffect(() => {
     let rafId: number;
 
@@ -235,14 +234,14 @@ function CourseGraphFlowInner() {
   const loadingState = useGraphStore(state => state.loadingState);
   const error = useGraphStore(state => state.error);
   const fetchRoadData = useGraphStore(state => state.fetchRoadData);
-  const addNode = useGraphStore(state => state.addNode);
-  const updateNodeLocal = useGraphStore(state => state.updateNodeLocal);
-  const removeNode = useGraphStore(state => state.removeNode);
+  const addMarker = useGraphStore(state => state.addMarker);
+  const updateMarker = useGraphStore(state => state.updateMarker);
+  const removeMarker = useGraphStore(state => state.removeMarker);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  
+
   // Compute display nodes from markers + optimizer nodes
   const storeNodes = React.useMemo(() => {
     // Build a map of optimizer nodes by (courseId, section) for overlap detection
@@ -251,12 +250,12 @@ function CourseGraphFlowInner() {
       const key = `${on.courseId}_${on.section}`;
       optimizerMap.set(key, on);
     }
-    
+
     // Markers become nodes with userControlled=true
     const markerNodes: CourseNodeType[] = markers.map((marker) => {
       const key = `${marker.courseId}_${marker.section}`;
       const hasOptimizerOverlap = optimizerMap.has(key) && marker.status !== 'banish';
-      
+
       return {
         id: marker.id,
         courseId: marker.courseId,
@@ -266,14 +265,14 @@ function CourseGraphFlowInner() {
         ...(hasOptimizerOverlap ? { optimizerAgreed: true } : {}),
       } as CourseNodeType & { optimizerAgreed?: boolean };
     });
-    
+
     // Filter out optimizer nodes that overlap with non-banish markers
     const markerKeys = new Set(
       markers
         .filter(m => m.status !== 'banish')
         .map(m => `${m.courseId}_${m.section}`)
     );
-    
+
     const optimizerOnlyNodes: CourseNodeType[] = optimizerNodes
       .filter(on => {
         const key = `${on.courseId}_${on.section}`;
@@ -285,22 +284,22 @@ function CourseGraphFlowInner() {
         section: on.section,
         userControlled: false,
       }));
-    
+
     return [...markerNodes, ...optimizerOnlyNodes];
   }, [markers, optimizerNodes]);
-  
+
   // Compute edges asynchronously whenever storeNodes changes
   const [storeEdges, setStoreEdges] = React.useState<StoreEdge[]>([]);
-  
+
   React.useEffect(() => {
     let cancelled = false;
-    
+
     computePrerequisiteEdges(storeNodes).then(newEdges => {
       if (!cancelled) {
         setStoreEdges(newEdges);
       }
     });
-    
+
     return () => {
       cancelled = true;
     };
@@ -315,22 +314,22 @@ function CourseGraphFlowInner() {
 
   // Context menu handlers
   const handlePin = (nodeId: string) => {
-    updateNodeLocal(nodeId, { nodeStatus: 'pin' });
+    updateMarker(nodeId, { status: 'pin' });
     setContextMenu(null);
   };
 
   const handleSolo = (nodeId: string) => {
-    updateNodeLocal(nodeId, { nodeStatus: 'solo' });
+    updateMarker(nodeId, { status: 'solo' });
     setContextMenu(null);
   };
 
   const handleBanish = (nodeId: string) => {
-    updateNodeLocal(nodeId, { nodeStatus: 'banish' });
+    updateMarker(nodeId, { status: 'banish' });
     setContextMenu(null);
   };
 
-  const handleRemoveNode = async (nodeId: string) => {
-    await removeNode(nodeId);
+  const handleRemoveNode = (nodeId: string) => {
+    removeMarker(nodeId);
     setContextMenu(null);
   };
 
@@ -495,10 +494,10 @@ function CourseGraphFlowInner() {
 
     if (section && node.data.section !== section.id) {
       // Update the section in the store, which will trigger a re-render with correct positioning
-      updateNodeLocal(node.id, { section: section.id });
+      updateMarker(node.id, { section: section.id });
     } else {
       // Same section, but need to snap back to center - force a re-render
-      updateNodeLocal(node.id, { section: node.data.section });
+      updateMarker(node.id, { section: node.data.section });
     }
   };
 
@@ -547,14 +546,9 @@ function CourseGraphFlowInner() {
       const clampedIndex = Math.max(0, Math.min(sectionIndex, allSections.length - 1));
       const section = allSections[clampedIndex];
 
-      // Add the node with the correct section
-      const newNode = {
-        ...nodeData,
-        section: section.id,
-      };
-
-      await addNode(newNode);
-      console.log('Node added successfully at position:', position, 'section:', section.title);
+      // Add the marker with the correct section
+      addMarker(nodeData.courseId, section.id, 'pin');
+      console.log('Marker added successfully at position:', position, 'section:', section.title);
     } catch (error) {
       console.error('Failed to add dropped node:', error);
     }

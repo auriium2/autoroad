@@ -37,12 +37,6 @@ interface GraphStore {
   removeMarker: (id: string) => void;
   updateMarker: (id: string, updates: Partial<Marker>) => void;
 
-  // Computed node management (backward compat with old API)
-  addNode: (node: CourseNode) => Promise<void>;
-  removeNode: (id: string) => Promise<void>;
-  updateNode: (id: string, updates: Partial<CourseNode>) => Promise<void>;
-  updateNodeLocal: (id: string, updates: Partial<CourseNode>) => void;
-
   loadRoadData: (data: Partial<{
     markers: Marker[];
     optimizerNodes: OptimizerNode[];
@@ -110,38 +104,6 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     set({
       markers: markers.map(m => m.id === id ? { ...m, ...updates } : m),
     });
-  },
-
-  // Backward compatibility - wrap marker operations
-  addNode: async (node) => {
-    if (node.userControlled) {
-      get().addMarker(node.courseId, node.section, node.nodeStatus || 'pin');
-    }
-  },
-
-  removeNode: async (id) => {
-    // Check if it's a marker
-    const marker = get().markers.find(m => m.id === id);
-    if (marker) {
-      get().removeMarker(id);
-    }
-  },
-
-  updateNode: async (id, updates) => {
-    const marker = get().markers.find(m => m.id === id);
-    if (marker && updates.nodeStatus) {
-      get().updateMarker(id, { status: updates.nodeStatus });
-    }
-  },
-
-  updateNodeLocal: (id, updates) => {
-    const marker = get().markers.find(m => m.id === id);
-    if (marker) {
-      const markerUpdates: Partial<Marker> = {};
-      if (updates.section !== undefined) markerUpdates.section = updates.section;
-      if (updates.nodeStatus !== undefined) markerUpdates.status = updates.nodeStatus;
-      get().updateMarker(id, markerUpdates);
-    }
   },
 
   loadRoadData: (data) => {
