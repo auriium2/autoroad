@@ -64,12 +64,29 @@ function tokenize(prereqStr: string): string[] {
   // - Quoted strings: ''text'' or "text"
   // - GIR requirements: GIR:XXXX
   // - Course IDs: dept.number (both can have letters/numbers)
+  // - Text operators: AND, OR (case insensitive)
   // - Operators: , /
   // - Parentheses: ( )
-  const pattern = /''[^']*''|"[^"]*"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|[(),/]/gi;
+  const pattern = /''[^']*''|"[^"]*"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]/gi;
 
   const tokens = prereqStr.match(pattern) || [];
-  return tokens.map(t => t.trim()).filter(t => t.length > 0);
+  
+  // Convert text operators to symbols
+  const normalized: string[] = [];
+  for (const t of tokens) {
+    const trimmed = t.trim();
+    if (!trimmed) continue;
+    
+    if (trimmed.toUpperCase() === 'AND') {
+      normalized.push(',');
+    } else if (trimmed.toUpperCase() === 'OR') {
+      normalized.push('/');
+    } else {
+      normalized.push(trimmed);
+    }
+  }
+  
+  return normalized;
 }
 
 function filterJunkTokens(tokens: string[]): string[] {
@@ -101,19 +118,51 @@ function filterJunkTokens(tokens: string[]): string[] {
     filtered.pop();
   }
 
-  // Remove consecutive operators
+  // Remove consecutive operators and operators after opening parens
   const cleaned: string[] = [];
   if (filtered.length > 0) {
     cleaned.push(filtered[0]);
     for (let i = 1; i < filtered.length; i++) {
-      if ([',', '/'].includes(filtered[i]) && [',', '/'].includes(cleaned[cleaned.length - 1])) {
+      const current = filtered[i];
+      const prev = cleaned[cleaned.length - 1];
+      
+      // Skip operators that follow other operators
+      if ([',', '/'].includes(current) && [',', '/'].includes(prev)) {
         continue;
       }
-      cleaned.push(filtered[i]);
+      
+      // Skip operators that directly follow opening parentheses
+      if ([',', '/'].includes(current) && prev === '(') {
+        continue;
+      }
+      
+      // Skip operators that directly precede closing parentheses
+      if ([',', '/'].includes(prev) && current === ')') {
+        cleaned.pop(); // Remove the operator before the closing paren
+      }
+      
+      cleaned.push(current);
     }
   }
 
-  return cleaned;
+  // Remove empty parentheses: ()
+  const final: string[] = [];
+  let i = 0;
+  while (i < cleaned.length) {
+    if (i < cleaned.length - 1 && cleaned[i] === '(' && cleaned[i + 1] === ')') {
+      // Skip both ( and )
+      i += 2;
+      // Also remove preceding operator if exists
+      if (final.length > 0 && [',', '/'].includes(final[final.length - 1])) {
+        final.pop();
+      }
+    } else {
+      final.push(cleaned[i]);
+      i += 1;
+    }
+  }
+
+  return final;
 }
 
 export function parseFireroad(prereqStr: string): PrereqNode {

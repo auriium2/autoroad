@@ -3,8 +3,12 @@
  * Interface to MIT's Fireroad course catalog API
  */
 
-// Use Next.js API proxy to avoid CORS issues
+// Toggle between direct API calls and proxy
+const USE_DIRECT_API = true;
+const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 const FIREROAD_PROXY_URL = '/api/fireroad';
+
+const BASE_URL = USE_DIRECT_API ? FIREROAD_API_URL : FIREROAD_PROXY_URL;
 
 export class ApiError extends Error {
   constructor(
@@ -24,7 +28,9 @@ async function apiFetch<T>(
   const response = await fetch(url, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      // Only add Accept header - don't add Content-Type for GET requests
+      // to avoid CORS preflight requests
+      'Accept': 'application/json',
       ...options.headers,
     },
   });
@@ -137,18 +143,18 @@ export const fireroadApi = {
     if (params?.level) searchParams.append('level', params.level);
     if (params?.full) searchParams.append('full', 'true');
 
-    const url = `${FIREROAD_PROXY_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
+    const url = `${BASE_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
     return apiFetch<FireroadCourse[]>(url);
   },
 
   async getCoursesByDepartment(dept: string, full = false): Promise<FireroadCourse[]> {
     const params = full ? '?full=true' : '';
-    return apiFetch<FireroadCourse[]>(`${FIREROAD_PROXY_URL}/courses/dept/${dept}${params}`);
+    return apiFetch<FireroadCourse[]>(`${BASE_URL}/courses/dept/${dept}${params}`);
   },
 
   async getCourseDetails(subjectId: string): Promise<CourseDetails> {
     const course = await apiFetch<FireroadCourse>(
-      `${FIREROAD_PROXY_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
+      `${BASE_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
     );
     return normalizeFireroadCourse(course);
   },
@@ -157,6 +163,6 @@ export const fireroadApi = {
     // Note: This endpoint returns the entire catalog and can be very large
     // Consider implementing pagination or not exposing this endpoint
     const params = full ? '?full=true' : '';
-    return apiFetch<FireroadCourse[]>(`${FIREROAD_PROXY_URL}/courses/all${params}`);
+    return apiFetch<FireroadCourse[]>(`${BASE_URL}/courses/all${params}`);
   },
 };

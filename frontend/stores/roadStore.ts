@@ -209,7 +209,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // Load sample data for development/demo
   loadInitialData: () => {
     const markers: Marker[] = [
-      { uuid: "marker_1", courseId: "6.120a", section: 1, status: 'pin' },
+      { uuid: "marker_1", courseId: "6.120A", section: 1, status: 'pin' },
     ];
 
     set({
@@ -228,11 +228,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         { courseId: "6.1200", section: 1 },
         { courseId: "6.1010", section: 2 },
         { courseId: "6.1020", section: 3 },
-        { courseId: "6.1030", section: 3 },
+        { courseId: "6.1210", section: 3 }, // Introduction to Algorithms
         { courseId: "6.1040", section: 3 },
-        { courseId: "6.1050", section: 4 },
-        { courseId: "6.1060", section: 5 },
-        { courseId: "6.1070", section: 5 },
+        { courseId: "6.1800", section: 4 }, // Computer Systems Engineering
+        { courseId: "6.1910", section: 4 }, // Computation Structures
+        { courseId: "6.3900", section: 5 }, // Introduction to Machine Learning
       ] as OptimizerNode[],
       availableNodes: [],
     });

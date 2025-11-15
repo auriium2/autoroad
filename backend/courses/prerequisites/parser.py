@@ -46,17 +46,33 @@ def tokenize(prereq_str: str) -> list[str]:
     - Operators: "," (AND), "/" (OR)
     - Parentheses: "(", ")"
     - Quoted strings (to be filtered later)
+    - Text operators: AND, OR (convert to symbols)
     """
     # Pattern to match:
     # - Quoted strings: ''text'' or "text"
     # - GIR requirements: GIR:XXXX
     # - Course IDs: dept.number (both can have letters/numbers)
+    # - Text operators: AND, OR (case insensitive)
     # - Operators: , /
     # - Parentheses: ( )
-    pattern = r"''[^']*''|\"[^\"]*\"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|[(),/]"
+    pattern = r"''[^']*''|\"[^\"]*\"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]"
 
     tokens = re.findall(pattern, prereq_str, re.IGNORECASE)
-    return [t.strip() for t in tokens if t.strip()]
+    
+    # Convert text operators to symbols
+    normalized = []
+    for t in tokens:
+        t = t.strip()
+        if not t:
+            continue
+        if t.upper() == 'AND':
+            normalized.append(',')
+        elif t.upper() == 'OR':
+            normalized.append('/')
+        else:
+            normalized.append(t)
+    
+    return normalized
 
 
 def filter_junk_tokens(tokens: list[str]) -> list[str]:
@@ -83,15 +99,43 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
     while filtered and filtered[-1] in [',', '/']:
         filtered.pop()
 
+    # Remove consecutive operators and operators after opening parens
     cleaned = []
     if filtered:
         cleaned.append(filtered[0])
         for i in range(1, len(filtered)):
-            if filtered[i] in [',', '/'] and cleaned[-1] in [',', '/']:
+            current = filtered[i]
+            prev = cleaned[-1]
+            
+            # Skip operators that follow other operators
+            if current in [',', '/'] and prev in [',', '/']:
                 continue
-            cleaned.append(filtered[i])
+            
+            # Skip operators that directly follow opening parentheses
+            if current in [',', '/'] and prev == '(':
+                continue
+            
+            # Skip operators that directly precede closing parentheses
+            if prev in [',', '/'] and current == ')':
+                cleaned.pop()  # Remove the operator before the closing paren
+            
+            cleaned.append(current)
 
-    return cleaned
+    # Remove empty parentheses: ()
+    final = []
+    i = 0
+    while i < len(cleaned):
+        if i < len(cleaned) - 1 and cleaned[i] == '(' and cleaned[i + 1] == ')':
+            # Skip both ( and )
+            i += 2
+            # Also remove preceding operator if exists
+            if final and final[-1] in [',', '/']:
+                final.pop()
+        else:
+            final.append(cleaned[i])
+            i += 1
+
+    return final
 
 def parse_fireroad(prereq_str: str) -> PrereqNode:
     """
@@ -221,3 +265,28 @@ def prereq_to_string(prereq: PrereqNode) -> str:
         return ' OR '.join(item_strings)
 
     return f"{prereq.threshold} of: [{', '.join(item_strings)}]"
+
+
+def extract_course_ids(prereq_tree: PrereqNode | None) -> list[str]:
+    """
+    Extract all course IDs from a prerequisite tree.
+    
+    Args:
+        prereq_tree: The prerequisite tree to extract from
+    
+    Returns:
+        List of all course IDs in the tree
+    """
+    if not prereq_tree:
+        return []
+
+    if isinstance(prereq_tree, PrereqCourse):
+        return [prereq_tree.course_id]
+
+    if isinstance(prereq_tree, PrereqGroup):
+        course_ids = []
+        for child in prereq_tree.items:
+            course_ids.extend(extract_course_ids(child))
+        return course_ids
+
+    return []
