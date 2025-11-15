@@ -328,7 +328,7 @@ function CourseGraphFlowInner() {
     }
 
     setContextMenu({
-      nodeId: node.id,
+      nodeUuid: node.id,
       x: event.clientX,
       y: event.clientY,
     });
