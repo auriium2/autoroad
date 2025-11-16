@@ -284,14 +284,17 @@ export function prereqToString(prereq: PrereqNode): string {
 class PrerequisiteEvaluator {
   private availableCourses: Set<string>;
   private allowReuseAcrossRequirements: boolean;
+  private minimal: boolean;
   private usedCourses: Set<string>;
 
   constructor(
     availableCourses: string[],
-    allowReuseAcrossRequirements: boolean = false
+    allowReuseAcrossRequirements: boolean = false,
+    minimal: boolean = true
   ) {
     this.availableCourses = new Set(availableCourses);
     this.allowReuseAcrossRequirements = allowReuseAcrossRequirements;
+    this.minimal = minimal;
     this.usedCourses = new Set();
   }
 
@@ -365,61 +368,78 @@ class PrerequisiteEvaluator {
       };
     }
 
-    // For unsatisfied groups, return minimal set of unsatisfied reasons
-    // For OR groups (threshold === 1), return the shortest unsatisfied option
-    // For AND groups (threshold === items.length), return all unsatisfied items
-    // For k-of-n groups, return the k options with fewest unsatisfied reasons
-    
-    if (group.threshold === 1) {
-      // OR group: return the option with fewest missing prerequisites
-      const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
-      if (unsatisfiedResults.length === 0) {
+    // For unsatisfied groups, return unsatisfied reasons based on mode
+    if (this.minimal) {
+      // MINIMAL MODE: Return smallest set of missing prerequisites
+      // For OR groups (threshold === 1), return the shortest unsatisfied option
+      // For AND groups (threshold === items.length), return all unsatisfied items
+      // For k-of-n groups, return the k options with fewest unsatisfied reasons
+      
+      if (group.threshold === 1) {
+        // OR group: return the option with fewest missing prerequisites
+        const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
+        if (unsatisfiedResults.length === 0) {
+          return {
+            satisfied: false,
+            unsatisfiedReasons: [],
+            matchedCourses: allMatchedCourses
+          };
+        }
+        
+        // Find the option with the fewest unsatisfied reasons
+        const minimalOption = unsatisfiedResults.reduce((min, curr) => 
+          curr.unsatisfiedReasons.length < min.unsatisfiedReasons.length ? curr : min
+        );
+        
         return {
           satisfied: false,
-          unsatisfiedReasons: [],
+          unsatisfiedReasons: minimalOption.unsatisfiedReasons,
+          matchedCourses: allMatchedCourses
+        };
+      } else if (group.threshold === group.items.length) {
+        // AND group: return minimal set from each unsatisfied item
+        // Each unsatisfied item already returns its minimal set
+        const allUnsatisfiedReasons: string[] = [];
+        for (const result of itemResults) {
+          if (!result.satisfied) {
+            allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
+          }
+        }
+        
+        return {
+          satisfied: false,
+          unsatisfiedReasons: allUnsatisfiedReasons,
+          matchedCourses: allMatchedCourses
+        };
+      } else {
+        // k-of-n group: need to satisfy k items, find the k options with fewest missing
+        const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
+        const needed = group.threshold - satisfiedCount;
+        
+        // Sort by number of unsatisfied reasons and take the k with fewest
+        const sortedUnsatisfied = [...unsatisfiedResults].sort((a, b) => 
+          a.unsatisfiedReasons.length - b.unsatisfiedReasons.length
+        );
+        
+        const minimalOptions = sortedUnsatisfied.slice(0, needed);
+        const allUnsatisfiedReasons: string[] = [];
+        for (const result of minimalOptions) {
+          allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
+        }
+        
+        return {
+          satisfied: false,
+          unsatisfiedReasons: allUnsatisfiedReasons,
           matchedCourses: allMatchedCourses
         };
       }
-      
-      // Find the option with the fewest unsatisfied reasons
-      const minimalOption = unsatisfiedResults.reduce((min, curr) => 
-        curr.unsatisfiedReasons.length < min.unsatisfiedReasons.length ? curr : min
-      );
-      
-      return {
-        satisfied: false,
-        unsatisfiedReasons: minimalOption.unsatisfiedReasons,
-        matchedCourses: allMatchedCourses
-      };
-    } else if (group.threshold === group.items.length) {
-      // AND group: return minimal set from each unsatisfied item
-      // Each unsatisfied item already returns its minimal set
+    } else {
+      // COMPLETE MODE: Return all unsatisfied reasons from all branches
       const allUnsatisfiedReasons: string[] = [];
       for (const result of itemResults) {
         if (!result.satisfied) {
           allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
         }
-      }
-      
-      return {
-        satisfied: false,
-        unsatisfiedReasons: allUnsatisfiedReasons,
-        matchedCourses: allMatchedCourses
-      };
-    } else {
-      // k-of-n group: need to satisfy k items, find the k options with fewest missing
-      const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
-      const needed = group.threshold - satisfiedCount;
-      
-      // Sort by number of unsatisfied reasons and take the k with fewest
-      const sortedUnsatisfied = [...unsatisfiedResults].sort((a, b) => 
-        a.unsatisfiedReasons.length - b.unsatisfiedReasons.length
-      );
-      
-      const minimalOptions = sortedUnsatisfied.slice(0, needed);
-      const allUnsatisfiedReasons: string[] = [];
-      for (const result of minimalOptions) {
-        allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
       }
       
       return {
@@ -441,9 +461,10 @@ class PrerequisiteEvaluator {
 export function evaluatePrerequisites(
   prereqTree: PrereqNode,
   availableCourses: string[],
-  allowReuse: boolean = true
+  allowReuse: boolean = true,
+  minimal: boolean = true
 ): EvaluationResult {
-  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse);
+  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse, minimal);
   return evaluator.evaluate(prereqTree);
 }
 

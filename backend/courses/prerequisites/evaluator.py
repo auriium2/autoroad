@@ -19,10 +19,12 @@ class PrerequisiteEvaluator:
     def __init__(
         self,
         available_courses: list[str],
-        allow_reuse_across_requirements: bool = False
+        allow_reuse_across_requirements: bool = False,
+        minimal: bool = True
     ):
         self.available_courses = set(available_courses)
         self.allow_reuse_across_requirements = allow_reuse_across_requirements
+        self.minimal = minimal
         self.used_courses: set[str] = set()
 
     def evaluate(self, prereq: PrereqNode) -> EvaluationResult:
@@ -62,17 +64,16 @@ class PrerequisiteEvaluator:
 
         satisfied_count = 0
         all_matched_courses: list[str] = []
-        all_unsatisfied_reasons: list[str] = []
+        item_results: list[EvaluationResult] = []
 
         for item in group.items:
             result = self.evaluate(item)
+            item_results.append(result)
 
             all_matched_courses.extend(result.matched_courses)
 
             if result.satisfied:
                 satisfied_count += 1
-            else:
-                all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
 
             if satisfied_count >= group.threshold:
                 return EvaluationResult(
@@ -86,11 +87,68 @@ class PrerequisiteEvaluator:
                 matched_courses=all_matched_courses
             )
 
-        return EvaluationResult(
-            satisfied=False,
-            unsatisfied_reasons=all_unsatisfied_reasons,
-            matched_courses=all_matched_courses
-        )
+        # For unsatisfied groups, return unsatisfied reasons based on mode
+        if self.minimal:
+            # MINIMAL MODE: Return smallest set of missing prerequisites
+            if group.threshold == 1:
+                # OR group: return the option with fewest missing prerequisites
+                unsatisfied_results = [r for r in item_results if not r.satisfied]
+                if not unsatisfied_results:
+                    return EvaluationResult(
+                        satisfied=False,
+                        matched_courses=all_matched_courses
+                    )
+                
+                # Find the option with the fewest unsatisfied reasons
+                minimal_option = min(unsatisfied_results, key=lambda r: len(r.unsatisfied_reasons))
+                
+                return EvaluationResult(
+                    satisfied=False,
+                    unsatisfied_reasons=minimal_option.unsatisfied_reasons,
+                    matched_courses=all_matched_courses
+                )
+            elif group.threshold == len(group.items):
+                # AND group: return minimal set from each unsatisfied item
+                all_unsatisfied_reasons: list[str] = []
+                for result in item_results:
+                    if not result.satisfied:
+                        all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
+                
+                return EvaluationResult(
+                    satisfied=False,
+                    unsatisfied_reasons=all_unsatisfied_reasons,
+                    matched_courses=all_matched_courses
+                )
+            else:
+                # k-of-n group: need to satisfy k items, find the k options with fewest missing
+                unsatisfied_results = [r for r in item_results if not r.satisfied]
+                needed = group.threshold - satisfied_count
+                
+                # Sort by number of unsatisfied reasons and take the k with fewest
+                sorted_unsatisfied = sorted(unsatisfied_results, key=lambda r: len(r.unsatisfied_reasons))
+                minimal_options = sorted_unsatisfied[:needed]
+                
+                all_unsatisfied_reasons: list[str] = []
+                for result in minimal_options:
+                    all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
+                
+                return EvaluationResult(
+                    satisfied=False,
+                    unsatisfied_reasons=all_unsatisfied_reasons,
+                    matched_courses=all_matched_courses
+                )
+        else:
+            # COMPLETE MODE: Return all unsatisfied reasons from all branches
+            all_unsatisfied_reasons: list[str] = []
+            for result in item_results:
+                if not result.satisfied:
+                    all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
+            
+            return EvaluationResult(
+                satisfied=False,
+                unsatisfied_reasons=all_unsatisfied_reasons,
+                matched_courses=all_matched_courses
+            )
 
     def reset(self) -> None:
         """Reset the used courses set."""

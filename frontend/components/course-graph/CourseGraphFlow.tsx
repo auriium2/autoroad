@@ -697,7 +697,7 @@ function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "
               disabled={currentStatus === 'solo'}
             >
               <Unlink className="w-4 h-4" />
-              <span>Pin + Independent</span>
+              <span>Pin + Ignore Prereqs</span>
               {currentStatus === 'solo' && (
                 <span className="ml-auto text-xs text-muted-foreground">✓</span>
               )}

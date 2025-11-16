@@ -194,6 +194,19 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
       const results = await Promise.all(prereqPromises);
 
+      // Pre-compute courses by section for O(1) lookup instead of O(n) filtering per node
+      const coursesBySection = new Map<number, string[]>();
+      for (const node of nodes) {
+        if (node.nodeStatus === 'banish') continue;
+        
+        for (let section = node.section + 1; section <= 10; section++) {
+          if (!coursesBySection.has(section)) {
+            coursesBySection.set(section, []);
+          }
+          coursesBySection.get(section)!.push(node.courseId);
+        }
+      }
+
       // Evaluate prerequisites for each node
       for (const { node, prereqString } of results) {
         if (!prereqString) {
@@ -204,10 +217,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         try {
           const prereqTree = parseFireroad(prereqString);
           
-          // Get courses taken before this node's section (excluding banished)
-          const takenCourses = nodes
-            .filter(n => n.section < node.section && n.nodeStatus !== 'banish')
-            .map(n => n.courseId);
+          // Get courses taken before this node's section (O(1) lookup instead of O(n) filter)
+          const takenCourses = coursesBySection.get(node.section) || [];
 
           const result = evaluatePrerequisites(prereqTree, takenCourses);
 
