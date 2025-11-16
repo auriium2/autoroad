@@ -51,9 +51,16 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
                 course_id = self.courses_df.at[course_idx, 'subject_id']
                 title = self.courses_df.at[course_idx, 'title'] if 'title' in self.courses_df.columns else None
 
+                # Convert semester to section for frontend
+                # Special semesters (-2, -1) stay as-is, regular semesters (1-12) become 0-based (0-11)
+                if semester < 0:
+                    section = semester  # Keep special semesters as-is
+                else:
+                    section = semester - 1  # Convert regular semesters to 0-based
+
                 nodes.append({
                     "courseId": course_id,
-                    "section": semester - 1,  # Convert to 0-based for frontend
+                    "section": section,
                     "title": title
                 })
 
@@ -81,17 +88,43 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
             print(f"  - {node['courseId']} @ section {node['section']}")
 
 
-def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int):
+def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int, markers=None):
     """Create decision variables for taking courses."""
     take_vars = {}
+    
+    # Build a set of (course_id, semester) for markers in special semesters
+    # Note: marker.section is 0-based from frontend, but for special semesters:
+    #   section=-2 -> Must Take (semester=-1 after +1 conversion in marker constraints)
+    #   section=-1 -> ASE (semester=0 after +1 conversion, but we use -1 for ASE in take_vars)
+    # So we need to map: section=-2 -> semester=-2, section=-1 -> semester=-1
+    special_semester_courses = set()
+    if markers:
+        print(f"[DEBUG] Processing {len(markers)} markers")
+        for marker in markers:
+            print(f"[DEBUG] Marker: {marker.courseId} section={marker.section} status={marker.status}")
+            if marker.section == -2:  # Must Take
+                special_semester_courses.add((marker.courseId, -2))
+                print(f"[DEBUG] Added {marker.courseId} to Must Take semester -2")
+            elif marker.section == -1:  # ASE
+                special_semester_courses.add((marker.courseId, -1))
+                print(f"[DEBUG] Added {marker.courseId} to ASE semester -1")
 
     for course_idx in courses_df.index:
         subject_id = courses_df.at[course_idx, 'subject_id']
 
+        # For regular semesters (1 to max_semesters)
         for semester in range(1, max_semesters + 1):
             if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
                 take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
+        
+        # For special semesters, only create vars if there's a marker
+        if (subject_id, -2) in special_semester_courses:
+            var_name = f"take_{subject_id.replace('.', '_')}_s-2"
+            take_vars[(course_idx, -2)] = model.NewBoolVar(var_name)
+        if (subject_id, -1) in special_semester_courses:
+            var_name = f"take_{subject_id.replace('.', '_')}_s-1"
+            take_vars[(course_idx, -1)] = model.NewBoolVar(var_name)
 
     return take_vars
 
@@ -106,15 +139,17 @@ def add_basic_constraints(
 ):
     """Add basic constraints like max units per semester, taking course once, etc."""
 
-    # Constraint: Take each course at most once
+    # Constraint: Take each course at most once in regular semesters
+    # Note: Special semesters (-2, -1) are only used via markers, optimizer can't place there
+    # A course in Must Take/ASE can be retaken in regular semesters if needed
     for course_idx in courses_df.index:
-        course_takes = [
+        regular_semester_takes = [
             take_vars[(course_idx, s)]
             for s in range(1, max_semesters + 1)
             if (course_idx, s) in take_vars
         ]
-        if course_takes:
-            model.Add(sum(course_takes) <= 1)
+        if regular_semester_takes:
+            model.Add(sum(regular_semester_takes) <= 1)
 
     # Constraint: Max units per semester
     for semester in range(1, max_semesters + 1):
@@ -193,7 +228,7 @@ async def optimize(request: OptimizationRequest):
             # Create model (run in thread pool)
             def create_model():
                 model = cp_model.CpModel()
-                take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters)
+                take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
                 add_basic_constraints(model, take_vars, courses_df, max_units_per_semester, max_units_iap, max_semesters)
                 return model, take_vars
 

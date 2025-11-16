@@ -218,10 +218,8 @@ const SECTION_INDEX_MAP = new Map(
 );
 
 function CourseGraphFlowInner({ 
-  prereqCheckMode = "all",
   disableEdgesDuringOptimization = false,
 }: { 
-  prereqCheckMode?: "all" | "optimizer-only" | "off";
   disableEdgesDuringOptimization?: boolean;
 }) {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
@@ -340,18 +338,14 @@ function CourseGraphFlowInner({
   // Fetch prerequisite edges using the hook
   const { data: storeEdges = [] } = usePrerequisiteEdges(nodesToCalculateEdges);
 
-  // Fetch missing prerequisites based on mode
+  // Fetch missing prerequisites for all nodes (skip during optimization for performance)
   const nodesToCheck = React.useMemo(() => {
-    if (prereqCheckMode === "off" || isOptimizing) {
-      return []; // Skip when off or during optimization (performance)
-    } else if (prereqCheckMode === "optimizer-only") {
-      // Only check optimizer nodes (non-user-controlled)
-      return storeNodes.filter(n => !n.userControlled);
+    if (isOptimizing) {
+      return []; // Skip during optimization for performance
     } else {
-      // Check all nodes
-      return storeNodes;
+      return storeNodes; // Check all nodes
     }
-  }, [prereqCheckMode, isOptimizing, storeNodes]);
+  }, [isOptimizing, storeNodes]);
 
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
 
@@ -784,16 +778,13 @@ function CourseGraphFlowInner({
 }
 
 export function CourseGraphFlow({ 
-  prereqCheckMode = "all",
   disableEdgesDuringOptimization = false,
 }: { 
-  prereqCheckMode?: "all" | "optimizer-only" | "off";
   disableEdgesDuringOptimization?: boolean;
-}) {
+} = {}) {
   return (
     <ReactFlowProvider>
       <CourseGraphFlowInner 
-        prereqCheckMode={prereqCheckMode} 
         disableEdgesDuringOptimization={disableEdgesDuringOptimization}
       />
     </ReactFlowProvider>

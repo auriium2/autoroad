@@ -194,7 +194,8 @@ class PrerequisiteConstraintBuilder:
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Prerequisite is satisfied if taken in any earlier semester
-        earlier_semesters = range(1, semester)
+        # Include special semesters (-2, -1) as they happen before regular semesters
+        earlier_semesters = list(range(-2, 0)) + list(range(1, semester))
         taken_vars = [
             self.ctx.take_vars[prereq_idx, s]
             for s in earlier_semesters
@@ -234,7 +235,8 @@ class PrerequisiteConstraintBuilder:
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Satisfied if any course with this GIR was taken in an earlier semester
-        earlier_semesters = range(1, semester)
+        # Include special semesters (-2, -1) as they happen before regular semesters
+        earlier_semesters = list(range(-2, 0)) + list(range(1, semester))
         taken_vars = [
             self.ctx.take_vars[c, s]
             for c in gir_courses
@@ -273,7 +275,8 @@ class PrerequisiteConstraintBuilder:
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Satisfied if any course with this HASS was taken in an earlier semester
-        earlier_semesters = range(1, semester)
+        # Include special semesters (-2, -1) as they happen before regular semesters
+        earlier_semesters = list(range(-2, 0)) + list(range(1, semester))
         taken_vars = [
             self.ctx.take_vars[c, s]
             for c in hass_courses
@@ -345,7 +348,7 @@ def add_prerequisite_constraints(
     courses_df: pd.DataFrame,
     planning_year_start: int,
     prereq_trees: dict[int, PrereqNode],
-    solo_course_ids: set[str] = None
+    solo_course_ids: set[str] | None = None
 ) -> ConstraintResult:
     """
     Add prerequisite constraints to a CP-SAT model.
@@ -356,6 +359,7 @@ def add_prerequisite_constraints(
         courses_df: DataFrame containing course information
         planning_year_start: The starting year for planning
         prereq_trees: Map from course index to its prerequisite tree
+        solo_course_ids: Set of course IDs marked as solo (skip prerequisite checks)
 
     Returns:
         ConstraintResult with summary of constraints added and any issues
