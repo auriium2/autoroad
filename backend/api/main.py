@@ -1,24 +1,12 @@
-from contextlib import asynccontextmanager
-
-from backend.api.routes import optimize
-from backend.api.services.redis_client import close_redis
+from api.routes import optimize
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Starting Autoroad API server...")
-    yield
-    print("Shutting down Autoroad API server...")
-    await close_redis()
 
 
 app = FastAPI(
     title="Autoroad API",
     description="Course planning and optimization API for MIT students",
-    version="1.0.0",
-    lifespan=lifespan
+    version="1.0.0"
 )
 
 app.add_middleware(

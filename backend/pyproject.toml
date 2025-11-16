@@ -10,6 +10,8 @@ dependencies = [
     "basedpyright>=1.33.0",
     "pyarrow>=22.0.0",
     "fastapi>=0.121.1",
+    "uvicorn>=0.38.0",
+    "cachetools>=6.2.2",
 ]
 
 [project.optional-dependencies]

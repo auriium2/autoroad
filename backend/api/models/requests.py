@@ -5,8 +5,8 @@ from pydantic import BaseModel, Field
 
 class Marker(BaseModel):
     courseId: str = Field(..., description="Course subject ID (e.g., '6.1200', '18.01')")
-    section: int = Field(..., ge=1, le=12, description="Semester number (1-12)")
-    status: Literal["pin", "banish", "solo"] = Field(..., description="User preference for this course")
+    section: int = Field(..., ge=-1, le=11, description="Semester index (0-11, or -1 for banish/any)")
+    status: Literal["pin", "banish", "solo"] = Field(default="pin", description="User preference for this course")
 
 
 class OptimizationConstraints(BaseModel):

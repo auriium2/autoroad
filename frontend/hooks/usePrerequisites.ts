@@ -15,7 +15,7 @@ async function fetchPrerequisitesForCourse(courseId: string): Promise<string[]> 
   try {
     const courseDetails = await fireroadApi.getCourseDetails(courseId);
     const prereqString = courseDetails.prerequisites || '';
-    
+
     if (!prereqString) {
       return [];
     }
@@ -56,13 +56,13 @@ export function useCheckCoursePlacement(
       try {
         const courseDetails = await fireroadApi.getCourseDetails(courseId);
         const prereqString = courseDetails.prerequisites || '';
-        
+
         if (!prereqString) {
           return { satisfied: true, missing: [] };
         }
 
         const prereqTree = parseFireroad(prereqString);
-        
+
         const takenCourses = allNodes
           .filter(n => n.section < section)
           .map(n => n.courseId);
@@ -91,7 +91,7 @@ export function usePrerequisiteString(courseId: string | null) {
     queryKey: ['prerequisites', 'string', courseId],
     queryFn: async () => {
       if (!courseId) return '';
-      
+
       try {
         const courseDetails = await fireroadApi.getCourseDetails(courseId);
         return courseDetails.prerequisites || '';
@@ -115,7 +115,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
     () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
     [nodes]
   );
-  
+
   return useQuery({
     queryKey: ['prerequisites', 'edges', courseKey],
     queryFn: async () => {
@@ -130,10 +130,10 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       }
 
       // Fetch all prerequisites in parallel instead of sequentially
-      const prereqPromises = nodes.map(node => 
+      const prereqPromises = nodes.map(node =>
         fetchPrerequisitesForCourse(node.courseId).then(prereqs => ({ node, prereqs }))
       );
-      
+
       const results = await Promise.all(prereqPromises);
 
       // Build edges from results
@@ -193,8 +193,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
           if (courseDetails.hass_attribute) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
-          return { 
-            node, 
+          return {
+            node,
             prereqString: courseDetails.prerequisites || '',
             tags
           };
@@ -217,7 +217,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       for (const node of nodes) {
         // Skip nodes in "Must Take" section (-2) and banished nodes
         if (node.section === -2 || node.nodeStatus === 'banish') continue;
-        
+
         for (let section = node.section + 1; section <= 10; section++) {
           if (!coursesBySection.has(section)) {
             coursesBySection.set(section, []);
@@ -235,7 +235,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
         try {
           const prereqTree = parseFireroad(prereqString);
-          
+
           // Get courses taken before this node's section (O(1) lookup instead of O(n) filter)
           const takenCourses = coursesBySection.get(node.section) || [];
 

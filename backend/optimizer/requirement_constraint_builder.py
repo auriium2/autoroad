@@ -92,7 +92,7 @@ class ConstraintContext:
         """Generate a unique variable name with the given prefix."""
         self._counter += 1
         return f"{prefix}_{self._counter}"
-    
+
     def register_var(self, var: cp_model.IntVar, debug_name: str) -> None:
         """Register a variable with its human-readable debug name."""
         self.var_name_map[var.Name()] = debug_name
@@ -152,7 +152,7 @@ class RequirementConstraintBuilder:
             )
             self.results.append(result)
             return result
-        
+
         if isinstance(node, RequirementCourse):
             result = self._build_course(node, parent_path)
         elif isinstance(node, RequirementPlainString):
@@ -202,7 +202,7 @@ class RequirementConstraintBuilder:
         # Create a variable for whether this course requirement is satisfied
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
-        
+
         # Register the debug name (use req_id if available, otherwise course_id)
         debug_name = node.req_id if node.req_id else course_id
         self.ctx.register_var(satisfied_var, debug_name)
@@ -241,7 +241,7 @@ class RequirementConstraintBuilder:
 
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
-        
+
         # Register the debug name
         debug_name = node.req_id if node.req_id else "HASS (any)"
         self.ctx.register_var(satisfied_var, debug_name)
@@ -284,7 +284,7 @@ class RequirementConstraintBuilder:
 
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
-        
+
         # Register the debug name
         debug_name = node.req_id if node.req_id else f"{attribute}:{value}"
         self.ctx.register_var(satisfied_var, debug_name)
@@ -307,8 +307,8 @@ class RequirementConstraintBuilder:
         return ConstraintResult(satisfied_var=satisfied_var)
 
     def _collect_all_course_vars_from_results(
-        self, 
-        child_nodes: list[RequirementNode], 
+        self,
+        child_nodes: list[RequirementNode],
         child_results: list[ConstraintResult]
     ) -> list[cp_model.IntVar]:
         """
@@ -318,27 +318,27 @@ class RequirementConstraintBuilder:
         Returns only leaf course variables, not group variables.
         """
         course_vars = []
-        
+
         for node, result in zip(child_nodes, child_results):
             # Skip pruned or invalid results
             if hasattr(node, 'was_pruned') and node.was_pruned:
                 continue
             if not result.is_valid:
                 continue
-            
+
             # If it's a course (leaf), add its satisfaction variable
             if isinstance(node, RequirementCourse):
                 course_vars.append(result.satisfied_var)
-            
+
             # If it's a group, recurse into its children
             elif isinstance(node, RequirementGroup):
                 # Recursively build the group's children to get their course vars
                 # We need to recurse into the original node structure
                 nested_vars = self._collect_course_vars_recursive(node)
                 course_vars.extend(nested_vars)
-        
+
         return course_vars
-    
+
     def _collect_course_vars_recursive(self, node: RequirementNode) -> list[cp_model.IntVar]:
         """
         Helper to recursively collect course variables from a node by rebuilding it.
@@ -347,24 +347,24 @@ class RequirementConstraintBuilder:
         # Skip pruned nodes
         if hasattr(node, 'was_pruned') and node.was_pruned:
             return []
-        
+
         # If it's a course, build it and return its variable
         if isinstance(node, RequirementCourse):
             result = self._build_course(node, "temp")
             if result.is_valid and result.satisfied_var is not None:
                 return [result.satisfied_var]
             return []
-        
+
         # If it's a group, recurse into children
         if isinstance(node, RequirementGroup):
             course_vars: list[cp_model.IntVar] = []
             for child in node.items:
                 course_vars.extend(self._collect_course_vars_recursive(child))
             return course_vars
-        
+
         # Plain strings don't contribute
         return []
-    
+
     def _build_plain_string(self, node: RequirementPlainString, path: str) -> ConstraintResult:
         """
         Build constraints for plain-string requirements.
@@ -375,7 +375,7 @@ class RequirementConstraintBuilder:
         """
         var_name = self.ctx.fresh_name("req")
         placeholder = self.ctx.model.NewBoolVar(var_name)
-        
+
         # Register the debug name
         debug_name = node.req_id if node.req_id else f"[Plain: {node.description[:50]}]"
         self.ctx.register_var(placeholder, debug_name)
@@ -413,7 +413,7 @@ class RequirementConstraintBuilder:
         # Create variable for this group
         var_name = self.ctx.fresh_name("req")
         group_var = self.ctx.model.NewBoolVar(var_name)
-        
+
         # Register the debug name (use req_id if available)
         debug_name = node.req_id if node.req_id else group_name
         self.ctx.register_var(group_var, debug_name)
@@ -477,7 +477,7 @@ class RequirementConstraintBuilder:
         """Build constraints for a group with a threshold."""
         threshold = node.threshold
         group_name = node.title or "unnamed"
-        
+
         # This should never be None since we only call this when threshold is not None
         assert threshold is not None, "threshold must not be None"
 
@@ -503,7 +503,7 @@ class RequirementConstraintBuilder:
         if threshold.criterion == "subjects":
             # Collect all leaf course variables from the subtree
             all_course_vars = self._collect_all_course_vars_from_results(child_nodes, child_results)
-            
+
             if len(all_course_vars) < cutoff:
                 errors.append(
                     f"Group '{group_name}' requires {cutoff} subjects "

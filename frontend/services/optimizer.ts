@@ -7,9 +7,10 @@
 import type { Marker, OptimizerNode } from '@/types';
 
 export interface OptimizationConstraints {
+  maxSemesters?: number;
   maxUnitsPerSemester?: number;
-  minUnitsPerSemester?: number;
-  preferredTimes?: string[];
+  maxUnitsIAP?: number;
+  maxHoursPerSemester?: number;
 }
 
 export interface OptimizationResult {
@@ -26,106 +27,110 @@ export interface OptimizationProgress {
 }
 
 /**
- * Mock optimizer that simulates optimization steps
- * In production, this would connect to a backend API or WebSocket
+ * Real optimizer that connects to backend API via Server-Sent Events (SSE)
  */
-class MockOptimizer {
-  private mockDelay = 500; // ms between steps
+class BackendOptimizer {
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   /**
-   * Run optimization process
+   * Run optimization process with real-time streaming via SSE
    * Always yields intermediate results as the optimizer works
-   * The caller can choose to only use the final result or show progress
    */
   async *optimize(
     markers: Marker[],
     requiredCourses: string[],
     constraints?: OptimizationConstraints
   ): AsyncGenerator<OptimizationProgress> {
-    // Simulate optimizer working through steps
-    const steps = [
-      {
-        step: 1,
-        message: "Analyzing prerequisites...",
-        nodes: markers.filter(m => m.status !== 'banish').map(m => ({
-          courseId: m.courseId,
-          section: m.section,
-        })),
+    // Prepare request body
+    const requestBody = {
+      markers: markers.map(m => ({
+        courseId: m.courseId,
+        section: m.section,
+        status: m.status,
+      })),
+      requirements: requiredCourses.length > 0 ? requiredCourses : ['girs', 'major6-3new'],
+      constraints: {
+        maxSemesters: constraints?.maxSemesters || 12,
+        maxUnitsPerSemester: constraints?.maxUnitsPerSemester || 60,
+        maxUnitsIAP: constraints?.maxUnitsIAP || 12,
+        maxHoursPerSemester: constraints?.maxHoursPerSemester || 60,
       },
-      {
-        step: 2,
-        message: "Distributing required courses...",
-        nodes: [
-          ...markers.filter(m => m.status !== 'banish').map(m => ({
-            courseId: m.courseId,
-            section: m.section,
-          })),
-          { courseId: "6.1010", section: 2 },
-          { courseId: "6.1030", section: 3 },
-        ],
-      },
-      {
-        step: 3,
-        message: "Optimizing unit distribution...",
-        nodes: [
-          ...markers.filter(m => m.status !== 'banish').map(m => ({
-            courseId: m.courseId,
-            section: m.section,
-          })),
-          { courseId: "6.1010", section: 2 },
-          { courseId: "6.1020", section: 3 },
-          { courseId: "6.1030", section: 3 },
-          { courseId: "6.1040", section: 3 },
-        ],
-      },
-      {
-        step: 4,
-        message: "Finalizing schedule...",
-        nodes: [
-          ...markers.filter(m => m.status !== 'banish').map(m => ({
-            courseId: m.courseId,
-            section: m.section,
-          })),
-          { courseId: "6.1010", section: 2 },
-          { courseId: "6.1020", section: 3 },
-          { courseId: "6.1030", section: 3 },
-          { courseId: "6.1040", section: 3 },
-          { courseId: "6.390", section: 4 },
-          { courseId: "6.1060", section: 5 },
-          { courseId: "6.1220", section: 5 },
-        ],
-      },
-    ];
+    };
 
-    for (const stepData of steps) {
-      await new Promise(resolve => setTimeout(resolve, this.mockDelay));
-      yield {
-        ...stepData,
-        totalSteps: steps.length,
-      };
+    // Make POST request to start optimization
+    const response = await fetch(`${this.baseUrl}/api/optimize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Optimization request failed: ${response.statusText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    // Parse SSE stream
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        // Decode chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE messages
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6); // Remove 'data: ' prefix
+            
+            try {
+              const message = JSON.parse(data);
+
+              // Handle different message types
+              if (message.type === 'progress') {
+                yield {
+                  nodes: [],
+                  step: message.step || 0,
+                  totalSteps: message.totalSteps,
+                  message: message.message,
+                };
+              } else if (message.type === 'solution') {
+                yield {
+                  nodes: message.nodes || [],
+                  step: message.step || 0,
+                  totalSteps: message.totalSteps,
+                  message: message.message,
+                };
+              } else if (message.type === 'complete') {
+                // Final message - stop iteration
+                return;
+              } else if (message.type === 'error') {
+                throw new Error(message.error || 'Optimization failed');
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE message:', data, e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
     }
   }
 }
 
 // Export singleton instance
-export const optimizerApi = new MockOptimizer();
-
-/**
- * TODO: Real WebSocket implementation would look like:
- *
- * class WebSocketOptimizer {
- *   private ws: WebSocket | null = null;
- *
- *   async *streamOptimization(...) {
- *     this.ws = new WebSocket('ws://backend/optimize');
- *
- *     // Send request
- *     this.ws.send(JSON.stringify({ markers, requiredCourses, constraints }));
- *
- *     // Yield updates as they come
- *     for await (const message of this.iterateMessages(this.ws)) {
- *       yield JSON.parse(message) as OptimizationProgress;
- *     }
- *   }
- * }
- */
+export const optimizerApi = new BackendOptimizer();

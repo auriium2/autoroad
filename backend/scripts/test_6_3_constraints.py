@@ -2,8 +2,8 @@
 Test that 6-3 constraint building works without errors.
 """
 
-import requests
 import pandas as pd
+import requests
 from ortools.sat.python import cp_model
 
 from courses.requirements.parser import parse_requirement
@@ -33,15 +33,15 @@ def fetch_requirement(key):
 def create_take_vars(model, courses_df, planning_year_start):
     """Create decision variables for taking courses."""
     take_vars = {}
-    
+
     for course_idx in courses_df.index:
         subject_id = courses_df.at[course_idx, 'subject_id']
-        
+
         for semester in range(1, 13):
             if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
                 take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
-    
+
     return take_vars
 
 
@@ -49,29 +49,29 @@ def main():
     # Fetch data
     courses_df = fetch_all_courses()
     print(f"Fetched {len(courses_df)} courses")
-    
+
     # Get planning year
     school_year, planning_year = find_current_school_year()
     planning_year_start = int(planning_year.split('-')[0])
     print(f"Planning year: {planning_year}")
-    
+
     # Create model and variables
     print("\nCreating CP-SAT model...")
     model = cp_model.CpModel()
     take_vars = create_take_vars(model, courses_df, planning_year_start)
     print(f"Created {len(take_vars)} decision variables")
-    
+
     # Fetch and parse 6-3 requirements
     print("\nFetching 6-3 requirements...")
     major_data = fetch_requirement('major6-3new')
     major_tree = parse_requirement({'reqs': major_data['reqs'], 'title': 'major6-3new'})
-    
+
     # Validate
     print("Validating requirements...")
     major_validation = validate_and_prune(major_tree, courses_df, remove_invalid=False)
     print(f"  Is feasible: {major_validation.is_feasible}")
     print(f"  Removed courses: {len(major_validation.removed_courses)}")
-    
+
     # Build constraints
     print("\nBuilding constraints (this is where the bug was)...")
     try:
@@ -79,19 +79,19 @@ def main():
             model, take_vars, major_validation.pruned_tree, courses_df, planning_year_start, enforce=False
         )
         print(f"✓ Successfully built {len(aux_vars)} constraint variables")
-        print(f"✓ No errors during constraint building!")
-        
+        print("✓ No errors during constraint building!")
+
         # Try to enforce them
         print("\nTrying to enforce constraints...")
         aux_vars2, var_map2 = add_requirement_constraints(
             model, take_vars, major_validation.pruned_tree, courses_df, planning_year_start, enforce=True
         )
-        print(f"✓ Successfully enforced constraints!")
-        
+        print("✓ Successfully enforced constraints!")
+
     except ValueError as e:
         print(f"✗ ERROR during constraint building: {e}")
         return 1
-    
+
     print("\n" + "="*60)
     print("SUCCESS: 6-3 constraints can be built and enforced!")
     print("="*60)

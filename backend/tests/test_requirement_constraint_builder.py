@@ -532,18 +532,18 @@ class TestAddRequirementConstraints:
             "gir_attribute": [None],
             "hass_attribute": [None],
         })
-        
+
         model = cp_model.CpModel()
         take_vars = {(0, 1): model.NewBoolVar("take_6.100A_s1")}
-        
+
         schedule = CourseSchedule(df, 2024)
         ctx = ConstraintContext(model, take_vars, schedule)
         builder = RequirementConstraintBuilder(ctx)
-        
+
         # Build a pruned requirement
         req = RequirementCourse(course_id="INVALID.COURSE", was_pruned=True)
         result = builder.build(req)
-        
+
         # Should not create a constraint variable
         assert result.satisfied_var is None
         # Should generate a warning about skipping
