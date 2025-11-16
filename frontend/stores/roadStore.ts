@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { storage } from '@/lib/storage';
-import { ApiError } from '@/services/fireroad';
+import { ApiError, fireroadApi } from '@/services/fireroad';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
 import { optimizerApi, type OptimizationConstraints, type OptimizationProgress } from '@/services/optimizer';
 
@@ -177,21 +177,77 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     });
 
     try {
+      let lastRenderTime = 0;
+      const RENDER_THROTTLE_MS = 500; // Only update UI every 500ms (cache makes this faster)
+      let latestNodes: OptimizerNode[] = [];
+      let hasPrefetched = false;
+
       // Stream optimization progress
       for await (const progress of optimizerApi.optimize(
         markers,
         [], // TODO: pass required courses
         constraints
       )) {
+        if (progress.nodes.length > 0) {
+          console.log(`[Optimizer] Received solution #${progress.solutionNumber}: objective=${progress.objectiveValue}, courses=${progress.nodes.length}`);
+          latestNodes = progress.nodes;
 
+          // Prefetch all courses on first solution to warm up the cache
+          if (!hasPrefetched && progress.nodes.length > 0) {
+            hasPrefetched = true;
+            const uniqueCourseIds = Array.from(new Set(progress.nodes.map(n => n.courseId)));
+            console.log(`[Optimizer] Prefetching ${uniqueCourseIds.length} courses...`);
+            
+            // Prefetch all courses in parallel (fire and forget)
+            Promise.all(
+              uniqueCourseIds.map(courseId => 
+                fireroadApi.getCourseDetails(courseId).catch(err => {
+                  console.warn(`Failed to prefetch ${courseId}:`, err);
+                })
+              )
+            ).then(() => {
+              console.log(`[Optimizer] ✓ Prefetch complete`);
+            });
+          }
+
+          // Throttle UI updates to reduce rendering lag
+          const now = Date.now();
+          const timeSinceLastRender = now - lastRenderTime;
+          if (timeSinceLastRender >= RENDER_THROTTLE_MS) {
+            lastRenderTime = now;
+            console.log(`[Optimizer] 🎨 Rendering solution #${progress.solutionNumber}`);
+
+            set({
+              optimizerNodes: latestNodes,
+              optimizationProgress: showProgress ? {
+                step: progress.step,
+                totalSteps: progress.totalSteps,
+                message: progress.message,
+              } : null,
+            });
+          } else {
+            console.log(`[Optimizer] ⏸️  Throttled render (${timeSinceLastRender.toFixed(0)}ms < ${RENDER_THROTTLE_MS}ms)`);
+          }
+        } else {
+          // Progress messages without nodes (e.g., "Initializing...")
+          set({
+            optimizationProgress: showProgress ? {
+              step: progress.step,
+              totalSteps: progress.totalSteps,
+              message: progress.message,
+            } : null,
+          });
+        }
+      }
+
+      // Final update with the latest solution (in case it was throttled)
+      if (latestNodes.length > 0) {
+        console.log(`[Optimizer] 🏁 Optimization complete! ${latestNodes.length} courses`);
         set({
-          optimizerNodes: progress.nodes,
-          optimizationProgress: showProgress ? {
-            step: progress.step,
-            totalSteps: progress.totalSteps,
-            message: progress.message,
-          } : null,
+          optimizerNodes: latestNodes,
         });
+      } else {
+        console.log(`[Optimizer] ⚠️  Optimization complete but no solutions found`);
       }
 
       // Finalize

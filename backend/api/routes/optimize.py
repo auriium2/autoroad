@@ -39,6 +39,8 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         self.courses_df = courses_df
         self.solution_count = 0
         self.solution_queue = solution_queue
+        self.best_solution_nodes = []  # Track best solution for .road export
+        self.best_objective_value = None
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -55,16 +57,28 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
                     "title": title
                 })
 
+        current_objective = self.ObjectiveValue()
+        
+        # Track best solution for .road export (lower objective = better)
+        if self.best_objective_value is None or current_objective < self.best_objective_value:
+            self.best_objective_value = current_objective
+            self.best_solution_nodes = nodes
+            print(f"[SSE] Callback: New best solution #{self.solution_count} with objective={current_objective}")
+
         solution = {
             "type": "solution",
             "step": self.solution_count,
+            "solutionNumber": self.solution_count,  # Explicit sequence number for ordering
             "nodes": nodes,
-            "objectiveValue": self.ObjectiveValue()
+            "objectiveValue": current_objective
         }
-        
+
         # Put solution in queue immediately (thread-safe)
         self.solution_queue.put(solution)
-        print(f"[SSE] Callback: Solution {self.solution_count} queued")
+        print(f"[SSE] Callback: Solution {self.solution_count} queued with objective={current_objective}, {len(nodes)} courses")
+        # Debug: print first 5 courses with their sections
+        for node in nodes[:5]:
+            print(f"  - {node['courseId']} @ section {node['section']}")
 
 
 def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int):
@@ -139,7 +153,7 @@ def parse_prerequisites_for_all_courses(courses_df: pd.DataFrame):
 async def optimize(request: OptimizationRequest):
     """
     Run optimization and stream progress via SSE.
-    
+
     Returns:
         SSE stream with messages:
         - progress: Status updates
@@ -182,9 +196,9 @@ async def optimize(request: OptimizationRequest):
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters)
                 add_basic_constraints(model, take_vars, courses_df, max_units_per_semester, max_units_iap, max_semesters)
                 return model, take_vars
-            
+
             model, take_vars = await loop.run_in_executor(None, create_model)
-            
+
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
 
             # Add requirement constraints (run in thread pool)
@@ -198,7 +212,7 @@ async def optimize(request: OptimizationRequest):
                             model, take_vars, validation.pruned_tree,
                             courses_df, planning_year_start, enforce=True
                         )
-            
+
             await loop.run_in_executor(None, add_requirements)
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
@@ -207,7 +221,7 @@ async def optimize(request: OptimizationRequest):
             def add_prereqs():
                 prereq_trees = parse_prerequisites_for_all_courses(courses_df)
                 add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees)
-            
+
             await loop.run_in_executor(None, add_prereqs)
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10})}\n\n"
@@ -216,7 +230,7 @@ async def optimize(request: OptimizationRequest):
             def add_markers():
                 markers = parse_markers_from_dict([m.model_dump() for m in request.markers])
                 return add_marker_constraints(model, take_vars, markers, courses_df, planning_year_start)
-            
+
             marker_result = await loop.run_in_executor(None, add_markers)
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
@@ -230,7 +244,7 @@ async def optimize(request: OptimizationRequest):
                 builder.add(FrontloadCourses(), weight=0.1)
                 objective = builder.build(model, take_vars, courses_df, planning_year_start)
                 model.Minimize(objective)
-            
+
             await loop.run_in_executor(None, build_objective)
 
             msg = {'type': 'progress', 'message': 'Solving...', 'step': 7, 'totalSteps': 10}
@@ -239,7 +253,7 @@ async def optimize(request: OptimizationRequest):
 
             # Create queue for solutions
             solution_queue = queue.Queue()
-            
+
             # Create callback
             callback = StreamingCallback(take_vars, courses_df, solution_queue)
 
@@ -251,12 +265,12 @@ async def optimize(request: OptimizationRequest):
             # Run solver in thread pool (non-blocking)
             print("[SSE] Starting solver...")
             solver_done = threading.Event()
-            
+
             def run_solver():
                 result = solver.Solve(model, callback)
                 solution_queue.put({'__done__': True, 'result': result, 'count': callback.solution_count})
                 solver_done.set()
-            
+
             solver_thread = threading.Thread(target=run_solver)
             solver_thread.start()
 
@@ -264,23 +278,47 @@ async def optimize(request: OptimizationRequest):
             while not solver_done.is_set() or not solution_queue.empty():
                 try:
                     solution = solution_queue.get(timeout=0.1)
-                    
+
                     # Check for completion signal
                     if '__done__' in solution:
                         result = solution['result']
                         print(f"[SSE] Solver finished with status: {result}, found {solution['count']} solutions")
                         break
-                    
+
                     # Stream the solution
                     print(f"[SSE] Streaming solution {solution['step']}")
                     yield f"data: {json.dumps(solution)}\n\n"
-                    
+
                 except queue.Empty:
                     # No solution yet, yield control
                     await asyncio.sleep(0.05)
-            
+
             # Make sure solver thread completes
             solver_thread.join()
+
+            # Export to .road file for debugging
+            if result in [cp_model.OPTIMAL, cp_model.FEASIBLE] and callback.best_solution_nodes:
+                from pathlib import Path
+
+                road_data = {
+                    "coursesOfStudy": [],
+                    "progressAssertions": {},
+                    "selectedSubjects": [
+                        {
+                            "subject_id": node["courseId"],
+                            "semester": node["section"] + 1,  # Convert back to 1-indexed
+                            "title": node.get("title", ""),
+                            "units": 12,
+                            "overrideWarnings": False
+                        }
+                        for node in callback.best_solution_nodes
+                    ]
+                }
+
+                output_path = Path("optimization_result.road")
+                with open(output_path, "w") as f:
+                    json.dump(road_data, f, indent=2)
+                print(f"[SSE] Exported best solution (objective={callback.best_objective_value}) to {output_path}")
 
             # Send completion
             status_map = {

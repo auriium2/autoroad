@@ -3,7 +3,7 @@
  */
 
 import * as React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
 import { parseFireroad, extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
 import type { CourseNode } from '@/types';
@@ -37,7 +37,7 @@ export function usePrerequisiteCourseIds(courseId: string) {
     queryFn: async () => {
       return await fetchPrerequisitesForCourse(courseId);
     },
-    staleTime: 10 * 60 * 1000, // Prerequisites don't change often - cache for 10 minutes
+    staleTime: 60 * 60 * 1000, // Prerequisites don't change often - cache for 1 hour
     retry: 2,
   });
 }
@@ -79,7 +79,7 @@ export function useCheckCoursePlacement(
       }
     },
     enabled: !!courseId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }
 
@@ -106,9 +106,25 @@ export function usePrerequisiteString(courseId: string | null) {
 }
 
 /**
+ * Hook to get cached course details
+ */
+function useCachedCourseDetails(courseId: string) {
+  return useQuery({
+    queryKey: ['courseDetails', courseId],
+    queryFn: async () => {
+      return await fireroadApi.getCourseDetails(courseId);
+    },
+    staleTime: 60 * 60 * 1000, // Cache for 1 hour
+    retry: 2,
+  });
+}
+
+/**
  * Hook to compute prerequisite edges for a graph of courses
  */
 export function usePrerequisiteEdges(nodes: CourseNode[]) {
+  const queryClient = useQueryClient();
+  
   // Create a stable key from the sorted course IDs and their node uuids
   // Using useMemo to prevent recreating the key on every render
   const courseKey = React.useMemo(
@@ -129,25 +145,96 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
         courseToNode.set(node.courseId, node);
       }
 
-      // Fetch all prerequisites in parallel instead of sequentially
-      const prereqPromises = nodes.map(node =>
-        fetchPrerequisitesForCourse(node.courseId).then(prereqs => ({ node, prereqs }))
-      );
+      // Fetch all course details in parallel (prerequisites + tags + prereq string)
+      // Use queryClient to leverage cache
+      const fetchStartTime = performance.now();
+      const prereqPromises = nodes.map(async (node) => {
+        try {
+          const courseDetails = await queryClient.fetchQuery({
+            queryKey: ['courseDetails', node.courseId],
+            queryFn: () => fireroadApi.getCourseDetails(node.courseId),
+            staleTime: 60 * 60 * 1000,
+          });
+          const prereqString = courseDetails.prerequisites || '';
+          
+          // Extract prerequisite course IDs
+          let prereqCourseIds: string[] = [];
+          if (prereqString) {
+            try {
+              const prereqTree = parseFireroad(prereqString);
+              prereqCourseIds = extractCourseIds(prereqTree);
+            } catch (error) {
+              // Ignore parse errors
+            }
+          }
+          
+          // Extract tags
+          const tags: string[] = [];
+          if (courseDetails.gir_attribute) {
+            tags.push(`GIR:${courseDetails.gir_attribute}`);
+          }
+          if (courseDetails.hass_attribute) {
+            tags.push(`HASS:${courseDetails.hass_attribute}`);
+          }
+          
+          return { node, prereqCourseIds, tags, prereqString };
+        } catch (error) {
+          console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
+          return { node, prereqCourseIds: [], tags: [], prereqString: '' };
+        }
+      });
 
       const results = await Promise.all(prereqPromises);
+      const fetchEndTime = performance.now();
+      console.log(`[Performance] Fetched ${nodes.length} course details in ${(fetchEndTime - fetchStartTime).toFixed(2)}ms`);
 
-      // Build edges from results
-      for (const { node, prereqs } of results) {
-        for (const prereqCourseId of prereqs) {
-          const prereqNode = courseToNode.get(prereqCourseId);
-
-          // Only create edge if both courses are in the graph
-          if (prereqNode) {
-            edges.push({
-              fromUuid: prereqNode.uuid,
-              toUuid: node.uuid,
-            });
+      // Build tag -> courses map
+      const tag2courses = new Map<string, CourseNode[]>();
+      for (const { node, tags } of results) {
+        for (const tag of tags) {
+          if (!tag2courses.has(tag)) {
+            tag2courses.set(tag, []);
           }
+          tag2courses.get(tag)!.push(node);
+        }
+      }
+
+      // Build edges from results - only draw edges to courses that actually satisfy the prerequisites
+      for (const { node, prereqString } of results) {
+        // Skip if no prerequisites
+        if (!prereqString) continue;
+
+        try {
+          const prereqTree = parseFireroad(prereqString);
+          
+          // Get courses taken before this node
+          const takenCourseIds = results
+            .filter(r => r.node.section < node.section)
+            .map(r => r.node.courseId);
+
+          // Build tags map for taken courses
+          const takenCourseTags = new Map<string, string[]>();
+          for (const { node: n, tags } of results) {
+            if (n.section < node.section) {
+              takenCourseTags.set(n.courseId, tags);
+            }
+          }
+
+          // Evaluate prerequisites to find which courses actually satisfy them
+          const result = evaluatePrerequisites(prereqTree, takenCourseIds, true, true, takenCourseTags);
+
+          // Only draw edges to the courses that were matched
+          for (const matchedCourseId of result.matchedCourses) {
+            const prereqNode = courseToNode.get(matchedCourseId);
+            if (prereqNode && prereqNode.section < node.section) {
+              edges.push({
+                fromUuid: prereqNode.uuid,
+                toUuid: node.uuid,
+              });
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to evaluate prerequisites for edges for ${node.courseId}:`, error);
         }
       }
 
@@ -156,7 +243,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       return edges;
     },
     enabled: nodes.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }
 
@@ -165,6 +252,8 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
  * Returns a map of uuid -> missing prerequisite course IDs
  */
 export function useMissingPrerequisites(nodes: CourseNode[]) {
+  const queryClient = useQueryClient();
+  
   const courseKey = React.useMemo(
     () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(','),
     [nodes]
@@ -185,7 +274,11 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         }
 
         try {
-          const courseDetails = await fireroadApi.getCourseDetails(node.courseId);
+          const courseDetails = await queryClient.fetchQuery({
+            queryKey: ['courseDetails', node.courseId],
+            queryFn: () => fireroadApi.getCourseDetails(node.courseId),
+            staleTime: 60 * 60 * 1000,
+          });
           const tags: string[] = [];
           if (courseDetails.gir_attribute) {
             tags.push(`GIR:${courseDetails.gir_attribute}`);
@@ -214,11 +307,14 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
       // Pre-compute courses by section for O(1) lookup instead of O(n) filtering per node
       const coursesBySection = new Map<number, string[]>();
+      // Find max section number
+      const maxSection = Math.max(...nodes.map(n => n.section));
+      
       for (const node of nodes) {
         // Skip nodes in "Must Take" section (-2) and banished nodes
         if (node.section === -2 || node.nodeStatus === 'banish') continue;
 
-        for (let section = node.section + 1; section <= 10; section++) {
+        for (let section = node.section + 1; section <= maxSection; section++) {
           if (!coursesBySection.has(section)) {
             coursesBySection.set(section, []);
           }
@@ -258,6 +354,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       return uuid2missingPrereqs;
     },
     enabled: nodes.length > 0,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000,
   });
 }

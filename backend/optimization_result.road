@@ -1,0 +1,230 @@
+{
+  "coursesOfStudy": [],
+  "progressAssertions": {},
+  "selectedSubjects": [
+    {
+      "subject_id": "11.014",
+      "semester": 1,
+      "title": "History of the Built Environment in the US",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "11.026",
+      "semester": 3,
+      "title": "Downtown",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "16.C20",
+      "semester": 4,
+      "title": "Introduction to Computational Science and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.01L",
+      "semester": 2,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.05",
+      "semester": 6,
+      "title": "Introduction to Probability and Statistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.218",
+      "semester": 1,
+      "title": "History of the Built Environment in the US",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.321",
+      "semester": 3,
+      "title": "Downtown",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.041",
+      "semester": 12,
+      "title": "Writing About Literature",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.764",
+      "semester": 12,
+      "title": "Computational and Experimental Writing Workshop",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.091",
+      "semester": 4,
+      "title": "Introduction to Solid-State Chemistry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.982",
+      "semester": 1,
+      "title": "The Ancient Andean World",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1000",
+      "semester": 1,
+      "title": "Introduction to Programming and Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 3,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1010",
+      "semester": 3,
+      "title": "Fundamentals of Programming",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1020",
+      "semester": 9,
+      "title": "Software Construction",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1200",
+      "semester": 3,
+      "title": "Mathematics for Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1210",
+      "semester": 4,
+      "title": "Introduction to Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1220",
+      "semester": 6,
+      "title": "Design and Analysis of Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1800",
+      "semester": 6,
+      "title": "Computer Systems Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1903",
+      "semester": 6,
+      "title": "Introduction to Low-level Programming in C and Assembly",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1910",
+      "semester": 4,
+      "title": "Computation Structures",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5151",
+      "semester": 6,
+      "title": "Large-scale Symbolic Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5310",
+      "semester": 9,
+      "title": "Geometric Folding Algorithms: Linkages, Origami, Polyhedra",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.C01",
+      "semester": 6,
+      "title": "Modeling with Machine Learning: from Algorithms to Applications",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.S058",
+      "semester": 3,
+      "title": "Special Subject in Electrical Engineering and Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.UAT",
+      "semester": 4,
+      "title": "Oral Communication",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.015",
+      "semester": 7,
+      "title": "Introductory Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.022",
+      "semester": 12,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.1802",
+      "semester": 3,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.8012",
+      "semester": 10,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "STS.051",
+      "semester": 1,
+      "title": "Documenting MIT Communities",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "STS.075",
+      "semester": 1,
+      "title": "Technology and Culture",
+      "units": 12,
+      "overrideWarnings": false
+    }
+  ]
+}

@@ -24,6 +24,8 @@ export interface OptimizationProgress {
   step: number;
   totalSteps?: number;
   message?: string;
+  objectiveValue?: number; // Objective value for this solution (lower is better)
+  solutionNumber?: number; // Sequence number to ensure proper ordering
 }
 
 /**
@@ -113,6 +115,8 @@ class BackendOptimizer {
                   step: message.step || 0,
                   totalSteps: message.totalSteps,
                   message: message.message,
+                  objectiveValue: message.objectiveValue,
+                  solutionNumber: message.solutionNumber,
                 };
               } else if (message.type === 'complete') {
                 // Final message - stop iteration

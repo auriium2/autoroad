@@ -1,0 +1,265 @@
+{
+  "coursesOfStudy": [],
+  "progressAssertions": {},
+  "selectedSubjects": [
+    {
+      "subject_id": "18.01L",
+      "semester": 2,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.02A",
+      "semester": 10,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.03",
+      "semester": 1,
+      "title": "Differential Equations",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.001",
+      "semester": 3,
+      "title": "Mechanics and Materials I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.002",
+      "semester": 9,
+      "title": "Mechanics and Materials II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.003",
+      "semester": 4,
+      "title": "Dynamics and Control I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.004",
+      "semester": 6,
+      "title": "Dynamics and Control II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.005",
+      "semester": 4,
+      "title": "Thermal-Fluids Engineering I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.006",
+      "semester": 6,
+      "title": "Thermal-Fluids Engineering II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.007",
+      "semester": 9,
+      "title": "Design and Manufacturing I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.008",
+      "semester": 12,
+      "title": "Design and Manufacturing II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.019",
+      "semester": 12,
+      "title": "Design of Ocean Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.086",
+      "semester": 6,
+      "title": "Numerical Computation for Mechanical Engineers",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.670",
+      "semester": 3,
+      "title": "Mechanical Engineering Tools",
+      "units": 3,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.671",
+      "semester": 9,
+      "title": "Measurement and Instrumentation",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.750",
+      "semester": 6,
+      "title": "Medical Device Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.797",
+      "semester": 12,
+      "title": "Molecular, Cellular, and Tissue Biomechanics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.THU",
+      "semester": 12,
+      "title": "Undergraduate Thesis",
+      "units": 0,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.086",
+      "semester": 7,
+      "title": "20th Century Ukraine and Russia: Entangled Histories and Identity Politics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.301",
+      "semester": 2,
+      "title": "French I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.401",
+      "semester": 10,
+      "title": "German I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.501",
+      "semester": 5,
+      "title": "Japanese I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.284",
+      "semester": 9,
+      "title": "South Asia, the United States, and MIT: Transformative Connections",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.222",
+      "semester": 10,
+      "title": "Expository Writing for Bilingual Students",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.780",
+      "semester": 1,
+      "title": "Writing the Full-Length Play",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.111",
+      "semester": 7,
+      "title": "Principles of Chemical Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 1,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100B",
+      "semester": 3,
+      "title": "Introduction to Computational Thinking and Data Science",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1910",
+      "semester": 3,
+      "title": "Computation Structures",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.2050",
+      "semester": 4,
+      "title": "Digital Systems Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.015",
+      "semester": 7,
+      "title": "Introductory Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.01L",
+      "semester": 7,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.022",
+      "semester": 12,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.1802",
+      "semester": 4,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.8022",
+      "semester": 3,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CMS.591",
+      "semester": 10,
+      "title": "Educational Theory and Practice I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.801",
+      "semester": 1,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    }
+  ]
+}

@@ -1,17 +1,57 @@
-# autoroad
+# Autoroad
 
+Constraint-based course schedule optimizer for MIT students.
 
-## architecture: frontend
-- i used nextjs/react for the frontend since react is well known by llms and i don't want to debug frontend myself when i don't have to
-- i tried to avoid as much backend surface as possible by routing as much work as possible to the fireroad api via cors. 
-- this means I don't have to maintain boilerplate for authentication, etc, and can focus on the optimization logic on the backend
+## Quick Start
 
-## architecture: backend
-- i used python/fastapi for the optimizer endpoint. python was chosen ~~so i can get a job~~ so i can use the ortools library for integer programming. fastapi was chosen for its speed and ease of use.
-- the backend has the unglorified task of offloading optimization work to workers who run the integer programming solver, and then stream results back to the frontend via redis streams.
-- the workers are designed to be horizontally scalable, since all they have to do is run the optimization and then die
+### Backend
+```bash
+cd backend
+uv sync
+uv run uvicorn api.main:app --reload --port 8000
+```
 
-## ai usage
-- frontend built entirely with ai assistance. I used a combination of chatgpt's codex agent and copilot to generate the frontend code. I had to do some manual work to connect the frontend to the backend, but overall it was a huge time saver.
-- backend unit testing, regression testing, etc done by ai. no human should be forced to write unit tests.
-- please employ me
+### Frontend
+```bash
+cd frontend
+npm install
+NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+```
+
+Visit http://localhost:3000
+
+## Architecture
+
+### Frontend
+- **Next.js/React** for UI
+- **Fireroad API** for course data (via CORS, no auth needed)
+- **Server-Sent Events (SSE)** for real-time optimization progress
+- Focus on simplicity and LLM-friendliness
+
+### Backend
+- **FastAPI** for HTTP endpoints
+- **OR-Tools CP-SAT** for constraint solving
+- **Modular constraint builders**: requirements, prerequisites, markers
+- **Composable objective functions**: minimize units, maximize ratings, frontload, etc.
+- Designed for horizontal scalability (stateless, no Redis/workers needed)
+
+## Features
+
+- ✅ **GIR and major requirements** (from Fireroad API)
+- ✅ **Prerequisite constraints** (automatic dependency resolution)
+- ✅ **User markers** (pin, banish, solo courses)
+- ✅ **Multiple objectives** (units, ratings, hours, frontload/backload, etc.)
+- ✅ **Real-time streaming** (see solutions as optimizer improves)
+- ✅ **Normalized scaling** (all objectives weighted equally)
+
+## Development
+
+See detailed docs:
+- [Backend README](backend/README.md)
+- [Objective Scaling](backend/optimizer/objectives/SCALES.md)
+
+## AI Usage
+- Frontend built entirely with AI assistance (ChatGPT + Copilot)
+- Backend unit testing and regression testing by AI
+- No human should be forced to write unit tests
+- Please employ me
