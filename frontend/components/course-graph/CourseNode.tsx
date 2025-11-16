@@ -8,7 +8,7 @@ import { useCourseDetails } from "@/hooks/useCourseData";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 
 type CourseNodeComponentProps = {
-  node: CourseNode & { optimizerAgreed?: boolean };
+  node: CourseNode & { optimizerAgreed?: boolean; missingPrereqs?: string[] };
   disableTooltip?: boolean;
 };
 
@@ -20,24 +20,41 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
 
   const { courseId, userControlled, disabled, section, nodeStatus: markerStatus } = node;
   const optimizerAgreed = node.optimizerAgreed;
+  const missingPrereqs = node.missingPrereqs || [];
 
   // Check node status
   const isBanished = markerStatus === 'banish';
   const isSolo = markerStatus === 'solo';
+  const hasUnsatisfiedPrereqs = missingPrereqs.length > 0;
 
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
   const units = courseDetails?.units || 12; // Default to 12 if not available
 
   // Get node styling from shared utility
-  const { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
+  let { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
 
-  // Override with yellow glow for solo nodes (but keep blue colors)
-  const finalBoxShadow = isSolo 
-    ? "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)"
-    : boxShadow;
+  // Override styling based on node state
+  if (hasUnsatisfiedPrereqs && !isBanished) {
+    // User-controlled nodes with errors: purple
+    // Optimizer nodes with errors: red
+    if (userControlled) {
+      borderColor = 'border-purple-500';
+      bgColor = 'bg-purple-500/10';
+      textColor = 'text-purple-400';
+      boxShadow = 'none';
+    } else {
+      borderColor = 'border-red-500';
+      bgColor = 'bg-red-500/10';
+      textColor = 'text-red-400';
+      boxShadow = 'none';
+    }
+  } else if (isSolo) {
+    // Yellow glow for solo nodes (but keep blue colors)
+    boxShadow = "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)";
+  }
 
-  const glowStyle = finalBoxShadow !== "none" ? { boxShadow: finalBoxShadow } : {};
+  const glowStyle = boxShadow !== "none" ? { boxShadow } : {};
 
   // Get term-based border gradient
   const termHighlight = getTermBorderHighlight({
@@ -46,8 +63,36 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
     offeredIAP: courseDetails?.offered_IAP,
   });
 
+  // Limit displayed prerequisites (show max 3, then "...")
+  const MAX_DISPLAYED_PREREQS = 3;
+  const displayedPrereqs = missingPrereqs.slice(0, MAX_DISPLAYED_PREREQS);
+  const hasMore = missingPrereqs.length > MAX_DISPLAYED_PREREQS;
+
   return (
     <div className="flex flex-col items-center">
+      {/* Missing prerequisites floating above and to the right */}
+      {hasUnsatisfiedPrereqs && !isBanished && (
+        <div className="absolute" style={{ top: -8, left: 46, zIndex: 1000 }}>
+          <div className="flex flex-col gap-0.5">
+            {displayedPrereqs.map((prereq, index) => (
+              <div
+                key={index}
+                className="glass-card px-1 py-0 rounded text-[9px] font-medium text-red-400 whitespace-nowrap shadow-sm border border-red-500/30"
+              >
+                {prereq}
+              </div>
+            ))}
+            {hasMore && (
+              <div
+                className="glass-card px-1 py-0 rounded text-[9px] font-medium text-red-400 whitespace-nowrap shadow-sm border border-red-500/30 text-center"
+              >
+                ...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Circle node */}
       <CourseTooltip courseId={courseId} disabled={disableTooltip}>
         <div
@@ -96,8 +141,16 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
                 cy="18"
                 r="16"
                 fill="none"
-                stroke={userControlled ? "rgba(147, 197, 253, 0.8)" : "rgba(255,255,255,0.35)"}
-                strokeWidth="3"
+                stroke={
+                  hasUnsatisfiedPrereqs && userControlled
+                    ? "rgba(168, 85, 247, 0.8)" // Purple for user-controlled with errors
+                    : hasUnsatisfiedPrereqs && !userControlled
+                    ? "rgba(239, 68, 68, 0.8)" // Red for optimizer nodes with errors
+                    : userControlled
+                    ? "rgba(147, 197, 253, 0.8)" // Blue for user-controlled without errors
+                    : "rgba(255,255,255,0.35)" // White for optimizer nodes without errors
+                }
+                strokeWidth="4"
                 pathLength={1}
                 strokeDasharray={termHighlight.dasharray}
                 strokeDashoffset={termHighlight.dashoffset}
@@ -116,9 +169,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
               <circle
                 cx="18"
                 cy="18"
-                r="14"
+                r="11"
                 fill="none"
-                stroke="rgba(34, 197, 94, 0.6)"
+                stroke="rgba(34, 197, 94, 1)"
                 strokeWidth="1.5"
               />
             </svg>

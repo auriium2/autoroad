@@ -23,7 +23,7 @@ import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode } f
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
-import { usePrerequisiteEdges } from "@/hooks/usePrerequisites";
+import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrerequisites";
 
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) {
@@ -58,11 +58,10 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: bo
   );
 }
 
+// Causes warning that doesnt appear in prod
 const nodeTypes: NodeTypes = {
   courseNode: FlowCourseNode,
 };
-
-
 
 // Column headers and dividers that move with the viewport
 function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: { x: number; y: number; zoom: number } }) {
@@ -215,7 +214,7 @@ const SECTION_INDEX_MAP = new Map(
   ALL_SECTIONS.map((section, index) => [section.id, index])
 );
 
-function CourseGraphFlowInner() {
+function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "all" | "optimizer-only" | "off" }) {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
   const markers = useGraphStore(state => state.markers);
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
@@ -289,6 +288,21 @@ function CourseGraphFlowInner() {
   // Fetch prerequisite edges using the hook
   const { data: storeEdges = [] } = usePrerequisiteEdges(storeNodes);
 
+  // Fetch missing prerequisites based on mode
+  const nodesToCheck = React.useMemo(() => {
+    if (prereqCheckMode === "off") {
+      return [];
+    } else if (prereqCheckMode === "optimizer-only") {
+      // Only check optimizer nodes (non-user-controlled)
+      return storeNodes.filter(n => !n.userControlled);
+    } else {
+      // Check all nodes
+      return storeNodes;
+    }
+  }, [prereqCheckMode, storeNodes]);
+
+  const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
+
   // Context menu state
   const [contextMenu, setContextMenu] = React.useState<{
     nodeUuid: string;
@@ -359,13 +373,23 @@ function CourseGraphFlowInner() {
       nodesBySection.get(node.section)!.push(node);
     }
 
+    const nodeIndicesByUuid = new Map<string, number>();
+    for (const nodesInSection of nodesBySection.values()) {
+      nodesInSection.forEach((node, index) => {
+        nodeIndicesByUuid.set(node.uuid, index);
+      });
+    }
+
     const result: Node[] = storeNodes.map((node) => {
       const sectionIndex = SECTION_INDEX_MAP.get(node.section) ?? 0;
-      const nodesInSection = nodesBySection.get(node.section) || [];
-      const nodeIndexInSection = nodesInSection.findIndex(n => n.uuid === node.uuid);
+      const nodesInSection = nodesBySection.get(node.section)!;
+      const nodeIndexInSection = nodeIndicesByUuid.get(node.uuid)!;
 
       const totalNodesHeight = (nodesInSection.length - 1) * NODE_SPACING;
       const startY = VIEWPORT_CENTER_Y - (totalNodesHeight / 2);
+
+      // Get missing prerequisites for this node
+      const missingPrereqs = uuid2missingPrereqs?.get(node.uuid) || [];
 
       return {
         id: node.uuid,
@@ -376,7 +400,7 @@ function CourseGraphFlowInner() {
         },
         data: {
           ...node,
-          disableTooltip: contextMenu?.nodeUuid === node.uuid,
+          missingPrereqs,
         },
         draggable: node.userControlled || false,
       };
@@ -386,7 +410,30 @@ function CourseGraphFlowInner() {
     const endTime = performance.now();
     console.log(`[Performance] Converted ${storeNodes.length} nodes in ${(endTime - startTime).toFixed(2)}ms`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeNodesKey, contextMenu?.nodeUuid]);
+  }, [storeNodesKey, setNodes, uuid2missingPrereqs]);
+
+  React.useEffect(() => {
+    if (contextMenu) {
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.id === contextMenu.nodeUuid
+            ? { ...node, data: { ...node.data, disableTooltip: true } }
+            : node.data.disableTooltip
+            ? { ...node, data: { ...node.data, disableTooltip: false } }
+            : node
+        )
+      );
+    } else {
+      // Clear all disableTooltip flags when context menu closes
+      setNodes((currentNodes) =>
+        currentNodes.map((node) =>
+          node.data.disableTooltip
+            ? { ...node, data: { ...node.data, disableTooltip: false } }
+            : node
+        )
+      );
+    }
+  }, [contextMenu, setNodes]);
 
   // Create stable key for edges
   const storeEdgesKey = React.useMemo(
@@ -684,10 +731,10 @@ function CourseGraphFlowInner() {
   );
 }
 
-export function CourseGraphFlow() {
+export function CourseGraphFlow({ prereqCheckMode = "all" }: { prereqCheckMode?: "all" | "optimizer-only" | "off" }) {
   return (
     <ReactFlowProvider>
-      <CourseGraphFlowInner />
+      <CourseGraphFlowInner prereqCheckMode={prereqCheckMode} />
     </ReactFlowProvider>
   );
 }

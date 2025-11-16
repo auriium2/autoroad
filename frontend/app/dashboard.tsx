@@ -24,10 +24,20 @@ import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { useGraphStore } from "@/stores/roadStore";
 import { Toaster } from "@/components/ui/toaster";
 import { toast as showToast } from "@/hooks/useToast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Dashboard() {
   const [isOptimizing, setIsOptimizing] = React.useState(false);
   const [selectedYear, setSelectedYear] = React.useState<string | undefined>(undefined);
+  const [prereqCheckMode, setPrereqCheckMode] = React.useState<"all" | "optimizer-only" | "off">("all");
+  const [viewMode, setViewMode] = React.useState<string>("default");
+  
   const handleYearChange = React.useCallback((value?: string) => {
     setSelectedYear(value);
   }, []);
@@ -112,7 +122,31 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold tracking-tight">Autoroad</h1>
 
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={prereqCheckMode} 
+                  onValueChange={(value) => setPrereqCheckMode(value as "all" | "optimizer-only" | "off")}
+                >
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Prereq checking" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Check all prereqs</SelectItem>
+                    <SelectItem value="optimizer-only">Check optimizer only</SelectItem>
+                    <SelectItem value="off">No prereq checking</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={viewMode} onValueChange={setViewMode}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="View mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default view</SelectItem>
+                    <SelectItem value="compact">Compact view</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Button
                   size="sm"
                   variant="outline"
@@ -136,7 +170,7 @@ export default function Dashboard() {
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">
-              <CourseGraphFlow />
+              <CourseGraphFlow prereqCheckMode={prereqCheckMode} />
             </div>
           </div>
         </SidebarInset>

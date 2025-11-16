@@ -9,14 +9,26 @@ import { useCourseDrag } from "./useCourseDrag";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 import type { FireroadCourse } from "@/services/fireroad";
 
+const COURSES_PER_PAGE = 20;
+
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
+  const [displayCount, setDisplayCount] = React.useState(COURSES_PER_PAGE);
 
-  const { data: courses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
+  const { data: allCourses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "6", "18"];
+  
+  // Reset display count when search params change
+  React.useEffect(() => {
+    setDisplayCount(COURSES_PER_PAGE);
+  }, [searchQuery, selectedDepartment]);
+  
+  // Paginate courses for display
+  const courses = allCourses.slice(0, displayCount);
+  const hasMore = displayCount < allCourses.length;
 
   // Create a custom drag preview element that matches graph node size (36x36)
   const createDragPreview = (courseId: string, units: number) => {
@@ -172,7 +184,25 @@ export function CourseSearchTab() {
         })}
         {!isLoading && !isError && courses.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-8">
-            No courses found
+            {searchQuery === "" && selectedDepartment === "all" ? (
+              <>
+                <div className="mb-2">Select a department or search for courses</div>
+                <div className="text-xs opacity-70">Tip: Try selecting "6" or "18" to browse courses</div>
+              </>
+            ) : (
+              "No courses found"
+            )}
+          </div>
+        )}
+        {!isLoading && !isError && hasMore && (
+          <div className="text-center py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDisplayCount(prev => prev + COURSES_PER_PAGE)}
+            >
+              Load More ({allCourses.length - displayCount} remaining)
+            </Button>
           </div>
         )}
       </div>

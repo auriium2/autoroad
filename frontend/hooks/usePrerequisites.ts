@@ -159,3 +159,75 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+/**
+ * Hook to compute missing prerequisites for all nodes in a graph
+ * Returns a map of uuid -> missing prerequisite course IDs
+ */
+export function useMissingPrerequisites(nodes: CourseNode[]) {
+  const courseKey = React.useMemo(
+    () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(','),
+    [nodes]
+  );
+
+  return useQuery({
+    queryKey: ['prerequisites', 'missing', courseKey],
+    queryFn: async () => {
+      console.log('[Performance] Computing missing prerequisites for', nodes.length, 'nodes');
+      const startTime = performance.now();
+      const uuid2missingPrereqs = new Map<string, string[]>();
+
+      // Fetch all prerequisite strings in parallel
+      const prereqPromises = nodes.map(async (node) => {
+        if (node.nodeStatus === 'solo' || node.nodeStatus === 'banish') {
+          return { node, prereqString: '' };
+        }
+
+        try {
+          const courseDetails = await fireroadApi.getCourseDetails(node.courseId);
+          return { node, prereqString: courseDetails.prerequisites || '' };
+        } catch (error) {
+          console.warn(`Failed to fetch prerequisites for ${node.courseId}:`, error);
+          return { node, prereqString: '' };
+        }
+      });
+
+      const results = await Promise.all(prereqPromises);
+
+      // Evaluate prerequisites for each node
+      for (const { node, prereqString } of results) {
+        if (!prereqString) {
+          uuid2missingPrereqs.set(node.uuid, []);
+          continue;
+        }
+
+        try {
+          const prereqTree = parseFireroad(prereqString);
+          
+          // Get courses taken before this node's section (excluding banished)
+          const takenCourses = nodes
+            .filter(n => n.section < node.section && n.nodeStatus !== 'banish')
+            .map(n => n.courseId);
+
+          const result = evaluatePrerequisites(prereqTree, takenCourses);
+
+          if (!result.satisfied) {
+            // Store unique missing course IDs
+            uuid2missingPrereqs.set(node.uuid, Array.from(new Set(result.unsatisfiedReasons)));
+          } else {
+            uuid2missingPrereqs.set(node.uuid, []);
+          }
+        } catch (error) {
+          console.warn(`Failed to evaluate prerequisites for ${node.courseId}:`, error);
+          uuid2missingPrereqs.set(node.uuid, []);
+        }
+      }
+
+      const endTime = performance.now();
+      console.log(`[Performance] Computed missing prerequisites in ${(endTime - startTime).toFixed(2)}ms`);
+      return uuid2missingPrereqs;
+    },
+    enabled: nodes.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}

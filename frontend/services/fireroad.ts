@@ -103,6 +103,10 @@ export interface CourseDetails {
   offered_fall?: boolean;
   offered_spring?: boolean;
   offered_IAP?: boolean;
+  rating?: number[];
+  enrollment?: number[];
+  in_class_hours?: number;
+  out_of_class_hours?: number;
 }
 
 function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
@@ -123,9 +127,14 @@ function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
     level: course.level,
     gir_attribute: course.gir_attribute,
     hass_attribute: course.hass_attribute,
+    communication_requirement: course.communication_requirement,
     offered_fall: course.offered_fall,
     offered_spring: course.offered_spring,
     offered_IAP: course.offered_IAP,
+    rating: course.rating,
+    enrollment: course.enrollment,
+    in_class_hours: course.in_class_hours,
+    out_of_class_hours: course.out_of_class_hours,
   };
 }
 

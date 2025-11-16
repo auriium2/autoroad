@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 
 export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [showFullDescription, setShowFullDescription] = React.useState(false);
   const { data: courseDetails, isLoading, isError } = useCourseDetails(isOpen ? courseId : null);
 
   // Close tooltip if disabled prop changes to true
@@ -21,16 +22,23 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
     }
   }, [disabled, isOpen]);
 
+  // Reset description expansion when tooltip closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setShowFullDescription(false);
+    }
+  }, [isOpen]);
+
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip open={isOpen && !disabled} onOpenChange={(open) => !disabled && setIsOpen(open)}>
         <TooltipTrigger asChild>
           {children}
         </TooltipTrigger>
-        <TooltipContent 
-          side="right" 
+        <TooltipContent
+          side="right"
           align="center"
-          className="max-w-xs p-3 space-y-2 z-[9999]"
+          className="max-w-xs p-3 space-y-2 z-[9999] max-h-96 overflow-y-auto"
           sideOffset={10}
         >
           {isLoading && (
@@ -39,13 +47,13 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
               Loading...
             </div>
           )}
-          
+
           {isError && (
             <div className="text-xs text-destructive">
               Failed to load details
             </div>
           )}
-          
+
           {courseDetails && (
             <div className="space-y-2">
               {/* Header */}
@@ -54,8 +62,8 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                 <div className="text-xs font-medium text-muted-foreground">{courseDetails.name}</div>
               </div>
 
-              {/* Quick info */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {/* Quick info - includes hours breakdown */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span>{courseDetails.units} units</span>
                 {courseDetails.terms_offered.length > 0 && (
                   <>
@@ -63,20 +71,27 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                     <span>{courseDetails.terms_offered.join(", ")}</span>
                   </>
                 )}
+                {(courseDetails.in_class_hours || courseDetails.out_of_class_hours) && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {courseDetails.in_class_hours && `${courseDetails.in_class_hours}h in`}
+                      {courseDetails.in_class_hours && courseDetails.out_of_class_hours && ', '}
+                      {courseDetails.out_of_class_hours && `${courseDetails.out_of_class_hours}h out`}
+                    </span>
+                  </>
+                )}
               </div>
 
-              {/* Description */}
-              {courseDetails.description && (
-                <div className="text-xs leading-snug text-muted-foreground border-t border-border/50 pt-2">
-                  {courseDetails.description.length > 150 
-                    ? `${courseDetails.description.substring(0, 150)}...` 
-                    : courseDetails.description}
-                </div>
-              )}
-
-              {/* Prerequisites/Corequisites */}
-              {(courseDetails.prerequisites || courseDetails.corequisites) && (
+              {/* Instructors and Prerequisites - grouped together */}
+              {(courseDetails.instructors?.length || courseDetails.prerequisites || courseDetails.corequisites) && (
                 <div className="text-xs border-t border-border/50 pt-2 space-y-1">
+                  {courseDetails.instructors && courseDetails.instructors.length > 0 && (
+                    <div>
+                      <span className="font-medium text-foreground">Instructor: </span>
+                      <span className="text-muted-foreground">{courseDetails.instructors.join(", ")}</span>
+                    </div>
+                  )}
                   {courseDetails.prerequisites && (
                     <div>
                       <span className="font-medium text-foreground">Prereq: </span>
@@ -88,6 +103,28 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                       <span className="font-medium text-foreground">Coreq: </span>
                       <span className="text-muted-foreground">{courseDetails.corequisites}</span>
                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Description with show more/less */}
+              {courseDetails.description && (
+                <div className="text-xs leading-snug text-muted-foreground border-b border-border/50 pb-2">
+                  {showFullDescription
+                    ? courseDetails.description
+                    : courseDetails.description.length > 150
+                      ? `${courseDetails.description.substring(0, 150)}...`
+                      : courseDetails.description}
+                  {courseDetails.description.length > 150 && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowFullDescription(!showFullDescription);
+                      }}
+                      className="ml-1 text-primary hover:underline focus:outline-none"
+                    >
+                      {showFullDescription ? "Show less" : "Show more"}
+                    </button>
                   )}
                 </div>
               )}

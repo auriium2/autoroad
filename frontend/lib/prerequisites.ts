@@ -335,17 +335,16 @@ class PrerequisiteEvaluator {
 
     let satisfiedCount = 0;
     const allMatchedCourses: string[] = [];
-    const allUnsatisfiedReasons: string[] = [];
+    const itemResults: EvaluationResult[] = [];
 
     for (const item of group.items) {
       const result = this.evaluate(item);
+      itemResults.push(result);
 
       allMatchedCourses.push(...result.matchedCourses);
 
       if (result.satisfied) {
         satisfiedCount++;
-      } else {
-        allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
       }
 
       // Early exit if we've satisfied the threshold
@@ -366,11 +365,69 @@ class PrerequisiteEvaluator {
       };
     }
 
-    return {
-      satisfied: false,
-      unsatisfiedReasons: allUnsatisfiedReasons,
-      matchedCourses: allMatchedCourses
-    };
+    // For unsatisfied groups, return minimal set of unsatisfied reasons
+    // For OR groups (threshold === 1), return the shortest unsatisfied option
+    // For AND groups (threshold === items.length), return all unsatisfied items
+    // For k-of-n groups, return the k options with fewest unsatisfied reasons
+    
+    if (group.threshold === 1) {
+      // OR group: return the option with fewest missing prerequisites
+      const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
+      if (unsatisfiedResults.length === 0) {
+        return {
+          satisfied: false,
+          unsatisfiedReasons: [],
+          matchedCourses: allMatchedCourses
+        };
+      }
+      
+      // Find the option with the fewest unsatisfied reasons
+      const minimalOption = unsatisfiedResults.reduce((min, curr) => 
+        curr.unsatisfiedReasons.length < min.unsatisfiedReasons.length ? curr : min
+      );
+      
+      return {
+        satisfied: false,
+        unsatisfiedReasons: minimalOption.unsatisfiedReasons,
+        matchedCourses: allMatchedCourses
+      };
+    } else if (group.threshold === group.items.length) {
+      // AND group: return minimal set from each unsatisfied item
+      // Each unsatisfied item already returns its minimal set
+      const allUnsatisfiedReasons: string[] = [];
+      for (const result of itemResults) {
+        if (!result.satisfied) {
+          allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
+        }
+      }
+      
+      return {
+        satisfied: false,
+        unsatisfiedReasons: allUnsatisfiedReasons,
+        matchedCourses: allMatchedCourses
+      };
+    } else {
+      // k-of-n group: need to satisfy k items, find the k options with fewest missing
+      const unsatisfiedResults = itemResults.filter(r => !r.satisfied);
+      const needed = group.threshold - satisfiedCount;
+      
+      // Sort by number of unsatisfied reasons and take the k with fewest
+      const sortedUnsatisfied = [...unsatisfiedResults].sort((a, b) => 
+        a.unsatisfiedReasons.length - b.unsatisfiedReasons.length
+      );
+      
+      const minimalOptions = sortedUnsatisfied.slice(0, needed);
+      const allUnsatisfiedReasons: string[] = [];
+      for (const result of minimalOptions) {
+        allUnsatisfiedReasons.push(...result.unsatisfiedReasons);
+      }
+      
+      return {
+        satisfied: false,
+        unsatisfiedReasons: allUnsatisfiedReasons,
+        matchedCourses: allMatchedCourses
+      };
+    }
   }
 
   reset(): void {
