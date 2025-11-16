@@ -448,7 +448,7 @@ function CourseGraphFlowInner({
           ...node,
           missingPrereqs,
         },
-        draggable: node.userControlled || false,
+        draggable: !isOptimizing && (node.userControlled || false),
       };
     });
 
