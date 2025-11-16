@@ -24,6 +24,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
 import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrerequisites";
+import { toast as showToast } from "@/hooks/useToast";
 
 // Custom node component wrapper for React Flow
 function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) {
@@ -225,12 +226,34 @@ function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "
   const updateMarker = useGraphStore(state => state.updateMarker);
   const removeMarker = useGraphStore(state => state.removeMarker);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
+  const markersChangedSinceOptimization = useGraphStore(state => state.markersChangedSinceOptimization);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   // Track viewport for column headers
   const [viewport, setViewport] = React.useState({ x: 0, y: 20, zoom: 1 });
+
+  // Track if we've shown the stale warning alert
+  const [hasShownStaleWarning, setHasShownStaleWarning] = React.useState(false);
+
+  // Show warning alert when markers change (once)
+  React.useEffect(() => {
+    if (markersChangedSinceOptimization && !hasShownStaleWarning) {
+      showToast({
+        title: "Optimizer results are stale",
+        description: "You've modified your markers. Press 'Optimize!' to update the schedule.",
+        variant: "default",
+        duration: 5000,
+      });
+      setHasShownStaleWarning(true);
+    }
+
+    // Reset flag when optimization completes
+    if (!markersChangedSinceOptimization && hasShownStaleWarning) {
+      setHasShownStaleWarning(false);
+    }
+  }, [markersChangedSinceOptimization, hasShownStaleWarning]);
 
   // Compute display nodes from markers + optimizer nodes
   const storeNodes = React.useMemo(() => {
@@ -615,7 +638,7 @@ function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "
 
   return (
     <div
-      className="h-full w-full rounded-md border border-border bg-muted/30 relative"
+      className={`h-full w-full rounded-md border ${markersChangedSinceOptimization ? 'border-yellow-500 border-2' : 'border-border'} bg-muted/30 relative`}
       style={{ overflow: 'hidden' }}
     >
       <ReactFlow
@@ -697,7 +720,7 @@ function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "
               disabled={currentStatus === 'solo'}
             >
               <Unlink className="w-4 h-4" />
-              <span>Pin + Ignore Prereqs</span>
+              <span>Pin + ignore prerequisites</span>
               {currentStatus === 'solo' && (
                 <span className="ml-auto text-xs text-muted-foreground">✓</span>
               )}

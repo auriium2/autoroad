@@ -12,10 +12,6 @@ interface BasicToastConfig {
 }
 
 export function DashboardAlerts() {
-  // Note: hasChangesSinceOptimization removed in refactor - markers system handles this
-  const markers = useGraphStore((state) => state.markers);
-  const hasMarkers = markers.length > 0;
-
   const toastRefs = React.useRef<Record<string, { dismiss: () => void }>>({});
   const welcomeShownRef = React.useRef(false);
 
@@ -48,21 +44,6 @@ export function DashboardAlerts() {
       durationMs: 5000,
     });
   }, [showOrReplaceToast]);
-
-  React.useEffect(() => {
-    if (hasMarkers) {
-      showOrReplaceToast("user-markers", {
-        type: "info",
-        title: "Manual placements detected",
-        description:
-          "You've pinned courses manually. Run Optimize to see suggestions that respect your constraints.",
-        durationMs: 5000,
-      });
-    } else if (toastRefs.current["user-markers"]) {
-      toastRefs.current["user-markers"]?.dismiss();
-      delete toastRefs.current["user-markers"];
-    }
-  }, [hasMarkers, showOrReplaceToast]);
 
   return null;
 }

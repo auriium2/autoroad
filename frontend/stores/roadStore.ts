@@ -26,6 +26,9 @@ interface GraphStore {
     message?: string;
   } | null;
 
+  // Track if markers have changed since last optimization
+  markersChangedSinceOptimization: boolean;
+
   // User info
   userId: string | null;
 
@@ -66,6 +69,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   isSaving: false,
   isOptimizing: false,
   optimizationProgress: null,
+  markersChangedSinceOptimization: false,
   userId: null,
 
   // User actions
@@ -75,7 +79,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
   // Marker management
   addMarker: (courseId, section, status = 'pin') => {
-    const { markers } = get();
+    const { markers, optimizerNodes } = get();
 
     const newMarker: Marker = {
       uuid: `marker_${courseId}_${Date.now()}`,
@@ -86,22 +90,25 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
     set({
       markers: [...markers, newMarker],
+      markersChangedSinceOptimization: optimizerNodes.length > 0,
     });
   },
 
   removeMarker: (uuid) => {
-    const { markers } = get();
+    const { markers, optimizerNodes } = get();
 
     set({
       markers: markers.filter(m => m.uuid !== uuid),
+      markersChangedSinceOptimization: optimizerNodes.length > 0,
     });
   },
 
   updateMarker: (uuid, updates) => {
-    const { markers } = get();
+    const { markers, optimizerNodes } = get();
 
     set({
       markers: markers.map(m => m.uuid === uuid ? { ...m, ...updates } : m),
+      markersChangedSinceOptimization: optimizerNodes.length > 0,
     });
   },
 
@@ -166,6 +173,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       error: null,
       isOptimizing: true,
       optimizationProgress: showProgress ? {} as any : null,
+      markersChangedSinceOptimization: false, // Reset flag when optimization starts
     });
 
     try {
