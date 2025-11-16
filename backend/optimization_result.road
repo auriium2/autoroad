@@ -18,28 +18,35 @@
     },
     {
       "subject_id": "16.C20",
-      "semester": 4,
+      "semester": 6,
       "title": "Introduction to Computational Science and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.01L",
-      "semester": 2,
+      "subject_id": "18.01",
+      "semester": 1,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "18.05",
-      "semester": 6,
+      "semester": 3,
       "title": "Introduction to Probability and Statistics",
       "units": 12,
       "overrideWarnings": false
     },
     {
+      "subject_id": "18.06",
+      "semester": 3,
+      "title": "Linear Algebra",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
       "subject_id": "21H.218",
-      "semester": 1,
+      "semester": 7,
       "title": "History of the Built Environment in the US",
       "units": 12,
       "overrideWarnings": false
@@ -52,23 +59,16 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.041",
-      "semester": 12,
+      "subject_id": "21L.000",
+      "semester": 6,
       "title": "Writing About Literature",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.764",
-      "semester": 12,
-      "title": "Computational and Experimental Writing Workshop",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.091",
-      "semester": 4,
-      "title": "Introduction to Solid-State Chemistry",
+      "subject_id": "3.096",
+      "semester": 7,
+      "title": "Architectural Ironwork",
       "units": 12,
       "overrideWarnings": false
     },
@@ -80,37 +80,16 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1000",
-      "semester": 1,
-      "title": "Introduction to Programming and Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "6.100A",
-      "semester": 3,
+      "semester": 1,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1010",
+      "subject_id": "6.120A",
       "semester": 3,
-      "title": "Fundamentals of Programming",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1020",
-      "semester": 9,
-      "title": "Software Construction",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1200",
-      "semester": 3,
-      "title": "Mathematics for Computer Science",
+      "title": "Discrete Mathematics and Proof for Computer Science",
       "units": 12,
       "overrideWarnings": false
     },
@@ -122,21 +101,7 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1220",
-      "semester": 6,
-      "title": "Design and Analysis of Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1800",
-      "semester": 6,
-      "title": "Computer Systems Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1903",
+      "subject_id": "6.1904",
       "semester": 6,
       "title": "Introduction to Low-level Programming in C and Assembly",
       "units": 12,
@@ -150,23 +115,37 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.5151",
-      "semester": 6,
-      "title": "Large-scale Symbolic Systems",
+      "subject_id": "6.2000",
+      "semester": 4,
+      "title": "Electrical Circuits: Modeling and Design of Physical Systems",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.5310",
-      "semester": 9,
-      "title": "Geometric Folding Algorithms: Linkages, Origami, Polyhedra",
+      "subject_id": "6.2600",
+      "semester": 6,
+      "title": "Micro/Nano Processing Technology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.C01",
+      "subject_id": "6.3000",
+      "semester": 4,
+      "title": "Signal Processing",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.3100",
+      "semester": 4,
+      "title": "Dynamical System Modeling and Control Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.9000",
       "semester": 6,
-      "title": "Modeling with Machine Learning: from Algorithms to Applications",
+      "title": "Engineering for Impact",
       "units": 12,
       "overrideWarnings": false
     },
@@ -178,44 +157,37 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.UAT",
-      "semester": 4,
-      "title": "Oral Communication",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "7.015",
-      "semester": 7,
+      "subject_id": "7.016",
+      "semester": 6,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.022",
-      "semester": 12,
-      "title": "Physics II",
+      "subject_id": "CC.5111",
+      "semester": 10,
+      "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "CC.1802",
-      "semester": 3,
+      "subject_id": "ES.182A",
+      "semester": 2,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.8012",
-      "semester": 10,
+      "subject_id": "ES.801",
+      "semester": 1,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.051",
-      "semester": 1,
-      "title": "Documenting MIT Communities",
+      "subject_id": "ES.8022",
+      "semester": 3,
+      "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     },

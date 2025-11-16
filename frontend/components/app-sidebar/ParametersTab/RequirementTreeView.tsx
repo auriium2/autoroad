@@ -15,6 +15,7 @@ interface RequirementTreeViewProps {
 export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps) {
   const markers = useGraphStore((state) => state.markers);
   const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
+  const isOptimizing = useGraphStore((state) => state.isOptimizing);
   
   const expandedNodesRecord = useOptimizationStore((state) => state.expandedRequirementNodes);
   const expandedNodes = React.useMemo(
@@ -23,25 +24,33 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
   );
   const toggleNodeExpanded = useOptimizationStore((state) => state.toggleRequirementNodeExpanded);
   
-  const allCourseIds = React.useMemo(() => [
-    ...markers.map(m => m.courseId),
-    ...optimizerNodes.map(n => n.courseId)
-  ], [markers, optimizerNodes]);
+  const allCourseIds = React.useMemo(() => {
+    const ids = new Set([
+      ...markers.map(m => m.courseId),
+      ...optimizerNodes.map(n => n.courseId)
+    ]);
+    return Array.from(ids);
+  }, [markers, optimizerNodes]);
+
+  const courseIdsKey = React.useMemo(() => 
+    allCourseIds.sort().join(','),
+    [allCourseIds]
+  );
 
   const { data: requirement, isLoading, error } = useQuery({
-    queryKey: ['requirement-progress', requirementKey, allCourseIds],
+    queryKey: ['requirement-progress', requirementKey, courseIdsKey],
     queryFn: async () => {
-      // Always try to get progress if we have courses
       if (allCourseIds.length > 0) {
         try {
+          console.log(`[RequirementProgress] Fetching progress for ${requirementKey} with ${allCourseIds.length} courses:`, allCourseIds);
           const result = await optimizerApi.getRequirementProgress(requirementKey, allCourseIds);
           console.log('Progress API result for', requirementKey, ':', result);
           return result;
         } catch (err) {
-          console.warn(`Progress endpoint not available for ${requirementKey}, falling back to basic:`, err);
+          console.warn(`Progress endpoint failed for ${requirementKey} with courses:`, allCourseIds, err);
+          console.warn('Falling back to basic requirement tree');
         }
       }
-      // Fallback to basic requirement (no progress data)
       const basic = await optimizerApi.getRequirement(requirementKey);
       console.log('Basic API result for', requirementKey, ':', basic);
       return basic;
@@ -119,6 +128,10 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
       </div>
     );
   };
+
+  if (isOptimizing) {
+    return <div className="text-xs text-muted-foreground">Optimizing schedule...</div>;
+  }
 
   if (isLoading) {
     return <div className="text-xs text-muted-foreground">Loading requirement tree...</div>;

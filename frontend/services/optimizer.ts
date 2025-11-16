@@ -109,14 +109,25 @@ export const optimizerApi = {
   },
 
   async getRequirementProgress(key: string, courseIds: string[]): Promise<RequirementTree> {
-    // Use GET method with comma-separated courses to avoid CORS preflight
-    const coursesParam = courseIds.join(',');
+    const roadData = {
+      coursesOfStudy: [key],
+      selectedSubjects: courseIds.map((courseId, index) => ({
+        subject_id: courseId,
+        title: courseId,
+        units: 12,
+        semester: index % 8,
+      })),
+      progressAssertions: {},
+    };
+
     const response = await fetch(
-      `https://fireroad.mit.edu/requirements/progress/${key}/${coursesParam}`,
+      `https://fireroad.mit.edu/requirements/progress/${key}/`,
       {
         headers: {
           'Accept': 'application/json',
         },
+        method: 'POST',
+        body: JSON.stringify(roadData),
       }
     );
     if (!response.ok) {
