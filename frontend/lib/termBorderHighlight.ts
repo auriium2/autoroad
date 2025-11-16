@@ -35,9 +35,9 @@ function resolvePattern(terms: TermAvailability): TermPattern | null {
 }
 
 const HIGHLIGHT_CONFIG: Record<TermPattern, TermBorderHighlight> = {
-  fall: { dasharray: "0.5 0.5", dashoffset: 0.25 },
-  spring: { dasharray: "0.5 0.5", dashoffset: 0.75 },
-  iap: { dasharray: "0.5 0.5", dashoffset: 0.5 },
+  fall: { dasharray: "0.5 0.5", dashoffset: 0.75 },   // Left half
+  spring: { dasharray: "0.5 0.5", dashoffset: 0.25 }, // Right half
+  iap: { dasharray: "0.5 0.5", dashoffset: 0 },       // Bottom half
   both: { dasharray: "1 0", dashoffset: 0 },
 };
 
