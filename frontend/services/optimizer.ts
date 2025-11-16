@@ -100,14 +100,6 @@ export const optimizerApi = {
     return response.json();
   },
 
-  async getRequirement(key: string): Promise<RequirementTree> {
-    const response = await fetch(`https://fireroad.mit.edu/requirements/get_json/${key}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch requirement ${key}: ${response.statusText}`);
-    }
-    return response.json();
-  },
-
   async getRequirementProgress(key: string, courseIds: string[]): Promise<RequirementTree> {
     const roadData = {
       coursesOfStudy: [key],

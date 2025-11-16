@@ -40,20 +40,10 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
   const { data: requirement, isLoading, error } = useQuery({
     queryKey: ['requirement-progress', requirementKey, courseIdsKey],
     queryFn: async () => {
-      if (allCourseIds.length > 0) {
-        try {
-          console.log(`[RequirementProgress] Fetching progress for ${requirementKey} with ${allCourseIds.length} courses:`, allCourseIds);
-          const result = await optimizerApi.getRequirementProgress(requirementKey, allCourseIds);
-          console.log('Progress API result for', requirementKey, ':', result);
-          return result;
-        } catch (err) {
-          console.warn(`Progress endpoint failed for ${requirementKey} with courses:`, allCourseIds, err);
-          console.warn('Falling back to basic requirement tree');
-        }
-      }
-      const basic = await optimizerApi.getRequirement(requirementKey);
-      console.log('Basic API result for', requirementKey, ':', basic);
-      return basic;
+      console.log(`[RequirementProgress] Fetching progress for ${requirementKey} with ${allCourseIds.length} courses:`, allCourseIds);
+      const result = await optimizerApi.getRequirementProgress(requirementKey, allCourseIds);
+      console.log('Progress API result for', requirementKey, ':', result);
+      return result;
     },
     staleTime: 5000,
   });
