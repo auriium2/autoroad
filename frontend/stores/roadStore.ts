@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { storage } from '@/lib/storage';
 import { ApiError, fireroadApi } from '@/services/fireroad';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
-import { optimizerApi, type OptimizationConstraints, type OptimizationProgress } from '@/services/optimizer';
+import { optimizerApi, type OptimizationConstraints, type OptimizationProgress, type ObjectiveConfig } from '@/services/optimizer';
+import { useOptimizationStore } from '@/stores/optimizationStore';
 
 // Re-export types for backward compatibility
 export type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode };
@@ -167,6 +168,10 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // Optimization - always streams progress
   optimizeRoad: async (constraints, showProgress = true) => {
     const { markers } = get();
+    
+    // Get objectives and requirements from optimization store
+    const selectedObjectives = useOptimizationStore.getState().selectedObjectives;
+    const selectedRequirements = useOptimizationStore.getState().selectedRequirements;
 
     set({
       loadingState: 'loading',
@@ -185,8 +190,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       // Stream optimization progress
       for await (const progress of optimizerApi.optimize(
         markers,
-        [], // TODO: pass required courses
-        constraints
+        selectedRequirements,
+        constraints,
+        selectedObjectives.length > 0 ? selectedObjectives : undefined
       )) {
         if (progress.nodes.length > 0) {
           console.log(`[Optimizer] Received solution #${progress.solutionNumber}: objective=${progress.objectiveValue}, courses=${progress.nodes.length}`);

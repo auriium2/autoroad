@@ -1,13 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Target, Search, Sliders, LucideIcon } from "lucide-react";
+import { Search, Sliders, LucideIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
 } from "@/components/ui/sidebar";
-import { ObjectivesTab } from "./ObjectivesTab/ObjectivesTab";
 import { CourseSearchTab } from "./CourseSearchTab/CourseSearchTab";
 import { ParametersTab } from "./ParametersTab/ParametersTab";
 
@@ -27,12 +26,6 @@ const TABS: TabConfig[] = [
     component: CourseSearchTab,
   },
   {
-    id: "objectives",
-    label: "Objectives",
-    icon: Target,
-    component: ObjectivesTab,
-  },
-  {
     id: "parameters",
     label: "Parameters",
     icon: Sliders,
@@ -40,16 +33,9 @@ const TABS: TabConfig[] = [
   },
 ];
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  selectedYear?: string;
-  onSelectedYearChange?: (value?: string) => void;
-}
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
 
-export function AppSidebar({
-  selectedYear,
-  onSelectedYearChange,
-  ...props
-}: AppSidebarProps) {
+export function AppSidebar({ ...props }: AppSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<string>("courses");
 
   // Find the active tab component
@@ -84,14 +70,7 @@ export function AppSidebar({
       </SidebarHeader>
       
       <SidebarContent className="overflow-hidden">
-        {activeTab === "parameters" ? (
-          <ParametersTab
-            selectedYear={selectedYear}
-            onSelectedYearChange={onSelectedYearChange}
-          />
-        ) : (
-          <ActiveComponent />
-        )}
+        <ActiveComponent />
       </SidebarContent>
     </Sidebar>
   );

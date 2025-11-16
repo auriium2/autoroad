@@ -1,10 +1,11 @@
 /**
- * Optimizer API service
- * Handles communication with the backend optimizer
- * Supports both one-shot optimization and live streaming of optimization progress
+ * Optimizer API Client
+ * Interface to the backend optimization service
  */
 
 import type { Marker, OptimizerNode } from '@/types';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 export interface OptimizationConstraints {
   maxSemesters?: number;
@@ -13,37 +14,123 @@ export interface OptimizationConstraints {
   maxHoursPerSemester?: number;
 }
 
-export interface OptimizationResult {
-  nodes: OptimizerNode[]; // List of (semester, courseId) pairs
-  success: boolean;
-  error?: string;
-}
-
 export interface OptimizationProgress {
-  nodes: OptimizerNode[]; // Current state
+  nodes: OptimizerNode[];
   step: number;
   totalSteps?: number;
   message?: string;
-  objectiveValue?: number; // Objective value for this solution (lower is better)
-  solutionNumber?: number; // Sequence number to ensure proper ordering
+  objectiveValue?: number;
+  solutionNumber?: number;
 }
 
-/**
- * Real optimizer that connects to backend API via Server-Sent Events (SSE)
- */
-class BackendOptimizer {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export interface ObjectiveMetadata {
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+  hasParameters: boolean;
+  defaultParameters: Record<string, any>;
+  parameterTypes: Record<string, string>;
+}
 
-  /**
-   * Run optimization process with real-time streaming via SSE
-   * Always yields intermediate results as the optimizer works
-   */
+export interface ObjectiveConfig {
+  key: string;
+  weight: number;
+  parameters: Record<string, any>;
+}
+
+export interface ObjectivesResponse {
+  objectives: ObjectiveMetadata[];
+  defaultConfiguration: ObjectiveConfig[];
+}
+
+export interface RequirementMetadata {
+  title_no_degree?: string;
+  title?: string;
+  short?: string;
+  medium?: string;
+}
+
+export type RequirementsListResponse = Record<string, RequirementMetadata>;
+
+export interface RequirementNode {
+  title?: string;
+  'connection-type'?: 'all' | 'any';
+  'threshold-desc'?: string;
+  threshold?: {
+    cutoff: number;
+    criterion: string;
+    type: string;
+  };
+  desc?: string;
+  reqs?: RequirementNode[];
+  req?: string;
+  fulfilled?: boolean;
+  progress?: number;
+  max?: number;
+  percent_fulfilled?: number;
+  sat_courses?: string[];
+  is_bypassed?: boolean;
+}
+
+export interface RequirementTree {
+  'list-id': string;
+  title: string;
+  'medium-title'?: string;
+  'short-title'?: string;
+  'title-no-degree'?: string;
+  desc?: string;
+  reqs: RequirementNode[];
+}
+
+export const optimizerApi = {
+  async getObjectives(): Promise<ObjectivesResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/optimize/objectives`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch objectives: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getRequirementsList(): Promise<RequirementsListResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/optimize/requirements`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch requirements: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getRequirement(key: string): Promise<RequirementTree> {
+    const response = await fetch(`https://fireroad.mit.edu/requirements/get_json/${key}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch requirement ${key}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getRequirementProgress(key: string, courseIds: string[]): Promise<RequirementTree> {
+    // Use GET method with comma-separated courses to avoid CORS preflight
+    const coursesParam = courseIds.join(',');
+    const response = await fetch(
+      `https://fireroad.mit.edu/requirements/progress/${key}/${coursesParam}`,
+      {
+        headers: {
+          'Accept': 'application/json',
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch requirement progress for ${key}: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
   async *optimize(
     markers: Marker[],
     requiredCourses: string[],
-    constraints?: OptimizationConstraints
+    constraints?: OptimizationConstraints,
+    objectives?: ObjectiveConfig[]
   ): AsyncGenerator<OptimizationProgress> {
-    // Prepare request body
     const requestBody = {
       markers: markers.map(m => ({
         courseId: m.courseId,
@@ -57,10 +144,10 @@ class BackendOptimizer {
         maxUnitsIAP: constraints?.maxUnitsIAP || 12,
         maxHoursPerSemester: constraints?.maxHoursPerSemester || 60,
       },
+      objectives: objectives || undefined,
     };
 
-    // Make POST request to start optimization
-    const response = await fetch(`${this.baseUrl}/api/optimize`, {
+    const response = await fetch(`${BACKEND_URL}/api/optimize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -76,7 +163,6 @@ class BackendOptimizer {
       throw new Error('Response body is null');
     }
 
-    // Parse SSE stream
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -84,24 +170,21 @@ class BackendOptimizer {
     try {
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
-        // Decode chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
 
-        // Process complete SSE messages
         const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = line.slice(6); // Remove 'data: ' prefix
-            
+            const data = line.slice(6);
+
             try {
               const message = JSON.parse(data);
 
-              // Handle different message types
               if (message.type === 'progress') {
                 yield {
                   nodes: [],
@@ -119,7 +202,6 @@ class BackendOptimizer {
                   solutionNumber: message.solutionNumber,
                 };
               } else if (message.type === 'complete') {
-                // Final message - stop iteration
                 return;
               } else if (message.type === 'error') {
                 throw new Error(message.error || 'Optimization failed');
@@ -133,8 +215,5 @@ class BackendOptimizer {
     } finally {
       reader.releaseLock();
     }
-  }
-}
-
-// Export singleton instance
-export const optimizerApi = new BackendOptimizer();
+  },
+};

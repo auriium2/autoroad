@@ -14,13 +14,8 @@ from courses.prerequisites.parser import parse_fireroad
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
 from optimizer.marker_constraint_builder import add_marker_constraints, parse_markers_from_dict
-from optimizer.objectives import (
-    FrontloadCourses,
-    MaximizeRating,
-    MinimizeTotalHours,
-    MinimizeUnits,
-    ObjectiveBuilder,
-)
+from optimizer.objectives import ObjectiveBuilder
+from optimizer.objectives.registry import get_all_objectives, get_default_objectives, instantiate_objective
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
 from utils.utils import find_current_school_year, is_valid_class_semester
@@ -278,10 +273,22 @@ async def optimize(request: OptimizationRequest):
             # Build objective (run in thread pool)
             def build_objective():
                 builder = ObjectiveBuilder()
-                builder.add(MinimizeUnits(), weight=0.4)
-                builder.add(MaximizeRating(target_rating=6.0), weight=0.3)
-                builder.add(MinimizeTotalHours(default_hours=12.0), weight=0.2)
-                builder.add(FrontloadCourses(), weight=0.1)
+                
+                # Use provided objectives or defaults
+                if request.objectives:
+                    # Use user-provided objectives
+                    for obj_config in request.objectives:
+                        try:
+                            obj = instantiate_objective(obj_config.key, obj_config.parameters)
+                            builder.add(obj, weight=obj_config.weight)
+                        except ValueError as e:
+                            print(f"[WARNING] Invalid objective {obj_config.key}: {e}")
+                else:
+                    # Use default objectives
+                    for key, weight, params in get_default_objectives():
+                        obj = instantiate_objective(key, params)
+                        builder.add(obj, weight=weight)
+                
                 objective = builder.build(model, take_vars, courses_df, planning_year_start)
                 model.Minimize(objective)
 
@@ -390,6 +397,56 @@ async def optimize(request: OptimizationRequest):
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/optimize/objectives")
+async def get_objectives():
+    """
+    Get all available optimization objectives with metadata.
+    
+    Returns:
+        List of objectives with their keys, names, descriptions, parameters, etc.
+    """
+    objectives = get_all_objectives()
+    
+    # Convert to dict format for JSON response
+    result = []
+    for obj in objectives:
+        result.append({
+            "key": obj.key,
+            "name": obj.name,
+            "description": obj.description,
+            "category": obj.category,
+            "hasParameters": obj.has_parameters,
+            "defaultParameters": obj.default_parameters,
+            "parameterTypes": {k: v.__name__ if hasattr(v, '__name__') else str(v) for k, v in obj.parameter_types.items()},
+        })
+    
+    # Also include default configuration
+    defaults = get_default_objectives()
+    default_config = [
+        {"key": key, "weight": weight, "parameters": params}
+        for key, weight, params in defaults
+    ]
+    
+    return {
+        "objectives": result,
+        "defaultConfiguration": default_config
+    }
+
+
+@router.get("/optimize/requirements")
+async def get_requirements_list():
+    """
+    Get all available requirements from Fireroad API.
+    
+    Returns:
+        Dictionary mapping requirement IDs to their metadata (titles, etc.)
+    """
+    import requests
+    response = requests.get('https://fireroad.mit.edu/requirements/list_reqs')
+    response.raise_for_status()
+    return response.json()
 
 
 @router.post("/optimize/clear-cache")

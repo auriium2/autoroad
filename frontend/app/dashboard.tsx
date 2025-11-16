@@ -31,15 +31,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useOptimizationStore } from "@/stores/optimizationStore";
 
 export default function Dashboard() {
   const [isOptimizing, setIsOptimizing] = React.useState(false);
-  const [selectedYear, setSelectedYear] = React.useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = React.useState<string>("default");
   
-  const handleYearChange = React.useCallback((value?: string) => {
-    setSelectedYear(value);
-  }, []);
+  const selectedYear = useOptimizationStore((state) => state.selectedYear);
 
   // Get optimize function and progress from store
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
@@ -86,10 +84,7 @@ export default function Dashboard() {
   return (
     <SidebarProvider>
       <div className="flex w-screen h-screen">
-        <AppSidebar
-          selectedYear={selectedYear}
-          onSelectedYearChange={handleYearChange}
-        />
+        <AppSidebar />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/50 px-4 relative z-10 glass dark:glass-dark">
             <div className="flex items-center gap-2">
