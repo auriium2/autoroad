@@ -26,7 +26,7 @@ export function ObjectiveSelector() {
 
   const handleToggleObjective = (objective: ObjectiveMetadata) => {
     const existing = selectedObjectives.find(o => o.key === objective.key);
-    
+
     if (existing) {
       // Remove objective
       const newObjectives = selectedObjectives.filter(o => o.key !== objective.key);
@@ -93,17 +93,18 @@ export function ObjectiveSelector() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {Object.entries(objectivesByCategory).map(([category, objectives]) => (
         <div key={category} className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground">
             {categoryLabels[category] || category}
           </h3>
-          
+
           {objectives.map(objective => {
             const isSelected = selectedObjectives.some(o => o.key === objective.key);
             const config = selectedObjectives.find(o => o.key === objective.key);
-            
+            const isRecommended = data.defaultConfiguration.some(d => d.key === objective.key);
+
             return (
               <div key={objective.key} className="space-y-2">
                 <div className="flex items-start gap-2">
@@ -111,15 +112,22 @@ export function ObjectiveSelector() {
                     id={objective.key}
                     checked={isSelected}
                     onCheckedChange={() => handleToggleObjective(objective)}
-                    className="mt-1"
+                    className="mt-1 shrink-0"
                   />
-                  <div className="flex-1 space-y-1">
-                    <Label
-                      htmlFor={objective.key}
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      {objective.name}
-                    </Label>
+                  <div className="flex-1 space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Label
+                        htmlFor={objective.key}
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        {objective.name}
+                      </Label>
+                      {isRecommended && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                          RECOMMENDED
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {objective.description}
                     </p>
@@ -127,9 +135,9 @@ export function ObjectiveSelector() {
                 </div>
 
                 {isSelected && config && (
-                  <div className="ml-6 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <Label className="text-xs text-muted-foreground w-16">Weight:</Label>
+                  <div className="ml-6 space-y-2 pr-1">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Label className="text-xs text-muted-foreground w-16 shrink-0">Weight:</Label>
                       <input
                         type="range"
                         min="0"
@@ -137,18 +145,18 @@ export function ObjectiveSelector() {
                         step="1"
                         value={Math.round(config.weight * 100)}
                         onChange={(e) => handleWeightChange(objective.key, Number(e.target.value) / 100)}
-                        className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
+                        className="flex-1 min-w-0 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
                       />
-                      <span className="text-xs font-medium w-12 text-right">
-                        {Math.round(config.weight * 100)}%
+                      <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
+                        {Math.round(config.weight * 100)}
                       </span>
                     </div>
 
                     {objective.hasParameters && (
                       <div className="space-y-2 pt-1">
                         {Object.entries(objective.defaultParameters).map(([paramName, defaultValue]) => (
-                          <div key={paramName} className="flex items-center gap-3">
-                            <Label className="text-xs text-muted-foreground w-32 capitalize">
+                          <div key={paramName} className="flex items-center gap-2 min-w-0">
+                            <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
                               {paramName.replace(/_/g, ' ')}:
                             </Label>
                             <input
@@ -162,7 +170,7 @@ export function ObjectiveSelector() {
                                   : parseInt(e.target.value)
                               )}
                               step={typeof defaultValue === 'number' && !Number.isInteger(defaultValue) ? 0.1 : 1}
-                              className="flex-1 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded"
+                              className="w-14 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded shrink-0 tabular-nums"
                             />
                           </div>
                         ))}
@@ -178,7 +186,7 @@ export function ObjectiveSelector() {
 
       <div className="pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground">
-          Weights are automatically normalized to sum to 100%. Higher weights prioritize that objective.
+          Weights are automatically normalized to sum to 100%. Higher weights prioritize that objective. Fuck S and anyone else who treats me like that while i'm at my lowest.
         </p>
       </div>
     </div>
@@ -187,14 +195,14 @@ export function ObjectiveSelector() {
 
 function normalizeWeights(objectives: ObjectiveConfig[]): ObjectiveConfig[] {
   if (objectives.length === 0) return objectives;
-  
+
   const totalWeight = objectives.reduce((sum, obj) => sum + obj.weight, 0);
-  
+
   if (totalWeight === 0) {
     // If all weights are 0, distribute equally
     return objectives.map(obj => ({ ...obj, weight: 1 / objectives.length }));
   }
-  
+
   // Normalize so weights sum to 1
   return objectives.map(obj => ({
     ...obj,

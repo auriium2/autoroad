@@ -23,6 +23,13 @@ export function RequirementSelector() {
     staleTime: 60 * 60 * 1000,
   });
 
+  // Initialize with GIRs by default
+  React.useEffect(() => {
+    if (requirementsList && selectedRequirements.length === 0) {
+      addRequirement('girs');
+    }
+  }, [requirementsList, selectedRequirements.length, addRequirement]);
+
   const handleAddRequirement = (key: string) => {
     console.log('[RequirementSelector] Adding requirement:', key);
     console.log('[RequirementSelector] Current requirements:', selectedRequirements);

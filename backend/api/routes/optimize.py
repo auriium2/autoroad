@@ -87,21 +87,16 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
     """Create decision variables for taking courses."""
     take_vars = {}
     
-    # Build a set of (course_id, semester) for markers in special semesters
-    # Note: marker.section is 0-based from frontend, but for special semesters:
-    #   section=-2 -> Must Take (semester=-1 after +1 conversion in marker constraints)
-    #   section=-1 -> ASE (semester=0 after +1 conversion, but we use -1 for ASE in take_vars)
-    # So we need to map: section=-2 -> semester=-2, section=-1 -> semester=-1
-    special_semester_courses = set()
+    # Build a set of course_ids for ASE markers only
+    # Must Take (section=-2) is handled as a requirement constraint, not a placement
+    # ASE (section=-1) creates a special semester variable
+    ase_courses = set()
     if markers:
         print(f"[DEBUG] Processing {len(markers)} markers")
         for marker in markers:
             print(f"[DEBUG] Marker: {marker.courseId} section={marker.section} status={marker.status}")
-            if marker.section == -2:  # Must Take
-                special_semester_courses.add((marker.courseId, -2))
-                print(f"[DEBUG] Added {marker.courseId} to Must Take semester -2")
-            elif marker.section == -1:  # ASE
-                special_semester_courses.add((marker.courseId, -1))
+            if marker.section == -1:  # ASE
+                ase_courses.add(marker.courseId)
                 print(f"[DEBUG] Added {marker.courseId} to ASE semester -1")
 
     for course_idx in courses_df.index:
@@ -113,11 +108,8 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
                 take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
         
-        # For special semesters, only create vars if there's a marker
-        if (subject_id, -2) in special_semester_courses:
-            var_name = f"take_{subject_id.replace('.', '_')}_s-2"
-            take_vars[(course_idx, -2)] = model.NewBoolVar(var_name)
-        if (subject_id, -1) in special_semester_courses:
+        # For ASE semester, only create var if there's an ASE marker
+        if subject_id in ase_courses:
             var_name = f"take_{subject_id.replace('.', '_')}_s-1"
             take_vars[(course_idx, -1)] = model.NewBoolVar(var_name)
 

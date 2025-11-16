@@ -34,7 +34,8 @@ This ensures that when weights sum to 1.0, each objective has comparable influen
 | Objective | Cost When Satisfied | Cost When Violated | Notes |
 |-----------|--------------------|--------------------|-------|
 | **MinimizeMaxSemesterHours** | 0 | `100 × excess_hours × 10` | 10 hours over → 10,000 |
-| **MinimizeFinalsLoad** | 0 | `100 × excess_finals` | 2 excess finals → 200 |
+| **LimitClassesPerSemester** | 0 | `1000 × excess_classes` | 2 excess classes → 2,000 |
+| **MinimizeFinalsLoad** | 0 | `1000 × excess_finals` | 2 excess finals → 2,000 |
 
 ## Typical Schedule Impact
 

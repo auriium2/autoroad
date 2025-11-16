@@ -265,15 +265,27 @@ function CourseGraphFlowInner({
   const storeNodes = React.useMemo(() => {
     // Build a map of optimizer nodes by (courseId, section) for overlap detection
     const optimizerMap = new Map<string, OptimizerNode>();
+    const optimizerCourseIds = new Set<string>();
     for (const on of optimizerNodes) {
       const key = `${on.courseId}_${on.section}`;
       optimizerMap.set(key, on);
+      optimizerCourseIds.add(on.courseId);
     }
 
     // Markers become nodes with userControlled=true
     const markerNodes: CourseNodeType[] = markers.map((marker) => {
-      const key = `${marker.courseId}_${marker.section}`;
-      const hasOptimizerOverlap = optimizerMap.has(key) && marker.status !== 'banish';
+      let hasOptimizerOverlap = false;
+      
+      if (marker.status !== 'banish') {
+        if (marker.section === -2) {
+          // Must Take: satisfied if course exists in ANY optimizer semester
+          hasOptimizerOverlap = optimizerCourseIds.has(marker.courseId);
+        } else {
+          // Regular sections: satisfied if course exists in exact same section
+          const key = `${marker.courseId}_${marker.section}`;
+          hasOptimizerOverlap = optimizerMap.has(key);
+        }
+      }
 
       return {
         uuid: marker.uuid,

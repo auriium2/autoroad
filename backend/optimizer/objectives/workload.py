@@ -80,6 +80,78 @@ class MinimizeTotalHours:
         return sum(terms) if terms else 0
 
 
+class LimitClassesPerSemester:
+    """
+    Soft constraint to limit the number of classes per semester.
+    
+    Penalizes semesters that exceed max_classes threshold. This prevents
+    taking too many classes in one semester even if the units and hours are manageable.
+    
+    Scale: Soft constraint with high penalty (1000 per excess class by default).
+           Designed to dominate when violated, but negligible when satisfied.
+    """
+
+    def __init__(self, max_classes: int = 4, penalty: int = 1000):
+        """
+        Args:
+            max_classes: Maximum comfortable number of classes per semester
+            penalty: Penalty cost for each class beyond max_classes (default 1000)
+        """
+        self.max_classes = max_classes
+        self.penalty = penalty
+
+    def get_name(self) -> str:
+        return "Limit Classes Per Semester"
+
+    def get_description(self) -> str:
+        return f"Penalize semesters with more than {self.max_classes} classes"
+
+    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+        return {}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        """
+        Add penalty for semesters exceeding max_classes.
+        
+        For each semester:
+        1. Count total classes: sum(take_var)
+        2. Create excess_var = max(0, class_count - max_classes)
+        3. Add excess_var * penalty to objective
+        """
+        terms = []
+
+        # Group take_vars by semester (only regular semesters 1-12)
+        semesters = set(semester for _, semester in take_vars.keys() if semester >= 1)
+
+        for sem in semesters:
+            # Count classes in this semester
+            classes_in_semester = []
+            for (course_idx, semester), var in take_vars.items():
+                if semester == sem:
+                    classes_in_semester.append(var)
+
+            if not classes_in_semester:
+                continue
+
+            # Create a variable for number of classes in this semester
+            class_count_var = model.NewIntVar(0, len(classes_in_semester), f'classes_sem_{sem}')
+            model.Add(class_count_var == sum(classes_in_semester))
+
+            # Create a variable for excess classes (above threshold)
+            excess_var = model.NewIntVar(0, len(classes_in_semester), f'excess_classes_sem_{sem}')
+            model.AddMaxEquality(excess_var, [class_count_var - self.max_classes, 0])
+
+            # Add penalty term
+            terms.append(excess_var * self.penalty)
+
+        return sum(terms) if terms else 0
+
+
 class MinimizeMaxSemesterHours:
     """
     Soft constraint to limit hours per semester.
@@ -196,15 +268,15 @@ class MinimizeFinalsLoad:
     This is a soft constraint: we add penalty variables for semesters
     exceeding a threshold number of finals.
     
-    Scale: Soft constraint with high penalty (100 per excess final by default).
+    Scale: Soft constraint with high penalty (1000 per excess final by default).
            Designed to dominate when violated, but negligible when satisfied.
     """
 
-    def __init__(self, max_finals: int = 4, penalty: int = 100):
+    def __init__(self, max_finals: int = 4, penalty: int = 1000):
         """
         Args:
             max_finals: Maximum comfortable number of finals per semester
-            penalty: Penalty cost for each final beyond max_finals
+            penalty: Penalty cost for each final beyond max_finals (default 1000)
         """
         self.max_finals = max_finals
         self.penalty = penalty

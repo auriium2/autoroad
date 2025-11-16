@@ -83,10 +83,30 @@ def add_marker_constraints(
 
         if marker.status == "pin":
             # Pin: Force course to be taken in specified semester
-            # Special sections: -2 (Must Take), -1 (ASE) stay as-is (no +1 conversion)
-            # Regular sections: 0-11 get converted to semesters 1-12
+            # Special handling for Must Take (section -2): require course in ANY semester
+            # ASE (section -1): pin to ASE semester
+            # Regular sections (0-11): pin to specific semester (converted to 1-12)
             if marker.section == -2:
-                semester = -2  # Must Take
+                # Must Take: course must be taken in any regular semester (1-12)
+                # Don't pin to a specific semester, just ensure it's taken
+                any_semester_vars = [
+                    take_vars[(course_idx, s)]
+                    for s in range(1, 13)
+                    if (course_idx, s) in take_vars
+                ]
+                
+                if not any_semester_vars:
+                    errors.append(
+                        f"Cannot fulfill Must Take marker for {marker.course_id}: "
+                        f"course not offered in any semester"
+                    )
+                    continue
+                
+                # Add constraint: must take this course in at least one semester
+                model.Add(sum(any_semester_vars) >= 1)
+                constraints_added += 1
+                continue
+                
             elif marker.section == -1:
                 semester = -1  # ASE
             elif marker.section >= 0:
@@ -135,10 +155,15 @@ def add_marker_constraints(
 
         elif marker.status == "solo":
             # Solo: Force course to be taken, and no other courses in that semester
-            # Special sections: -2 (Must Take), -1 (ASE) stay as-is
-            # Regular sections: 0-11 get converted to semesters 1-12
+            # Must Take (section -2): not allowed for solo - must pick a specific semester
+            # ASE (section -1): solo in ASE semester
+            # Regular sections: solo in that specific semester
             if marker.section == -2:
-                semester = -2  # Must Take
+                errors.append(
+                    f"Solo marker for {marker.course_id} cannot be in Must Take column. "
+                    f"Please move to a specific semester to use solo mode."
+                )
+                continue
             elif marker.section == -1:
                 semester = -1  # ASE
             elif marker.section >= 0:

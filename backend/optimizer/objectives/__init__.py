@@ -11,7 +11,7 @@ from .ratings import MaximizeRating, MaximizeWeightedRating
 from .scheduling import BackloadCourses, ClusterCourses, FrontloadCourses, MinimizeFridayClasses
 from .social import MaximizeCohortOverlap
 from .units import MinimizeUnits
-from .workload import MinimizeFinalsLoad, MinimizeMaxSemesterHours, MinimizeTotalHours
+from .workload import MinimizeFinalsLoad, MinimizeMaxSemesterHours, MinimizeTotalHours, LimitClassesPerSemester
 
 __all__ = [
     # Base classes
@@ -25,6 +25,7 @@ __all__ = [
     'MaximizeWeightedRating',
     'MinimizeTotalHours',
     'MinimizeMaxSemesterHours',
+    'LimitClassesPerSemester',
     'MinimizeFinalsLoad',
     'FrontloadCourses',
     'BackloadCourses',
