@@ -214,14 +214,24 @@ class TestGIRRequirements:
 
     def test_gir_requirement_satisfied(self):
         """Test that GIR requirements can be satisfied."""
-        evaluator = PrerequisiteEvaluator(["GIR:BIOL"])
+        evaluator = PrerequisiteEvaluator(
+            ["7.012"],  # An actual course
+            course_tags={"7.012": ["GIR:BIOL"]}
+        )
         prereq = PrereqCourse("GIR:BIOL")
         result = evaluator.evaluate(prereq)
         assert result.satisfied
 
     def test_multiple_girs(self):
         """Test multiple GIR requirements."""
-        evaluator = PrerequisiteEvaluator(["GIR:BIOL", "GIR:CAL2", "GIR:CHEM"])
+        evaluator = PrerequisiteEvaluator(
+            ["7.012", "18.02", "5.111"],  # Actual courses
+            course_tags={
+                "7.012": ["GIR:BIOL"],
+                "18.02": ["GIR:CAL2"],
+                "5.111": ["GIR:CHEM"]
+            }
+        )
         prereq = PrereqGroup(threshold=3, items=(
             PrereqCourse("GIR:BIOL"),
             PrereqCourse("GIR:CAL2"),

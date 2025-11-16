@@ -57,7 +57,7 @@ async def optimize(request: OptimizationRequest):
             last_id = '0'
             timeout_counter = 0
             max_timeouts = 600  # 60 seconds max wait (100ms * 600)
-            
+
             # First message: send job_id so client can cancel
             yield f"data: {json.dumps({'type': 'job_started', 'job_id': job_id})}\n\n"
 
@@ -119,24 +119,24 @@ async def get_optimization_result(job_id: str):
         - 404: Job not found or expired
     """
     redis_client = await get_redis()
-    
+
     # Check if job result exists
     result = await redis_client.get(f"optimization:result:{job_id}")
-    
+
     if result:
         return {
             "status": "completed",
             "result": json.loads(result)
         }
-    
+
     # Check if job is still in queue/running
     from arq.jobs import Job, JobStatus
     redis_pool = await create_pool(get_redis_settings())
-    
+
     try:
         job = Job(job_id, redis_pool)
         job_info = await job.info()
-        
+
         if job_info:
             status_map = {
                 JobStatus.deferred: "queued",
@@ -145,14 +145,14 @@ async def get_optimization_result(job_id: str):
                 JobStatus.complete: "completed",
                 JobStatus.not_found: "not_found"
             }
-            
+
             return {
                 "status": status_map.get(job_info.status, "unknown"),
                 "job_status": str(job_info.status)
             }
     except:
         pass
-    
+
     raise HTTPException(status_code=404, detail="Job not found or expired")
 
 
@@ -169,7 +169,7 @@ async def cancel_optimization(job_id: str):
     """
     redis_pool = await create_pool(get_redis_settings())
     redis_client = await get_redis()
-    
+
     # Phase 1: Try to abort if still in queue
     from arq.jobs import Job
     try:
@@ -177,10 +177,10 @@ async def cancel_optimization(job_id: str):
         await job.abort()
     except:
         pass  # Job might not exist or already running
-    
+
     # Phase 2: Set cancellation flag for running jobs
     await redis_client.set(f"cancel:{job_id}", "1", ex=60)
-    
+
     return {"message": f"Cancellation requested for job {job_id}"}
 
 

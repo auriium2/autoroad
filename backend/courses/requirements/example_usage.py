@@ -8,7 +8,8 @@ monolithic add_requirement_constraints function from analyze.py.
 import pandas as pd
 from ortools.sat.python import cp_model
 
-from .constraint_builder import add_requirement_constraints
+from optimizer.requirement_constraint_builder import add_requirement_constraints
+
 from .types import RequirementCourse, RequirementGroup, RequirementThreshold
 
 
@@ -20,19 +21,19 @@ def example_simple_requirement():
         'subject_id': ['6.100A', '6.1200', '18.01'],
         'total_units': [12, 12, 12],
     })
-    
+
     # Create take variables for each course and semester
     take_vars = {}
     for course_idx in courses_df.index:
         for semester in range(1, 13):
             var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
-    
+
     # Create a simple requirement: must take 6.100A
     requirement = RequirementCourse(course_id="6.100A", title="Introduction to Programming")
-    
+
     # Add constraints
-    aux_vars = add_requirement_constraints(
+    aux_vars, var_name_map = add_requirement_constraints(
         model=model,
         take_vars=take_vars,
         requirement=requirement,
@@ -40,7 +41,7 @@ def example_simple_requirement():
         planning_year_start=2024,
         enforce=True  # Require this course to be taken
     )
-    
+
     print("Simple requirement constraints added successfully")
     return model, aux_vars
 
@@ -52,13 +53,13 @@ def example_choice_requirement():
         'subject_id': ['6.100A', '6.100L', '6.1200', '6.120A'],
         'total_units': [12, 12, 12, 12],
     })
-    
+
     take_vars = {}
     for course_idx in courses_df.index:
         for semester in range(1, 13):
             var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
-    
+
     # Create a choice requirement: take either 6.100A or 6.100L
     requirement = RequirementGroup(
         items=(
@@ -68,8 +69,8 @@ def example_choice_requirement():
         connection_type="any",
         title="Intro Programming"
     )
-    
-    aux_vars = add_requirement_constraints(
+
+    aux_vars, var_name_map = add_requirement_constraints(
         model=model,
         take_vars=take_vars,
         requirement=requirement,
@@ -77,7 +78,7 @@ def example_choice_requirement():
         planning_year_start=2024,
         enforce=True
     )
-    
+
     print("Choice requirement constraints added successfully")
     print(f"Auxiliary variables: {list(aux_vars.keys())}")
     return model, aux_vars
@@ -90,13 +91,13 @@ def example_threshold_requirement():
         'subject_id': ['6.3100', '6.3200', '6.3300', '6.3400', '6.3500'],
         'total_units': [12, 12, 12, 12, 12],
     })
-    
+
     take_vars = {}
     for course_idx in courses_df.index:
         for semester in range(1, 13):
             var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
-    
+
     # Create a threshold requirement: take at least 2 of these 5 courses
     requirement = RequirementGroup(
         items=(
@@ -110,8 +111,8 @@ def example_threshold_requirement():
         threshold=RequirementThreshold(cutoff=2, criterion="subjects", type="GTE"),
         title="Advanced Electives"
     )
-    
-    aux_vars = add_requirement_constraints(
+
+    aux_vars, var_name_map = add_requirement_constraints(
         model=model,
         take_vars=take_vars,
         requirement=requirement,
@@ -119,7 +120,7 @@ def example_threshold_requirement():
         planning_year_start=2024,
         enforce=True
     )
-    
+
     print("Threshold requirement constraints added successfully")
     return model, aux_vars
 
@@ -131,13 +132,13 @@ def example_nested_requirement():
         'subject_id': ['6.100A', '6.100L', '6.1200', '6.120A', '6.1210', '18.01', '18.02'],
         'total_units': [12, 12, 12, 12, 12, 12, 12],
     })
-    
+
     take_vars = {}
     for course_idx in courses_df.index:
         for semester in range(1, 13):
             var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
-    
+
     # Create a nested requirement structure
     requirement = RequirementGroup(
         items=(
@@ -174,8 +175,8 @@ def example_nested_requirement():
         connection_type="all",
         title="Foundation Courses"
     )
-    
-    aux_vars = add_requirement_constraints(
+
+    aux_vars, var_name_map = add_requirement_constraints(
         model=model,
         take_vars=take_vars,
         requirement=requirement,
@@ -183,7 +184,7 @@ def example_nested_requirement():
         planning_year_start=2024,
         enforce=True
     )
-    
+
     print("Nested requirement constraints added successfully")
     print(f"Created {len(aux_vars)} auxiliary variables")
     return model, aux_vars
@@ -197,13 +198,13 @@ def example_with_special_requirements():
         'total_units': [12, 12, 12, 12],
         'gir_attribute': ['PHY1', 'PHY2', 'CHEM', 'CAL1'],
     })
-    
+
     take_vars = {}
     for course_idx in courses_df.index:
         for semester in range(1, 13):
             var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
-    
+
     # Create requirements using GIR codes
     requirement = RequirementGroup(
         items=(
@@ -215,8 +216,8 @@ def example_with_special_requirements():
         connection_type="all",
         title="General Institute Requirements"
     )
-    
-    aux_vars = add_requirement_constraints(
+
+    aux_vars, var_name_map = add_requirement_constraints(
         model=model,
         take_vars=take_vars,
         requirement=requirement,
@@ -224,7 +225,7 @@ def example_with_special_requirements():
         planning_year_start=2024,
         enforce=True
     )
-    
+
     print("Special requirements constraints added successfully")
     return model, aux_vars
 
@@ -233,21 +234,21 @@ if __name__ == "__main__":
     print("=== Example 1: Simple Requirement ===")
     example_simple_requirement()
     print()
-    
+
     print("=== Example 2: Choice Requirement ===")
     example_choice_requirement()
     print()
-    
+
     print("=== Example 3: Threshold Requirement ===")
     example_threshold_requirement()
     print()
-    
+
     print("=== Example 4: Nested Requirement ===")
     example_nested_requirement()
     print()
-    
+
     print("=== Example 5: Special Requirements ===")
     example_with_special_requirements()
     print()
-    
+
     print("All examples completed successfully!")

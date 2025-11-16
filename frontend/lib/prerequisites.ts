@@ -49,7 +49,7 @@ interface EvaluationResult {
 function isValidCourseId(s: string): boolean {
   const trimmed = s.trim();
 
-  if (trimmed.startsWith('GIR:')) {
+  if (trimmed.startsWith('GIR:') || trimmed.startsWith('HASS:')) {
     return true;
   }
 
@@ -62,12 +62,12 @@ function isValidCourseId(s: string): boolean {
 function tokenize(prereqStr: string): string[] {
   // Pattern to match:
   // - Quoted strings: ''text'' or "text"
-  // - GIR requirements: GIR:XXXX
+  // - GIR/HASS requirements: GIR:XXXX, HASS:X
   // - Course IDs: dept.number (both can have letters/numbers)
   // - Text operators: AND, OR (case insensitive)
   // - Operators: , /
   // - Parentheses: ( )
-  const pattern = /''[^']*''|"[^"]*"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]/gi;
+  const pattern = /''[^']*''|"[^"]*"|(?:GIR|HASS):[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]/gi;
 
   const tokens = prereqStr.match(pattern) || [];
   
@@ -286,15 +286,18 @@ class PrerequisiteEvaluator {
   private allowReuseAcrossRequirements: boolean;
   private minimal: boolean;
   private usedCourses: Set<string>;
+  private courseTags: Map<string, string[]>; // courseId -> list of tags like ["GIR:CAL1", "HASS:A"]
 
   constructor(
     availableCourses: string[],
     allowReuseAcrossRequirements: boolean = false,
-    minimal: boolean = true
+    minimal: boolean = true,
+    courseTags: Map<string, string[]> = new Map()
   ) {
     this.availableCourses = new Set(availableCourses);
     this.allowReuseAcrossRequirements = allowReuseAcrossRequirements;
     this.minimal = minimal;
+    this.courseTags = courseTags;
     this.usedCourses = new Set();
   }
 
@@ -313,6 +316,32 @@ class PrerequisiteEvaluator {
   private evaluateCourse(course: PrereqCourse): EvaluationResult {
     const courseId = course.courseId;
 
+    // Check if this is a tag requirement (GIR:XXX or HASS:XXX)
+    if (courseId.startsWith('GIR:') || courseId.startsWith('HASS:')) {
+      // Find any available course that has this tag
+      for (const availableCourse of this.availableCourses) {
+        const tags = this.courseTags.get(availableCourse) || [];
+        const canUse = this.allowReuseAcrossRequirements || !this.usedCourses.has(availableCourse);
+        
+        if (tags.includes(courseId) && canUse) {
+          this.usedCourses.add(availableCourse);
+          return {
+            satisfied: true,
+            matchedCourses: [availableCourse],
+            unsatisfiedReasons: []
+          };
+        }
+      }
+      
+      // No course with this tag found
+      return {
+        satisfied: false,
+        unsatisfiedReasons: [courseId],
+        matchedCourses: []
+      };
+    }
+
+    // Regular course ID check
     const canUse = this.allowReuseAcrossRequirements || !this.usedCourses.has(courseId);
 
     if (this.availableCourses.has(courseId) && canUse) {
@@ -462,9 +491,10 @@ export function evaluatePrerequisites(
   prereqTree: PrereqNode,
   availableCourses: string[],
   allowReuse: boolean = true,
-  minimal: boolean = true
+  minimal: boolean = true,
+  courseTags: Map<string, string[]> = new Map()
 ): EvaluationResult {
-  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse, minimal);
+  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse, minimal, courseTags);
   return evaluator.evaluate(prereqTree);
 }
 

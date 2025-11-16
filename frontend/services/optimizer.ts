@@ -31,7 +31,7 @@ export interface OptimizationProgress {
  */
 class MockOptimizer {
   private mockDelay = 500; // ms between steps
-  
+
   /**
    * Run optimization process
    * Always yields intermediate results as the optimizer works
@@ -90,13 +90,13 @@ class MockOptimizer {
           { courseId: "6.1020", section: 3 },
           { courseId: "6.1030", section: 3 },
           { courseId: "6.1040", section: 3 },
-          { courseId: "6.1050", section: 4 },
+          { courseId: "6.390", section: 4 },
           { courseId: "6.1060", section: 5 },
-          { courseId: "6.1070", section: 5 },
+          { courseId: "6.1220", section: 5 },
         ],
       },
     ];
-    
+
     for (const stepData of steps) {
       await new Promise(resolve => setTimeout(resolve, this.mockDelay));
       yield {
@@ -112,16 +112,16 @@ export const optimizerApi = new MockOptimizer();
 
 /**
  * TODO: Real WebSocket implementation would look like:
- * 
+ *
  * class WebSocketOptimizer {
  *   private ws: WebSocket | null = null;
- *   
+ *
  *   async *streamOptimization(...) {
  *     this.ws = new WebSocket('ws://backend/optimize');
- *     
+ *
  *     // Send request
  *     this.ws.send(JSON.stringify({ markers, requiredCourses, constraints }));
- *     
+ *
  *     // Yield updates as they come
  *     for await (const message of this.iterateMessages(this.ws)) {
  *       yield JSON.parse(message) as OptimizationProgress;

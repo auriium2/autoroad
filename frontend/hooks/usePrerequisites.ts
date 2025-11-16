@@ -177,27 +177,46 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       const startTime = performance.now();
       const uuid2missingPrereqs = new Map<string, string[]>();
 
-      // Fetch all prerequisite strings in parallel
-      const prereqPromises = nodes.map(async (node) => {
-        if (node.nodeStatus === 'solo' || node.nodeStatus === 'banish') {
-          return { node, prereqString: '' };
+      // Fetch all course details in parallel (prerequisites + tags in one fetch)
+      const courseDetailPromises = nodes.map(async (node) => {
+        // Skip nodes in "Must Take" section (-2), solo nodes, and banished nodes
+        if (node.section === -2 || node.nodeStatus === 'solo' || node.nodeStatus === 'banish') {
+          return { node, prereqString: '', tags: [] };
         }
 
         try {
           const courseDetails = await fireroadApi.getCourseDetails(node.courseId);
-          return { node, prereqString: courseDetails.prerequisites || '' };
+          const tags: string[] = [];
+          if (courseDetails.gir_attribute) {
+            tags.push(`GIR:${courseDetails.gir_attribute}`);
+          }
+          if (courseDetails.hass_attribute) {
+            tags.push(`HASS:${courseDetails.hass_attribute}`);
+          }
+          return { 
+            node, 
+            prereqString: courseDetails.prerequisites || '',
+            tags
+          };
         } catch (error) {
-          console.warn(`Failed to fetch prerequisites for ${node.courseId}:`, error);
-          return { node, prereqString: '' };
+          console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
+          return { node, prereqString: '', tags: [] };
         }
       });
 
-      const results = await Promise.all(prereqPromises);
+      const results = await Promise.all(courseDetailPromises);
+
+      // Build course tags map
+      const courseId2tags = new Map<string, string[]>();
+      for (const { node, tags } of results) {
+        courseId2tags.set(node.courseId, tags);
+      }
 
       // Pre-compute courses by section for O(1) lookup instead of O(n) filtering per node
       const coursesBySection = new Map<number, string[]>();
       for (const node of nodes) {
-        if (node.nodeStatus === 'banish') continue;
+        // Skip nodes in "Must Take" section (-2) and banished nodes
+        if (node.section === -2 || node.nodeStatus === 'banish') continue;
         
         for (let section = node.section + 1; section <= 10; section++) {
           if (!coursesBySection.has(section)) {
@@ -220,7 +239,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
           // Get courses taken before this node's section (O(1) lookup instead of O(n) filter)
           const takenCourses = coursesBySection.get(node.section) || [];
 
-          const result = evaluatePrerequisites(prereqTree, takenCourses);
+          const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags);
 
           if (!result.satisfied) {
             // Store unique missing course IDs

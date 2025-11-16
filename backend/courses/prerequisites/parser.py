@@ -24,11 +24,11 @@ from .types import PrereqCourse, PrereqGroup, PrereqNode
 
 def is_valid_course_id(s: str) -> bool:
     """
-    Check if a string is a valid course ID (e.g., "18.01", "6.100A") or GIR.
+    Check if a string is a valid course ID (e.g., "18.01", "6.100A") or GIR/HASS tag.
     """
     s = s.strip()
 
-    if s.startswith("GIR:"):
+    if s.startswith("GIR:") or s.startswith("HASS:"):
         return True
 
     # Standard course format: <department>.<number>
@@ -50,12 +50,12 @@ def tokenize(prereq_str: str) -> list[str]:
     """
     # Pattern to match:
     # - Quoted strings: ''text'' or "text"
-    # - GIR requirements: GIR:XXXX
+    # - GIR/HASS requirements: GIR:XXXX, HASS:X
     # - Course IDs: dept.number (both can have letters/numbers)
     # - Text operators: AND, OR (case insensitive)
     # - Operators: , /
     # - Parentheses: ( )
-    pattern = r"''[^']*''|\"[^\"]*\"|GIR:[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]"
+    pattern = r"''[^']*''|\"[^\"]*\"|(?:GIR|HASS):[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]"
 
     tokens = re.findall(pattern, prereq_str, re.IGNORECASE)
     

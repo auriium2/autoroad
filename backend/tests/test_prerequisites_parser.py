@@ -287,14 +287,14 @@ class TestRealWorldExamples:
     def test_6_1910_quoted_strings_with_operators(self):
         """Test 6.1910 case: quoted strings between operators causing parse errors."""
         input_str = "GIR:PHY2/6.100A/(''Coreq: 6.1903''/6.1904)/''permission of instructor''"
-        
+
         # Should parse without raising an error
         result = parse_fireroad(input_str)
-        
+
         # Should be an OR group
         assert isinstance(result, PrereqGroup)
         assert result.threshold == 1  # OR
-        
+
         # Should contain GIR:PHY2, 6.100A, and 6.1904 (but not the quoted strings)
         course_ids = extract_course_ids(result)
         assert "GIR:PHY2" in course_ids
@@ -320,7 +320,7 @@ class TestRegressionFireroadBugs:
             ("21G.502/(''placement test'', ''permission of instructor'')", ["21G.502"]),
             ("21L.609/(''placement exam'', ''permission of instructor'')", ["21L.609"]),
         ]
-        
+
         for input_str, expected_courses in test_cases:
             result = parse_fireroad(input_str)
             course_ids = extract_course_ids(result)
@@ -334,16 +334,16 @@ class TestRegressionFireroadBugs:
         """
         input_str = "''Prereq: 10.213''/10.40/(5.601 AND 5.602)"
         result = parse_fireroad(input_str)
-        
+
         course_ids = extract_course_ids(result)
         assert "10.40" in course_ids
         assert "5.601" in course_ids
         assert "5.602" in course_ids
-        
+
         # Verify structure: should be OR at top level
         assert isinstance(result, PrereqGroup)
         assert result.threshold == 1  # OR
-        
+
         # Second item should be a group with AND (threshold=2)
         and_group = result.items[1]
         assert isinstance(and_group, PrereqGroup)
@@ -357,7 +357,7 @@ class TestRegressionFireroadBugs:
         """
         input_str = "5.310/7.002/(''Coreq: 12 units UROP''/''other approved laboratory subject'', ''permission of instructor'')"
         result = parse_fireroad(input_str)
-        
+
         course_ids = extract_course_ids(result)
         assert "5.310" in course_ids
         assert "7.002" in course_ids
@@ -373,7 +373,7 @@ class TestRegressionFireroadBugs:
         # The filter should clean this up automatically
         input_str = "GIR:PHY2/6.100A/(''quoted''/6.1904)"
         result = parse_fireroad(input_str)
-        
+
         course_ids = extract_course_ids(result)
         assert "GIR:PHY2" in course_ids
         assert "6.100A" in course_ids
@@ -387,7 +387,7 @@ class TestRegressionFireroadBugs:
         """
         input_str = "21G.504/(''Placement test'', ''permission of instructor'')"
         result = parse_fireroad(input_str)
-        
+
         course_ids = extract_course_ids(result)
         assert course_ids == ["21G.504"]
 
@@ -410,16 +410,16 @@ class TestRegressionFireroadBugs:
             "21L.613/(''placement exam'', ''permission of instructor'')",
             "5.310/7.002/(''Coreq: 12 units UROP''/''other approved laboratory subject'', ''permission of instructor'')",
         ]
-        
+
         for input_str in original_failures:
             # All of these should parse without raising an exception
             result = parse_fireroad(input_str)
             assert result is not None, f"Failed to parse: {input_str}"
-            
+
             # All should extract at least one valid course
             course_ids = extract_course_ids(result)
             assert len(course_ids) > 0, f"No courses found in: {input_str}"
-            
+
             # None should contain quoted strings
             for course_id in course_ids:
                 assert not course_id.startswith("''"), f"Quoted string in result: {course_id}"

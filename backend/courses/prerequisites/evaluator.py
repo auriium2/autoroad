@@ -20,11 +20,13 @@ class PrerequisiteEvaluator:
         self,
         available_courses: list[str],
         allow_reuse_across_requirements: bool = False,
-        minimal: bool = True
+        minimal: bool = True,
+        course_tags: dict[str, list[str]] | None = None
     ):
         self.available_courses = set(available_courses)
         self.allow_reuse_across_requirements = allow_reuse_across_requirements
         self.minimal = minimal
+        self.course_tags: dict[str, list[str]] = course_tags or {}
         self.used_courses: set[str] = set()
 
     def evaluate(self, prereq: PrereqNode) -> EvaluationResult:
@@ -43,6 +45,27 @@ class PrerequisiteEvaluator:
         """Evaluate a simple course requirement."""
         course_id = course.course_id
 
+        # Check if this is a tag requirement (GIR:XXX or HASS:XXX)
+        if course_id.startswith('GIR:') or course_id.startswith('HASS:'):
+            # Find any available course that has this tag
+            for available_course in self.available_courses:
+                tags = self.course_tags.get(available_course, [])
+                can_use = self.allow_reuse_across_requirements or available_course not in self.used_courses
+                
+                if course_id in tags and can_use:
+                    self.used_courses.add(available_course)
+                    return EvaluationResult(
+                        satisfied=True,
+                        matched_courses=[available_course]
+                    )
+            
+            # No course with this tag found
+            return EvaluationResult(
+                satisfied=False,
+                unsatisfied_reasons=[course_id]
+            )
+
+        # Regular course ID check
         can_use = self.allow_reuse_across_requirements or course_id not in self.used_courses
 
         if course_id in self.available_courses and can_use:

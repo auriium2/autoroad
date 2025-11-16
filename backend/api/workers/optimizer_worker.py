@@ -4,10 +4,9 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import redis.asyncio as redis
-from ortools.sat.python import cp_model
-
 from backend.scripts.analyze import add_prerequisite_constraints, add_requirement_constraints
 from backend.utils.utils import find_current_school_year, is_valid_class_semester
+from ortools.sat.python import cp_model
 
 # Type aliases for clarity
 CourseData = List[Dict[str, Any]]
@@ -319,7 +318,7 @@ async def run_optimization_job(
                 if msg.get('type') == 'solution':
                     final_nodes = msg.get('nodes', [])
                     break
-        
+
         # If no pending messages, reconstruct from solver state
         if not final_nodes and result in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
             for (c, s), v in take.items():
@@ -331,7 +330,7 @@ async def run_optimization_job(
                         "semester": s,
                         "title": title
                     })
-        
+
         # Set job result with full solution
         await redis_client.set(
             f"optimization:result:{job_id}",

@@ -638,7 +638,7 @@ function CourseGraphFlowInner({ prereqCheckMode = "all" }: { prereqCheckMode?: "
 
   return (
     <div
-      className={`h-full w-full rounded-md border ${markersChangedSinceOptimization ? 'border-yellow-500 border-2' : 'border-border'} bg-muted/30 relative`}
+      className={`h-full w-full rounded-md ${markersChangedSinceOptimization ? 'border-yellow-500 border' : 'border border-border'} bg-muted/30 relative`}
       style={{ overflow: 'hidden' }}
     >
       <ReactFlow
