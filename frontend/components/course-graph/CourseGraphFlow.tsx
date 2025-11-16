@@ -27,7 +27,7 @@ import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrereq
 import { toast as showToast } from "@/hooks/useToast";
 
 // Custom node component wrapper for React Flow
-function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) {
+const FlowCourseNode = React.memo(({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) => {
   return (
     <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
       {/* Handles at edges of the circle - centered vertically on the 36px circle */}
@@ -57,9 +57,11 @@ function FlowCourseNode({ data }: { data: CourseNodeType & { disableTooltip?: bo
       />
     </div>
   );
-}
+});
 
-// Causes warning that doesnt appear in prod
+FlowCourseNode.displayName = 'FlowCourseNode';
+
+// Define nodeTypes outside component to prevent re-creation
 const nodeTypes: NodeTypes = {
   courseNode: FlowCourseNode,
 };
@@ -313,10 +315,27 @@ function CourseGraphFlowInner({
     [storeNodes]
   );
 
-  // Compute edges asynchronously whenever storeNodes changes
+  // Debounce edge calculation during optimization to reduce lag
+  const [debouncedNodes, setDebouncedNodes] = React.useState<typeof storeNodes>([]);
+  
+  React.useEffect(() => {
+    if (!isOptimizing) {
+      // Not optimizing - update immediately
+      setDebouncedNodes(storeNodes);
+      return;
+    }
+    
+    // During optimization - debounce updates
+    const timer = setTimeout(() => {
+      setDebouncedNodes(storeNodes);
+    }, 800); // Wait 800ms after last change
+    
+    return () => clearTimeout(timer);
+  }, [storeNodes, isOptimizing]);
+
   const nodesToCalculateEdges = React.useMemo(() => {
-    return storeNodes;
-  }, [storeNodes]);
+    return debouncedNodes;
+  }, [debouncedNodes]);
 
   // Fetch prerequisite edges using the hook
   const { data: storeEdges = [] } = usePrerequisiteEdges(nodesToCalculateEdges);
@@ -324,7 +343,7 @@ function CourseGraphFlowInner({
   // Fetch missing prerequisites based on mode
   const nodesToCheck = React.useMemo(() => {
     if (prereqCheckMode === "off" || isOptimizing) {
-      return []; // Skip when off or during optimization
+      return []; // Skip when off or during optimization (performance)
     } else if (prereqCheckMode === "optimizer-only") {
       // Only check optimizer nodes (non-user-controlled)
       return storeNodes.filter(n => !n.userControlled);
@@ -332,7 +351,7 @@ function CourseGraphFlowInner({
       // Check all nodes
       return storeNodes;
     }
-  }, [isOptimizing, prereqCheckMode, storeNodes]);
+  }, [prereqCheckMode, isOptimizing, storeNodes]);
 
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
 

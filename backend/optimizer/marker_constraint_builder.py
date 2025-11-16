@@ -83,15 +83,19 @@ def add_marker_constraints(
 
         if marker.status == "pin":
             # Pin: Force course to be taken in specified semester
-            if marker.section < 0:
-                # section = -1 means "any semester" - no constraint needed
+            # Special sections: -2 (Must Take), -1 (ASE) stay as-is (no +1 conversion)
+            # Regular sections: 0-11 get converted to semesters 1-12
+            if marker.section == -2:
+                semester = -2  # Must Take
+            elif marker.section == -1:
+                semester = -1  # ASE
+            elif marker.section >= 0:
+                semester = marker.section + 1  # Regular semesters (0->1, 1->2, etc.)
+            else:
                 warnings.append(
-                    f"Pin marker for {marker.course_id} has section=-1 (any semester), skipping"
+                    f"Pin marker for {marker.course_id} has invalid section {marker.section}, skipping"
                 )
                 continue
-
-            # Convert section (0-based) to semester (1-based)
-            semester = marker.section + 1
 
             # Check if take_var exists for this (course, semester)
             if (course_idx, semester) not in take_vars:
@@ -106,34 +110,44 @@ def add_marker_constraints(
             constraints_added += 1
 
         elif marker.status == "banish":
-            # Banish: Prevent course from being taken at all
-            # Find all semesters where this course could be taken
-            course_vars = [
-                take_vars[(c, s)]
-                for (c, s) in take_vars.keys()
-                if c == course_idx
-            ]
-
-            if not course_vars:
-                warnings.append(
-                    f"Course {marker.course_id} has no available semesters to banish from"
+            # Banish: Prevent course from being taken in this specific semester
+            # Special sections not allowed for banish
+            if marker.section < 0:
+                errors.append(
+                    f"Banish marker for {marker.course_id} has section={marker.section}, "
+                    f"cannot banish from special semesters (Must Take/ASE)"
                 )
                 continue
 
-            # Add constraint: sum of all take_vars for this course must be 0
-            model.Add(sum(course_vars) == 0)
+            semester = marker.section + 1  # Regular semesters only
+
+            # Check if take_var exists for this (course, semester)
+            if (course_idx, semester) not in take_vars:
+                warnings.append(
+                    f"Course {marker.course_id} is not offered in semester {semester}, "
+                    f"banish constraint has no effect"
+                )
+                continue
+
+            # Add constraint: must NOT take this course in this semester
+            model.Add(take_vars[(course_idx, semester)] == 0)
             constraints_added += 1
 
         elif marker.status == "solo":
             # Solo: Force course to be taken, and no other courses in that semester
-            if marker.section < 0:
+            # Special sections: -2 (Must Take), -1 (ASE) stay as-is
+            # Regular sections: 0-11 get converted to semesters 1-12
+            if marker.section == -2:
+                semester = -2  # Must Take
+            elif marker.section == -1:
+                semester = -1  # ASE
+            elif marker.section >= 0:
+                semester = marker.section + 1  # Regular semesters
+            else:
                 errors.append(
-                    f"Solo marker for {marker.course_id} has section=-1 (any semester), "
-                    f"cannot enforce solo constraint without specific semester"
+                    f"Solo marker for {marker.course_id} has invalid section {marker.section}"
                 )
                 continue
-
-            semester = marker.section + 1
 
             # Check if take_var exists for this (course, semester)
             if (course_idx, semester) not in take_vars:

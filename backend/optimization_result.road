@@ -17,13 +17,6 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "16.C20",
-      "semester": 4,
-      "title": "Introduction to Computational Science and Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "18.01L",
       "semester": 2,
       "title": "Calculus",
@@ -31,9 +24,23 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.05",
-      "semester": 6,
-      "title": "Introduction to Probability and Statistics",
+      "subject_id": "18.03",
+      "semester": 3,
+      "title": "Differential Equations",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.06",
+      "semester": 4,
+      "title": "Linear Algebra",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21A.500",
+      "semester": 1,
+      "title": "Technology and Culture",
       "units": 12,
       "overrideWarnings": false
     },
@@ -52,57 +59,50 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.041",
+      "subject_id": "21T.232",
       "semester": 12,
-      "title": "Writing About Literature",
+      "title": "Producing Podcasts",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.764",
+      "subject_id": "21W.035",
       "semester": 12,
-      "title": "Computational and Experimental Writing Workshop",
+      "title": "Science Writing and New Media: Elements of Science Writing for the Public",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.091",
+      "subject_id": "5.111",
       "semester": 4,
-      "title": "Introduction to Solid-State Chemistry",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.982",
-      "semester": 1,
-      "title": "The Ancient Andean World",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1000",
-      "semester": 1,
-      "title": "Introduction to Programming and Computer Science",
+      "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100A",
-      "semester": 3,
+      "semester": 1,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1010",
+      "subject_id": "6.100B",
       "semester": 3,
+      "title": "Introduction to Computational Thinking and Data Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1010",
+      "semester": 4,
       "title": "Fundamentals of Programming",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1020",
-      "semester": 9,
+      "semester": 6,
       "title": "Software Construction",
       "units": 12,
       "overrideWarnings": false
@@ -122,9 +122,9 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1220",
+      "subject_id": "6.1400",
       "semester": 6,
-      "title": "Design and Analysis of Algorithms",
+      "title": "Computability and Complexity Theory",
       "units": 12,
       "overrideWarnings": false
     },
@@ -150,23 +150,51 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.5151",
-      "semester": 6,
-      "title": "Large-scale Symbolic Systems",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.5310",
+      "subject_id": "6.2600",
       "semester": 9,
-      "title": "Geometric Folding Algorithms: Linkages, Origami, Polyhedra",
+      "title": "Micro/Nano Processing Technology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.C01",
+      "subject_id": "6.3800",
+      "semester": 7,
+      "title": "Introduction to Inference",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.3900",
+      "semester": 7,
+      "title": "Introduction to Machine Learning",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.4300",
+      "semester": 9,
+      "title": "Introduction to Computer Vision",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5620",
+      "semester": 7,
+      "title": "Foundations of Cryptography",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.8210",
       "semester": 6,
-      "title": "Modeling with Machine Learning: from Algorithms to Applications",
+      "title": "Underactuated Robotics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.C25",
+      "semester": 7,
+      "title": "Real World Computation with Julia",
       "units": 12,
       "overrideWarnings": false
     },
@@ -178,16 +206,16 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.UAT",
-      "semester": 4,
-      "title": "Oral Communication",
+      "subject_id": "7.015",
+      "semester": 1,
+      "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "7.015",
-      "semester": 7,
-      "title": "Introductory Biology",
+      "subject_id": "8.01L",
+      "semester": 11,
+      "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
@@ -202,20 +230,6 @@
       "subject_id": "CC.1802",
       "semester": 3,
       "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "ES.8012",
-      "semester": 10,
-      "title": "Physics I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "STS.051",
-      "semester": 1,
-      "title": "Documenting MIT Communities",
       "units": 12,
       "overrideWarnings": false
     },

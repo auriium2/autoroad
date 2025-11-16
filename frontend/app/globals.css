@@ -162,6 +162,10 @@
   .animate-toast-progress {
     animation: toast-progress linear var(--toast-duration, 6000ms) forwards;
   }
+  
+  .animate-pulse-warning {
+    animation: pulse-warning 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }
 
 @keyframes toast-progress {
@@ -170,5 +174,16 @@
   }
   to {
     transform: scaleX(1);
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
   }
 }

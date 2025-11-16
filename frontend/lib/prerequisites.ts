@@ -62,12 +62,12 @@ function isValidCourseId(s: string): boolean {
 function tokenize(prereqStr: string): string[] {
   // Pattern to match:
   // - Quoted strings: ''text'' or "text"
-  // - GIR/HASS requirements: GIR:XXXX, HASS:X
+  // - GIR/HASS requirements: GIR:XXXX, HASS:X (can include hyphens like HASS-A)
   // - Course IDs: dept.number (both can have letters/numbers)
   // - Text operators: AND, OR (case insensitive)
   // - Operators: , /
   // - Parentheses: ( )
-  const pattern = /''[^']*''|"[^"]*"|(?:GIR|HASS):[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]/gi;
+  const pattern = /''[^']*''|"[^"]*"|(?:GIR|HASS):[A-Z0-9-]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]/gi;
 
   const tokens = prereqStr.match(pattern) || [];
   

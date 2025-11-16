@@ -31,24 +31,42 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const { data: courseDetails } = useCourseDetails(courseId);
   const units = courseDetails?.units || 12; // Default to 12 if not available
 
+  // Check if course is placed in wrong semester
+  // Special semesters (-2 for Must Take, -1 for ASE) are always valid
+  // Regular semesters: 0,3,6,9 = Fall; 1,4,7,10 = IAP; 2,5,8,11 = Spring
+  const isWrongSemester = React.useMemo(() => {
+    if (section < 0 || !courseDetails) return false; // Special semesters or no data
+    
+    const semesterType = section % 3; // 0=Fall, 1=IAP, 2=Spring
+    
+    const wrongSemester = 
+      (semesterType === 0 && !courseDetails.offered_fall) ||
+      (semesterType === 1 && !courseDetails.offered_IAP) ||
+      (semesterType === 2 && !courseDetails.offered_spring);
+    
+    if (wrongSemester) {
+      console.log(`[CourseNode] ${courseId} wrong semester - section=${section}, type=${semesterType}, fall=${courseDetails.offered_fall}, IAP=${courseDetails.offered_IAP}, spring=${courseDetails.offered_spring}`);
+    }
+    
+    return wrongSemester;
+  }, [section, courseDetails, courseId]);
+
   // Get node styling from shared utility
   let { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
 
   // Override styling based on node state
-  if (hasUnsatisfiedPrereqs && !isBanished) {
-    // User-controlled nodes with errors: purple
-    // Optimizer nodes with errors: red
-    if (userControlled) {
-      borderColor = 'border-purple-500';
-      bgColor = 'bg-purple-500/10';
-      textColor = 'text-purple-400';
-      boxShadow = 'none';
-    } else {
-      borderColor = 'border-red-500';
-      bgColor = 'bg-red-500/10';
-      textColor = 'text-red-400';
-      boxShadow = 'none';
-    }
+  if (isWrongSemester && !isBanished) {
+    // Course placed in wrong semester: yellow warning with soft pulse
+    borderColor = 'border-yellow-500';
+    bgColor = 'bg-yellow-500/10';
+    textColor = 'text-yellow-400';
+    boxShadow = '0 0 0 0 rgba(234, 179, 8, 0.4)';
+  } else if (hasUnsatisfiedPrereqs && !isBanished) {
+    // Both user-controlled and optimizer nodes with errors: red
+    borderColor = 'border-red-500';
+    bgColor = 'bg-red-500/10';
+    textColor = 'text-red-400';
+    boxShadow = 'none';
   } else if (isSolo) {
     // Yellow glow for solo nodes (but keep blue colors)
     boxShadow = "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)";
@@ -105,9 +123,15 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
           <div
             className={`absolute inset-0 rounded-full border-2 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center ${isBanished ? 'border-red-500 bg-red-500/10' : `${borderColor} ${bgColor}`}`}
           >
-            <div className={`text-xs font-bold ${isBanished ? 'text-red-400' : textColor}`}>
-              {isBanished ? '' : units}
-            </div>
+            {isWrongSemester ? (
+              <div className={`text-base font-bold ${textColor} animate-pulse-warning`}>
+                ⚠
+              </div>
+            ) : (
+              <div className={`text-xs font-bold ${isBanished ? 'text-red-400' : textColor}`}>
+                {isBanished ? '' : units}
+              </div>
+            )}
           </div>
 
           {/* Diagonal slash for banished nodes */}
@@ -142,10 +166,10 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
                 r="16"
                 fill="none"
                 stroke={
-                  hasUnsatisfiedPrereqs && userControlled
-                    ? "rgba(168, 85, 247, 0.8)" // Purple for user-controlled with errors
-                    : hasUnsatisfiedPrereqs && !userControlled
-                    ? "rgba(239, 68, 68, 0.8)" // Red for optimizer nodes with errors
+                  isWrongSemester
+                    ? "rgba(234, 179, 8, 0.9)" // Yellow for wrong semester
+                    : hasUnsatisfiedPrereqs
+                    ? "rgba(239, 68, 68, 0.8)" // Red for any node with errors
                     : userControlled
                     ? "rgba(147, 197, 253, 0.8)" // Blue for user-controlled without errors
                     : "rgba(255,255,255,0.35)" // White for optimizer nodes without errors

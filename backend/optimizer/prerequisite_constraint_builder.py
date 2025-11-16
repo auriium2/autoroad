@@ -344,7 +344,8 @@ def add_prerequisite_constraints(
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pd.DataFrame,
     planning_year_start: int,
-    prereq_trees: dict[int, PrereqNode]
+    prereq_trees: dict[int, PrereqNode],
+    solo_course_ids: set[str] = None
 ) -> ConstraintResult:
     """
     Add prerequisite constraints to a CP-SAT model.
@@ -359,8 +360,18 @@ def add_prerequisite_constraints(
     Returns:
         ConstraintResult with summary of constraints added and any issues
     """
+    if solo_course_ids is None:
+        solo_course_ids = set()
+    
+    # Filter out solo courses from prereq_trees
+    filtered_prereq_trees = {}
+    for course_idx, prereq_tree in prereq_trees.items():
+        course_id = courses_df.at[course_idx, 'subject_id']
+        if course_id not in solo_course_ids:
+            filtered_prereq_trees[course_idx] = prereq_tree
+    
     schedule = CourseSchedule(courses_df, planning_year_start)
     ctx = ConstraintContext(model, take_vars, schedule)
     builder = PrerequisiteConstraintBuilder(ctx)
 
-    return builder.add_all_prerequisite_constraints(prereq_trees)
+    return builder.add_all_prerequisite_constraints(filtered_prereq_trees)

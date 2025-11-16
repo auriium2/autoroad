@@ -268,11 +268,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
       // Fetch all course details in parallel (prerequisites + tags in one fetch)
       const courseDetailPromises = nodes.map(async (node) => {
-        // Skip nodes in "Must Take" section (-2), solo nodes, and banished nodes
-        if (node.section === -2 || node.nodeStatus === 'solo' || node.nodeStatus === 'banish') {
-          return { node, prereqString: '', tags: [] };
-        }
-
         try {
           const courseDetails = await queryClient.fetchQuery({
             queryKey: ['courseDetails', node.courseId],
@@ -286,9 +281,13 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
           if (courseDetails.hass_attribute) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
+          
+          // Skip prerequisite checking for Must Take (-2), ASEs (-1), and solo nodes
+          const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'solo';
+          
           return {
             node,
-            prereqString: courseDetails.prerequisites || '',
+            prereqString: skipPrereqCheck ? '' : (courseDetails.prerequisites || ''),
             tags
           };
         } catch (error) {
@@ -305,20 +304,22 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         courseId2tags.set(node.courseId, tags);
       }
 
-      // Pre-compute courses by section for O(1) lookup instead of O(n) filtering per node
-      const coursesBySection = new Map<number, string[]>();
-      // Find max section number
+      // Pre-compute courses taken before each section for O(1) lookup
+      const minSection = Math.min(...nodes.map(n => n.section));
       const maxSection = Math.max(...nodes.map(n => n.section));
+      const coursesBySection = new Map<number, string[]>();
       
-      for (const node of nodes) {
-        // Skip nodes in "Must Take" section (-2) and banished nodes
-        if (node.section === -2 || node.nodeStatus === 'banish') continue;
-
-        for (let section = node.section + 1; section <= maxSection; section++) {
-          if (!coursesBySection.has(section)) {
-            coursesBySection.set(section, []);
+      for (const { node } of results) {
+        // For each course, add it to all sections that come AFTER it
+        // This way, when we look up section N, we get all courses from sections < N
+        for (let section = minSection; section <= maxSection; section++) {
+          // If this section comes after the course's section, the course is "taken before" it
+          if (section > node.section) {
+            if (!coursesBySection.has(section)) {
+              coursesBySection.set(section, []);
+            }
+            coursesBySection.get(section)!.push(node.courseId);
           }
-          coursesBySection.get(section)!.push(node.courseId);
         }
       }
 
@@ -332,7 +333,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         try {
           const prereqTree = parseFireroad(prereqString);
 
-          // Get courses taken before this node's section (O(1) lookup instead of O(n) filter)
+          // Get courses taken before this node's section (O(1) lookup)
+          // This includes special semesters: -2 (Must Take), -1 (ASE)
           const takenCourses = coursesBySection.get(node.section) || [];
 
           const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags);

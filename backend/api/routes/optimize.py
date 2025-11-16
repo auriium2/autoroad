@@ -220,7 +220,12 @@ async def optimize(request: OptimizationRequest):
             # Add prerequisite constraints (run in thread pool)
             def add_prereqs():
                 prereq_trees = parse_prerequisites_for_all_courses(courses_df)
-                add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees)
+                # Get solo marker course IDs to skip prerequisite enforcement
+                solo_course_ids = set()
+                for m in request.markers:
+                    if m.status == 'solo':
+                        solo_course_ids.add(m.courseId)
+                add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, solo_course_ids)
 
             await loop.run_in_executor(None, add_prereqs)
 
