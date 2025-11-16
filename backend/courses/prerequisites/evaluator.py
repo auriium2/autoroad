@@ -51,14 +51,14 @@ class PrerequisiteEvaluator:
             for available_course in self.available_courses:
                 tags = self.course_tags.get(available_course, [])
                 can_use = self.allow_reuse_across_requirements or available_course not in self.used_courses
-                
+
                 if course_id in tags and can_use:
                     self.used_courses.add(available_course)
                     return EvaluationResult(
                         satisfied=True,
                         matched_courses=[available_course]
                     )
-            
+
             # No course with this tag found
             return EvaluationResult(
                 satisfied=False,
@@ -121,10 +121,10 @@ class PrerequisiteEvaluator:
                         satisfied=False,
                         matched_courses=all_matched_courses
                     )
-                
+
                 # Find the option with the fewest unsatisfied reasons
                 minimal_option = min(unsatisfied_results, key=lambda r: len(r.unsatisfied_reasons))
-                
+
                 return EvaluationResult(
                     satisfied=False,
                     unsatisfied_reasons=minimal_option.unsatisfied_reasons,
@@ -136,7 +136,7 @@ class PrerequisiteEvaluator:
                 for result in item_results:
                     if not result.satisfied:
                         all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
-                
+
                 return EvaluationResult(
                     satisfied=False,
                     unsatisfied_reasons=all_unsatisfied_reasons,
@@ -146,15 +146,15 @@ class PrerequisiteEvaluator:
                 # k-of-n group: need to satisfy k items, find the k options with fewest missing
                 unsatisfied_results = [r for r in item_results if not r.satisfied]
                 needed = group.threshold - satisfied_count
-                
+
                 # Sort by number of unsatisfied reasons and take the k with fewest
                 sorted_unsatisfied = sorted(unsatisfied_results, key=lambda r: len(r.unsatisfied_reasons))
                 minimal_options = sorted_unsatisfied[:needed]
-                
+
                 all_unsatisfied_reasons: list[str] = []
                 for result in minimal_options:
                     all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
-                
+
                 return EvaluationResult(
                     satisfied=False,
                     unsatisfied_reasons=all_unsatisfied_reasons,
@@ -166,7 +166,7 @@ class PrerequisiteEvaluator:
             for result in item_results:
                 if not result.satisfied:
                     all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
-            
+
             return EvaluationResult(
                 satisfied=False,
                 unsatisfied_reasons=all_unsatisfied_reasons,

@@ -58,7 +58,7 @@ def tokenize(prereq_str: str) -> list[str]:
     pattern = r"''[^']*''|\"[^\"]*\"|(?:GIR|HASS):[A-Z0-9]+|[A-Z0-9]+\.[A-Z0-9]+|\bAND\b|\bOR\b|[(),/]"
 
     tokens = re.findall(pattern, prereq_str, re.IGNORECASE)
-    
+
     # Convert text operators to symbols
     normalized = []
     for t in tokens:
@@ -71,7 +71,7 @@ def tokenize(prereq_str: str) -> list[str]:
             normalized.append('/')
         else:
             normalized.append(t)
-    
+
     return normalized
 
 
@@ -106,19 +106,19 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
         for i in range(1, len(filtered)):
             current = filtered[i]
             prev = cleaned[-1]
-            
+
             # Skip operators that follow other operators
             if current in [',', '/'] and prev in [',', '/']:
                 continue
-            
+
             # Skip operators that directly follow opening parentheses
             if current in [',', '/'] and prev == '(':
                 continue
-            
+
             # Skip operators that directly precede closing parentheses
             if prev in [',', '/'] and current == ')':
                 cleaned.pop()  # Remove the operator before the closing paren
-            
+
             cleaned.append(current)
 
     # Remove empty parentheses: ()

@@ -1,0 +1,237 @@
+{
+  "coursesOfStudy": [],
+  "progressAssertions": {},
+  "selectedSubjects": [
+    {
+      "subject_id": "16.C20",
+      "semester": 12,
+      "title": "Introduction to Computational Science and Engineering",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.01L",
+      "semester": 8,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.05",
+      "semester": 12,
+      "title": "Introduction to Probability and Statistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21A.135",
+      "semester": 1,
+      "title": "Africa and the Politics of Knowledge",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.901",
+      "semester": 5,
+      "title": "Korean I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21T.231",
+      "semester": 4,
+      "title": "Talking and Dancing",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21T.232",
+      "semester": 7,
+      "title": "Producing Podcasts",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.012",
+      "semester": 7,
+      "title": "Writing and Rhetoric: Food for Thought",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "22.082",
+      "semester": 7,
+      "title": "Anthro-Engineering: Decarbonization at the Million-Person Scale",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "24.900",
+      "semester": 12,
+      "title": "Introduction to Linguistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "4.614",
+      "semester": 10,
+      "title": "Introduction to Islamic Architecture",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1000",
+      "semester": 1,
+      "title": "Introduction to Programming and Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 3,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1010",
+      "semester": 3,
+      "title": "Fundamentals of Programming",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1020",
+      "semester": 9,
+      "title": "Software Construction",
+      "units": 15,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1200",
+      "semester": 3,
+      "title": "Mathematics for Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.120A",
+      "semester": 3,
+      "title": "Discrete Mathematics and Proof for Computer Science",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1210",
+      "semester": 4,
+      "title": "Introduction to Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1220",
+      "semester": 6,
+      "title": "Design and Analysis of Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1420",
+      "semester": 7,
+      "title": "Fixed Parameter and Fine-grained Computation",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1800",
+      "semester": 6,
+      "title": "Computer Systems Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1904",
+      "semester": 12,
+      "title": "Introduction to Low-level Programming in C and Assembly",
+      "units": 6,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1910",
+      "semester": 4,
+      "title": "Computation Structures",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.2000",
+      "semester": 9,
+      "title": "Electrical Circuits: Modeling and Design of Physical Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.2220",
+      "semester": 10,
+      "title": "Power Electronics Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.8721",
+      "semester": 1,
+      "title": "Principles of Synthetic Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.01L",
+      "semester": 2,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.8022",
+      "semester": 12,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.1801",
+      "semester": 1,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.1802",
+      "semester": 10,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.5112",
+      "semester": 10,
+      "title": "Principles of Chemical Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.7012",
+      "semester": 3,
+      "title": "Introductory Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.802",
+      "semester": 6,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    }
+  ]
+}
