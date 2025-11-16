@@ -205,11 +205,25 @@ export const optimizerApi = {
                   solutionNumber: message.solutionNumber,
                 };
               } else if (message.type === 'complete') {
+                // Check if optimization failed or has warnings
+                if (message.status === 'INFEASIBLE') {
+                  const errorMsg = message.warnings?.join('. ') || 'No feasible solution found. Markers or constraints may be too strict or impossible to complete! ';
+                  throw new Error(errorMsg);
+                } else if (message.status === 'MODEL_INVALID') {
+                  throw new Error('Invalid optimization model - please report this bug');
+                } else if (message.warnings && message.warnings.length > 0) {
+                  console.warn('[Optimizer] Warnings:', message.warnings);
+                }
                 return;
               } else if (message.type === 'error') {
                 throw new Error(message.error || 'Optimization failed');
               }
             } catch (e) {
+              // Re-throw intentional errors (optimization failures)
+              if (e instanceof Error) {
+                throw e;
+              }
+              // Only log actual parse errors
               console.error('Failed to parse SSE message:', data, e);
             }
           }

@@ -3,156 +3,205 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "14.01",
-      "semester": 1,
-      "title": "Principles of Microeconomics",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.18",
-      "semester": 9,
-      "title": "Mathematical Economic Modeling",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.19",
-      "semester": 7,
-      "title": "Market Design",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.30",
-      "semester": 4,
-      "title": "Introduction to Statistical Methods in Economics",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.32",
-      "semester": 12,
-      "title": "Econometric Data Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.41",
-      "semester": 7,
-      "title": "Public Finance and Public Policy",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "14.75",
+      "subject_id": "1.071",
       "semester": 3,
-      "title": "Political Economy and Economic Development",
+      "title": "Global Change Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "15.276",
+      "subject_id": "10.28",
+      "semester": 10,
+      "title": "Chemical-Biological Engineering Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "11.014",
       "semester": 1,
-      "title": "Communicating with Data",
+      "title": "History of the Built Environment in the US",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "17.567",
+      "semester": 8,
+      "title": "Israel: History, Politics, Culture, and Identity",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "18.01",
-      "semester": 1,
+      "semester": 0,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.02",
+      "subject_id": "18.03",
       "semester": 3,
-      "title": "Calculus",
+      "title": "Differential Equations",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "18.06",
-      "semester": 7,
+      "semester": 6,
       "title": "Linear Algebra",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21L.006",
+      "subject_id": "2.79",
       "semester": 4,
-      "title": "American Literature",
+      "title": "Biomaterials: Tissue Interactions",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.015",
-      "semester": 1,
-      "title": "Writing and Rhetoric: Writing about Sports",
+      "subject_id": "20.109",
+      "semester": 10,
+      "title": "Laboratory Fundamentals in Biological Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.095",
+      "subject_id": "20.110",
+      "semester": 7,
+      "title": "Thermodynamics of Biomolecular Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "20.309",
+      "semester": 7,
+      "title": "Instrumentation and Measurement for Biological Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "20.320",
+      "semester": 10,
+      "title": "Analysis of Biomolecular and Cellular Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "20.330",
       "semester": 6,
-      "title": "Introduction to Metalsmithing",
+      "title": "Fields, Forces and Flows in Biological Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "20.380",
+      "semester": 12,
+      "title": "Biological Engineering Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.951",
+      "semester": 11,
+      "title": "Arabic I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21T.110",
+      "semester": 5,
+      "title": "Physical Improvisation: Bodies in Motion",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.013",
+      "semester": 7,
+      "title": "Mechanics of Materials",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.052",
+      "semester": 12,
+      "title": "Nanomechanics of Materials and Biomaterials",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.985",
+      "semester": 9,
+      "title": "Archaeological Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "5.111",
-      "semester": 12,
+      "semester": 3,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
+      "subject_id": "5.12",
+      "semester": 7,
+      "title": "Organic Chemistry I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.24",
+      "semester": 9,
+      "title": "Archaeological Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.310",
+      "semester": 1,
+      "title": "Laboratory Chemistry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.601",
+      "semester": 4,
+      "title": "Thermodynamics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.602",
+      "semester": 6,
+      "title": "Thermodynamics II and Kinetics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
       "subject_id": "6.100A",
-      "semester": 3,
+      "semester": 12,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 0,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100B",
-      "semester": 9,
+      "semester": 6,
       "title": "Introduction to Computational Thinking and Data Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1200",
-      "semester": 3,
-      "title": "Mathematics for Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1210",
+      "subject_id": "6.3700",
       "semester": 4,
-      "title": "Introduction to Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1220",
-      "semester": 10,
-      "title": "Design and Analysis of Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3260",
-      "semester": 7,
-      "title": "Networks",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3900",
-      "semester": 9,
-      "title": "Introduction to Machine Learning",
+      "title": "Introduction to Probability",
       "units": 12,
       "overrideWarnings": false
     },
@@ -164,23 +213,114 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "CC.802",
-      "semester": 12,
-      "title": "Physics II",
+      "subject_id": "7.015",
+      "semester": 0,
+      "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.801",
+      "subject_id": "7.03",
+      "semester": 3,
+      "title": "Genetics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.05",
+      "semester": 9,
+      "title": "General Biochemistry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.06",
       "semester": 10,
+      "title": "Cell Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.23",
+      "semester": 12,
+      "title": "Immunology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.01",
+      "semester": 0,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "IDS.955",
-      "semester": 11,
-      "title": "Practical Experience in Data, Systems, and Society",
+      "subject_id": "8.012",
+      "semester": 1,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.241",
+      "semester": 9,
+      "title": "Introduction to Biological Physics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "9.01",
+      "semester": 7,
+      "title": "Introduction to Neuroscience",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "9.12",
+      "semester": 12,
+      "title": "Experimental Molecular Neurobiology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.115",
+      "semester": 1,
+      "title": "Writing About Big Questions: Defending Poetry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.1802",
+      "semester": 3,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.113",
+      "semester": 6,
+      "title": "Ancient Greek Philosophy and Mathematics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.1801",
+      "semester": 1,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.8022",
+      "semester": 4,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "IDS.013",
+      "semester": 6,
+      "title": "Statistical Thinking and Data Analysis",
       "units": 12,
       "overrideWarnings": false
     }

@@ -59,7 +59,7 @@ export default function Dashboard() {
           title: "Optimization failed",
           description: result.error || "Optimization failed",
           variant: "destructive",
-          duration: 1000,
+          duration: 10000,
         });
       } else {
         showToast({
