@@ -217,9 +217,9 @@ const SECTION_INDEX_MAP = new Map(
   ALL_SECTIONS.map((section, index) => [section.id, index])
 );
 
-function CourseGraphFlowInner({ 
+function CourseGraphFlowInner({
   disableEdgesDuringOptimization = false,
-}: { 
+}: {
   disableEdgesDuringOptimization?: boolean;
 }) {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
@@ -315,19 +315,19 @@ function CourseGraphFlowInner({
 
   // Debounce edge calculation during optimization to reduce lag
   const [debouncedNodes, setDebouncedNodes] = React.useState<typeof storeNodes>([]);
-  
+
   React.useEffect(() => {
     if (!isOptimizing) {
       // Not optimizing - update immediately
       setDebouncedNodes(storeNodes);
       return;
     }
-    
+
     // During optimization - debounce updates
     const timer = setTimeout(() => {
       setDebouncedNodes(storeNodes);
     }, 800); // Wait 800ms after last change
-    
+
     return () => clearTimeout(timer);
   }, [storeNodes, isOptimizing]);
 
@@ -705,7 +705,7 @@ function CourseGraphFlowInner({
 
       {/* Optimization overlay - disable interactions */}
       {isOptimizing && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-[100] pointer-events-none" />
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1.5px] z-[100] pointer-events-none" />
       )}
 
       {/* Context menu */}
@@ -777,14 +777,14 @@ function CourseGraphFlowInner({
   );
 }
 
-export function CourseGraphFlow({ 
+export function CourseGraphFlow({
   disableEdgesDuringOptimization = false,
-}: { 
+}: {
   disableEdgesDuringOptimization?: boolean;
 } = {}) {
   return (
     <ReactFlowProvider>
-      <CourseGraphFlowInner 
+      <CourseGraphFlowInner
         disableEdgesDuringOptimization={disableEdgesDuringOptimization}
       />
     </ReactFlowProvider>
