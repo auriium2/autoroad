@@ -10,7 +10,7 @@ from .builder import ObjectiveBuilder
 from .ratings import MaximizeRating, MaximizeWeightedRating
 from .scheduling import BackloadCourses, ClusterCourses, FrontloadCourses, MinimizeFridayClasses
 from .social import MaximizeCohortOverlap
-from .units import MinimizeUnits
+from .units import MinimizeUnits, AvoidSmallClasses
 from .workload import MinimizeFinalsLoad, MinimizeMaxSemesterHours, MinimizeTotalHours, LimitClassesPerSemester
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
 
     # Objectives
     'MinimizeUnits',
+    'AvoidSmallClasses',
     'MaximizeRating',
     'MaximizeWeightedRating',
     'MinimizeTotalHours',

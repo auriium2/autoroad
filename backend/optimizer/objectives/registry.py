@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from .base import ObjectiveComponent
 from . import (
     MinimizeUnits,
+    AvoidSmallClasses,
     MaximizeRating,
     MaximizeWeightedRating,
     MinimizeTotalHours,
@@ -43,6 +44,16 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         has_parameters=False,
         default_parameters={},
         parameter_types={},
+        category="units",
+    ),
+    "avoid_small_classes": ObjectiveMetadata(
+        key="avoid_small_classes",
+        class_ref=AvoidSmallClasses,
+        name="Avoid Small Classes",
+        description="Penalize classes with very few units (e.g., seminars)",
+        has_parameters=True,
+        default_parameters={"min_units": 3, "penalty": 1000},
+        parameter_types={"min_units": int, "penalty": int},
         category="units",
     ),
     "maximize_rating": ObjectiveMetadata(
@@ -89,7 +100,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="limit_classes_per_semester",
         class_ref=LimitClassesPerSemester,
         name="Limit Classes Per Semester",
-        description="Penalize semesters with too many classes",
+        description="Penalize semesters with too many classes. Not recommended to disable this objective.",
         has_parameters=True,
         default_parameters={"max_classes": 4, "penalty": 1000},
         parameter_types={"max_classes": int, "penalty": int},
@@ -176,21 +187,21 @@ def get_objectives_by_category(category: str) -> list[ObjectiveMetadata]:
 def instantiate_objective(key: str, parameters: dict[str, Any] | None = None) -> ObjectiveComponent:
     """
     Create an instance of an objective by key.
-    
+
     Args:
         key: Objective key (e.g., "minimize_units")
         parameters: Optional parameters to pass to constructor
-        
+
     Returns:
         Instantiated objective
-        
+
     Raises:
         ValueError: If key not found or parameters invalid
     """
     metadata = get_objective_metadata(key)
     if not metadata:
         raise ValueError(f"Unknown objective: {key}")
-    
+
     # Use default parameters if not provided
     if parameters is None:
         parameters = metadata.default_parameters.copy()
@@ -199,7 +210,7 @@ def instantiate_objective(key: str, parameters: dict[str, Any] | None = None) ->
         params = metadata.default_parameters.copy()
         params.update(parameters)
         parameters = params
-    
+
     # Instantiate with parameters
     try:
         return metadata.class_ref(**parameters)
@@ -209,14 +220,13 @@ def instantiate_objective(key: str, parameters: dict[str, Any] | None = None) ->
 
 def get_default_objectives() -> list[tuple[str, float, dict[str, Any]]]:
     """
-    Get the default objective configuration (current hardcoded setup).
-    
+    Get the default objective configuration.
+
     Returns:
         List of (key, weight, parameters) tuples
     """
     return [
-        ("minimize_units", 0.4, {}),
-        ("maximize_rating", 0.3, {"target_rating": 6.0}),
-        ("minimize_total_hours", 0.2, {"default_hours": 12.0}),
-        ("frontload_courses", 0.1, {}),
+        ("minimize_units", 0.5, {}),
+        ("limit_classes_per_semester", 0.3, {"max_classes": 4, "penalty": 1000}),
+        ("avoid_small_classes", 0.2, {"min_units": 3, "penalty": 1000}),
     ]

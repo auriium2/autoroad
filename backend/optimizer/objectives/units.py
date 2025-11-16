@@ -53,3 +53,55 @@ class MinimizeUnits:
                 terms.append(var * scaled_units)
 
         return sum(terms) if terms else 0
+
+
+class AvoidSmallClasses:
+    """
+    Soft constraint to avoid taking small unit classes (e.g., seminars, 1-unit courses).
+    
+    Penalizes courses below a minimum unit threshold. This prevents padding schedules
+    with low-value classes that don't contribute much to degree progress.
+    
+    Scale: Soft constraint with high penalty (1000 per small class by default).
+           Designed to dominate when violated, but negligible when satisfied.
+    """
+
+    def __init__(self, min_units: int = 3, penalty: int = 1000):
+        """
+        Args:
+            min_units: Minimum acceptable units for a class (default 3)
+            penalty: Penalty cost for each class below min_units (default 1000)
+        """
+        self.min_units = min_units
+        self.penalty = penalty
+
+    def get_name(self) -> str:
+        return "Avoid Small Classes"
+
+    def get_description(self) -> str:
+        return f"Penalize classes with fewer than {self.min_units} units"
+
+    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+        return {}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        """
+        Add penalty for taking small unit classes.
+        
+        For each course with units < min_units, add penalty when taken.
+        """
+        terms = []
+
+        for (course_idx, semester), var in take_vars.items():
+            units = context.courses_df.at[course_idx, 'units'] if 'units' in context.courses_df.columns else 12
+            
+            if pd.notna(units) and units < self.min_units:
+                # Penalize taking this small class
+                terms.append(var * self.penalty)
+
+        return sum(terms) if terms else 0

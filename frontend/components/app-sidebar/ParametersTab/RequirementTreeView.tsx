@@ -46,6 +46,7 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
       return result;
     },
     staleTime: 5000,
+    enabled: !isOptimizing,
   });
 
   const toggleNode = (path: string) => {

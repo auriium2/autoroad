@@ -75,7 +75,7 @@ export function ObjectiveSelector() {
     return null;
   }
 
-  // Group objectives by category
+  // Group objectives by category and sort with defaults first
   const objectivesByCategory = data.objectives.reduce((acc, obj) => {
     if (!acc[obj.category]) {
       acc[obj.category] = [];
@@ -83,6 +83,18 @@ export function ObjectiveSelector() {
     acc[obj.category].push(obj);
     return acc;
   }, {} as Record<string, ObjectiveMetadata[]>);
+
+  // Sort each category: defaults first, then alphabetically
+  Object.values(objectivesByCategory).forEach(objectives => {
+    objectives.sort((a, b) => {
+      const aIsDefault = data.defaultConfiguration.some(d => d.key === a.key);
+      const bIsDefault = data.defaultConfiguration.some(d => d.key === b.key);
+
+      if (aIsDefault && !bIsDefault) return -1;
+      if (!aIsDefault && bIsDefault) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  });
 
   const categoryLabels: Record<string, string> = {
     units: 'Units & Load',
@@ -104,6 +116,10 @@ export function ObjectiveSelector() {
             const isSelected = selectedObjectives.some(o => o.key === objective.key);
             const config = selectedObjectives.find(o => o.key === objective.key);
             const isRecommended = data.defaultConfiguration.some(d => d.key === objective.key);
+            const isConstraint = objective.key.includes('limit') ||
+                                 objective.key.includes('avoid') ||
+                                 objective.key.includes('minimize_max') ||
+                                 objective.key.includes('minimize_finals');
 
             return (
               <div key={objective.key} className="space-y-2">
@@ -115,13 +131,18 @@ export function ObjectiveSelector() {
                     className="mt-1 shrink-0"
                   />
                   <div className="flex-1 space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <Label
                         htmlFor={objective.key}
                         className="text-sm font-medium cursor-pointer"
                       >
                         {objective.name}
                       </Label>
+                      {isConstraint && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium border border-orange-500/30">
+                          CONSTRAINT
+                        </span>
+                      )}
                       {isRecommended && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
                           RECOMMENDED
@@ -136,21 +157,24 @@ export function ObjectiveSelector() {
 
                 {isSelected && config && (
                   <div className="ml-6 space-y-2 pr-1">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Label className="text-xs text-muted-foreground w-16 shrink-0">Weight:</Label>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        step="1"
-                        value={Math.round(config.weight * 100)}
-                        onChange={(e) => handleWeightChange(objective.key, Number(e.target.value) / 100)}
-                        className="flex-1 min-w-0 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
-                      />
-                      <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
-                        {Math.round(config.weight * 100)}
-                      </span>
-                    </div>
+                    {!isConstraint && (
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Label className="text-xs text-muted-foreground w-16 shrink-0">Weight:</Label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={Math.round(config.weight * 100)}
+                          onChange={(e) => handleWeightChange(objective.key, Number(e.target.value) / 100)}
+                          className="flex-1 min-w-0 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
+                        />
+                        <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
+                          {Math.round(config.weight * 100)}
+                        </span>
+                      </div>
+                    )}
+
 
                     {objective.hasParameters && (
                       <div className="space-y-2 pt-1">
