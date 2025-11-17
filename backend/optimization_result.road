@@ -3,170 +3,198 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "18.06",
-      "semester": 12,
-      "title": "Linear Algebra",
+      "subject_id": "11.047",
+      "semester": 8,
+      "title": "Race, Place, and Modernity in the Americas",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21H.284",
+      "subject_id": "16.680",
       "semester": 9,
-      "title": "South Asia, the United States, and MIT: Transformative Connections",
+      "title": "Project in Aeronautics and Astronautics",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21T.103",
-      "semester": 9,
-      "title": "Motion Theater",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21T.111",
-      "semester": 10,
-      "title": "Physical Improvisation: Scores and Structures",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.035",
-      "semester": 12,
-      "title": "Science Writing and New Media: Elements of Science Writing for the Public",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.762",
-      "semester": 10,
-      "title": "Poetry Workshop",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.010",
+      "subject_id": "16.999",
       "semester": 4,
-      "title": "Structure of Materials",
+      "title": "Teaching in Aeronautics and Astronautics",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.020",
-      "semester": 3,
-      "title": "Thermodynamics of Materials",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.023",
-      "semester": 6,
-      "title": "Synthesis and Design of Materials",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.029",
+      "subject_id": "16.C20",
       "semester": 12,
-      "title": "Mathematics and Computational Thinking for Materials Scientists and Engineers I",
+      "title": "Introduction to Computational Science and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.030",
+      "subject_id": "17.395",
+      "semester": 4,
+      "title": "Innovation Systems for Science, Technology, Energy, Manufacturing, and Health",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.S794",
       "semester": 7,
-      "title": "Microstructural Evolution in Materials",
+      "title": "Graduate Special Subject in Mechanical Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.155",
+      "subject_id": "2.S988",
+      "semester": 7,
+      "title": "Special Subject in Mechanical Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.S994",
+      "semester": 6,
+      "title": "Undergraduate Special Subject in Mechanical Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21A.949",
+      "semester": 6,
+      "title": "Graduate Independent Study",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.218",
+      "semester": 4,
+      "title": "History of the Built Environment in the US",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.222",
       "semester": 3,
-      "title": "Micro/Nano Processing Technology",
+      "title": "Expository Writing for Bilingual Students",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "22.S909",
+      "semester": 7,
+      "title": "Special Subject in Nuclear Science and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "24.905",
+      "semester": 12,
+      "title": "Laboratory in Psycholinguistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.096",
+      "semester": 10,
+      "title": "Architectural Ironwork",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.982",
+      "semester": 1,
+      "title": "The Ancient Andean World",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.983",
+      "semester": 10,
+      "title": "Ancient Mesoamerican Civilization",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "5.111",
-      "semester": 1,
+      "semester": 9,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "5.601",
-      "semester": 6,
-      "title": "Thermodynamics I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "6.100A",
-      "semester": 4,
+      "semester": 7,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100B",
-      "semester": 10,
+      "semester": 12,
       "title": "Introduction to Computational Thinking and Data Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.022",
-      "semester": 12,
-      "title": "Physics II",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "CC.1801",
-      "semester": 4,
-      "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "ES.113",
+      "subject_id": "6.THM",
       "semester": 9,
-      "title": "Ancient Greek Philosophy and Mathematics",
+      "title": "Master of Engineering Program Thesis",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.182A",
-      "semester": 5,
-      "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "ES.7012",
-      "semester": 6,
+      "subject_id": "7.014",
+      "semester": 9,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.801",
+      "subject_id": "CC.1801",
       "semester": 10,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.182A",
+      "semester": 11,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.8012",
+      "semester": 1,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.041",
+      "subject_id": "ES.8022",
       "semester": 6,
-      "title": "Exercise is Medicine: From Ancient Civilizations to Modern Health Care Systems",
+      "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.083",
-      "semester": 9,
-      "title": "Computers and Social Change",
+      "subject_id": "MAS.S74",
+      "semester": 12,
+      "title": "Special Subject in Media Technology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "SCM.URG",
+      "semester": 6,
+      "title": "Undergraduate Research",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "WGS.120",
+      "semester": 10,
+      "title": "Science in Action: Technologies and Controversies in Everyday Life",
       "units": 12,
       "overrideWarnings": false
     }

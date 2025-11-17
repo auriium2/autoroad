@@ -16,10 +16,10 @@ from .utils import preprocess_schedule_data
 class FrontloadCourses:
     """
     Objective to frontload courses (prefer earlier semesters).
-    
+
     This encourages taking courses earlier in the academic career,
     which can be useful for unlocking prerequisites or graduating early.
-    
+
     Scale: Normalized to ~100 per course (semester 6 × 20 = 120).
     """
 
@@ -40,7 +40,7 @@ class FrontloadCourses:
     ) -> cp_model.LinearExpr:
         """
         Minimize sum of (semester_number * 20 * take_var).
-        
+
         Later semesters have higher numbers, so this penalizes taking courses late.
         Scaled by 20 to normalize to ~100 per course.
         """
@@ -51,17 +51,19 @@ class FrontloadCourses:
             # Average semester ~6 → 120
             terms.append(var * semester * 20)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class BackloadCourses:
     """
     Objective to backload courses (prefer later semesters).
-    
+
     This encourages taking courses later in the academic career,
     which can be useful for maintaining enrollment status or
     spreading out difficult courses.
-    
+
     Scale: Normalized to ~100 per course (semester 6 → (13-6) × 20 = 140).
     """
 
@@ -82,7 +84,7 @@ class BackloadCourses:
     ) -> cp_model.LinearExpr:
         """
         Minimize sum of ((13 - semester_number) * 20 * take_var).
-        
+
         Earlier semesters have higher costs, so this penalizes taking courses early.
         Assumes 12 semesters max. Scaled by 20 to normalize to ~100 per course.
         """
@@ -93,15 +95,17 @@ class BackloadCourses:
             # Average semester ~6 → (13-6) × 20 = 140
             terms.append(var * (13 - semester) * 20)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class MinimizeFridayClasses:
     """
     Objective to minimize classes that meet on Friday.
-    
+
     This maximizes long weekends for students who want to minimize Friday schedules.
-    
+
     Scale: Normalized to ~100 per Friday course (penalty=100).
     """
 
@@ -130,11 +134,11 @@ class MinimizeFridayClasses:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for each course taken that meets on Friday.
-        
+
         Cost = sum(penalty * take_var) for courses with Friday classes
         """
         if context.extra is None or 'has_friday' not in context.extra:
-            return 0
+            return cp_model.LinearExpr.Sum([])
 
         has_friday = context.extra['has_friday']
         terms = []
@@ -143,18 +147,20 @@ class MinimizeFridayClasses:
             if has_friday.get(course_idx, False):
                 terms.append(var * self.penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class ClusterCourses:
     """
     Objective to cluster courses together in the day (minimize time gaps).
-    
+
     This encourages schedules where classes are back-to-back rather than
     spread throughout the day with long gaps.
-    
+
     Uses actual time slot parsing to calculate gaps in minutes.
-    
+
     Scale: Normalized to ~100 per course assuming ~1 hour average gap × 50 penalty = 50.
     """
 
@@ -184,17 +190,17 @@ class ClusterCourses:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for time gaps between classes.
-        
+
         For each semester and each day:
         1. Identify which courses are taken on that day
         2. For each pair of courses, calculate the time gap
         3. Penalize the gap proportionally
-        
+
         Note: This is an approximation since we can't know exact end times.
         We use start time differences as a proxy.
         """
         if context.extra is None or 'time_slots' not in context.extra:
-            return 0
+            return cp_model.LinearExpr.Sum([])
 
         time_slots_map = context.extra['time_slots']
         terms = []
@@ -247,4 +253,6 @@ class ClusterCourses:
                         penalty = int(gap_hours * self.gap_penalty_per_hour)
                         terms.append(both_taken * penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])

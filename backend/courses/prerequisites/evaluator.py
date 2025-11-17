@@ -12,7 +12,6 @@ from .types import EvaluationResult, PrereqCourse, PrereqGroup, PrereqNode
 class PrerequisiteEvaluator:
     """
     Evaluates prerequisites in PrereqNode format.
-    
     By default, a course can only satisfy one requirement (no reuse).
     """
 
@@ -151,25 +150,25 @@ class PrerequisiteEvaluator:
                 sorted_unsatisfied = sorted(unsatisfied_results, key=lambda r: len(r.unsatisfied_reasons))
                 minimal_options = sorted_unsatisfied[:needed]
 
-                all_unsatisfied_reasons: list[str] = []
+                kn_unsatisfied_reasons: list[str] = []
                 for result in minimal_options:
-                    all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
+                    kn_unsatisfied_reasons.extend(result.unsatisfied_reasons)
 
                 return EvaluationResult(
                     satisfied=False,
-                    unsatisfied_reasons=all_unsatisfied_reasons,
+                    unsatisfied_reasons=kn_unsatisfied_reasons,
                     matched_courses=all_matched_courses
                 )
         else:
             # COMPLETE MODE: Return all unsatisfied reasons from all branches
-            all_unsatisfied_reasons: list[str] = []
+            complete_unsatisfied_reasons: list[str] = []
             for result in item_results:
                 if not result.satisfied:
-                    all_unsatisfied_reasons.extend(result.unsatisfied_reasons)
+                    complete_unsatisfied_reasons.extend(result.unsatisfied_reasons)
 
             return EvaluationResult(
                 satisfied=False,
-                unsatisfied_reasons=all_unsatisfied_reasons,
+                unsatisfied_reasons=complete_unsatisfied_reasons,
                 matched_courses=all_matched_courses
             )
 

@@ -15,13 +15,13 @@ from .base import OBJECTIVE_SCALE, ObjectiveComponent, ObjectiveContext
 class ObjectiveBuilder:
     """
     Builder for composing multiple objective components with weights.
-    
+
     Usage:
         builder = ObjectiveBuilder()
         builder.add(MinimizeUnits(), weight=0.3)
         builder.add(MaximizeRating(), weight=0.5)
         builder.add(FrontloadCourses(), weight=0.2)
-        
+
         objective = builder.build(model, take_vars, courses_df, planning_year_start)
         model.Minimize(objective)
     """
@@ -38,11 +38,11 @@ class ObjectiveBuilder:
     def add(self, component: ObjectiveComponent, weight: float = 1.0) -> ObjectiveBuilder:
         """
         Add an objective component with a weight.
-        
+
         Args:
             component: Objective component to add
             weight: Weight for this component (will be normalized if normalize_weights=True)
-            
+
         Returns:
             Self for method chaining
         """
@@ -61,19 +61,20 @@ class ObjectiveBuilder:
     ) -> cp_model.LinearExpr:
         """
         Build the combined objective function.
-        
+
         Args:
             model: CP-SAT model
             take_vars: Decision variables mapping (course_idx, semester) -> BoolVar
             courses_df: DataFrame with course data
             planning_year_start: Starting year for planning
-            
+
         Returns:
             Linear expression to minimize
         """
         if not self.components:
             # No objectives specified, return 0
-            return 0
+            from ortools.sat.python.cp_model import LinearExpr
+            return LinearExpr.Sum([])
 
         # Normalize weights if requested
         if self.normalize_weights:
@@ -114,12 +115,15 @@ class ObjectiveBuilder:
                     continue
                 terms.append(expr * scaled_weight)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        from ortools.sat.python.cp_model import LinearExpr
+        return LinearExpr.Sum([])
 
     def get_summary(self) -> str:
         """
         Get a human-readable summary of the objectives.
-        
+
         Returns:
             Multi-line string describing the objectives and their weights
         """

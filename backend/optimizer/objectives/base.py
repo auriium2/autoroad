@@ -18,7 +18,7 @@ OBJECTIVE_SCALE = 10000
 class ObjectiveContext:
     """
     Context information passed to objective components.
-    
+
     Contains metadata and helper data structures needed by objectives.
     """
     planning_year_start: int
@@ -35,7 +35,7 @@ class ObjectiveContext:
 class ObjectiveComponent(Protocol):
     """
     Protocol for objective function components.
-    
+
     Each component represents a single optimization goal (e.g., minimize units,
     maximize ratings). Components can be combined with weights using ObjectiveBuilder.
     """
@@ -48,12 +48,12 @@ class ObjectiveComponent(Protocol):
     ) -> cp_model.LinearExpr:
         """
         Add this objective component to the model.
-        
+
         Args:
             model: The CP-SAT model
             take_vars: Dict mapping (course_idx, semester) -> decision variable
             context: Context with courses data and metadata
-            
+
         Returns:
             A linear expression representing the cost to MINIMIZE.
             For maximization objectives, return negative values.
@@ -71,10 +71,10 @@ class ObjectiveComponent(Protocol):
     def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
         """
         Optional preprocessing step to extract/compute data from courses_df.
-        
+
         This is called once before optimization. Use this to parse schedules,
         compute derived fields, etc.
-        
+
         Returns:
             Dictionary of preprocessed data to be stored in ObjectiveContext
         """

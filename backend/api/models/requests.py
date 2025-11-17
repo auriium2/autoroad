@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ class Marker(BaseModel):
 class ObjectiveConfig(BaseModel):
     key: str = Field(..., description="Objective key (e.g., 'minimize_units')")
     weight: float = Field(..., ge=0, le=1, description="Weight for this objective (0-1)")
-    parameters: Dict[str, Any] = Field(default_factory=dict, description="Optional parameters for the objective")
+    parameters: dict[str, object] = Field(default_factory=dict, description="Optional parameters for the objective")
 
 
 class OptimizationConstraints(BaseModel):
@@ -23,8 +23,8 @@ class OptimizationConstraints(BaseModel):
 
 
 class OptimizationRequest(BaseModel):
-    markers: List[Marker] = Field(default_factory=list, description="User-placed course markers")
-    requirements: List[str] = Field(default=["major6-3new", "girs"], description="Requirement keys to satisfy")
+    markers: list[Marker] = Field(default_factory=list, description="User-placed course markers")
+    requirements: list[str] = Field(default=["major6-3new", "girs"], description="Requirement keys to satisfy")
     constraints: OptimizationConstraints = Field(default_factory=OptimizationConstraints)
-    planningYear: Optional[str] = Field(default=None, description="Planning year (e.g., '2024-2025')")
-    objectives: Optional[List[ObjectiveConfig]] = Field(default=None, description="Optimization objectives (if None, uses defaults)")
+    planningYear: str | None = Field(default=None, description="Planning year (e.g., '2024-2025')")
+    objectives: list[ObjectiveConfig] | None = Field(default=None, description="Optimization objectives (if None, uses defaults)")

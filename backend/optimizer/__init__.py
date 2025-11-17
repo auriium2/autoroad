@@ -3,11 +3,8 @@ Optimizer module: constraint builders and objective functions.
 """
 
 from .marker_constraint_builder import (
-    Marker,
     MarkerConstraintResult,
-    MarkerStatus,
     add_marker_constraints,
-    parse_markers_from_dict,
 )
 from .prerequisite_constraint_builder import (
     ConstraintResult as PrerequisiteConstraintResult,
@@ -22,9 +19,6 @@ from .requirement_constraint_builder import (
 __all__ = [
     # Marker constraints
     "add_marker_constraints",
-    "parse_markers_from_dict",
-    "Marker",
-    "MarkerStatus",
     "MarkerConstraintResult",
     # Prerequisite constraints
     "add_prerequisite_constraints",

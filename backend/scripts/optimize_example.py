@@ -61,7 +61,7 @@ def fetch_all_requirements():
 def create_take_vars(model, courses_df, planning_year_start):
     """
     Create decision variables for taking courses.
-    
+
     Returns:
         dict mapping (course_idx, semester) -> BoolVar
     """
@@ -106,7 +106,7 @@ def add_basic_constraints(model, take_vars, courses_df):
 def parse_prerequisites_for_all_courses(courses_df):
     """
     Parse prerequisites for all courses.
-    
+
     Returns:
         dict mapping course_idx -> PrereqNode
     """
@@ -171,7 +171,7 @@ def export_to_road_file(solver, take_vars, courses_df, output_path):
 def optimize_for_major(major_key, output_filename):
     """
     Run optimization for a specific major.
-    
+
     Args:
         major_key: Key for the major requirement (e.g., 'major6-3new', 'major2', 'major15')
         output_filename: Name of the output .road file

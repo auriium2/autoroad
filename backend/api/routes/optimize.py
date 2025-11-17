@@ -2,18 +2,20 @@ import asyncio
 import json
 import queue
 import threading
+from collections.abc import Sequence
 
 import pandas as pd
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
-from api.models.requests import OptimizationRequest
-from api.services.cache import clear_cache, get_courses_data, get_requirements
+from api.models.requests import Marker, OptimizationRequest
+from api.services.cache import get_courses_data, get_requirements
 from courses.prerequisites.parser import parse_fireroad
+from courses.prerequisites.types import PrereqNode
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
-from optimizer.marker_constraint_builder import add_marker_constraints, parse_markers_from_dict
+from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.objectives import ObjectiveBuilder
 from optimizer.objectives.registry import (
     get_all_objectives,
@@ -32,14 +34,14 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
     CP-SAT callback that puts solutions into a queue for real-time streaming.
     """
 
-    def __init__(self, take_vars: dict, courses_df: pd.DataFrame, solution_queue: queue.Queue):
+    def __init__(self, take_vars: dict[tuple[int, int], cp_model.IntVar], courses_df: pd.DataFrame, solution_queue: queue.Queue[object]):
         super().__init__()
-        self.take_vars = take_vars
-        self.courses_df = courses_df
-        self.solution_count = 0
-        self.solution_queue = solution_queue
-        self.best_solution_nodes = []  # Track best solution for .road export
-        self.best_objective_value = None
+        self.take_vars: dict[tuple[int, int], cp_model.IntVar] = take_vars
+        self.courses_df: pd.DataFrame = courses_df
+        self.solution_count: int = 0
+        self.solution_queue: queue.Queue[object] = solution_queue
+        self.best_solution_nodes: list[dict[str, object]] = []  # Track best solution for .road export
+        self.best_objective_value: float | None = None
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -87,7 +89,7 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
             print(f"  - {node['courseId']} @ section {node['section']}")
 
 
-def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int, markers=None):
+def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int, markers: Sequence[Marker] | None = None) -> dict[tuple[int, int], cp_model.IntVar]:
     """Create decision variables for taking courses."""
     take_vars = {}
 
@@ -122,12 +124,12 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
 
 def add_basic_constraints(
     model: cp_model.CpModel,
-    take_vars: dict,
+    take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pd.DataFrame,
     max_units_per_semester: int,
     max_units_iap: int,
     max_semesters: int
-):
+) -> None:
     """Add basic constraints like max units per semester, taking course once, etc."""
 
     # Constraint: Take each course at most once in regular semesters
@@ -157,9 +159,9 @@ def add_basic_constraints(
             model.Add(sum(semester_takes) <= max_units)
 
 
-def parse_prerequisites_for_all_courses(courses_df: pd.DataFrame):
+def parse_prerequisites_for_all_courses(courses_df: pd.DataFrame) -> dict[int, PrereqNode]:
     """Parse prerequisites for all courses."""
-    prereq_trees = {}
+    prereq_trees: dict[int, PrereqNode] = {}
 
     for course_idx in courses_df.index:
         prereq_str = courses_df.at[course_idx, 'prerequisites']
@@ -232,12 +234,15 @@ async def optimize(request: OptimizationRequest):
                 for req_key in request.requirements:
                     if req_key in requirements_data:
                         req_data = requirements_data[req_key]
-                        req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
-                        validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                        add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, planning_year_start, enforce=True
-                        )
+                        if isinstance(req_data, dict):
+                            req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                            if req_tree is not None:
+                                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                                if validation.pruned_tree is not None:
+                                    add_requirement_constraints(
+                                        model, take_vars, validation.pruned_tree,
+                                        courses_df, planning_year_start, enforce=True
+                                    )
 
             await loop.run_in_executor(None, add_requirements)
 
@@ -259,8 +264,7 @@ async def optimize(request: OptimizationRequest):
 
             # Add marker constraints (run in thread pool)
             def add_markers():
-                markers = parse_markers_from_dict([m.model_dump() for m in request.markers])
-                return add_marker_constraints(model, take_vars, markers, courses_df, planning_year_start)
+                return add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
 
             marker_result = await loop.run_in_executor(None, add_markers)
 
@@ -308,8 +312,10 @@ async def optimize(request: OptimizationRequest):
             # Run solver in thread pool (non-blocking)
             print("[SSE] Starting solver...")
             solver_done = threading.Event()
+            result = cp_model.MODEL_INVALID  # Initialize with default value
 
             def run_solver():
+                nonlocal result
                 result = solver.Solve(model, callback)
                 solution_queue.put({'__done__': True, 'result': result, 'count': callback.solution_count})
                 solver_done.set()
@@ -349,7 +355,7 @@ async def optimize(request: OptimizationRequest):
                     "selectedSubjects": [
                         {
                             "subject_id": node["courseId"],
-                            "semester": node["section"] + 1,  # Convert back to 1-indexed
+                            "semester": int(node["section"]) + 1 if isinstance(node["section"], int) else 1,  # Convert back to 1-indexed
                             "title": node.get("title", ""),
                             "units": 12,
                             "overrideWarnings": False
@@ -443,13 +449,3 @@ async def get_requirements_list():
     response = requests.get('https://fireroad.mit.edu/requirements/list_reqs')
     response.raise_for_status()
     return response.json()
-
-
-@router.post("/optimize/clear-cache")
-async def clear_optimization_cache():
-    """
-    Clear all cached course and requirement data.
-    Useful for forcing a refresh from Fireroad API.
-    """
-    clear_cache()
-    return {"message": "Cache cleared successfully"}

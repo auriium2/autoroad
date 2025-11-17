@@ -10,14 +10,14 @@ import pandas as pd
 def parse_schedule_has_friday(schedule: str | None) -> bool:
     """
     Check if a course schedule includes Friday classes.
-    
+
     Args:
         schedule: Schedule string from Fireroad API
-        
+
     Returns:
         True if the course has classes on Friday
     """
-    if pd.isna(schedule) or not schedule:
+    if schedule is None or pd.isna(schedule) or not schedule:
         return False
 
     # Schedule format: "Lecture,4-237/MWF/0/1;Recitation,34-101/TR/0/1"
@@ -42,11 +42,11 @@ def parse_schedule_has_friday(schedule: str | None) -> bool:
 def parse_time_to_minutes(time_str: str, is_evening: str) -> int | None:
     """
     Convert time string to minutes since midnight.
-    
+
     Args:
         time_str: Time string like "9", "1-2.30", "5.30 PM"
         is_evening: "0" for daytime, "1" for evening
-        
+
     Returns:
         Minutes since midnight, or None if unparseable
     """
@@ -86,15 +86,15 @@ def parse_time_to_minutes(time_str: str, is_evening: str) -> int | None:
 def parse_schedule_time_slots(schedule: str | None) -> list[tuple[str, int]]:
     """
     Parse schedule into list of (days, start_time_minutes) tuples for clustering analysis.
-    
+
     Args:
         schedule: Schedule string from Fireroad API
-        
+
     Returns:
         List of (days, start_time_minutes) tuples, e.g., [("MWF", 540), ("TR", 810)]
         where 540 = 9:00 AM, 810 = 1:30 PM
     """
-    if pd.isna(schedule) or not schedule:
+    if schedule is None or pd.isna(schedule) or not schedule:
         return []
 
     time_slots = []
@@ -119,13 +119,13 @@ def parse_schedule_time_slots(schedule: str | None) -> list[tuple[str, int]]:
     return time_slots
 
 
-def preprocess_schedule_data(courses_df: pd.DataFrame) -> dict[int, Any]:
+def preprocess_schedule_data(courses_df: pd.DataFrame) -> dict[str, object]:
     """
     Preprocess all schedule data for efficient lookup during optimization.
-    
+
     Args:
         courses_df: DataFrame with course data including 'schedule' column
-        
+
     Returns:
         Dictionary with preprocessed data:
         - 'has_friday': dict mapping course_idx -> bool
@@ -148,23 +148,23 @@ def preprocess_schedule_data(courses_df: pd.DataFrame) -> dict[int, Any]:
 def compute_bayesian_rating(rating: float, enrollment: float, min_votes: int = 10, global_mean: float = 5.0) -> float:
     """
     Compute Bayesian/IMDB-style weighted rating.
-    
+
     This reduces bias from courses with very few reviews by blending
     the course rating with the global mean, weighted by number of reviews.
-    
+
     Formula: weighted_rating = (v / (v + m)) * R + (m / (v + m)) * C
     where:
         v = number of reviews (enrollment)
         m = minimum votes threshold
         R = course rating
         C = global mean rating
-    
+
     Args:
         rating: Course rating (0-7)
         enrollment: Number of students (proxy for number of reviews)
         min_votes: Minimum number of votes to trust the rating
         global_mean: Global average rating across all courses
-        
+
     Returns:
         Weighted rating
     """

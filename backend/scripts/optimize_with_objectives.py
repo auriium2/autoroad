@@ -179,7 +179,7 @@ def optimize_with_objectives(
     # Parse and add prerequisites
     print("\nAdding prerequisite constraints...")
     prereq_trees = parse_prerequisites_for_all_courses(courses_df)
-    prereq_result = add_prerequisite_constraints(
+    add_prerequisite_constraints(
         model, take_vars, courses_df, planning_year_start, prereq_trees
     )
 

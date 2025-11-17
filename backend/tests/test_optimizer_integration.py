@@ -13,8 +13,9 @@ These tests cover bugs we've encountered and fixed:
 import pandas as pd
 from ortools.sat.python import cp_model
 
+from api.models.requests import Marker
 from courses.prerequisites.types import PrereqCourse
-from optimizer.marker_constraint_builder import Marker, add_marker_constraints
+from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 
 
@@ -40,9 +41,9 @@ def create_take_vars_simple(model, courses_df, markers=None):
     if markers:
         for marker in markers:
             if marker.section == -2:  # Must Take
-                special_semester_courses.add((marker.course_id, -2))
+                special_semester_courses.add((marker.courseId, -2))
             elif marker.section == -1:  # ASE
-                special_semester_courses.add((marker.course_id, -1))
+                special_semester_courses.add((marker.courseId, -1))
 
     for course_idx in courses_df.index:
         subject_id = courses_df.at[course_idx, 'subject_id']
@@ -67,7 +68,7 @@ class TestOptimizerIntegration:
     def test_ase_course_with_pinned_courses(self):
         """
         Regression test: ASE course + pinned courses should be feasible.
-        
+
         Scenario: 18.01 in ASE, 18.02 and 8.01 pinned in Freshman Fall.
         This was marked as infeasible due to semester conversion bug.
         """
@@ -75,9 +76,9 @@ class TestOptimizerIntegration:
         model = cp_model.CpModel()
 
         markers = [
-            Marker(course_id='18.01', status='pin', section=-1),  # ASE
-            Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
-            Marker(course_id='8.01', status='pin', section=0),    # Freshman Fall
+            Marker(courseId='18.01', status='pin', section=-1),  # ASE
+            Marker(courseId='18.02', status='pin', section=0),   # Freshman Fall
+            Marker(courseId='8.01', status='pin', section=0),    # Freshman Fall
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -96,15 +97,15 @@ class TestOptimizerIntegration:
     def test_ase_satisfies_prerequisite(self):
         """
         Regression test: ASE courses should satisfy prerequisites.
-        
+
         Scenario: 18.01 as ASE should satisfy 18.02's prerequisite.
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
 
         markers = [
-            Marker(course_id='18.01', status='pin', section=-1),  # ASE
-            Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
+            Marker(courseId='18.01', status='pin', section=-1),  # ASE
+            Marker(courseId='18.02', status='pin', section=0),   # Freshman Fall
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -128,14 +129,14 @@ class TestOptimizerIntegration:
     def test_override_course_ignores_prerequisites(self):
         """
         Regression test: Override courses should not require prerequisites.
-        
+
         Scenario: 18.02 marked as override should not need 18.01.
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
 
         markers = [
-            Marker(course_id='18.02', status='override', section=0),  # Freshman Fall, override
+            Marker(courseId='18.02', status='override', section=0),  # Freshman Fall, override
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -159,15 +160,15 @@ class TestOptimizerIntegration:
     def test_must_take_satisfies_prerequisite(self):
         """
         Test: Must Take courses should satisfy prerequisites.
-        
+
         Scenario: Course in Must Take section should satisfy prerequisites for later courses.
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
 
         markers = [
-            Marker(course_id='18.01', status='pin', section=-2),  # Must Take
-            Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
+            Marker(courseId='18.01', status='pin', section=-2),  # Must Take
+            Marker(courseId='18.02', status='pin', section=0),   # Freshman Fall
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -189,14 +190,14 @@ class TestOptimizerIntegration:
     def test_banish_prevents_specific_semester_only(self):
         """
         Regression test: Banish should only prevent course in specific semester.
-        
+
         Scenario: 18.01 banished from Freshman Fall should still be takeable in Freshman Spring.
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
 
         markers = [
-            Marker(course_id='18.01', status='banish', section=0),  # Banish from Freshman Fall
+            Marker(courseId='18.01', status='banish', section=0),  # Banish from Freshman Fall
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -218,7 +219,7 @@ class TestOptimizerIntegration:
     def test_optimizer_doesnt_place_in_special_semesters(self):
         """
         Regression test: Optimizer should not place courses in special semesters.
-        
+
         Scenario: Without markers, optimizer should not use special semesters.
         """
         courses_df = create_simple_courses_df()
@@ -247,12 +248,12 @@ class TestOptimizerIntegration:
     def test_override_does_not_block_other_courses(self):
         """
         REGRESSION TEST: Override markers should NOT prevent other courses in same semester.
-        
+
         This was a critical bug - the old implementation forced all other courses
         in the semester to be 0. Override should ONLY:
         1. Pin the course to that semester
         2. Skip prerequisite checking
-        
+
         It should NOT prevent other courses from being in that semester.
         """
         courses_df = create_simple_courses_df()
@@ -261,8 +262,8 @@ class TestOptimizerIntegration:
         # Override 18.02 in Freshman Fall AND pin 18.01 in Freshman Fall
         # Both should be able to coexist in the same semester
         markers = [
-            Marker(course_id='18.02', status='override', section=0),  # Freshman Fall
-            Marker(course_id='18.01', status='pin', section=0),       # Freshman Fall
+            Marker(courseId='18.02', status='override', section=0),  # Freshman Fall
+            Marker(courseId='18.01', status='pin', section=0),       # Freshman Fall
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -290,7 +291,7 @@ class TestOptimizerIntegration:
     def test_override_allows_multiple_courses_in_semester(self):
         """
         REGRESSION TEST: Override with 3+ courses in same semester.
-        
+
         Verifies that override truly doesn't block other courses.
         """
         courses_df = create_simple_courses_df()
@@ -298,9 +299,9 @@ class TestOptimizerIntegration:
 
         # Put 3 courses in Freshman Fall, one is override
         markers = [
-            Marker(course_id='18.01', status='pin', section=0),
-            Marker(course_id='18.02', status='override', section=0),  # Override
-            Marker(course_id='8.01', status='pin', section=0),
+            Marker(courseId='18.01', status='pin', section=0),
+            Marker(courseId='18.02', status='override', section=0),  # Override
+            Marker(courseId='8.01', status='pin', section=0),
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -326,7 +327,7 @@ class TestOptimizerIntegration:
     def test_override_skips_prerequisites_but_pins_semester(self):
         """
         REGRESSION TEST: Override should skip prereq checking AND pin to semester.
-        
+
         Verifies both behaviors work correctly:
         1. Course is pinned to specified semester
         2. Prerequisite checking is skipped for that course
@@ -337,7 +338,7 @@ class TestOptimizerIntegration:
         # 18.02 requires 18.01, but we mark 18.02 as override in Freshman Fall
         # WITHOUT taking 18.01 first (or at all)
         markers = [
-            Marker(course_id='18.02', status='override', section=0),  # Freshman Fall, no prereqs needed
+            Marker(courseId='18.02', status='override', section=0),  # Freshman Fall, no prereqs needed
         ]
 
         take_vars = create_take_vars_simple(model, courses_df, markers)
@@ -365,7 +366,7 @@ class TestOptimizerIntegration:
 
         # Verify 18.01 is NOT required to be taken
         course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
-        total_18_01 = sum(
+        sum(
             solver.Value(take_vars[(course_18_01_idx, s)])
             for s in range(1, 13)
             if (course_18_01_idx, s) in take_vars

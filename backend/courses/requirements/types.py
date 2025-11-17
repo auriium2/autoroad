@@ -31,7 +31,7 @@ from typing import Literal, Union
 class RequirementCourse:
     """
     A leaf requirement representing a single course or special requirement.
-    
+
     Examples:
     - Course: RequirementCourse(course_id="6.100A")
     - GIR: RequirementCourse(course_id="GIR:CAL1")
@@ -47,13 +47,13 @@ class RequirementCourse:
 class RequirementPlainString:
     """
     A leaf requirement that's descriptive text rather than a parseable course ID.
-    
+
     This is used for requirements that cannot be encoded as simple course IDs,
     like "2 math subjects (first decimal ≥ 1)" or "72 units of unrestricted electives".
-    
+
     The plain-string flag in the API indicates the req field is human-readable text
     rather than a course code to validate against.
-    
+
     Example: RequirementPlainString(description="2 math subjects (first decimal ≥ 1)")
     """
     description: str
@@ -67,7 +67,7 @@ class RequirementPlainString:
 class RequirementThreshold:
     """
     Threshold specification for how many sub-requirements must be satisfied.
-    
+
     Examples:
     - RequirementThreshold(cutoff=2, criterion="subjects", type="GTE")
       means "at least 2 subjects"
@@ -83,7 +83,7 @@ class RequirementThreshold:
 class RequirementGroup:
     """
     A branch requirement containing sub-requirements.
-    
+
     Attributes:
     - items: List of sub-requirements (can be courses or groups)
     - connection_type: 'all' (AND) or 'any' (OR)
@@ -92,14 +92,14 @@ class RequirementGroup:
     - threshold_desc: Optional human-readable threshold description
     - req_id: Unique identifier for constraint naming
     - was_pruned: True if any items were removed during validation
-    
+
     Examples:
     - All courses required:
       RequirementGroup(items=[...], connection_type="all")
-    
+
     - Any course required:
       RequirementGroup(items=[...], connection_type="any")
-    
+
     - At least 2 of 5 courses:
       RequirementGroup(
           items=[...],

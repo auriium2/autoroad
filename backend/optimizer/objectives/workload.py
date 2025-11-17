@@ -15,11 +15,11 @@ from .base import ObjectiveContext
 class MinimizeTotalHours:
     """
     Objective to minimize total hours across all semesters.
-    
+
     Linear objective - continuously prefers fewer total hours.
     Note: This can lead to unbalanced semesters. Consider MinimizeMaxSemesterHours
     for more even distribution.
-    
+
     Scale: Normalized to ~100 per course (12 hours × 10 = 120).
     """
 
@@ -48,9 +48,9 @@ class MinimizeTotalHours:
     ) -> cp_model.LinearExpr:
         """
         Minimize sum of total hours for all courses taken.
-        
+
         Cost = sum((in_class_hours + out_of_class_hours) * take_var)
-        
+
         For courses with missing hours data, uses default_hours.
         """
         terms = []
@@ -62,11 +62,11 @@ class MinimizeTotalHours:
             total_hours = 0
             has_data = False
 
-            if pd.notna(in_class):
-                total_hours += float(in_class)
+            if in_class is not None and pd.notna(in_class):
+                total_hours += float(in_class)  # type: ignore[arg-type]
                 has_data = True
-            if pd.notna(out_of_class):
-                total_hours += float(out_of_class)
+            if out_of_class is not None and pd.notna(out_of_class):
+                total_hours += float(out_of_class)  # type: ignore[arg-type]
                 has_data = True
 
             # If no hours data available, use default
@@ -77,16 +77,18 @@ class MinimizeTotalHours:
             scaled_hours = int(total_hours * 10)
             terms.append(var * scaled_hours)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class LimitClassesPerSemester:
     """
     Soft constraint to limit the number of classes per semester.
-    
+
     Penalizes semesters that exceed max_classes threshold. This prevents
     taking too many classes in one semester even if the units and hours are manageable.
-    
+
     Scale: Soft constraint with high penalty (1000 per excess class by default).
            Designed to dominate when violated, but negligible when satisfied.
     """
@@ -117,7 +119,7 @@ class LimitClassesPerSemester:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for semesters exceeding max_classes.
-        
+
         For each semester:
         1. Count total classes: sum(take_var)
         2. Create excess_var = max(0, class_count - max_classes)
@@ -149,16 +151,18 @@ class LimitClassesPerSemester:
             # Add penalty term
             terms.append(excess_var * self.penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class MinimizeMaxSemesterHours:
     """
     Soft constraint to limit hours per semester.
-    
+
     Penalizes semesters that exceed max_hours threshold. This prevents
     one brutal semester even if total hours is reasonable.
-    
+
     Scale: Soft constraint with high penalty (100 per excess hour by default).
            Designed to dominate when violated, but negligible when satisfied.
     """
@@ -191,7 +195,7 @@ class MinimizeMaxSemesterHours:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for semesters exceeding max_hours.
-        
+
         For each semester:
         1. Calculate total hours: sum((in_class + out_of_class) * take_var)
         2. Create excess_var = max(0, total_hours - max_hours)
@@ -213,11 +217,11 @@ class MinimizeMaxSemesterHours:
                     total_hours = 0
                     has_data = False
 
-                    if pd.notna(in_class):
-                        total_hours += float(in_class)
+                    if in_class is not None and pd.notna(in_class):
+                        total_hours += float(in_class)  # type: ignore[arg-type]
                         has_data = True
-                    if pd.notna(out_of_class):
-                        total_hours += float(out_of_class)
+                    if out_of_class is not None and pd.notna(out_of_class):
+                        total_hours += float(out_of_class)  # type: ignore[arg-type]
                         has_data = True
 
                     # If no hours data available, use default
@@ -258,16 +262,18 @@ class MinimizeMaxSemesterHours:
             # Add penalty term
             terms.append(excess_var * self.penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class MinimizeFinalsLoad:
     """
     Objective to minimize the maximum number of finals in any semester.
-    
+
     This is a soft constraint: we add penalty variables for semesters
     exceeding a threshold number of finals.
-    
+
     Scale: Soft constraint with high penalty (1000 per excess final by default).
            Designed to dominate when violated, but negligible when satisfied.
     """
@@ -298,7 +304,7 @@ class MinimizeFinalsLoad:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for semesters exceeding max_finals.
-        
+
         For each semester:
         1. Count total finals: sum(has_final * take_var)
         2. Create excess_var = max(0, finals_count - max_finals)
@@ -332,4 +338,6 @@ class MinimizeFinalsLoad:
             # Add penalty term
             terms.append(excess_var * self.penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])

@@ -31,19 +31,19 @@ class TestCourseValidation:
 
     def test_valid_course(self, valid_courses_df):
         """Test that valid courses return True."""
-        assert prereq_validate_course_exists('6.100A', valid_courses_df) == True
+        assert prereq_validate_course_exists('6.100A', valid_courses_df)
 
     def test_invalid_course(self, valid_courses_df):
         """Test that invalid courses return False."""
-        assert prereq_validate_course_exists('INVALID.COURSE', valid_courses_df) == False
+        assert not prereq_validate_course_exists('INVALID.COURSE', valid_courses_df)
 
     def test_gir_always_valid(self, valid_courses_df):
         """Test that GIR requirements are always valid."""
-        assert prereq_validate_course_exists('GIR:CAL1', valid_courses_df) == True
+        assert prereq_validate_course_exists('GIR:CAL1', valid_courses_df)
 
     def test_hass_always_valid(self, valid_courses_df):
         """Test that HASS requirements are always valid."""
-        assert prereq_validate_course_exists('HASS', valid_courses_df) == True
+        assert prereq_validate_course_exists('HASS', valid_courses_df)
 
 
 class TestMarkInvalidPrerequisites:
@@ -54,7 +54,7 @@ class TestMarkInvalidPrerequisites:
         prereq = PrereqCourse(course_id='6.100A')
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
         assert isinstance(result, PrereqCourse)
         assert result.course_id == '6.100A'
 
@@ -63,7 +63,7 @@ class TestMarkInvalidPrerequisites:
         prereq = PrereqCourse(course_id='INVALID.COURSE')
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
         assert isinstance(result, PrereqCourse)
         assert result.course_id == 'INVALID.COURSE'
 
@@ -78,7 +78,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_and_group_with_one_invalid(self, valid_courses_df):
         """Test AND group with one invalid child."""
@@ -91,7 +91,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_or_group_with_one_valid(self, valid_courses_df):
         """Test OR group with one valid child."""
@@ -104,7 +104,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_or_group_with_all_invalid(self, valid_courses_df):
         """Test OR group with all invalid children."""
@@ -117,7 +117,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_threshold_group_met(self, valid_courses_df):
         """Test threshold group when threshold is met."""
@@ -131,7 +131,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_threshold_group_not_met(self, valid_courses_df):
         """Test threshold group when threshold is not met."""
@@ -145,7 +145,7 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_nested_groups(self, valid_courses_df):
         """Test nested groups with mixed validity."""
@@ -170,10 +170,10 @@ class TestMarkInvalidPrerequisites:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
         assert isinstance(result, PrereqGroup)
-        assert result.items[0].was_pruned == False
-        assert result.items[1].was_pruned == False
+        assert not result.items[0].was_pruned
+        assert not result.items[1].was_pruned
 
 
 class TestRemoveInvalidPrerequisites:
@@ -268,7 +268,7 @@ class TestValidateAndPrune:
         )
         result = prereq_validate_and_prune(prereq, valid_courses_df, remove_invalid=False)
 
-        assert result.is_feasible == True
+        assert result.is_feasible
         assert result.pruned_tree is not None
         assert len(result.removed_courses) == 1
         assert 'INVALID.COURSE' in result.removed_courses
@@ -285,7 +285,7 @@ class TestValidateAndPrune:
         )
         result = prereq_validate_and_prune(prereq, valid_courses_df, remove_invalid=True)
 
-        assert result.is_feasible == True
+        assert result.is_feasible
         assert result.pruned_tree is not None
         assert len(result.removed_courses) == 1
 
@@ -300,7 +300,7 @@ class TestValidateAndPrune:
         )
         result = prereq_validate_and_prune(prereq, valid_courses_df, remove_invalid=True)
 
-        assert result.is_feasible == False
+        assert not result.is_feasible
         assert result.pruned_tree is None
         assert len(result.removed_courses) == 2
 
@@ -331,7 +331,7 @@ class TestThresholdSemantics:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_threshold_two_of_three(self, valid_courses_df):
         """Test 2-of-3 threshold."""
@@ -345,7 +345,7 @@ class TestThresholdSemantics:
         )
         result = mark_invalid_prerequisites(prereq, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
 
 class TestWarningsAndMetadata:

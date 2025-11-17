@@ -36,7 +36,7 @@ class RequirementParseError(Exception):
 def _slugify(text: str) -> str:
     """
     Convert a title to a slug suitable for IDs.
-    
+
     Examples:
         "Programming Skills" -> "programming_skills"
         "6-3 Math" -> "6_3_math"
@@ -56,25 +56,25 @@ def _slugify(text: str) -> str:
 def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: dict[str, int] | None = None) -> RequirementNode:
     """
     Parse a Fireroad requirement item into a RequirementNode.
-    
+
     Args:
         req_item: Dictionary from Fireroad API (either a leaf or branch node)
         parent_id: ID path of parent requirement (for generating unique IDs)
         counter: Counter dict for tracking unnamed groups (shared across recursive calls)
-    
+
     Returns:
         RequirementNode: Parsed requirement tree
-    
+
     Raises:
         RequirementParseError: If the requirement structure is invalid
-    
+
     Examples:
         >>> parse_requirement({"req": "6.100A"})
         RequirementCourse(course_id='6.100A', title=None)
-        
+
         >>> parse_requirement({"plain-string": "Permission required", "title": "Permission"})
         RequirementPlainString(text='Permission required', title='Permission')
-        
+
         >>> parse_requirement({
         ...     "connection-type": "any",
         ...     "reqs": [{"req": "6.100A"}, {"req": "6.100L"}]
@@ -199,13 +199,13 @@ def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: di
 def parse_requirement_list(reqs: list[dict[str, Any]]) -> list[RequirementNode]:
     """
     Parse a list of requirements (top-level 'reqs' field from Fireroad).
-    
+
     Args:
         reqs: List of requirement dictionaries
-    
+
     Returns:
         List of parsed RequirementNode objects
-    
+
     Raises:
         RequirementParseError: If any requirement cannot be parsed
     """
@@ -225,12 +225,12 @@ def parse_requirement_list(reqs: list[dict[str, Any]]) -> list[RequirementNode]:
 def requirement_to_string(req: RequirementNode, indent: int = 0, show_ids: bool = False) -> str:
     """
     Convert a RequirementNode to a human-readable string representation.
-    
+
     Args:
         req: The requirement node to convert
         indent: Indentation level for nested requirements
         show_ids: Whether to show req_id in output
-    
+
     Returns:
         Human-readable string representation
     """

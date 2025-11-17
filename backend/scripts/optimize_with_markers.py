@@ -131,7 +131,7 @@ def export_to_road_file(solver, take_vars, courses_df, output_path):
 def optimize_with_markers(major_key: str, markers: list[Marker], output_filename: str):
     """
     Run optimization with user-defined markers.
-    
+
     Args:
         major_key: Key for the major requirement (e.g., 'major6-3new')
         markers: List of user-defined markers (pin, banish, override)

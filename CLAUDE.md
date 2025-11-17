@@ -5,7 +5,7 @@
 
 # python specific
 - run python with uv, and use uv for dependency management.
-- don't add __init__ files please
+- don't add __init__ files please. If you need to import something from a subdirectory, just use the full path. For example, if you have a file called utils.py in a subdirectory called helpers, you can import it with from helpers.utils import function_name. This way you don't have to worry about __init__ files and it keeps the code cleaner.
 - check types with basedpyright
 
 # web specific

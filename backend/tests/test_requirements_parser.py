@@ -28,7 +28,7 @@ class TestBasicParsing:
 
         assert isinstance(result, RequirementCourse)
         assert result.course_id == "6.100A"
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_course_with_title(self):
         """Test parsing a course with a title."""

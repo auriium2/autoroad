@@ -16,11 +16,11 @@ from .utils import compute_bayesian_rating
 class MaximizeRating:
     """
     Objective to prefer highly-rated courses.
-    
+
     Uses a penalty-based approach: penalizes courses based on how far below
-    a target rating they are. This way, taking more courses doesn't 
+    a target rating they are. This way, taking more courses doesn't
     automatically improve the objective.
-    
+
     Scale: Normalized to ~100 per course. Deficit of 1.0 rating point × 100 = 100.
            Typical course (rating 5.0 vs target 6.0) → penalty = 100.
     """
@@ -51,12 +51,12 @@ class MaximizeRating:
     ) -> cp_model.LinearExpr:
         """
         Penalize courses based on rating deficit from target.
-        
+
         Cost = sum(max(0, target - actual_rating) * 100 * take_var)
-        
+
         This encourages taking high-rated courses without rewarding
         taking more courses total.
-        
+
         Example (target=6.0):
         - Course with rating 6.5: penalty = 0 (at or above target)
         - Course with rating 6.0: penalty = 0 (at target)
@@ -68,7 +68,7 @@ class MaximizeRating:
         for (course_idx, semester), var in take_vars.items():
             rating = context.courses_df.at[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
 
-            if pd.notna(rating) and rating > 0:
+            if rating is not None and pd.notna(rating) and rating > 0:
                 # Penalty is how far below target this course is
                 # Scale by 100 to preserve decimal precision (e.g., 5.2 vs 4.8)
                 deficit = max(0, self.target_rating - rating)
@@ -82,16 +82,18 @@ class MaximizeRating:
                 penalty = int(deficit * 100)
                 terms.append(var * penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]  # type: ignore[return-value]
 
 
 class MaximizeWeightedRating:
     """
     Objective to prefer courses with high Bayesian-weighted ratings.
-    
+
     Uses penalty-based approach with Bayesian averaging to reduce bias
     from courses with few reviews.
-    
+
     Scale: Normalized to ~100 per course. Deficit of 1.0 rating point × 100 = 100.
            Similar to MaximizeRating but uses Bayesian weighting.
     """
@@ -135,7 +137,7 @@ class MaximizeWeightedRating:
     ) -> cp_model.LinearExpr:
         """
         Penalize courses based on deficit from target weighted rating.
-        
+
         Cost = sum(max(0, target - weighted_rating) * 100 * take_var)
         """
         terms = []
@@ -145,9 +147,9 @@ class MaximizeWeightedRating:
             rating = context.courses_df.at[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
             enrollment = context.courses_df.at[course_idx, 'enrollment_number'] if 'enrollment_number' in context.courses_df.columns else None
 
-            if pd.notna(rating) and rating > 0:
+            if rating is not None and pd.notna(rating) and rating > 0:
                 weighted_rating = compute_bayesian_rating(
-                    rating, enrollment or 0, self.min_votes, global_mean
+                    float(rating), enrollment or 0, self.min_votes, global_mean
                 )
                 # Penalty is deficit from target rating
                 deficit = max(0, self.target_rating - weighted_rating)
@@ -160,4 +162,6 @@ class MaximizeWeightedRating:
                 penalty = int(deficit * 100)
                 terms.append(var * penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])

@@ -270,10 +270,10 @@ def prereq_to_string(prereq: PrereqNode) -> str:
 def extract_course_ids(prereq_tree: PrereqNode | None) -> list[str]:
     """
     Extract all course IDs from a prerequisite tree.
-    
+
     Args:
         prereq_tree: The prerequisite tree to extract from
-    
+
     Returns:
         List of all course IDs in the tree
     """

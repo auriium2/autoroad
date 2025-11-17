@@ -33,11 +33,11 @@ class ValidationResult:
 def validate_course_exists(course_id: str, courses_df: Any) -> bool:
     """
     Check if a course exists in the course catalog.
-    
+
     Args:
         course_id: The course ID to check (e.g., "6.100A", "GIR:CAL1")
         courses_df: DataFrame containing course data with 'subject_id' column
-    
+
     Returns:
         True if the course exists or is a special requirement, False otherwise
     """
@@ -66,16 +66,16 @@ def mark_invalid_requirements(
 ) -> RequirementNode:
     """
     Mark unavailable courses in a requirement tree without removing them.
-    
+
     Sets was_pruned=True on invalid courses and propagates the flag up to parent groups.
     The tree structure remains intact - all courses are kept for debugging purposes.
-    
+
     Args:
         req: The requirement node to validate
         courses_df: DataFrame containing valid course data
         removed_courses: List to accumulate invalid course IDs
         warnings: List to accumulate warning messages
-    
+
     Returns:
         RequirementNode with was_pruned flags set (never returns None)
     """
@@ -207,16 +207,16 @@ def remove_invalid_requirements(
 ) -> RequirementNode | None:
     """
     Remove unavailable courses from a requirement tree.
-    
+
     This actually removes invalid items, potentially making the tree infeasible.
     Use mark_invalid_requirements() if you want to keep the structure intact.
-    
+
     Args:
         req: The requirement node to prune
         courses_df: DataFrame containing valid course data
         removed_courses: List to accumulate removed course IDs
         warnings: List to accumulate warning messages
-    
+
     Returns:
         Pruned requirement node, or None if the entire requirement is infeasible
     """
@@ -351,12 +351,12 @@ def validate_and_prune(
 ) -> ValidationResult:
     """
     Validate a requirement tree and either mark or remove invalid courses.
-    
+
     Args:
         req: The requirement node to validate
         courses_df: DataFrame containing valid course data
         remove_invalid: If True, remove invalid courses. If False, just mark them.
-    
+
     Returns:
         ValidationResult with pruned tree and metadata
     """

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class CourseNode(BaseModel):
     courseId: str
     semester: int
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class OptimizationJobResponse(BaseModel):
@@ -18,11 +18,11 @@ class OptimizationJobResponse(BaseModel):
 
 class OptimizationResult(BaseModel):
     status: Literal["OPTIMAL", "FEASIBLE", "INFEASIBLE", "MODEL_INVALID"]
-    nodes: List[CourseNode]
-    semesterUnits: List[int]
+    nodes: list[CourseNode]
+    semesterUnits: list[int]
     solutionCount: int
-    groupVars: Dict[str, Any] = Field(default_factory=dict)
-    warnings: List[str] = Field(default_factory=list)
+    groupVars: dict[str, object] = Field(default_factory=dict)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class ProgressMessage(BaseModel):
@@ -34,22 +34,22 @@ class ProgressMessage(BaseModel):
 class SolutionMessage(BaseModel):
     type: Literal["solution"]
     step: int
-    nodes: List[CourseNode]
-    semesterUnits: List[int]
-    groupVars: Dict[str, Any]
+    nodes: list[CourseNode]
+    semesterUnits: list[int]
+    groupVars: dict[str, object]
 
 
 class CompleteMessage(BaseModel):
     type: Literal["complete"]
     status: Literal["OPTIMAL", "FEASIBLE", "INFEASIBLE", "MODEL_INVALID"]
     solutionCount: int
-    warnings: List[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class ErrorMessage(BaseModel):
     type: Literal["error"]
     error: str
-    details: Optional[str] = None
+    details: str | None = None
 
 
 class JobStartedMessage(BaseModel):

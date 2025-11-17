@@ -41,7 +41,7 @@ class ConstraintSummary(TypedDict):
 class CourseSchedule:
     """
     Represents the available courses and their scheduling information.
-    
+
     This encapsulates all the course data needed to build constraints,
     making the constraint builder independent of specific dataframe structures.
     """
@@ -71,7 +71,7 @@ class CourseSchedule:
 class ConstraintContext:
     """
     Context for building constraints, containing the model and decision variables.
-    
+
     This separates the constraint building context from the requirements structure,
     making it easier to test and reason about.
     """
@@ -102,7 +102,7 @@ class ConstraintContext:
 class ConstraintResult:
     """
     Result of building constraints for a requirement.
-    
+
     Returns both the satisfaction variable and any warnings/errors encountered.
     """
     satisfied_var: cp_model.IntVar | None
@@ -123,7 +123,7 @@ class ConstraintResult:
 class RequirementConstraintBuilder:
     """
     Builds CP-SAT constraints from a RequirementNode tree.
-    
+
     This is the main entry point for converting requirements into constraints.
     It handles the recursive traversal of the requirement tree and delegates
     to specialized handlers for different requirement types.
@@ -136,11 +136,11 @@ class RequirementConstraintBuilder:
     def build(self, node: RequirementNode, parent_path: str = "root") -> ConstraintResult:
         """
         Build constraints for a requirement node and its descendants.
-        
+
         Args:
             node: The requirement node to process
             parent_path: Path to this node for error reporting
-            
+
         Returns:
             ConstraintResult containing the satisfaction variable and any issues
         """
@@ -314,7 +314,7 @@ class RequirementConstraintBuilder:
         """
         Recursively collect all course satisfaction variables from a list of children.
         This is used for thresholds with criterion='subjects' to match validator.py logic.
-        
+
         Returns only leaf course variables, not group variables.
         """
         course_vars = []
@@ -368,7 +368,7 @@ class RequirementConstraintBuilder:
     def _build_plain_string(self, node: RequirementPlainString, path: str) -> ConstraintResult:
         """
         Build constraints for plain-string requirements.
-        
+
         Plain-string requirements are descriptive text that can't be automatically
         validated. We create a placeholder variable that's always true so the
         requirement structure is preserved, but actual validation must be manual.
@@ -560,7 +560,7 @@ class RequirementConstraintBuilder:
     def enforce_requirement(self, node: RequirementNode) -> None:
         """
         Build constraints for a requirement and enforce it (require it to be satisfied).
-        
+
         This is a convenience method for the common case of building a requirement
         tree and requiring that the root requirement be satisfied.
         """
@@ -577,7 +577,7 @@ class RequirementConstraintBuilder:
     def get_summary(self) -> ConstraintSummary:
         """
         Get a summary of all issues encountered during constraint building.
-        
+
         Returns a dictionary with warnings and errors grouped by severity.
         """
         all_warnings = []
@@ -606,10 +606,10 @@ def add_requirement_constraints(
 ) -> tuple[dict[str, cp_model.IntVar], dict[str, str]]:
     """
     Add constraints for a requirement tree to a CP-SAT model.
-    
+
     This is the main entry point function that sets up the context and
     builds all constraints.
-    
+
     Args:
         model: The CP-SAT model to add constraints to
         take_vars: Dictionary mapping (course_idx, semester) to decision variables
@@ -617,12 +617,12 @@ def add_requirement_constraints(
         courses_df: DataFrame containing course information
         planning_year_start: Start year for planning (used for semester validation)
         enforce: Whether to require the root requirement be satisfied (default: True)
-    
+
     Returns:
         Tuple of:
         - Dictionary of auxiliary variables created during constraint building
         - Dictionary mapping variable names to human-readable debug names
-    
+
     Raises:
         ValueError: If enforce=True and the requirement cannot be built
     """

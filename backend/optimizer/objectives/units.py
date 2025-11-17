@@ -15,9 +15,9 @@ from .base import ObjectiveContext
 class MinimizeUnits:
     """
     Objective to minimize the total number of units taken.
-    
+
     This encourages taking the minimum required courses to satisfy requirements.
-    
+
     Scale: Normalized to ~100 per course (typical course is 12 units, scaled by 10).
     """
 
@@ -38,9 +38,9 @@ class MinimizeUnits:
     ) -> cp_model.LinearExpr:
         """
         Minimize sum of units for all courses taken.
-        
+
         Cost = sum(total_units * 10 * take_var)
-        
+
         Scaling: Multiply by 10 to normalize to ~100 per course (12 units × 10 = 120).
         """
         terms = []
@@ -52,16 +52,18 @@ class MinimizeUnits:
                 scaled_units = int(units) * 10
                 terms.append(var * scaled_units)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
 
 class AvoidSmallClasses:
     """
     Soft constraint to avoid taking small unit classes (e.g., seminars, 1-unit courses).
-    
+
     Penalizes courses below a minimum unit threshold. This prevents padding schedules
     with low-value classes that don't contribute much to degree progress.
-    
+
     Scale: Soft constraint with high penalty (1000 per small class by default).
            Designed to dominate when violated, but negligible when satisfied.
     """
@@ -92,16 +94,18 @@ class AvoidSmallClasses:
     ) -> cp_model.LinearExpr:
         """
         Add penalty for taking small unit classes.
-        
+
         For each course with units < min_units, add penalty when taken.
         """
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            units = context.courses_df.at[course_idx, 'units'] if 'units' in context.courses_df.columns else 12
+            units = context.courses_df.at[course_idx, 'total_units'] if 'total_units' in context.courses_df.columns else 12
 
             if pd.notna(units) and units < self.min_units:
                 # Penalize taking this small class
                 terms.append(var * self.penalty)
 
-        return sum(terms) if terms else 0
+        if terms:
+            return sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])

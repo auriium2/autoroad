@@ -32,27 +32,27 @@ class TestCourseValidation:
 
     def test_valid_course(self, valid_courses_df):
         """Test that valid courses return True."""
-        assert validate_course_exists('6.100A', valid_courses_df) == True
+        assert validate_course_exists('6.100A', valid_courses_df)
 
     def test_invalid_course(self, valid_courses_df):
         """Test that invalid courses return False."""
-        assert validate_course_exists('INVALID.COURSE', valid_courses_df) == False
+        assert not validate_course_exists('INVALID.COURSE', valid_courses_df)
 
     def test_gir_always_valid(self, valid_courses_df):
         """Test that GIR requirements are always valid."""
-        assert validate_course_exists('GIR:CAL1', valid_courses_df) == True
-        assert validate_course_exists('GIR:PHY1', valid_courses_df) == True
+        assert validate_course_exists('GIR:CAL1', valid_courses_df)
+        assert validate_course_exists('GIR:PHY1', valid_courses_df)
 
     def test_hass_always_valid(self, valid_courses_df):
         """Test that HASS requirements are always valid."""
-        assert validate_course_exists('HASS', valid_courses_df) == True
-        assert validate_course_exists('HASS-A', valid_courses_df) == True
-        assert validate_course_exists('HASS-H', valid_courses_df) == True
+        assert validate_course_exists('HASS', valid_courses_df)
+        assert validate_course_exists('HASS-A', valid_courses_df)
+        assert validate_course_exists('HASS-H', valid_courses_df)
 
     def test_ci_always_valid(self, valid_courses_df):
         """Test that CI requirements are always valid."""
-        assert validate_course_exists('CI-H', valid_courses_df) == True
-        assert validate_course_exists('CI-HW', valid_courses_df) == True
+        assert validate_course_exists('CI-H', valid_courses_df)
+        assert validate_course_exists('CI-HW', valid_courses_df)
 
 
 class TestMarkInvalidRequirements:
@@ -63,7 +63,7 @@ class TestMarkInvalidRequirements:
         req = RequirementCourse(course_id='6.100A', req_id='test')
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
         assert isinstance(result, RequirementCourse)
         assert result.course_id == '6.100A'
 
@@ -72,7 +72,7 @@ class TestMarkInvalidRequirements:
         req = RequirementCourse(course_id='INVALID.COURSE', req_id='test')
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
         assert isinstance(result, RequirementCourse)
         assert result.course_id == 'INVALID.COURSE'
 
@@ -81,7 +81,7 @@ class TestMarkInvalidRequirements:
         req = RequirementPlainString(description='Some text', req_id='test')
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_all_group_with_all_valid(self, valid_courses_df):
         """Test 'all' group with all valid children."""
@@ -95,7 +95,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_all_group_with_one_invalid(self, valid_courses_df):
         """Test 'all' group with one invalid child."""
@@ -109,7 +109,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_any_group_with_one_valid(self, valid_courses_df):
         """Test 'any' group with one valid child."""
@@ -123,7 +123,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_any_group_with_all_invalid(self, valid_courses_df):
         """Test 'any' group with all invalid children."""
@@ -137,7 +137,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_threshold_subjects_met(self, valid_courses_df):
         """Test threshold with criterion='subjects' when met."""
@@ -152,7 +152,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_threshold_subjects_not_met(self, valid_courses_df):
         """Test threshold with criterion='subjects' when not met."""
@@ -167,7 +167,7 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == True
+        assert result.was_pruned
 
     def test_nested_groups(self, valid_courses_df):
         """Test nested groups with mixed validity."""
@@ -195,10 +195,10 @@ class TestMarkInvalidRequirements:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
         assert isinstance(result, RequirementGroup)
-        assert result.items[0].was_pruned == False
-        assert result.items[1].was_pruned == False
+        assert not result.items[0].was_pruned
+        assert not result.items[1].was_pruned
 
 
 class TestRemoveInvalidRequirements:
@@ -317,7 +317,7 @@ class TestValidateAndPrune:
         )
         result = validate_and_prune(req, valid_courses_df, remove_invalid=False)
 
-        assert result.is_feasible == True
+        assert result.is_feasible
         assert result.pruned_tree is not None
         assert len(result.removed_courses) == 1
         assert 'INVALID.COURSE' in result.removed_courses
@@ -335,7 +335,7 @@ class TestValidateAndPrune:
         )
         result = validate_and_prune(req, valid_courses_df, remove_invalid=True)
 
-        assert result.is_feasible == True
+        assert result.is_feasible
         assert result.pruned_tree is not None
         assert len(result.removed_courses) == 1
 
@@ -351,7 +351,7 @@ class TestValidateAndPrune:
         )
         result = validate_and_prune(req, valid_courses_df, remove_invalid=True)
 
-        assert result.is_feasible == False
+        assert not result.is_feasible
         assert result.pruned_tree is None
         assert len(result.removed_courses) == 2
 
@@ -385,7 +385,7 @@ class TestConnectionTypeSemantics:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
 
     def test_threshold_subjects_counts_all_descendants(self, valid_courses_df):
         """Test that threshold with criterion='subjects' counts all descendants."""
@@ -413,4 +413,4 @@ class TestConnectionTypeSemantics:
         )
         result = mark_invalid_requirements(req, valid_courses_df)
 
-        assert result.was_pruned == False
+        assert not result.was_pruned
