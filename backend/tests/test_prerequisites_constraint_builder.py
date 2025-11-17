@@ -426,8 +426,8 @@ class TestASEAndMustTake:
         status = solver.Solve(model)
         assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE
 
-    def test_solo_courses_skip_prereq_constraints(self):
-        """Test that solo courses don't have prerequisite constraints added."""
+    def test_override_courses_skip_prereq_constraints(self):
+        """Test that override courses don't have prerequisite constraints added."""
         df = pd.DataFrame({
             'subject_id': ['8.02', '8.01'],
             'gir_attribute': [None, 'PHY1'],
@@ -444,14 +444,14 @@ class TestASEAndMustTake:
                     f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
                 )
 
-        # 8.02 requires 8.01, but 8.02 is marked as solo
+        # 8.02 requires 8.01, but 8.02 is marked as override
         prereq_trees = {0: PrereqCourse("8.01")}
-        solo_course_ids = {'8.02'}
+        override_course_ids = {'8.02'}
 
         result = add_prerequisite_constraints(
-            model, take_vars, df, 2024, prereq_trees, solo_course_ids
+            model, take_vars, df, 2024, prereq_trees, override_course_ids
         )
 
-        # No constraints should be added since 8.02 is solo
+        # No constraints should be added since 8.02 is override
         assert result.constraints_added == 0
         assert not result.has_issues

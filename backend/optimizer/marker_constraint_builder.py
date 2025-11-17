@@ -13,7 +13,7 @@ from typing import Literal
 import pandas as pd
 from ortools.sat.python import cp_model
 
-MarkerStatus = Literal["pin", "banish", "solo"]
+MarkerStatus = Literal["pin", "banish", "override"]
 
 
 @dataclass
@@ -27,7 +27,7 @@ class Marker:
         status: Type of constraint:
             - "pin": Force course to be taken in this semester
             - "banish": Prevent course from being taken at all
-            - "solo": Force course to be taken alone (no other courses in that semester)
+            - "override": Force course to be taken in specific semester, skipping prerequisite checks
     """
     course_id: str
     section: int
@@ -153,15 +153,15 @@ def add_marker_constraints(
             model.Add(take_vars[(course_idx, semester)] == 0)
             constraints_added += 1
 
-        elif marker.status == "solo":
-            # Solo: Force course to be taken, and no other courses in that semester
-            # Must Take (section -2): not allowed for solo - must pick a specific semester
-            # ASE (section -1): solo in ASE semester
-            # Regular sections: solo in that specific semester
+        elif marker.status == "override":
+            # Override: Force course to be taken in specific semester, skip prerequisite checking
+            # Must Take (section -2): not allowed for override - must pick a specific semester
+            # ASE (section -1): override in ASE semester
+            # Regular sections: override in that specific semester
             if marker.section == -2:
                 errors.append(
-                    f"Solo marker for {marker.course_id} cannot be in Must Take column. "
-                    f"Please move to a specific semester to use solo mode."
+                    f"Override marker for {marker.course_id} cannot be in Must Take column. "
+                    f"Please move to a specific semester to use override mode."
                 )
                 continue
             elif marker.section == -1:
@@ -170,33 +170,21 @@ def add_marker_constraints(
                 semester = marker.section + 1  # Regular semesters
             else:
                 errors.append(
-                    f"Solo marker for {marker.course_id} has invalid section {marker.section}"
+                    f"Override marker for {marker.course_id} has invalid section {marker.section}"
                 )
                 continue
 
             # Check if take_var exists for this (course, semester)
             if (course_idx, semester) not in take_vars:
                 errors.append(
-                    f"Cannot solo {marker.course_id} to semester {semester}: "
+                    f"Cannot override {marker.course_id} to semester {semester}: "
                     f"course not offered in that semester"
                 )
                 continue
 
-            # Constraint 1: Must take this course in this semester
+            # Must take this course in this semester (prerequisite checking skipped elsewhere)
             model.Add(take_vars[(course_idx, semester)] == 1)
             constraints_added += 1
-
-            # Constraint 2: No other courses in this semester
-            other_courses_in_semester = [
-                take_vars[(c, s)]
-                for (c, s) in take_vars.keys()
-                if s == semester and c != course_idx
-            ]
-
-            if other_courses_in_semester:
-                # All other courses in this semester must be 0
-                model.Add(sum(other_courses_in_semester) == 0)
-                constraints_added += 1
         else:
             warnings.append(f"Unknown marker status: {marker.status}")
 
@@ -240,7 +228,7 @@ def parse_markers_from_dict(markers_data: list[dict]) -> list[Marker]:
             continue
 
         # Validate status
-        if status not in ["pin", "banish", "solo"]:
+        if status not in ["pin", "banish", "override"]:
             status = "pin"
 
         markers.append(Marker(

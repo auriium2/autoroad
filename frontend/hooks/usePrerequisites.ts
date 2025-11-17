@@ -282,8 +282,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
           
-          // Skip prerequisite checking for Must Take (-2), ASEs (-1), and solo nodes
-          const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'solo';
+          // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
+          const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'override';
           
           return {
             node,

@@ -24,7 +24,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
 
   // Check node status
   const isBanished = markerStatus === 'banish';
-  const isSolo = markerStatus === 'solo';
+  const isOverride = markerStatus === 'override';
   const hasUnsatisfiedPrereqs = missingPrereqs.length > 0;
 
   // Fetch course details to get units and term availability
@@ -67,8 +67,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
     bgColor = 'bg-red-500/10';
     textColor = 'text-red-400';
     boxShadow = 'none';
-  } else if (isSolo) {
-    // Yellow glow for solo nodes (but keep blue colors)
+  } else if (isOverride) {
+    // Yellow glow for override nodes (but keep blue colors)
     boxShadow = "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)";
   }
 

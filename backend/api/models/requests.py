@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class Marker(BaseModel):
     courseId: str = Field(..., description="Course subject ID (e.g., '6.1200', '18.01')")
     section: int = Field(..., ge=-2, le=11, description="Semester index (0-11 for regular, -1 for ASE, -2 for Must Take)")
-    status: Literal["pin", "banish", "solo"] = Field(default="pin", description="User preference for this course")
+    status: Literal["pin", "banish", "override"] = Field(default="pin", description="User preference for this course")
 
 
 class ObjectiveConfig(BaseModel):

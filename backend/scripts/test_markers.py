@@ -1,7 +1,7 @@
 """
 Test marker constraint builder.
 
-Verifies that user-defined markers (pin, banish, solo) are correctly
+Verifies that user-defined markers (pin, banish, override) are correctly
 translated into optimization constraints.
 """
 
@@ -132,10 +132,10 @@ def test_banish_marker():
         print(f"✗ Could not solve: {solver.StatusName(status)}")
 
 
-def test_solo_marker():
-    """Test that solo markers force only one course in a semester."""
+def test_override_marker():
+    """Test that override markers pin a course WITHOUT blocking other courses."""
     print("\n" + "="*60)
-    print("Test 3: Solo Marker")
+    print("Test 3: Override Marker")
     print("="*60)
 
     courses_df = fetch_all_courses()
@@ -145,8 +145,12 @@ def test_solo_marker():
     model = cp_model.CpModel()
     take_vars = create_take_vars(model, courses_df, planning_year_start)
 
-    # Mark 6.100A as solo in semester 1
-    markers = [Marker(course_id="6.100A", section=0, status="solo")]
+    # Mark 6.100A as override in semester 1
+    # Also pin another course to semester 1 to verify override doesn't block it
+    markers = [
+        Marker(course_id="6.100A", section=0, status="override"),
+        Marker(course_id="18.01", section=0, status="pin"),  # Should be allowed!
+    ]
 
     result = add_marker_constraints(model, take_vars, markers, courses_df, planning_year_start)
 
@@ -160,23 +164,22 @@ def test_solo_marker():
     status = solver.Solve(model)
 
     if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
-        # Find 6.100A in courses_df
+        # Find courses in courses_df
         course_6_100A = courses_df[courses_df['subject_id'] == '6.100A'].index[0]
+        course_18_01 = courses_df[courses_df['subject_id'] == '18.01'].index[0]
 
-        # Check 6.100A is in semester 1
-        if (course_6_100A, 1) in take_vars:
-            is_taken_sem1 = solver.Value(take_vars[(course_6_100A, 1)])
-            print(f"✓ 6.100A in semester 1: {is_taken_sem1 == 1}")
-
-            # Check no other courses in semester 1
-            other_courses_sem1 = sum(
-                solver.Value(take_vars[(c, 1)])
-                for c in courses_df.index
-                if c != course_6_100A and (c, 1) in take_vars
-            )
-            print(f"✓ No other courses in semester 1: {other_courses_sem1 == 0}")
+        # Check both courses are in semester 1
+        if (course_6_100A, 1) in take_vars and (course_18_01, 1) in take_vars:
+            is_6_100A_sem1 = solver.Value(take_vars[(course_6_100A, 1)])
+            is_18_01_sem1 = solver.Value(take_vars[(course_18_01, 1)])
+            
+            print(f"✓ 6.100A in semester 1: {is_6_100A_sem1 == 1}")
+            print(f"✓ 18.01 ALSO in semester 1: {is_18_01_sem1 == 1}")
+            
+            assert is_6_100A_sem1 == 1, "Override course should be pinned"
+            assert is_18_01_sem1 == 1, "Override should NOT block other courses in same semester"
         else:
-            print("✗ 6.100A not available in semester 1")
+            print("✗ Courses not available in semester 1")
     else:
         print(f"✗ Could not solve: {solver.StatusName(status)}")
 
@@ -190,7 +193,7 @@ def test_parse_markers_from_dict():
     markers_data = [
         {"uuid": "marker_1", "courseId": "6.120A", "section": 0, "status": "pin"},
         {"uuid": "marker_2", "courseId": "18.01", "section": -1, "status": "banish"},
-        {"uuid": "marker_3", "courseId": "6.100A", "section": 2, "status": "solo"},
+        {"uuid": "marker_3", "courseId": "6.100A", "section": 2, "status": "override"},
     ]
 
     markers = parse_markers_from_dict(markers_data)
@@ -208,7 +211,7 @@ def test_parse_markers_from_dict():
     assert markers[1].status == "banish"
 
     assert markers[2].course_id == "6.100A"
-    assert markers[2].status == "solo"
+    assert markers[2].status == "override"
 
     print("✓ All assertions passed")
 
@@ -217,7 +220,7 @@ if __name__ == "__main__":
     test_parse_markers_from_dict()
     test_pin_marker()
     test_banish_marker()
-    test_solo_marker()
+    test_override_marker()
 
     print("\n" + "="*60)
     print("All tests completed!")

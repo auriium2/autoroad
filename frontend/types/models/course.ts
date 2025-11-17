@@ -4,7 +4,7 @@ export interface Marker {
   uuid: string;
   courseId: string;
   section: number;
-  status: 'pin' | 'banish' | 'solo';
+  status: 'pin' | 'banish' | 'override';
 }
 
 export interface OptimizerNode {
@@ -18,7 +18,7 @@ export interface CourseNode {
   section: number;
   userControlled?: boolean;
   disabled?: boolean;
-  nodeStatus?: 'pin' | 'banish' | 'solo';
+  nodeStatus?: 'pin' | 'banish' | 'override';
   offeredFall?: boolean;
   offeredSpring?: boolean;
   offeredIAP?: boolean;

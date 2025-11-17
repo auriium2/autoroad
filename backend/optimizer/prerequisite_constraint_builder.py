@@ -348,7 +348,7 @@ def add_prerequisite_constraints(
     courses_df: pd.DataFrame,
     planning_year_start: int,
     prereq_trees: dict[int, PrereqNode],
-    solo_course_ids: set[str] | None = None
+    override_course_ids: set[str] | None = None
 ) -> ConstraintResult:
     """
     Add prerequisite constraints to a CP-SAT model.
@@ -359,19 +359,19 @@ def add_prerequisite_constraints(
         courses_df: DataFrame containing course information
         planning_year_start: The starting year for planning
         prereq_trees: Map from course index to its prerequisite tree
-        solo_course_ids: Set of course IDs marked as solo (skip prerequisite checks)
+        override_course_ids: Set of course IDs marked as override (skip prerequisite checks)
 
     Returns:
         ConstraintResult with summary of constraints added and any issues
     """
-    if solo_course_ids is None:
-        solo_course_ids = set()
+    if override_course_ids is None:
+        override_course_ids = set()
     
-    # Filter out solo courses from prereq_trees
+    # Filter out override courses from prereq_trees
     filtered_prereq_trees = {}
     for course_idx, prereq_tree in prereq_trees.items():
         course_id = courses_df.at[course_idx, 'subject_id']
-        if course_id not in solo_course_ids:
+        if course_id not in override_course_ids:
             filtered_prereq_trees[course_idx] = prereq_tree
     
     schedule = CourseSchedule(courses_df, planning_year_start)

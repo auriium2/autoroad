@@ -36,7 +36,7 @@ interface GraphStore {
   // Actions for markers
   setUserId: (userId: string | null) => void;
 
-  addMarker: (courseId: string, section: number, status?: 'pin' | 'banish' | 'solo') => void;
+  addMarker: (courseId: string, section: number, status?: 'pin' | 'banish' | 'override') => void;
   removeMarker: (id: string) => void;
   updateMarker: (id: string, updates: Partial<Marker>) => void;
 

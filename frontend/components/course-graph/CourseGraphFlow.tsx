@@ -374,8 +374,8 @@ function CourseGraphFlowInner({
     setContextMenu(null);
   };
 
-  const handleSolo = (nodeId: string) => {
-    updateMarker(nodeId, { status: 'solo' });
+  const handleOverride = (nodeId: string) => {
+    updateMarker(nodeId, { status: 'override' });
     setContextMenu(null);
   };
 
@@ -516,8 +516,8 @@ function CourseGraphFlowInner({
       // Don't render edges if either node is banished
       if (fromNode.nodeStatus === 'banish' || toNode.nodeStatus === 'banish') return null;
 
-      // Don't render edges FROM solo nodes (they don't require dependencies)
-      if (toNode.nodeStatus === 'solo') return null;
+      // Don't render edges FROM override nodes (they don't require dependencies)
+      if (toNode.nodeStatus === 'override') return null;
 
       // Check if prerequisite is incorrectly placed
       const isIncorrectOrder = fromNode.section >= toNode.section;
@@ -751,12 +751,12 @@ function CourseGraphFlowInner({
 
             <button
               className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handleSolo(contextMenu.nodeUuid)}
-              disabled={currentStatus === 'solo'}
+              onClick={() => handleOverride(contextMenu.nodeUuid)}
+              disabled={currentStatus === 'override'}
             >
               <Unlink className="w-4 h-4" />
               <span>Pin + ignore prerequisites</span>
-              {currentStatus === 'solo' && (
+              {currentStatus === 'override' && (
                 <span className="ml-auto text-xs text-muted-foreground">✓</span>
               )}
             </button>

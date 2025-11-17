@@ -4,7 +4,7 @@ Example script demonstrating optimization with user-defined markers.
 This shows how to combine:
 - Degree requirements (GIRs + major)
 - Prerequisites
-- User markers (pin, banish, solo)
+- User markers (pin, banish, override)
 - Objective functions
 """
 
@@ -134,7 +134,7 @@ def optimize_with_markers(major_key: str, markers: list[Marker], output_filename
     
     Args:
         major_key: Key for the major requirement (e.g., 'major6-3new')
-        markers: List of user-defined markers (pin, banish, solo)
+        markers: List of user-defined markers (pin, banish, override)
         output_filename: Name of the output .road file
     """
     print(f"\n{'='*60}")
@@ -238,8 +238,8 @@ if __name__ == "__main__":
     ]
     optimize_with_markers("major6-3new", markers_1, "output_6-3_with_markers.road")
 
-    # Example 2: Solo marker for thesis semester
+    # Example 2: Override marker for thesis semester
     markers_2 = [
-        Marker(course_id="6.UAT", section=11, status="solo"),  # Senior spring
+        Marker(course_id="6.UAT", section=11, status="override"),  # Senior spring
     ]
-    optimize_with_markers("major6-3new", markers_2, "output_6-3_solo_thesis.road")
+    optimize_with_markers("major6-3new", markers_2, "output_6-3_override_thesis.road")
