@@ -131,17 +131,16 @@ def add_basic_constraints(
 ) -> None:
     """Add basic constraints like hard 48 unit limit for first semester, IAP limits, taking course once, etc."""
 
-    # Constraint: Take each course at most once in regular semesters
-    # Note: Special semesters (-2, -1) are only used via markers, optimizer can't place there
-    # A course in Must Take/ASE can be retaken in regular semesters if needed
+    # Constraint: Take each course at most once across ALL semesters (including ASE)
+    # This prevents duplicates when a course is pinned to ASE but optimizer tries to schedule it again
     for course_idx in range(len(courses_df)):
-        regular_semester_takes = [
+        all_semester_takes = [
             take_vars[(course_idx, s)]
-            for s in range(1, max_semesters + 1)
+            for s in range(-1, max_semesters + 1)  # Include ASE (-1) and regular semesters (1-12)
             if (course_idx, s) in take_vars
         ]
-        if regular_semester_takes:
-            model.Add(sum(regular_semester_takes) <= 1)
+        if all_semester_takes:
+            model.Add(sum(all_semester_takes) <= 1)
 
     # Constraint: Hard limit of 48 units for first semester (Freshman Fall)
     # This is an MIT policy constraint
