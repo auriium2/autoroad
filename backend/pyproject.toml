@@ -5,7 +5,7 @@ description = "Backend services for AutoRoad course planning"
 requires-python = ">=3.10"
 dependencies = [
     "requests>=2.32.0",
-    "pandas>=2.0.0",
+    "polars>=1.0.0",
     "ortools>=9.0.0",
     "basedpyright>=1.33.0",
     "pyarrow>=22.0.0",
@@ -41,3 +41,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]  # Line too long (handled by formatter)
+
+[tool.basedpyright]
+reportArgumentType = false # SHUT THE FUCK UP
+reportUnknownMemberType = false
+reportImplicitStringConcatenation = false
+reportUnknownVariableType = false

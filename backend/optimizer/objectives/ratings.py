@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext
@@ -40,7 +40,7 @@ class MaximizeRating:
     def get_description(self) -> str:
         return "Prefer courses with higher ratings (penalize low-rated courses)"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -66,9 +66,9 @@ class MaximizeRating:
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            rating = context.courses_df.at[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
+            rating = context.courses_df[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
 
-            if rating is not None and pd.notna(rating) and rating > 0:
+            if rating is not None and rating > 0:
                 # Penalty is how far below target this course is
                 # Scale by 100 to preserve decimal precision (e.g., 5.2 vs 4.8)
                 deficit = max(0, self.target_rating - rating)
@@ -84,7 +84,7 @@ class MaximizeRating:
 
         if terms:
             return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
 
 
 class MaximizeWeightedRating:
@@ -118,12 +118,12 @@ class MaximizeWeightedRating:
             f"Prefer courses with high Bayesian-weighted ratings (reduces bias from courses with <{self.min_votes} students)"
         )
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         """Compute global mean rating if not provided."""
         if self.global_mean is None and 'rating' in courses_df.columns:
             # Compute global mean from courses with ratings
-            valid_ratings = courses_df['rating'].dropna()
-            self._computed_mean = float(valid_ratings.mean()) if len(valid_ratings) > 0 else 5.0
+            mean_val = courses_df['rating'].drop_nulls().mean()
+            self._computed_mean = float(mean_val) if mean_val is not None else 5.0
         else:
             self._computed_mean = self.global_mean or 5.0
 
@@ -144,10 +144,10 @@ class MaximizeWeightedRating:
         global_mean = self._computed_mean or 5.0
 
         for (course_idx, semester), var in take_vars.items():
-            rating = context.courses_df.at[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
-            enrollment = context.courses_df.at[course_idx, 'enrollment_number'] if 'enrollment_number' in context.courses_df.columns else None
+            rating = context.courses_df[course_idx, 'rating'] if 'rating' in context.courses_df.columns else None
+            enrollment = context.courses_df[course_idx, 'enrollment_number'] if 'enrollment_number' in context.courses_df.columns else None
 
-            if rating is not None and pd.notna(rating) and rating > 0:
+            if rating is not None and rating > 0:
                 weighted_rating = compute_bayesian_rating(
                     float(rating), enrollment or 0, self.min_votes, global_mean
                 )
@@ -164,4 +164,4 @@ class MaximizeWeightedRating:
 
         if terms:
             return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])
+        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]

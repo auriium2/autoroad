@@ -2,7 +2,7 @@
 Tests for the requirement constraint builder.
 """
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from courses.requirements.types import (
@@ -24,7 +24,7 @@ class TestCourseSchedule:
 
     def test_get_course_index(self):
         """Test looking up course index by course ID."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B', '18.01'],
             'gir_attribute': [None, None, 'CAL1'],
         })
@@ -36,7 +36,7 @@ class TestCourseSchedule:
 
     def test_get_courses_by_attribute(self):
         """Test finding courses by attribute value."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['18.01', '18.02', '6.100A'],
             'gir_attribute': ['CAL1', 'CAL2', None],
         })
@@ -54,7 +54,7 @@ class TestCourseSchedule:
 
     def test_get_courses_by_hass_any(self):
         """Test finding courses with any HASS attribute."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['21M.011', '21H.102', '6.100A', '24.00'],
             'hass_attribute': ['HASS-A', 'HASS-H', None, 'HASS-S'],
         })
@@ -69,7 +69,7 @@ class TestRequirementConstraintBuilder:
 
     def test_simple_course_requirement(self):
         """Test a simple course requirement."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -82,7 +82,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -99,7 +99,7 @@ class TestRequirementConstraintBuilder:
 
     def test_missing_course(self):
         """Test that missing courses generate errors."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -126,7 +126,7 @@ class TestRequirementConstraintBuilder:
 
     def test_gir_requirement(self):
         """Test a GIR requirement (e.g., GIR:CAL1)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['18.01', '18.02', '6.100A'],
             'gir_attribute': ['CAL1', 'CAL2', None],
             'hass_attribute': [None, None, None],
@@ -138,7 +138,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -155,7 +155,7 @@ class TestRequirementConstraintBuilder:
 
     def test_hass_requirement(self):
         """Test a specific HASS requirement (e.g., HASS-A)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['21M.011', '21H.102', '6.100A'],
             'gir_attribute': [None, None, None],
             'hass_attribute': ['HASS-A', 'HASS-H', None],
@@ -167,7 +167,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -184,7 +184,7 @@ class TestRequirementConstraintBuilder:
 
     def test_ci_requirement(self):
         """Test a CI requirement (e.g., CI-H)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.UAT', '6.UAR', '6.100A'],
             'gir_attribute': [None, None, None],
             'hass_attribute': [None, None, None],
@@ -197,7 +197,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -214,7 +214,7 @@ class TestRequirementConstraintBuilder:
 
     def test_generic_hass_requirement(self):
         """Test the generic HASS requirement (any HASS course)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['21M.011', '21H.102', '6.100A'],
             'gir_attribute': [None, None, None],
             'hass_attribute': ['HASS-A', 'HASS-H', None],
@@ -226,7 +226,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 13):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -242,7 +242,7 @@ class TestRequirementConstraintBuilder:
 
     def test_plain_string_requirement(self):
         """Test plain-string requirements (always satisfied with warning)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -266,7 +266,7 @@ class TestRequirementConstraintBuilder:
 
     def test_group_all_connection(self):
         """Test a group with ALL connection (all children required)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B', '6.1010'],
             'gir_attribute': [None, None, None],
             'hass_attribute': [None, None, None],
@@ -278,7 +278,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -302,7 +302,7 @@ class TestRequirementConstraintBuilder:
 
     def test_group_any_connection(self):
         """Test a group with ANY connection (at least one child required)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -314,7 +314,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -337,7 +337,7 @@ class TestRequirementConstraintBuilder:
 
     def test_threshold_requirement(self):
         """Test a threshold requirement (N of M courses)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B', '6.1010', '6.1020'],
             'gir_attribute': [None, None, None, None],
             'hass_attribute': [None, None, None, None],
@@ -349,7 +349,7 @@ class TestRequirementConstraintBuilder:
         for course_idx in range(4):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -378,7 +378,7 @@ class TestRequirementConstraintBuilder:
 
     def test_infeasible_threshold(self):
         """Test threshold requirement where not enough valid courses exist."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -412,7 +412,7 @@ class TestRequirementConstraintBuilder:
 
     def test_enforce_requirement(self):
         """Test enforcing a requirement (making it mandatory)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -443,7 +443,7 @@ class TestRequirementConstraintBuilder:
 
     def test_get_summary(self):
         """Test getting a summary of issues encountered."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -478,7 +478,7 @@ class TestAddRequirementConstraints:
 
     def test_add_requirement_constraints(self):
         """Test the add_requirement_constraints function."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -490,7 +490,7 @@ class TestAddRequirementConstraints:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         # Simple requirement
@@ -506,7 +506,7 @@ class TestAddRequirementConstraints:
 
     def test_add_requirement_without_enforce(self):
         """Test adding constraints without enforcing the requirement."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -527,7 +527,7 @@ class TestAddRequirementConstraints:
 
     def test_pruned_course_skipped(self):
         """Test that pruned courses are skipped during constraint building."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A"],
             "gir_attribute": [None],
             "hass_attribute": [None],
@@ -553,7 +553,7 @@ class TestAddRequirementConstraints:
 
     def test_pruned_group_skipped(self):
         """Test that pruned groups are skipped entirely."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A"],
             "gir_attribute": [None],
             "hass_attribute": [None],
@@ -586,7 +586,7 @@ class TestAddRequirementConstraints:
 
     def test_mixed_pruned_and_valid_in_group(self):
         """Test a group with both pruned and valid children."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A", "6.100B"],
             "gir_attribute": [None, None],
             "hass_attribute": [None, None],
@@ -597,7 +597,7 @@ class TestAddRequirementConstraints:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -624,7 +624,7 @@ class TestAddRequirementConstraints:
 
     def test_nested_pruned_groups(self):
         """Test nested groups where some are pruned."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A"],
             "gir_attribute": [None],
             "hass_attribute": [None],
@@ -660,7 +660,7 @@ class TestAddRequirementConstraints:
 
     def test_all_pruned_children_in_group(self):
         """Test a group where all children are pruned (but group itself is not marked pruned)."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A"],
             "gir_attribute": [None],
             "hass_attribute": [None],
@@ -694,7 +694,7 @@ class TestAddRequirementConstraints:
 
     def test_pruned_plain_string(self):
         """Test that pruned plain-string requirements are skipped."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             "subject_id": ["6.100A"],
             "gir_attribute": [None],
             "hass_attribute": [None],

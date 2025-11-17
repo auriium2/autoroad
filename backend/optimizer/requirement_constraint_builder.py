@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypedDict
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from courses.requirements.types import (
@@ -45,26 +45,31 @@ class CourseSchedule:
     This encapsulates all the course data needed to build constraints,
     making the constraint builder independent of specific dataframe structures.
     """
-    courses_df: pd.DataFrame
+    courses_df: pl.DataFrame
     planning_year_start: int
 
     def get_course_index(self, course_id: str) -> int | None:
         """Get the internal index for a course ID, or None if not found."""
-        matches = self.courses_df.index[self.courses_df['subject_id'] == course_id].tolist()
-        return matches[0] if matches else None
+        subject_ids = self.courses_df['subject_id'].to_list()
+        try:
+            return subject_ids.index(course_id)
+        except ValueError:
+            return None
 
     def get_courses_by_attribute(self, attribute: str, value: str) -> list[int]:
         """Get all course indices that have a specific attribute value."""
         if attribute not in self.courses_df.columns:
             return []
-        return self.courses_df.index[self.courses_df[attribute] == value].tolist()
+        attribute_values = self.courses_df[attribute].to_list()
+        return [i for i, v in enumerate(attribute_values) if v == value]
 
     def get_courses_by_hass_any(self) -> list[int]:
         """Get all courses with any HASS attribute."""
         if "hass_attribute" not in self.courses_df.columns:
             return []
         hass_values = ["HASS-A", "HASS-E", "HASS-H", "HASS-S"]
-        return self.courses_df.index[self.courses_df["hass_attribute"].isin(hass_values)].tolist()
+        hass_attrs = self.courses_df["hass_attribute"].to_list()
+        return [i for i, v in enumerate(hass_attrs) if v in hass_values]
 
 
 @dataclass
@@ -600,7 +605,7 @@ def add_requirement_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     requirement: RequirementNode,
-    courses_df: pd.DataFrame,
+    courses_df: pl.DataFrame,
     planning_year_start: int,
     enforce: bool = True
 ) -> tuple[dict[str, cp_model.IntVar], dict[str, str]]:

@@ -5,7 +5,7 @@ This demonstrates how to use the new constraint builder instead of the
 monolithic add_requirement_constraints function from analyze.py.
 """
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from optimizer.requirement_constraint_builder import add_requirement_constraints
@@ -17,16 +17,16 @@ def example_simple_requirement():
     """Example: A simple course requirement."""
     # Create a model and decision variables
     model = cp_model.CpModel()
-    courses_df = pd.DataFrame({
+    courses_df = pl.DataFrame({
         'subject_id': ['6.100A', '6.1200', '18.01'],
         'total_units': [12, 12, 12],
     })
 
     # Create take variables for each course and semester
     take_vars = {}
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         for semester in range(1, 13):
-            var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
+            var_name = f"take_{courses_df[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
 
     # Create a simple requirement: must take 6.100A
@@ -49,15 +49,15 @@ def example_simple_requirement():
 def example_choice_requirement():
     """Example: A requirement with choices (any of several courses)."""
     model = cp_model.CpModel()
-    courses_df = pd.DataFrame({
+    courses_df = pl.DataFrame({
         'subject_id': ['6.100A', '6.100L', '6.1200', '6.120A'],
         'total_units': [12, 12, 12, 12],
     })
 
     take_vars = {}
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         for semester in range(1, 13):
-            var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
+            var_name = f"take_{courses_df[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
 
     # Create a choice requirement: take either 6.100A or 6.100L
@@ -87,15 +87,15 @@ def example_choice_requirement():
 def example_threshold_requirement():
     """Example: A requirement with a threshold (choose N of M courses)."""
     model = cp_model.CpModel()
-    courses_df = pd.DataFrame({
+    courses_df = pl.DataFrame({
         'subject_id': ['6.3100', '6.3200', '6.3300', '6.3400', '6.3500'],
         'total_units': [12, 12, 12, 12, 12],
     })
 
     take_vars = {}
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         for semester in range(1, 13):
-            var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
+            var_name = f"take_{courses_df[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
 
     # Create a threshold requirement: take at least 2 of these 5 courses
@@ -128,15 +128,15 @@ def example_threshold_requirement():
 def example_nested_requirement():
     """Example: A nested requirement structure (groups within groups)."""
     model = cp_model.CpModel()
-    courses_df = pd.DataFrame({
+    courses_df = pl.DataFrame({
         'subject_id': ['6.100A', '6.100L', '6.1200', '6.120A', '6.1210', '18.01', '18.02'],
         'total_units': [12, 12, 12, 12, 12, 12, 12],
     })
 
     take_vars = {}
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         for semester in range(1, 13):
-            var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
+            var_name = f"take_{courses_df[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
 
     # Create a nested requirement structure
@@ -193,16 +193,16 @@ def example_nested_requirement():
 def example_with_special_requirements():
     """Example: Using special requirements (GIRs, HASS, etc)."""
     model = cp_model.CpModel()
-    courses_df = pd.DataFrame({
+    courses_df = pl.DataFrame({
         'subject_id': ['8.01', '8.02', '5.111', '18.01'],
         'total_units': [12, 12, 12, 12],
         'gir_attribute': ['PHY1', 'PHY2', 'CHEM', 'CAL1'],
     })
 
     take_vars = {}
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         for semester in range(1, 13):
-            var_name = f"take_{courses_df.loc[course_idx, 'subject_id']}_{semester}"
+            var_name = f"take_{courses_df[course_idx, 'subject_id']}_{semester}"
             take_vars[course_idx, semester] = model.NewBoolVar(var_name)
 
     # Create requirements using GIR codes

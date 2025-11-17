@@ -2,7 +2,7 @@
 Tests for the prerequisite constraint builder.
 """
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from courses.prerequisites.types import PrereqCourse, PrereqGroup
@@ -19,7 +19,7 @@ class TestCourseSchedule:
 
     def test_get_course_index(self):
         """Test looking up course index by course ID."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B', '18.01'],
             'gir_attribute': [None, None, 'CAL1'],
         })
@@ -31,7 +31,7 @@ class TestCourseSchedule:
 
     def test_get_courses_by_gir(self):
         """Test finding courses by GIR attribute."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['18.01', '18.02', '6.100A'],
             'gir_attribute': ['CAL1', 'CAL2', None],
         })
@@ -45,7 +45,7 @@ class TestCourseSchedule:
 
     def test_get_courses_by_hass(self):
         """Test finding courses by HASS attribute."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['21M.011', '21H.102', '6.100A'],
             'hass_attribute': ['HASS-A', 'HASS-H', None],
         })
@@ -60,7 +60,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_simple_course_prereq(self):
         """Test a simple prerequisite: course A requires course B."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -73,7 +73,7 @@ class TestPrerequisiteConstraintBuilder:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -92,7 +92,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_gir_prereq(self):
         """Test a GIR prerequisite: course requires GIR:CAL1."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['8.01', '18.01', '18.02'],
             'gir_attribute': [None, 'CAL1', 'CAL2'],
             'hass_attribute': [None, None, None],
@@ -105,7 +105,7 @@ class TestPrerequisiteConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -123,7 +123,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_hass_prereq(self):
         """Test a HASS prerequisite: course requires HASS:A."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.UAT', '21M.011', '21H.102'],
             'gir_attribute': [None, None, None],
             'hass_attribute': [None, 'HASS-A', 'HASS-H'],
@@ -135,7 +135,7 @@ class TestPrerequisiteConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -153,7 +153,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_and_prereq(self):
         """Test AND prerequisite: course requires A AND B."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.1010', '6.100A', '6.100B'],
             'gir_attribute': [None, None, None],
             'hass_attribute': [None, None, None],
@@ -165,7 +165,7 @@ class TestPrerequisiteConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -186,7 +186,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_or_prereq(self):
         """Test OR prerequisite: course requires A OR B."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.1010', '6.100A', '6.100B'],
             'gir_attribute': [None, None, None],
             'hass_attribute': [None, None, None],
@@ -198,7 +198,7 @@ class TestPrerequisiteConstraintBuilder:
         for course_idx in range(3):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         schedule = CourseSchedule(df, 2024)
@@ -219,7 +219,7 @@ class TestPrerequisiteConstraintBuilder:
 
     def test_missing_course_warning(self):
         """Test that missing prerequisite courses generate warnings."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A'],
             'gir_attribute': [None],
             'hass_attribute': [None],
@@ -252,7 +252,7 @@ class TestAddPrerequisiteConstraints:
 
     def test_add_prerequisite_constraints(self):
         """Test the top-level function for adding constraints."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100A', '6.100B'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -264,7 +264,7 @@ class TestAddPrerequisiteConstraints:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         # Course 0 requires Course 1
@@ -283,7 +283,7 @@ class TestASEAndMustTake:
 
     def test_ase_satisfies_prereq(self):
         """Test that ASE courses (semester -1) can satisfy prerequisites."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['8.02', '8.01'],
             'gir_attribute': [None, 'PHY1'],
             'hass_attribute': [None, None],
@@ -322,7 +322,7 @@ class TestASEAndMustTake:
 
     def test_must_take_satisfies_prereq(self):
         """Test that Must Take courses (semester -2) can satisfy prerequisites."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['6.100B', '6.100A'],
             'gir_attribute': [None, None],
             'hass_attribute': [None, None],
@@ -360,7 +360,7 @@ class TestASEAndMustTake:
 
     def test_ase_no_prereq_constraints_added(self):
         """Test that ASE courses don't have prerequisite constraints added."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['8.02', '8.01'],
             'gir_attribute': [None, 'PHY1'],
             'hass_attribute': [None, None],
@@ -372,7 +372,7 @@ class TestASEAndMustTake:
         # Create take variables for both courses in ASE semester (-1)
         for course_idx in range(2):
             take_vars[(course_idx, -1)] = model.NewBoolVar(
-                f"take_{df.at[course_idx, 'subject_id']}_s-1"
+                f"take_{df[course_idx, 'subject_id']}_s-1"
             )
 
         schedule = CourseSchedule(df, 2024)
@@ -390,7 +390,7 @@ class TestASEAndMustTake:
 
     def test_ase_gir_satisfies_prereq(self):
         """Test that ASE courses with GIR attributes can satisfy GIR prerequisites."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['8.02', '18.01'],
             'gir_attribute': [None, 'CAL1'],
             'hass_attribute': [None, None],
@@ -428,7 +428,7 @@ class TestASEAndMustTake:
 
     def test_override_courses_skip_prereq_constraints(self):
         """Test that override courses don't have prerequisite constraints added."""
-        df = pd.DataFrame({
+        df = pl.DataFrame({
             'subject_id': ['8.02', '8.01'],
             'gir_attribute': [None, 'PHY1'],
             'hass_attribute': [None, None],
@@ -441,7 +441,7 @@ class TestASEAndMustTake:
         for course_idx in range(2):
             for semester in range(1, 4):
                 take_vars[(course_idx, semester)] = model.NewBoolVar(
-                    f"take_{df.at[course_idx, 'subject_id']}_s{semester}"
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
                 )
 
         # 8.02 requires 8.01, but 8.02 is marked as override

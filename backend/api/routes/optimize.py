@@ -4,7 +4,7 @@ import queue
 import threading
 from collections.abc import Sequence
 
-import pandas as pd
+import polars as pl
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
@@ -34,10 +34,10 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
     CP-SAT callback that puts solutions into a queue for real-time streaming.
     """
 
-    def __init__(self, take_vars: dict[tuple[int, int], cp_model.IntVar], courses_df: pd.DataFrame, solution_queue: queue.Queue[object]):
+    def __init__(self, take_vars: dict[tuple[int, int], cp_model.IntVar], courses_df: pl.DataFrame, solution_queue: queue.Queue[object]):
         super().__init__()
         self.take_vars: dict[tuple[int, int], cp_model.IntVar] = take_vars
-        self.courses_df: pd.DataFrame = courses_df
+        self.courses_df: pl.DataFrame = courses_df
         self.solution_count: int = 0
         self.solution_queue: queue.Queue[object] = solution_queue
         self.best_solution_nodes: list[dict[str, object]] = []  # Track best solution for .road export
@@ -49,8 +49,8 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
 
         for (course_idx, semester), var in self.take_vars.items():
             if self.Value(var) != 0:
-                course_id = self.courses_df.at[course_idx, 'subject_id']
-                title = self.courses_df.at[course_idx, 'title'] if 'title' in self.courses_df.columns else None
+                course_id = self.courses_df[course_idx, 'subject_id']
+                title = self.courses_df[course_idx, 'title'] if 'title' in self.courses_df.columns else None
 
                 # Convert semester to section for frontend
                 # Special semesters (-2, -1) stay as-is, regular semesters (1-12) become 0-based (0-11)
@@ -89,7 +89,7 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
             print(f"  - {node['courseId']} @ section {node['section']}")
 
 
-def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int, markers: Sequence[Marker] | None = None) -> dict[tuple[int, int], cp_model.IntVar]:
+def create_take_vars(model: cp_model.CpModel, courses_df: pl.DataFrame, planning_year_start: int, max_semesters: int, markers: Sequence[Marker] | None = None) -> dict[tuple[int, int], cp_model.IntVar]:
     """Create decision variables for taking courses."""
     take_vars = {}
 
@@ -105,8 +105,8 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
                 ase_courses.add(marker.courseId)
                 print(f"[DEBUG] Added {marker.courseId} to ASE semester -1")
 
-    for course_idx in courses_df.index:
-        subject_id = courses_df.at[course_idx, 'subject_id']
+    for course_idx in range(len(courses_df)):
+        subject_id = courses_df[course_idx, 'subject_id']
 
         # For regular semesters (1 to max_semesters)
         for semester in range(1, max_semesters + 1):
@@ -125,7 +125,7 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
 def add_basic_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
-    courses_df: pd.DataFrame,
+    courses_df: pl.DataFrame,
     max_units_per_semester: int,
     max_units_iap: int,
     max_semesters: int
@@ -135,7 +135,7 @@ def add_basic_constraints(
     # Constraint: Take each course at most once in regular semesters
     # Note: Special semesters (-2, -1) are only used via markers, optimizer can't place there
     # A course in Must Take/ASE can be retaken in regular semesters if needed
-    for course_idx in courses_df.index:
+    for course_idx in range(len(courses_df)):
         regular_semester_takes = [
             take_vars[(course_idx, s)]
             for s in range(1, max_semesters + 1)
@@ -151,22 +151,22 @@ def add_basic_constraints(
         max_units = max_units_iap if is_iap else max_units_per_semester
 
         semester_takes = [
-            take_vars[(c, semester)] * courses_df.at[c, 'total_units']
-            for c in courses_df.index
-            if (c, semester) in take_vars and 'total_units' in courses_df.columns and pd.notna(courses_df.at[c, 'total_units'])
+            take_vars[(c, semester)] * courses_df[c, 'total_units']
+            for c in range(len(courses_df))
+            if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
         ]
         if semester_takes:
             model.Add(sum(semester_takes) <= max_units)
 
 
-def parse_prerequisites_for_all_courses(courses_df: pd.DataFrame) -> dict[int, PrereqNode]:
+def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
     """Parse prerequisites for all courses."""
     prereq_trees: dict[int, PrereqNode] = {}
 
-    for course_idx in courses_df.index:
-        prereq_str = courses_df.at[course_idx, 'prerequisites']
+    for course_idx in range(len(courses_df)):
+        prereq_str = courses_df[course_idx, 'prerequisites']
 
-        if pd.notna(prereq_str) and prereq_str:
+        if prereq_str is not None and prereq_str:
             try:
                 prereq_tree = parse_fireroad(prereq_str)
                 if prereq_tree is not None:
@@ -202,7 +202,8 @@ async def optimize(request: OptimizationRequest):
             print("[SSE] Fetching courses and requirements...")
             courses_data = await loop.run_in_executor(None, get_courses_data)
             requirements_data = await loop.run_in_executor(None, get_requirements, tuple(request.requirements))
-            courses_df = pd.DataFrame(courses_data)
+            # Use infer_schema_length=None to ensure all columns are detected
+            courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
             print(f"[SSE] Loaded {len(courses_df)} courses")
 
             # Get planning year

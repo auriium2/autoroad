@@ -5,7 +5,7 @@ These tests verify that objective functions correctly compute costs
 and handle edge cases like missing data.
 """
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from optimizer.objectives.base import ObjectiveContext
@@ -24,7 +24,7 @@ class TestAvoidSmallClasses:
     def test_penalizes_small_unit_courses(self):
         """Regression test: ensure we read 'total_units' column correctly."""
         # Create sample courses with different unit values
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020', '21M.401', '6.1010'],
             'total_units': [12, 6, 3, 1],  # Note: total_units, not 'units'
         })
@@ -33,7 +33,7 @@ class TestAvoidSmallClasses:
 
         # Create take variables for semester 1
         take_vars = {}
-        for idx in courses_df.index:
+        for idx in range(len(courses_df)):
             var = model.NewBoolVar(f'take_{idx}_1')
             take_vars[(idx, 1)] = var
 
@@ -65,7 +65,7 @@ class TestAvoidSmallClasses:
 
     def test_no_penalty_for_courses_at_or_above_threshold(self):
         """Courses with units >= min_units should not be penalized."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
             'total_units': [12, 6],
         })
@@ -99,7 +99,7 @@ class TestAvoidSmallClasses:
 
     def test_handles_missing_total_units_column(self):
         """When total_units column is missing, should default to 12."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
         })
 
@@ -130,7 +130,7 @@ class TestAvoidSmallClasses:
 
     def test_different_penalty_values(self):
         """Test that penalty parameter is correctly applied."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.1010'],
             'total_units': [1],
         })
@@ -163,7 +163,7 @@ class TestMinimizeUnits:
 
     def test_minimizes_total_units(self):
         """Should prefer schedules with fewer total units."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
             'total_units': [12, 6],
         })
@@ -197,9 +197,9 @@ class TestMinimizeUnits:
 
     def test_handles_nan_units(self):
         """Should skip courses with NaN units."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
-            'total_units': [12, float('nan')],
+            'total_units': [12, None],  # Polars uses None instead of NaN
         })
 
         model = cp_model.CpModel()
@@ -234,7 +234,7 @@ class TestMinimizeTotalHours:
 
     def test_uses_actual_hours_data(self):
         """Should use in_class_hours + out_of_class_hours when available."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
             'in_class_hours': [4.0],
             'out_of_class_hours': [8.0],
@@ -264,7 +264,7 @@ class TestMinimizeTotalHours:
 
     def test_uses_default_when_hours_missing(self):
         """Should use default_hours when data is missing."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
         })
 
@@ -296,7 +296,7 @@ class TestMaximizeRating:
 
     def test_penalizes_low_ratings(self):
         """Should penalize courses below target rating."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
             'rating': [7.0, 5.0],  # One above target, one below
         })
@@ -330,9 +330,9 @@ class TestMaximizeRating:
 
     def test_handles_missing_ratings(self):
         """Should assume rating of 4.0 when missing."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
-            'rating': [float('nan')],
+            'rating': [None],  # Polars uses None instead of NaN
         })
 
         model = cp_model.CpModel()
@@ -363,7 +363,7 @@ class TestFrontloadCourses:
 
     def test_prefers_earlier_semesters(self):
         """Should prefer taking courses in earlier semesters."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
         })
 
@@ -401,7 +401,7 @@ class TestBackloadCourses:
 
     def test_prefers_later_semesters(self):
         """Should prefer taking courses in later semesters."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
         })
 
@@ -439,7 +439,7 @@ class TestMaximizeCohortOverlap:
 
     def test_prefers_larger_classes(self):
         """Should prefer courses with higher enrollment."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A', '6.9020'],
             'enrollment_number': [100, 20],
         })
@@ -473,7 +473,7 @@ class TestMaximizeCohortOverlap:
 
     def test_handles_missing_enrollment(self):
         """Should apply maximum penalty when enrollment is missing."""
-        courses_df = pd.DataFrame({
+        courses_df = pl.DataFrame({
             'course_id': ['6.100A'],
         })
 

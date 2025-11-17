@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext
@@ -37,7 +37,7 @@ class MinimizeTotalHours:
     def get_description(self) -> str:
         return f"Minimize total weekly hours (default {self.default_hours}h for courses with missing data)"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -56,16 +56,16 @@ class MinimizeTotalHours:
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            in_class = context.courses_df.at[course_idx, 'in_class_hours'] if 'in_class_hours' in context.courses_df.columns else None
-            out_of_class = context.courses_df.at[course_idx, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else None
+            in_class = context.courses_df[course_idx, 'in_class_hours'] if 'in_class_hours' in context.courses_df.columns else None
+            out_of_class = context.courses_df[course_idx, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else None
 
             total_hours = 0
             has_data = False
 
-            if in_class is not None and pd.notna(in_class):
+            if in_class is not None:
                 total_hours += float(in_class)  # type: ignore[arg-type]
                 has_data = True
-            if out_of_class is not None and pd.notna(out_of_class):
+            if out_of_class is not None:
                 total_hours += float(out_of_class)  # type: ignore[arg-type]
                 has_data = True
 
@@ -108,7 +108,7 @@ class LimitClassesPerSemester:
     def get_description(self) -> str:
         return f"Penalize semesters with more than {self.max_classes} classes"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -184,7 +184,7 @@ class MinimizeMaxSemesterHours:
     def get_description(self) -> str:
         return f"Penalize semesters with more than {self.max_hours} hours/week (default {self.default_hours}h for courses with missing data)"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -211,16 +211,16 @@ class MinimizeMaxSemesterHours:
             hours_in_semester = []
             for (course_idx, semester), var in take_vars.items():
                 if semester == sem:
-                    in_class = context.courses_df.at[course_idx, 'in_class_hours'] if 'in_class_hours' in context.courses_df.columns else None
-                    out_of_class = context.courses_df.at[course_idx, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else None
+                    in_class = context.courses_df[course_idx, 'in_class_hours'] if 'in_class_hours' in context.courses_df.columns else None
+                    out_of_class = context.courses_df[course_idx, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else None
 
                     total_hours = 0
                     has_data = False
 
-                    if in_class is not None and pd.notna(in_class):
+                    if in_class is not None:
                         total_hours += float(in_class)  # type: ignore[arg-type]
                         has_data = True
-                    if out_of_class is not None and pd.notna(out_of_class):
+                    if out_of_class is not None:
                         total_hours += float(out_of_class)  # type: ignore[arg-type]
                         has_data = True
 
@@ -239,13 +239,13 @@ class MinimizeMaxSemesterHours:
             # Calculate max possible hours (handle NaN values)
             max_possible = 0
             if 'in_class_hours' in context.courses_df.columns:
-                for c in context.courses_df.index:
-                    in_h = context.courses_df.at[c, 'in_class_hours']
-                    out_h = context.courses_df.at[c, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else 0
+                for c in range(len(context.courses_df)):
+                    in_h = context.courses_df[c, 'in_class_hours']
+                    out_h = context.courses_df[c, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else 0
                     total = 0
-                    if pd.notna(in_h):
+                    if in_h is not None:
                         total += float(in_h)
-                    if pd.notna(out_h):
+                    if out_h is not None:
                         total += float(out_h)
                     max_possible += int(total * 10)
             max_possible_hours = max(max_possible, 1000)
@@ -293,7 +293,7 @@ class MinimizeFinalsLoad:
     def get_description(self) -> str:
         return f"Penalize semesters with more than {self.max_finals} finals"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -320,7 +320,7 @@ class MinimizeFinalsLoad:
             finals_in_semester = []
             for (course_idx, semester), var in take_vars.items():
                 if semester == sem:
-                    has_final = context.courses_df.at[course_idx, 'has_final'] if 'has_final' in context.courses_df.columns else False
+                    has_final = context.courses_df[course_idx, 'has_final'] if 'has_final' in context.courses_df.columns else False
                     if has_final:
                         finals_in_semester.append(var)
 

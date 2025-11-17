@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext
@@ -27,7 +27,7 @@ class MinimizeUnits:
     def get_description(self) -> str:
         return "Minimize the total number of units taken across all semesters"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -46,14 +46,14 @@ class MinimizeUnits:
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            units = context.courses_df.at[course_idx, 'total_units']
-            if pd.notna(units):
+            units = context.courses_df[course_idx, 'total_units']
+            if units is not None:
                 # Scale by 10 to normalize (12 units → 120)
                 scaled_units = int(units) * 10
                 terms.append(var * scaled_units)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)
         return cp_model.LinearExpr.Sum([])
 
 
@@ -83,7 +83,7 @@ class AvoidSmallClasses:
     def get_description(self) -> str:
         return f"Penalize classes with fewer than {self.min_units} units"
 
-    def preprocess(self, courses_df: pd.DataFrame) -> dict[str, Any]:
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
     def add_to_model(
@@ -100,12 +100,12 @@ class AvoidSmallClasses:
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            units = context.courses_df.at[course_idx, 'total_units'] if 'total_units' in context.courses_df.columns else 12
+            units = context.courses_df[course_idx, 'total_units'] if 'total_units' in context.courses_df.columns else 12
 
-            if pd.notna(units) and units < self.min_units:
+            if units is not None and units < self.min_units:
                 # Penalize taking this small class
                 terms.append(var * self.penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])
+            return cp_model.LinearExpr.Sum(terms)
+        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]

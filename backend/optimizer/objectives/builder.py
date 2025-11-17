@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from .base import OBJECTIVE_SCALE, ObjectiveComponent, ObjectiveContext
@@ -56,7 +56,7 @@ class ObjectiveBuilder:
         self,
         model: cp_model.CpModel,
         take_vars: dict[tuple[int, int], cp_model.IntVar],
-        courses_df: pd.DataFrame,
+        courses_df: pl.DataFrame,
         planning_year_start: int
     ) -> cp_model.LinearExpr:
         """

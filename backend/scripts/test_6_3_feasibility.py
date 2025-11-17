@@ -2,7 +2,7 @@
 Quick test to check if 6-3 requirements are feasible after the fix.
 """
 
-import pandas as pd
+import polars as pl
 import requests
 
 from courses.requirements.parser import parse_requirement
@@ -18,7 +18,7 @@ def fetch_all_courses():
 
     # Filter out historical courses
     courses = [c for c in data if not c.get('is_historical')]
-    return pd.DataFrame(courses)
+    return pl.DataFrame(courses, infer_schema_length=None)
 
 
 def fetch_requirement(key):

@@ -10,7 +10,7 @@ These tests cover bugs we've encountered and fixed:
 - Must Take courses satisfying prerequisites
 """
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from api.models.requests import Marker
@@ -21,7 +21,7 @@ from optimizer.prerequisite_constraint_builder import add_prerequisite_constrain
 
 def create_simple_courses_df():
     """Create a simple course catalog for testing."""
-    return pd.DataFrame({
+    return pl.DataFrame({
         'subject_id': ['18.01', '18.02', '8.01', '8.02', '6.100'],
         'title': ['Calculus I', 'Calculus II', 'Physics I', 'Physics II', 'Intro to CS'],
         'total_units': [12, 12, 12, 12, 12],
@@ -45,8 +45,8 @@ def create_take_vars_simple(model, courses_df, markers=None):
             elif marker.section == -1:  # ASE
                 special_semester_courses.add((marker.courseId, -1))
 
-    for course_idx in courses_df.index:
-        subject_id = courses_df.at[course_idx, 'subject_id']
+    for course_idx in range(len(courses_df)):
+        subject_id = courses_df[course_idx, 'subject_id']
 
         # Regular semesters 1-12
         for semester in range(1, 13):
@@ -115,8 +115,8 @@ class TestOptimizerIntegration:
 
         # Add prerequisite: 18.02 requires 18.01
         prereq_trees = {0: PrereqCourse('18.01')}  # course_idx 0 is 18.01, but we want 18.02
-        # Find 18.02 index
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
+        # Find 18.02 index - in polars, iterate to find row
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
 
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees)
@@ -145,7 +145,7 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Add prerequisite: 18.02 requires 18.01
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
 
         # Pass override courses to skip prerequisite checking
@@ -177,7 +177,7 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Add prerequisite: 18.02 requires 18.01
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
 
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees)
@@ -208,7 +208,7 @@ class TestOptimizerIntegration:
         assert result.constraints_added == 1
 
         # Force taking the course in another semester
-        course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
         model.Add(take_vars[(course_18_01_idx, 2)] == 1)  # Freshman Spring
 
         # Should be feasible
@@ -282,8 +282,8 @@ class TestOptimizerIntegration:
             "Override should NOT block other courses in same semester"
 
         # Verify both courses are actually in semester 1
-        course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
 
         assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1, "18.01 should be in semester 1"
         assert solver.Value(take_vars[(course_18_02_idx, 1)]) == 1, "18.02 should be in semester 1"
@@ -316,9 +316,9 @@ class TestOptimizerIntegration:
             "Should be feasible to have multiple courses with override in semester"
 
         # Verify all 3 courses are in semester 1
-        course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
-        course_8_01_idx = courses_df.index[courses_df['subject_id'] == '8.01'].tolist()[0]
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
+        course_8_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '8.01')
 
         assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1
         assert solver.Value(take_vars[(course_18_02_idx, 1)]) == 1
@@ -347,7 +347,7 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Add prerequisite: 18.02 requires 18.01
-        course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
 
         # Pass override courses to skip prerequisite checking
@@ -365,7 +365,7 @@ class TestOptimizerIntegration:
             "Override should pin course to specified semester"
 
         # Verify 18.01 is NOT required to be taken
-        course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
         sum(
             solver.Value(take_vars[(course_18_01_idx, s)])
             for s in range(1, 13)

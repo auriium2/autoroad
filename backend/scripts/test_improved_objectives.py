@@ -5,7 +5,7 @@ Test improved objective implementations:
 3. Improved ClusterCourses with actual time parsing
 """
 
-import pandas as pd
+import polars as pl
 import requests
 from ortools.sat.python import cp_model
 
@@ -29,7 +29,7 @@ def fetch_all_courses():
     response.raise_for_status()
     data = response.json()
     courses = [c for c in data if not c.get('is_historical')]
-    return pd.DataFrame(courses)
+    return pl.DataFrame(courses, infer_schema_length=None)
 
 
 def fetch_requirement(key):
@@ -41,7 +41,7 @@ def fetch_requirement(key):
 def create_take_vars(model, courses_df, planning_year_start):
     take_vars = {}
     for course_idx in courses_df.index:
-        subject_id = courses_df.at[course_idx, 'subject_id']
+        subject_id = courses_df[course_idx, 'subject_id']
         for semester in range(1, 13):
             if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
@@ -66,7 +66,7 @@ def run_optimization_test(name, builder, courses_df, planning_year_start):
 
     for semester in range(1, 13):
         semester_takes = [
-            take_vars[(c, semester)] * courses_df.at[c, 'total_units']
+            take_vars[(c, semester)] * courses_df[c, 'total_units']
             for c in courses_df.index
             if (c, semester) in take_vars and 'total_units' in courses_df.columns
         ]
@@ -98,9 +98,9 @@ def run_optimization_test(name, builder, courses_df, planning_year_start):
         if 'in_class_hours' in courses_df.columns:
             for sem in range(1, 13):
                 courses_in_sem = [
-                    (courses_df.at[c, 'subject_id'],
-                     courses_df.at[c, 'in_class_hours'] if pd.notna(courses_df.at[c, 'in_class_hours']) else 0,
-                     courses_df.at[c, 'out_of_class_hours'] if pd.notna(courses_df.at[c, 'out_of_class_hours']) else 0)
+                    (courses_df[c, 'subject_id'],
+                     courses_df[c, 'in_class_hours'] if courses_df[c, 'in_class_hours'] is not None else 0,
+                     courses_df[c, 'out_of_class_hours'] if courses_df[c, 'out_of_class_hours'] is not None else 0)
                     for c, s in take_vars.keys()
                     if s == sem and solver.Value(take_vars[(c, s)]) == 1
                 ]

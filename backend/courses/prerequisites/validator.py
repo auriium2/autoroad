@@ -45,8 +45,8 @@ def validate_course_exists(course_id: str, courses_df: Any) -> bool:
     if course_id.startswith("CI-"):
         return True
 
-    if courses_df is not None and hasattr(courses_df, 'subject_id'):
-        return course_id in courses_df['subject_id'].values
+    if courses_df is not None and 'subject_id' in courses_df.columns:
+        return course_id in courses_df['subject_id'].to_list()
 
     return False
 

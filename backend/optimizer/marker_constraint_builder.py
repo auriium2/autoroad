@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 from pydantic import BaseModel, Field
 
@@ -28,7 +28,7 @@ def add_marker_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     markers: list['Marker'],
-    courses_df: pd.DataFrame,
+    courses_df: pl.DataFrame,
     planning_year_start: int,
 ) -> MarkerConstraintResult:
     """
@@ -52,8 +52,8 @@ def add_marker_constraints(
 
     # Build course_id -> course_idx mapping
     course_id_to_idx = {}
-    for idx in courses_df.index:
-        subject_id = courses_df.at[idx, 'subject_id']
+    for idx in range(len(courses_df)):
+        subject_id = courses_df[idx, 'subject_id']
         course_id_to_idx[subject_id] = idx
 
     for marker in markers:
@@ -161,7 +161,7 @@ def add_marker_constraints(
                 continue
 
             # Must take this course in this semester (prerequisite checking skipped elsewhere)
-            model.Add(take_vars[(course_idx, semester)] == 1)
+            _ = model.Add(take_vars[(course_idx, semester)] == 1)
             constraints_added += 1
         else:
             warnings.append(f"Unknown marker status: {marker.status}")

@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from enum import Enum
 
-import pandas as pd
+import polars as pl
 
 
 class NodeType(Enum):
@@ -23,7 +23,7 @@ class Node:
 
 # Prerequisite handling stuff
 def parse_prerequisites(prereq_str):
-    if pd.isna(prereq_str) or not prereq_str:
+    if prereq_str is None or not prereq_str:
         return []
     # Remove permission of instructor and any resulting empty delimiters
     prereq_str = re.sub(r"[\"']{0,2}permission of instructor[\"']{0,2}", "", prereq_str, flags=re.IGNORECASE)
@@ -156,30 +156,30 @@ def parse_prerequisites(prereq_str):
 
 # Semester validation
 
-def is_valid_class_semester(class_idx: int, semester: int, df: pd.DataFrame, planning_year_start: int, musician: bool = False) -> bool:
+def is_valid_class_semester(class_idx: int, semester: int, df: pl.DataFrame, planning_year_start: int, musician: bool = False) -> bool:
     # Determine the semester year and academic year string
     semester_ok = True
     if semester % 3 == 1:  # Fall semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year}-{semester_year + 1}"
-        semester_ok = df.loc[class_idx, 'offered_fall']
+        semester_ok = df[class_idx, 'offered_fall']
     elif semester % 3 == 2:  # IAP semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year - 1}-{semester_year}"
-        semester_ok = df.loc[class_idx, 'offered_IAP']
+        semester_ok = df[class_idx, 'offered_IAP']
     else:  # Spring semester
         semester_year = planning_year_start + (semester // 3) - 1
         academic_year = f"{semester_year}-{semester_year + 1}"
-        semester_ok = df.loc[class_idx, 'offered_spring']
+        semester_ok = df[class_idx, 'offered_spring']
 
 
-    not_offered_year = df.loc[class_idx, 'not_offered_year']
-    if pd.isna(not_offered_year):
+    not_offered_year = df[class_idx, 'not_offered_year']
+    if not_offered_year is None:
         year_ok = True
     else:
         year_ok = str(academic_year) != str(not_offered_year)
 
-    if not musician and df.loc[class_idx, 'subject_id'].lower().startswith('21m'): #stupid cheating
+    if not musician and df[class_idx, 'subject_id'].lower().startswith('21m'): #stupid cheating
         return False
     return semester_ok and year_ok
 
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
     # # Test cases for semester validation
     # print("\nTesting is_valid_class_semester academic year blocking:")
-    # test_df = pd.DataFrame({
+    # test_df = pl.DataFrame({
     #     'not_offered_year': [None, "2025-2026", "2026-2027"]
     # })
 

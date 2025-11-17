@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-import pandas as pd
+import polars as pl
 from ortools.sat.python import cp_model
 
 from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
@@ -13,22 +13,27 @@ class CourseSchedule:
     """
     Represents the available courses and their scheduling information.
     """
-    courses_df: pd.DataFrame
+    courses_df: pl.DataFrame
     planning_year_start: int
 
     def get_course_index(self, course_id: str) -> int | None:
-        matches = self.courses_df.index[self.courses_df['subject_id'] == course_id].tolist()
-        return matches[0] if matches else None
+        subject_ids = self.courses_df['subject_id'].to_list()
+        try:
+            return subject_ids.index(course_id)
+        except ValueError:
+            return None
 
     def get_courses_by_gir(self, gir_code: str) -> list[int]:
         if "gir_attribute" not in self.courses_df.columns:
             return []
-        return self.courses_df.index[self.courses_df["gir_attribute"] == gir_code].tolist()
+        gir_attrs = self.courses_df["gir_attribute"].to_list()
+        return [i for i, v in enumerate(gir_attrs) if v == gir_code]
 
     def get_courses_by_hass(self, hass_code: str) -> list[int]:
         if "hass_attribute" not in self.courses_df.columns:
             return []
-        return self.courses_df.index[self.courses_df["hass_attribute"] == hass_code].tolist()
+        hass_attrs = self.courses_df["hass_attribute"].to_list()
+        return [i for i, v in enumerate(hass_attrs) if v == hass_code]
 
 
 @dataclass
@@ -90,7 +95,7 @@ class PrerequisiteConstraintBuilder:
             ConstraintResult with summary of constraints added and any issues
         """
         for course_idx, prereq_tree in prereq_trees.items():
-            course_id = self.ctx.schedule.courses_df.at[course_idx, 'subject_id']
+            course_id = self.ctx.schedule.courses_df[course_idx, 'subject_id']
 
             # For each semester where this course can be taken
             for semester in range(1, 13):
@@ -345,7 +350,7 @@ class PrerequisiteConstraintBuilder:
 def add_prerequisite_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
-    courses_df: pd.DataFrame,
+    courses_df: pl.DataFrame,
     planning_year_start: int,
     prereq_trees: dict[int, PrereqNode],
     override_course_ids: set[str] | None = None
@@ -370,7 +375,7 @@ def add_prerequisite_constraints(
     # Filter out override courses from prereq_trees
     filtered_prereq_trees = {}
     for course_idx, prereq_tree in prereq_trees.items():
-        course_id = courses_df.at[course_idx, 'subject_id']
+        course_id = courses_df[course_idx, 'subject_id']
         if course_id not in override_course_ids:
             filtered_prereq_trees[course_idx] = prereq_tree
 

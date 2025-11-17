@@ -2,7 +2,7 @@
 Unit tests for requirements validator.
 """
 
-import pandas as pd  # type: ignore[import-untyped]
+import polars as pl  # type: ignore[import-untyped]
 import pytest
 
 from courses.requirements.types import (
@@ -22,7 +22,7 @@ from courses.requirements.validator import (
 @pytest.fixture
 def valid_courses_df():
     """Create a DataFrame with valid courses."""
-    return pd.DataFrame({
+    return pl.DataFrame({
         'subject_id': ['6.100A', '6.1200', '6.1010', '6.1020', '18.01', '18.02']
     })
 
