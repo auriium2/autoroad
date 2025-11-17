@@ -118,15 +118,27 @@ export default function Dashboard() {
         return;
       }
 
-      const importedMarkers = importFromRoadFormat(roadData);
+      const { markers: importedMarkers, warnings } = importFromRoadFormat(roadData);
 
       loadRoadData({ markers: importedMarkers });
 
-      showToast({
-        title: "Import successful",
-        description: `Imported ${importedMarkers.length} courses from .road file`,
-        duration: 3000,
-      });
+      if (warnings.length > 0) {
+        showToast({
+          title: "Import completed with warnings",
+          description: `Imported ${importedMarkers.length} courses. ${warnings.length} generic requirement(s) skipped.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        // Log warnings to console for user to see details
+        console.warn('Import warnings:', warnings);
+        warnings.forEach(warning => console.warn('- ' + warning));
+      } else {
+        showToast({
+          title: "Import successful",
+          description: `Imported ${importedMarkers.length} courses from .road file`,
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error('Error during import:', error);
       showToast({

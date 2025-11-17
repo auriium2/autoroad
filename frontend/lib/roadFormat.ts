@@ -16,12 +16,20 @@ export interface RoadFormat {
 }
 
 function sectionToSemester(section: number): number {
-  if (section < 0) return 1;
+  // ASE: section -1 -> semester 0
+  // Must Take: section -2 -> not exported (handled by filtering banish)
+  // Regular: section 0-11 -> semester 1-12
+  if (section === -1) return 0; // ASE
+  if (section < 0) return 1; // Fallback for other negative sections
   return section + 1;
 }
 
 function semesterToSection(semester: number): number {
-  return Math.max(0, semester - 1);
+  // ASE: semester 0 -> section -1
+  // Regular: semester 1-12 -> section 0-11
+  if (semester === 0) return -1; // ASE
+  if (semester < 0) return 0; // Fallback for invalid semesters
+  return semester - 1;
 }
 
 export async function exportToRoadFormat(
@@ -64,10 +72,32 @@ export async function exportToRoadFormat(
   };
 }
 
-export function importFromRoadFormat(roadData: RoadFormat): Marker[] {
+export interface ImportResult {
+  markers: Marker[];
+  warnings: string[];
+}
+
+export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
   const markers: Marker[] = [];
+  const warnings: string[] = [];
 
   for (const subject of roadData.selectedSubjects) {
+    // Check for generic HASS or GIR placeholders
+    const subjectId = subject.subject_id;
+    const isGenericGIR = /^GIR:/i.test(subjectId);
+    const isGenericHASS = /^HASS[-\s]?[AHSE]/i.test(subjectId);
+    const isGenericCI = /^CI-[HM]/i.test(subjectId);
+    // Plain GIR codes used by CourseRoad (CAL1, CAL2, BIOL, CHEM, PHY1, PHY2, REST)
+    const isPlainGIR = /^(CAL1|CAL2|BIOL|CHEM|PHY1|PHY2|REST)$/i.test(subjectId);
+    
+    if (isGenericGIR || isGenericHASS || isGenericCI || isPlainGIR) {
+      warnings.push(
+        `Generic requirement "${subjectId}" (${subject.title}) cannot be imported. ` +
+        `Please select a specific course that fulfills this requirement.`
+      );
+      continue; // Skip this subject
+    }
+
     const marker: Marker = {
       uuid: `marker_${subject.subject_id}_${Date.now()}_${Math.random()}`,
       courseId: subject.subject_id,
@@ -78,7 +108,7 @@ export function importFromRoadFormat(roadData: RoadFormat): Marker[] {
     markers.push(marker);
   }
 
-  return markers;
+  return { markers, warnings };
 }
 
 export function downloadRoadFile(roadData: RoadFormat, filename = 'autoroad.road'): void {

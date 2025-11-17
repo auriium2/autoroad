@@ -3,121 +3,226 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "1.018",
-      "semester": 10,
-      "title": "Fundamentals of Ecology",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "11.014",
-      "semester": 10,
-      "title": "History of the Built Environment in the US",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "11.026",
-      "semester": 9,
-      "title": "Downtown",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "18.01L",
-      "semester": 5,
-      "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "18.022",
-      "semester": 10,
-      "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.222",
-      "semester": 7,
-      "title": "Expository Writing for Bilingual Students",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.733",
-      "semester": 9,
+      "subject_id": "10.07",
+      "semester": 6,
       "title": "Debating About Society and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.093",
+      "subject_id": "11.123",
+      "semester": 9,
+      "title": "Big Plans and Mega-Urban Landscapes",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.01",
+      "semester": 12,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.01",
+      "semester": 0,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.02",
       "semester": 1,
-      "title": "Metalsmithing: Objects and Power",
+      "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.095",
+      "subject_id": "18.03",
       "semester": 3,
-      "title": "Introduction to Metalsmithing",
+      "title": "Differential Equations",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.983",
+      "subject_id": "18.031",
+      "semester": 2,
+      "title": "System Functions and the Laplace Transform",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.C06",
+      "semester": 1,
+      "title": "Linear Algebra and Optimization",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.001",
+      "semester": 3,
+      "title": "Mechanics and Materials I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.003",
+      "semester": 3,
+      "title": "Dynamics and Control I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "2.086",
+      "semester": 3,
+      "title": "Numerical Computation for Mechanical Engineers",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21L.591",
+      "semester": 2,
+      "title": "Literary London",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21T.220",
+      "semester": 4,
+      "title": "Set Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21W.011",
+      "semester": 3,
+      "title": "Writing and Rhetoric: Rhetoric and Contemporary Issues",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "24.900",
+      "semester": 1,
+      "title": "Introduction to Linguistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "5.112",
       "semester": 10,
-      "title": "Ancient Mesoamerican Civilization",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "5.111",
-      "semester": 3,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100A",
-      "semester": 4,
+      "semester": 10,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 0,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100B",
-      "semester": 12,
+      "semester": 7,
       "title": "Introduction to Computational Thinking and Data Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "7.016",
+      "subject_id": "6.1010",
+      "semester": 4,
+      "title": "Fundamentals of Programming",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1020",
+      "semester": 6,
+      "title": "Software Construction",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1100",
       "semester": 9,
+      "title": "Computer Language Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1200",
+      "semester": 7,
+      "title": "Mathematics for Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1210",
+      "semester": 10,
+      "title": "Introduction to Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1400",
+      "semester": 12,
+      "title": "Computability and Complexity Theory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1800",
+      "semester": 9,
+      "title": "Computer Systems Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1910",
+      "semester": 6,
+      "title": "Computation Structures",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.2060",
+      "semester": 12,
+      "title": "Microcomputer Project Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.3900",
+      "semester": 4,
+      "title": "Introduction to Machine Learning",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.015",
+      "semester": 4,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.012",
-      "semester": 4,
+      "subject_id": "8.01",
+      "semester": 1,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.021",
-      "semester": 7,
-      "title": "Physics II",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "9.60",
+      "subject_id": "ES.802",
       "semester": 12,
-      "title": "Machine-Motivated Human Vision",
+      "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     },
@@ -125,6 +230,13 @@
       "subject_id": "WGS.120",
       "semester": 9,
       "title": "Science in Action: Technologies and Controversies in Everyday Life",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "WGS.247",
+      "semester": 8,
+      "title": "Race, Place, and Modernity in the Americas",
       "units": 12,
       "overrideWarnings": false
     }
