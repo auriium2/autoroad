@@ -4,18 +4,22 @@ import queue
 import threading
 
 import pandas as pd
-from api.models.requests import OptimizationRequest
-from api.services.cache import clear_cache, get_courses_data, get_requirements
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
+from api.models.requests import OptimizationRequest
+from api.services.cache import clear_cache, get_courses_data, get_requirements
 from courses.prerequisites.parser import parse_fireroad
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
 from optimizer.marker_constraint_builder import add_marker_constraints, parse_markers_from_dict
 from optimizer.objectives import ObjectiveBuilder
-from optimizer.objectives.registry import get_all_objectives, get_default_objectives, instantiate_objective
+from optimizer.objectives.registry import (
+    get_all_objectives,
+    get_default_objectives,
+    instantiate_objective,
+)
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
 from utils.utils import find_current_school_year, is_valid_class_semester
@@ -60,7 +64,7 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
                 })
 
         current_objective = self.ObjectiveValue()
-        
+
         # Track best solution for .road export (lower objective = better)
         if self.best_objective_value is None or current_objective < self.best_objective_value:
             self.best_objective_value = current_objective
@@ -86,7 +90,7 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
 def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning_year_start: int, max_semesters: int, markers=None):
     """Create decision variables for taking courses."""
     take_vars = {}
-    
+
     # Build a set of course_ids for ASE markers only
     # Must Take (section=-2) is handled as a requirement constraint, not a placement
     # ASE (section=-1) creates a special semester variable
@@ -107,7 +111,7 @@ def create_take_vars(model: cp_model.CpModel, courses_df: pd.DataFrame, planning
             if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
                 take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
-        
+
         # For ASE semester, only create var if there's an ASE marker
         if subject_id in ase_courses:
             var_name = f"take_{subject_id.replace('.', '_')}_s-1"
@@ -265,7 +269,7 @@ async def optimize(request: OptimizationRequest):
             # Build objective (run in thread pool)
             def build_objective():
                 builder = ObjectiveBuilder()
-                
+
                 # Use provided objectives or defaults
                 if request.objectives:
                     # Use user-provided objectives
@@ -280,7 +284,7 @@ async def optimize(request: OptimizationRequest):
                     for key, weight, params in get_default_objectives():
                         obj = instantiate_objective(key, params)
                         builder.add(obj, weight=weight)
-                
+
                 objective = builder.build(model, take_vars, courses_df, planning_year_start)
                 model.Minimize(objective)
 
@@ -395,12 +399,12 @@ async def optimize(request: OptimizationRequest):
 async def get_objectives():
     """
     Get all available optimization objectives with metadata.
-    
+
     Returns:
         List of objectives with their keys, names, descriptions, parameters, etc.
     """
     objectives = get_all_objectives()
-    
+
     # Convert to dict format for JSON response
     result = []
     for obj in objectives:
@@ -413,14 +417,14 @@ async def get_objectives():
             "defaultParameters": obj.default_parameters,
             "parameterTypes": {k: v.__name__ if hasattr(v, '__name__') else str(v) for k, v in obj.parameter_types.items()},
         })
-    
+
     # Also include default configuration
     defaults = get_default_objectives()
     default_config = [
         {"key": key, "weight": weight, "parameters": params}
         for key, weight, params in defaults
     ]
-    
+
     return {
         "objectives": result,
         "defaultConfiguration": default_config
@@ -431,7 +435,7 @@ async def get_objectives():
 async def get_requirements_list():
     """
     Get all available requirements from Fireroad API.
-    
+
     Returns:
         Dictionary mapping requirement IDs to their metadata (titles, etc.)
     """

@@ -94,19 +94,19 @@ def add_marker_constraints(
                     for s in range(1, 13)
                     if (course_idx, s) in take_vars
                 ]
-                
+
                 if not any_semester_vars:
                     errors.append(
                         f"Cannot fulfill Must Take marker for {marker.course_id}: "
                         f"course not offered in any semester"
                     )
                     continue
-                
+
                 # Add constraint: must take this course in at least one semester
                 model.Add(sum(any_semester_vars) >= 1)
                 constraints_added += 1
                 continue
-                
+
             elif marker.section == -1:
                 semester = -1  # ASE
             elif marker.section >= 0:

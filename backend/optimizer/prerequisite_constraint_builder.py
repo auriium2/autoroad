@@ -366,14 +366,14 @@ def add_prerequisite_constraints(
     """
     if override_course_ids is None:
         override_course_ids = set()
-    
+
     # Filter out override courses from prereq_trees
     filtered_prereq_trees = {}
     for course_idx, prereq_tree in prereq_trees.items():
         course_id = courses_df.at[course_idx, 'subject_id']
         if course_id not in override_course_ids:
             filtered_prereq_trees[course_idx] = prereq_tree
-    
+
     schedule = CourseSchedule(courses_df, planning_year_start)
     ctx = ConstraintContext(model, take_vars, schedule)
     builder = PrerequisiteConstraintBuilder(ctx)

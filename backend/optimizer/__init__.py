@@ -11,6 +11,8 @@ from .marker_constraint_builder import (
 )
 from .prerequisite_constraint_builder import (
     ConstraintResult as PrerequisiteConstraintResult,
+)
+from .prerequisite_constraint_builder import (
     add_prerequisite_constraints,
 )
 from .requirement_constraint_builder import (

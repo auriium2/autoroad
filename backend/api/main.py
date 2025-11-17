@@ -1,7 +1,7 @@
-from api.routes import optimize
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.routes import optimize
 
 app = FastAPI(
     title="Autoroad API",

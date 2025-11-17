@@ -13,9 +13,9 @@ These tests cover bugs we've encountered and fixed:
 import pandas as pd
 from ortools.sat.python import cp_model
 
-from optimizer.marker_constraint_builder import add_marker_constraints, Marker
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from courses.prerequisites.types import PrereqCourse
+from optimizer.marker_constraint_builder import Marker, add_marker_constraints
+from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 
 
 def create_simple_courses_df():
@@ -34,7 +34,7 @@ def create_simple_courses_df():
 def create_take_vars_simple(model, courses_df, markers=None):
     """Simplified create_take_vars for testing."""
     take_vars = {}
-    
+
     # Build set of courses in special semesters
     special_semester_courses = set()
     if markers:
@@ -43,21 +43,21 @@ def create_take_vars_simple(model, courses_df, markers=None):
                 special_semester_courses.add((marker.course_id, -2))
             elif marker.section == -1:  # ASE
                 special_semester_courses.add((marker.course_id, -1))
-    
+
     for course_idx in courses_df.index:
         subject_id = courses_df.at[course_idx, 'subject_id']
-        
+
         # Regular semesters 1-12
         for semester in range(1, 13):
             var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
             take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
-        
+
         # Special semesters only if marker exists
         if (subject_id, -2) in special_semester_courses:
             take_vars[(course_idx, -2)] = model.NewBoolVar(f"take_{subject_id.replace('.', '_')}_s-2")
         if (subject_id, -1) in special_semester_courses:
             take_vars[(course_idx, -1)] = model.NewBoolVar(f"take_{subject_id.replace('.', '_')}_s-1")
-    
+
     return take_vars
 
 
@@ -73,21 +73,21 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         markers = [
             Marker(course_id='18.01', status='pin', section=-1),  # ASE
             Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
             Marker(course_id='8.01', status='pin', section=0),    # Freshman Fall
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         result = add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         assert result.constraints_added == 3
         assert len(result.errors) == 0
-        
+
         # Should be feasible
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -101,25 +101,25 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         markers = [
             Marker(course_id='18.01', status='pin', section=-1),  # ASE
             Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         # Add prerequisite: 18.02 requires 18.01
         prereq_trees = {0: PrereqCourse('18.01')}  # course_idx 0 is 18.01, but we want 18.02
         # Find 18.02 index
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
-        
+
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees)
-        
+
         # Should be feasible
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -133,24 +133,24 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         markers = [
             Marker(course_id='18.02', status='override', section=0),  # Freshman Fall, override
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         # Add prerequisite: 18.02 requires 18.01
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
-        
+
         # Pass override courses to skip prerequisite checking
         override_course_ids = {'18.02'}
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees, override_course_ids)
-        
+
         # Should be feasible even without 18.01
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -164,23 +164,23 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         markers = [
             Marker(course_id='18.01', status='pin', section=-2),  # Must Take
             Marker(course_id='18.02', status='pin', section=0),   # Freshman Fall
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         # Add prerequisite: 18.02 requires 18.01
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
-        
+
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees)
-        
+
         # Should be feasible
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -194,22 +194,22 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         markers = [
             Marker(course_id='18.01', status='banish', section=0),  # Banish from Freshman Fall
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         result = add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         assert result.constraints_added == 1
-        
+
         # Force taking the course in another semester
         course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
         model.Add(take_vars[(course_18_01_idx, 2)] == 1)  # Freshman Spring
-        
+
         # Should be feasible
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -223,22 +223,22 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         # No markers - so no special semester vars should be created
         take_vars = create_take_vars_simple(model, courses_df, markers=None)
-        
+
         # Check that no special semester vars exist
         for (course_idx, semester), var in take_vars.items():
             assert semester >= 1, f"Found variable for semester {semester}, should only have regular semesters"
-        
+
         # Force taking at least one course
         model.Add(sum(take_vars.values()) >= 1)
-        
+
         # Solve
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
-        
+
         # Verify solution doesn't use special semesters
         for (course_idx, semester), var in take_vars.items():
             if solver.Value(var) == 1:
@@ -257,33 +257,33 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         # Override 18.02 in Freshman Fall AND pin 18.01 in Freshman Fall
         # Both should be able to coexist in the same semester
         markers = [
             Marker(course_id='18.02', status='override', section=0),  # Freshman Fall
             Marker(course_id='18.01', status='pin', section=0),       # Freshman Fall
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         result = add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         # Should add exactly 2 constraints (one per marker)
         assert result.constraints_added == 2, f"Expected 2 constraints, got {result.constraints_added}"
         assert len(result.errors) == 0, f"Should have no errors, got {result.errors}"
-        
+
         # Should be feasible - both courses can be in semester 1
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
             "Override should NOT block other courses in same semester"
-        
+
         # Verify both courses are actually in semester 1
         course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
-        
+
         assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1, "18.01 should be in semester 1"
         assert solver.Value(take_vars[(course_18_02_idx, 1)]) == 1, "18.02 should be in semester 1"
 
@@ -295,30 +295,30 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         # Put 3 courses in Freshman Fall, one is override
         markers = [
             Marker(course_id='18.01', status='pin', section=0),
             Marker(course_id='18.02', status='override', section=0),  # Override
             Marker(course_id='8.01', status='pin', section=0),
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
         result = add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         assert result.constraints_added == 3
         assert len(result.errors) == 0
-        
+
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
             "Should be feasible to have multiple courses with override in semester"
-        
+
         # Verify all 3 courses are in semester 1
         course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
         course_8_01_idx = courses_df.index[courses_df['subject_id'] == '8.01'].tolist()[0]
-        
+
         assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1
         assert solver.Value(take_vars[(course_18_02_idx, 1)]) == 1
         assert solver.Value(take_vars[(course_8_01_idx, 1)]) == 1
@@ -333,36 +333,36 @@ class TestOptimizerIntegration:
         """
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        
+
         # 18.02 requires 18.01, but we mark 18.02 as override in Freshman Fall
         # WITHOUT taking 18.01 first (or at all)
         markers = [
             Marker(course_id='18.02', status='override', section=0),  # Freshman Fall, no prereqs needed
         ]
-        
+
         take_vars = create_take_vars_simple(model, courses_df, markers)
-        
+
         # Add marker constraints
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
-        
+
         # Add prerequisite: 18.02 requires 18.01
         course_18_02_idx = courses_df.index[courses_df['subject_id'] == '18.02'].tolist()[0]
         prereq_trees = {course_18_02_idx: PrereqCourse('18.01')}
-        
+
         # Pass override courses to skip prerequisite checking
         override_course_ids = {'18.02'}
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees, override_course_ids)
-        
+
         # Should be feasible even without 18.01
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
             "Override should skip prerequisite checking"
-        
+
         # Verify 18.02 is in semester 1 (pinned)
         assert solver.Value(take_vars[(course_18_02_idx, 1)]) == 1, \
             "Override should pin course to specified semester"
-        
+
         # Verify 18.01 is NOT required to be taken
         course_18_01_idx = courses_df.index[courses_df['subject_id'] == '18.01'].tolist()[0]
         total_18_01 = sum(

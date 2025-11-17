@@ -172,10 +172,10 @@ def test_override_marker():
         if (course_6_100A, 1) in take_vars and (course_18_01, 1) in take_vars:
             is_6_100A_sem1 = solver.Value(take_vars[(course_6_100A, 1)])
             is_18_01_sem1 = solver.Value(take_vars[(course_18_01, 1)])
-            
+
             print(f"✓ 6.100A in semester 1: {is_6_100A_sem1 == 1}")
             print(f"✓ 18.01 ALSO in semester 1: {is_18_01_sem1 == 1}")
-            
+
             assert is_6_100A_sem1 == 1, "Override course should be pinned"
             assert is_18_01_sem1 == 1, "Override should NOT block other courses in same semester"
         else:

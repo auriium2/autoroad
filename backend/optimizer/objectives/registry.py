@@ -2,24 +2,25 @@
 Registry of available objectives with metadata and validation.
 """
 
-from typing import Any
 from dataclasses import dataclass
-from .base import ObjectiveComponent
+from typing import Any
+
 from . import (
-    MinimizeUnits,
     AvoidSmallClasses,
+    BackloadCourses,
+    ClusterCourses,
+    FrontloadCourses,
+    LimitClassesPerSemester,
+    MaximizeCohortOverlap,
     MaximizeRating,
     MaximizeWeightedRating,
-    MinimizeTotalHours,
-    MinimizeMaxSemesterHours,
-    LimitClassesPerSemester,
     MinimizeFinalsLoad,
-    FrontloadCourses,
-    BackloadCourses,
     MinimizeFridayClasses,
-    ClusterCourses,
-    MaximizeCohortOverlap,
+    MinimizeMaxSemesterHours,
+    MinimizeTotalHours,
+    MinimizeUnits,
 )
+from .base import ObjectiveComponent
 
 
 @dataclass

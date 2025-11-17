@@ -99,7 +99,7 @@ class AvoidSmallClasses:
 
         for (course_idx, semester), var in take_vars.items():
             units = context.courses_df.at[course_idx, 'units'] if 'units' in context.courses_df.columns else 12
-            
+
             if pd.notna(units) and units < self.min_units:
                 # Penalize taking this small class
                 terms.append(var * self.penalty)
