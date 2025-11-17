@@ -55,6 +55,7 @@ export interface FireroadCourse {
   prerequisites?: string;
   corequisites?: string;
   is_variable_units?: boolean;
+  is_historical?: boolean;
   offered_fall?: boolean;
   offered_spring?: boolean;
   offered_IAP?: boolean;

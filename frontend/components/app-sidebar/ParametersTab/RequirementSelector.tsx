@@ -95,9 +95,9 @@ export function RequirementSelector() {
                 onClick={() => handleAddRequirement(key)}
                 className="w-full px-3 py-2 text-left text-sm hover:bg-gray-700 transition-colors"
               >
-                <div className="font-medium">{metadata.title_no_degree || metadata.medium || metadata.title || key}</div>
-                {metadata.short && metadata.short !== (metadata.title_no_degree || metadata.medium) && (
-                  <div className="text-xs text-muted-foreground">{metadata.short}</div>
+                <div className="font-medium">{metadata.short || metadata.medium || key}</div>
+                {(metadata.title_no_degree || metadata.title) && (
+                  <div className="text-xs text-muted-foreground">{metadata.title_no_degree || metadata.title}</div>
                 )}
               </button>
             ))}

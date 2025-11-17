@@ -22,8 +22,11 @@ export function useSearchCourses(query: string, department?: string) {
             full: false,
           });
 
+          // Filter out historical courses to match backend behavior
+          const nonHistorical = results.filter(course => !course.is_historical);
+
           // Sort results to prioritize exact department matches
-          const sorted = results.sort((a, b) => {
+          const sorted = nonHistorical.sort((a, b) => {
             const aDept = a.subject_id.split('.')[0];
             const bDept = b.subject_id.split('.')[0];
             const queryDept = query.split('.')[0];
@@ -46,7 +49,9 @@ export function useSearchCourses(query: string, department?: string) {
           return sorted;
         } else if (department && department !== 'all') {
           // List by department
-          return await fireroadApi.getCoursesByDepartment(department, false);
+          const deptCourses = await fireroadApi.getCoursesByDepartment(department, false);
+          // Filter out historical courses to match backend behavior
+          return deptCourses.filter(course => !course.is_historical);
         } else {
           // Return empty for "all" with no query (too many courses)
           return [];

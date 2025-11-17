@@ -1,6 +1,5 @@
 # autoroad
 
-
 ## architecture: frontend
 - i used nextjs/react for the frontend since react is well known by llms and i don't want to debug frontend myself when i don't have to
 - i tried to avoid as much backend surface as possible by routing as much work as possible to the fireroad api via cors. 

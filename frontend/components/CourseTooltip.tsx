@@ -75,11 +75,11 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                   <>
                     <span>•</span>
                     <span>
-                      {courseDetails.in_class_hours && courseDetails.out_of_class_hours && `${courseDetails.in_class_hours + courseDetails.out_of_class_hours}h in`}
-
+                      {courseDetails.in_class_hours && courseDetails.out_of_class_hours && `${Number((courseDetails.in_class_hours + courseDetails.out_of_class_hours).toFixed(2))}h`}
+{/*
                       {courseDetails.in_class_hours && `${courseDetails.in_class_hours}h in`}
                       {courseDetails.in_class_hours && courseDetails.out_of_class_hours && ', '}
-                      {courseDetails.out_of_class_hours && `${courseDetails.out_of_class_hours}h out`}
+                      {courseDetails.out_of_class_hours && `${courseDetails.out_of_class_hours}h out`}*/}
                     </span>
                   </>
                 )}
