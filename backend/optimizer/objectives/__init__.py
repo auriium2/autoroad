@@ -13,6 +13,7 @@ from .social import MaximizeCohortOverlap
 from .units import AvoidSmallClasses, MinimizeUnits
 from .workload import (
     LimitClassesPerSemester,
+    LimitUnitsPerSemester,
     MinimizeFinalsLoad,
     MinimizeMaxSemesterHours,
     MinimizeTotalHours,
@@ -32,6 +33,7 @@ __all__ = [
     'MinimizeTotalHours',
     'MinimizeMaxSemesterHours',
     'LimitClassesPerSemester',
+    'LimitUnitsPerSemester',
     'MinimizeFinalsLoad',
     'FrontloadCourses',
     'BackloadCourses',

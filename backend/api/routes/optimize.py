@@ -126,11 +126,10 @@ def add_basic_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pl.DataFrame,
-    max_units_per_semester: int,
     max_units_iap: int,
     max_semesters: int
 ) -> None:
-    """Add basic constraints like max units per semester, taking course once, etc."""
+    """Add basic constraints like hard 48 unit limit for first semester, IAP limits, taking course once, etc."""
 
     # Constraint: Take each course at most once in regular semesters
     # Note: Special semesters (-2, -1) are only used via markers, optimizer can't place there
@@ -144,19 +143,27 @@ def add_basic_constraints(
         if regular_semester_takes:
             model.Add(sum(regular_semester_takes) <= 1)
 
-    # Constraint: Max units per semester
+    # Constraint: Hard limit of 48 units for first semester (Freshman Fall)
+    # This is an MIT policy constraint
+    semester_1_takes = [
+        take_vars[(c, 1)] * courses_df[c, 'total_units']
+        for c in range(len(courses_df))
+        if (c, 1) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
+    ]
+    if semester_1_takes:
+        model.Add(sum(semester_1_takes) <= 48)
+    
+    # Constraint: Hard limit for IAP semesters
     for semester in range(1, max_semesters + 1):
-        # Determine max units for this semester
         is_iap = (semester - 2) % 3 == 0 and semester >= 2 and semester <= 11
-        max_units = max_units_iap if is_iap else max_units_per_semester
-
-        semester_takes = [
-            take_vars[(c, semester)] * courses_df[c, 'total_units']
-            for c in range(len(courses_df))
-            if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
-        ]
-        if semester_takes:
-            model.Add(sum(semester_takes) <= max_units)
+        if is_iap:
+            semester_takes = [
+                take_vars[(c, semester)] * courses_df[c, 'total_units']
+                for c in range(len(courses_df))
+                if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
+            ]
+            if semester_takes:
+                model.Add(sum(semester_takes) <= max_units_iap)
 
 
 def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
@@ -214,7 +221,6 @@ async def optimize(request: OptimizationRequest):
 
             # Extract constraints
             max_semesters = request.constraints.maxSemesters
-            max_units_per_semester = request.constraints.maxUnitsPerSemester
             max_units_iap = request.constraints.maxUnitsIAP
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
@@ -223,7 +229,7 @@ async def optimize(request: OptimizationRequest):
             def create_model():
                 model = cp_model.CpModel()
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
-                add_basic_constraints(model, take_vars, courses_df, max_units_per_semester, max_units_iap, max_semesters)
+                add_basic_constraints(model, take_vars, courses_df, max_units_iap, max_semesters)
                 return model, take_vars
 
             model, take_vars = await loop.run_in_executor(None, create_model)

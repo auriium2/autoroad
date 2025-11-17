@@ -19,10 +19,19 @@ interface OptimizationState {
   toggleRequirementNodeExpanded: (requirement: string, nodePath: string) => void;
 }
 
+function getDefaultYear(): string {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth();
+  const academicYearStart = currentMonth >= 8 ? currentYear : currentYear - 1;
+  const freshmanGradYear = academicYearStart + 4;
+  return String(freshmanGradYear);
+}
+
 export const useOptimizationStore = create<OptimizationState>((set) => ({
   selectedObjectives: [],
   selectedRequirements: [],
-  selectedYear: undefined,
+  selectedYear: getDefaultYear(),
   expandedRequirements: [],
   expandedRequirementNodes: {},
   

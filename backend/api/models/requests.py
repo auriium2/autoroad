@@ -17,9 +17,7 @@ class ObjectiveConfig(BaseModel):
 
 class OptimizationConstraints(BaseModel):
     maxSemesters: int = Field(default=12, ge=1, le=12, description="Maximum number of semesters")
-    maxUnitsPerSemester: int = Field(default=60, ge=1, le=100, description="Maximum units per regular semester")
     maxUnitsIAP: int = Field(default=12, ge=0, le=50, description="Maximum units for IAP semesters")
-    maxHoursPerSemester: int = Field(default=60, ge=0, le=100, description="Maximum hours per semester")
 
 
 class OptimizationRequest(BaseModel):

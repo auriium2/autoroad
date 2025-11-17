@@ -9,9 +9,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:800
 
 export interface OptimizationConstraints {
   maxSemesters?: number;
-  maxUnitsPerSemester?: number;
   maxUnitsIAP?: number;
-  maxHoursPerSemester?: number;
 }
 
 export interface OptimizationProgress {
@@ -21,6 +19,8 @@ export interface OptimizationProgress {
   message?: string;
   objectiveValue?: number;
   solutionNumber?: number;
+  status?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID';
+  isComplete?: boolean;
 }
 
 export interface ObjectiveMetadata {
@@ -132,7 +132,8 @@ export const optimizerApi = {
     markers: Marker[],
     requiredCourses: string[],
     constraints?: OptimizationConstraints,
-    objectives?: ObjectiveConfig[]
+    objectives?: ObjectiveConfig[],
+    planningYear?: string
   ): AsyncGenerator<OptimizationProgress> {
     const requestBody = {
       markers: markers.map(m => ({
@@ -143,11 +144,10 @@ export const optimizerApi = {
       requirements: requiredCourses.length > 0 ? requiredCourses : ['girs', 'major6-3new'],
       constraints: {
         maxSemesters: constraints?.maxSemesters || 12,
-        maxUnitsPerSemester: constraints?.maxUnitsPerSemester || 60,
         maxUnitsIAP: constraints?.maxUnitsIAP || 12,
-        maxHoursPerSemester: constraints?.maxHoursPerSemester || 60,
       },
       objectives: objectives || undefined,
+      planningYear: planningYear || undefined,
     };
 
     const response = await fetch(`${BACKEND_URL}/api/optimize`, {
@@ -214,6 +214,15 @@ export const optimizerApi = {
                 } else if (message.warnings && message.warnings.length > 0) {
                   console.warn('[Optimizer] Warnings:', message.warnings);
                 }
+                
+                // Yield final completion message with status
+                yield {
+                  nodes: [],
+                  step: 0,
+                  status: message.status,
+                  isComplete: true,
+                };
+                
                 return;
               } else if (message.type === 'error') {
                 throw new Error(message.error || 'Optimization failed');

@@ -3,23 +3,23 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "11.047",
-      "semester": 11,
-      "title": "Race, Place, and Modernity in the Americas",
+      "subject_id": "1.018",
+      "semester": 10,
+      "title": "Fundamentals of Ecology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "14.30",
-      "semester": 7,
-      "title": "Introduction to Statistical Methods in Economics",
+      "subject_id": "11.014",
+      "semester": 10,
+      "title": "History of the Built Environment in the US",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "16.C20",
-      "semester": 4,
-      "title": "Introduction to Computational Science and Engineering",
+      "subject_id": "11.026",
+      "semester": 9,
+      "title": "Downtown",
       "units": 12,
       "overrideWarnings": false
     },
@@ -31,211 +31,99 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.02",
-      "semester": 6,
+      "subject_id": "18.022",
+      "semester": 10,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.404",
-      "semester": 10,
-      "title": "Theory of Computation",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21A.104",
-      "semester": 3,
-      "title": "Memory, Culture, and Forgetting",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21H.218",
-      "semester": 4,
-      "title": "History of the Built Environment in the US",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "21W.222",
-      "semester": 4,
+      "semester": 7,
       "title": "Expository Writing for Bilingual Students",
       "units": 12,
       "overrideWarnings": false
     },
     {
+      "subject_id": "21W.733",
+      "semester": 9,
+      "title": "Debating About Society and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.093",
+      "semester": 1,
+      "title": "Metalsmithing: Objects and Power",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
       "subject_id": "3.095",
-      "semester": 6,
+      "semester": 3,
       "title": "Introduction to Metalsmithing",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "4.328",
-      "semester": 1,
-      "title": "Climate Visions",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.100A",
-      "semester": 1,
-      "title": "Introduction to Computer Science Programming in Python",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1010",
-      "semester": 9,
-      "title": "Fundamentals of Programming",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1020",
-      "semester": 12,
-      "title": "Software Construction",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1200",
-      "semester": 9,
-      "title": "Mathematics for Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1210",
+      "subject_id": "3.983",
       "semester": 10,
-      "title": "Introduction to Algorithms",
+      "title": "Ancient Mesoamerican Civilization",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1220",
-      "semester": 12,
-      "title": "Design and Analysis of Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1800",
-      "semester": 12,
-      "title": "Computer Systems Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1903",
-      "semester": 9,
-      "title": "Introduction to Low-level Programming in C and Assembly",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1910",
-      "semester": 6,
-      "title": "Computation Structures",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3260",
-      "semester": 10,
-      "title": "Networks",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3400",
-      "semester": 4,
-      "title": "Introduction to EECS via Communication Networks",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3800",
-      "semester": 7,
-      "title": "Introduction to Inference",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.4500",
+      "subject_id": "5.111",
       "semester": 3,
-      "title": "Design for the Web: Languages and User Interfaces",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.7411",
-      "semester": 10,
-      "title": "Principles of Digital Communication",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.C01",
-      "semester": 9,
-      "title": "Modeling with Machine Learning: from Algorithms to Applications",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.C85",
-      "semester": 3,
-      "title": "Interactive Data Visualization and Society",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.S041",
-      "semester": 3,
-      "title": "Special Subject in Electrical Engineering and Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.UAT",
-      "semester": 1,
-      "title": "Oral Communication",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "7.016",
-      "semester": 6,
-      "title": "Introductory Biology",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "8.022",
-      "semester": 12,
-      "title": "Physics II",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "CC.5111",
-      "semester": 7,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "CC.8012",
-      "semester": 7,
+      "subject_id": "6.100A",
+      "semester": 4,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100B",
+      "semester": 12,
+      "title": "Introduction to Computational Thinking and Data Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.016",
+      "semester": 9,
+      "title": "Introductory Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "8.012",
+      "semester": 4,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.012",
-      "semester": 1,
+      "subject_id": "8.021",
+      "semester": 7,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "9.60",
+      "semester": 12,
+      "title": "Machine-Motivated Human Vision",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "WGS.120",
+      "semester": 9,
       "title": "Science in Action: Technologies and Controversies in Everyday Life",
       "units": 12,
       "overrideWarnings": false

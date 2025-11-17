@@ -156,6 +156,92 @@ class LimitClassesPerSemester:
         return cp_model.LinearExpr.Sum([])
 
 
+class LimitUnitsPerSemester:
+    """
+    Soft constraint to limit the number of units per semester.
+
+    Penalizes semesters that exceed max_units threshold. This prevents
+    taking too many units in one semester.
+
+    Scale: Soft constraint with normalized penalty (100 per excess unit by default).
+           Taking one extra 12-unit course → penalty of ~1200, similar to limit_classes_per_semester (1000).
+           Designed to dominate when violated, but negligible when satisfied.
+    """
+
+    def __init__(self, max_units: int = 60, penalty: int = 100):
+        """
+        Args:
+            max_units: Maximum comfortable number of units per semester
+            penalty: Penalty cost for each unit beyond max_units (default 100, normalized so 12 extra units ≈ 1 extra class)
+        """
+        self.max_units: int = max_units
+        self.penalty: int = penalty
+
+    def get_name(self) -> str:
+        return "Limit Units Per Semester"
+
+    def get_description(self) -> str:
+        return f"Penalize semesters with more than {self.max_units} units"
+
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        return {}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        """
+        Add penalty for semesters exceeding max_units.
+
+        For each semester:
+        1. Count total units: sum(take_var * units)
+        2. Create excess_var = max(0, unit_count - max_units)
+        3. Add excess_var * penalty to objective
+        """
+        terms = []
+
+        # Group take_vars by semester (only regular semesters 1-12)
+        semesters = set(semester for _, semester in take_vars.keys() if semester >= 1)
+
+        for sem in semesters:
+            # Count units in this semester
+            units_in_semester = []
+            for (course_idx, semester), var in take_vars.items():
+                if semester == sem:
+                    units = context.courses_df[course_idx, 'total_units'] if 'total_units' in context.courses_df.columns else 0
+                    if units is not None and units > 0:
+                        units_in_semester.append(var * int(units))
+
+            if not units_in_semester:
+                continue
+
+            # Create a variable for number of units in this semester
+            max_possible_units = sum(
+                int(context.courses_df[course_idx, 'total_units']) 
+                for course_idx, _ in take_vars.keys() 
+                if 'total_units' in context.courses_df.columns 
+                and context.courses_df[course_idx, 'total_units'] is not None
+                and context.courses_df[course_idx, 'total_units'] > 0
+            )
+            max_possible_units = max(max_possible_units, 1000)
+
+            units_count_var = model.NewIntVar(0, max_possible_units, f'units_sem_{sem}')
+            _ = model.Add(units_count_var == sum(units_in_semester))
+
+            # Create a variable for excess units (above threshold)
+            excess_var = model.NewIntVar(0, max_possible_units, f'excess_units_sem_{sem}')
+            _ = model.AddMaxEquality(excess_var, [units_count_var - self.max_units, 0])
+
+            # Add penalty term
+            terms.append(excess_var * self.penalty)
+
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
+
+
 class MinimizeMaxSemesterHours:
     """
     Soft constraint to limit hours per semester.

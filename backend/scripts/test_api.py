@@ -24,9 +24,7 @@ def test_optimize_endpoint():
         "requirements": ["girs"],
         "constraints": {
             "maxSemesters": 12,
-            "maxUnitsPerSemester": 60,
-            "maxUnitsIAP": 12,
-            "maxHoursPerSemester": 60
+            "maxUnitsIAP": 12
         }
     }
 

@@ -30,6 +30,9 @@ interface GraphStore {
   // Track if markers have changed since last optimization
   markersChangedSinceOptimization: boolean;
 
+  // Track optimization result status
+  lastOptimizationStatus: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID' | null;
+
   // User info
   userId: string | null;
 
@@ -71,6 +74,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   isOptimizing: false,
   optimizationProgress: null,
   markersChangedSinceOptimization: false,
+  lastOptimizationStatus: null,
   userId: null,
 
   // User actions
@@ -92,6 +96,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     set({
       markers: [...markers, newMarker],
       markersChangedSinceOptimization: optimizerNodes.length > 0,
+      lastOptimizationStatus: null,
     });
   },
 
@@ -101,6 +106,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     set({
       markers: markers.filter(m => m.uuid !== uuid),
       markersChangedSinceOptimization: optimizerNodes.length > 0,
+      lastOptimizationStatus: null,
     });
   },
 
@@ -110,6 +116,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     set({
       markers: markers.map(m => m.uuid === uuid ? { ...m, ...updates } : m),
       markersChangedSinceOptimization: optimizerNodes.length > 0,
+      lastOptimizationStatus: null,
     });
   },
 
@@ -169,31 +176,46 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   optimizeRoad: async (constraints, showProgress = true) => {
     const { markers } = get();
     
-    // Get objectives and requirements from optimization store
+    // Get objectives, requirements, and year from optimization store
     const selectedObjectives = useOptimizationStore.getState().selectedObjectives;
     const selectedRequirements = useOptimizationStore.getState().selectedRequirements;
+    const selectedYear = useOptimizationStore.getState().selectedYear;
 
     set({
       loadingState: 'loading',
       error: null,
       isOptimizing: true,
       optimizationProgress: showProgress ? {} as any : null,
-      markersChangedSinceOptimization: false, // Reset flag when optimization starts
+      markersChangedSinceOptimization: false,
     });
 
     try {
       let lastRenderTime = 0;
-      const RENDER_THROTTLE_MS = 500; // Only update UI every 500ms (cache makes this faster)
+      const RENDER_THROTTLE_MS = 500;
       let latestNodes: OptimizerNode[] = [];
       let hasPrefetched = false;
+
+      // Convert graduation year to planning year if selected
+      let planningYear: string | undefined;
+      if (selectedYear) {
+        const { graduationYearToPlanningYear } = await import('@/lib/yearUtils');
+        planningYear = graduationYearToPlanningYear(selectedYear);
+      }
 
       // Stream optimization progress
       for await (const progress of optimizerApi.optimize(
         markers,
         selectedRequirements,
         constraints,
-        selectedObjectives.length > 0 ? selectedObjectives : undefined
+        selectedObjectives.length > 0 ? selectedObjectives : undefined,
+        planningYear
       )) {
+        // Handle completion status
+        if (progress.isComplete && progress.status) {
+          set({ lastOptimizationStatus: progress.status });
+          continue;
+        }
+        
         if (progress.nodes.length > 0) {
           console.log(`[Optimizer] Received solution #${progress.solutionNumber}: objective=${progress.objectiveValue}, courses=${progress.nodes.length}`);
           latestNodes = progress.nodes;

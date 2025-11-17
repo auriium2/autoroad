@@ -18,7 +18,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Upload, Loader2, Trash2 } from "lucide-react";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { useGraphStore } from "@/stores/roadStore";
@@ -32,27 +32,119 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useOptimizationStore } from "@/stores/optimizationStore";
+import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadFile } from "@/lib/roadFormat";
+import { fireroadApi } from "@/services/fireroad";
 
 export default function Dashboard() {
   const [isOptimizing, setIsOptimizing] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
-  
-  const selectedYear = useOptimizationStore((state) => state.selectedYear);
 
-  // Get optimize function and progress from store
+  const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
+
+  // Get store functions
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
   const optimizationProgress = useGraphStore(state => state.optimizationProgress);
+  const markers = useGraphStore(state => state.markers);
+  const loadRoadData = useGraphStore(state => state.loadRoadData);
+  const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
 
-  // Handle optimization
+  const prevStatusRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
+      showToast({
+        title: "Optimal solution found!",
+        description: "This is the best possible schedule given your constraints and objectives. Note: Results are optimal only in the mathematical sense given your specific objective function and might be wonky to a human",
+        duration: 5000,
+      });
+    }
+    prevStatusRef.current = lastOptimizationStatus;
+  }, [lastOptimizationStatus]);
+
+  const handleClearMarkers = () => {
+    loadRoadData({ markers: [] });
+    showToast({
+      title: "Markers cleared",
+      description: "All course markers have been removed",
+      duration: 2000,
+    });
+  };
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+
+      const roadData = await exportToRoadFormat(
+        markers,
+        selectedRequirements,
+        async (courseId) => {
+          const details = await fireroadApi.getCourseDetails(courseId);
+          return {
+            name: details.name,
+            units: details.units,
+          };
+        }
+      );
+
+      downloadRoadFile(roadData);
+
+      showToast({
+        title: "Export successful",
+        description: "Your schedule has been exported to .road format",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error during export:', error);
+      showToast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      setIsImporting(true);
+
+      const roadData = await uploadRoadFile();
+
+      if (!roadData) {
+        return;
+      }
+
+      const importedMarkers = importFromRoadFormat(roadData);
+
+      loadRoadData({ markers: importedMarkers });
+
+      showToast({
+        title: "Import successful",
+        description: `Imported ${importedMarkers.length} courses from .road file`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error during import:', error);
+      showToast({
+        title: "Import failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleOptimize = async () => {
     try {
       setIsOptimizing(true);
 
-      const result = await optimizeRoadFromStore({
-        maxUnitsPerSemester: 60,
-        minUnitsPerSemester: 36,
-        preferredTimes: selectedYear ? [selectedYear] : undefined
-      }, true); // Show progress during optimization
+      const result = await optimizeRoadFromStore(undefined, true);
 
       if (!result.success) {
         showToast({
@@ -103,9 +195,13 @@ export default function Dashboard() {
               </Breadcrumb>
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleImport} disabled={isImporting}>
+                <Upload className="h-4 w-4" />
+                {isImporting ? "Importing..." : "Import"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
                 <Download className="h-4 w-4" />
-                Export
+                {isExporting ? "Exporting..." : "Export"}
               </Button>
               <Button size="sm">Open in CourseRoad</Button>
             </div>
@@ -126,6 +222,11 @@ export default function Dashboard() {
                     <SelectItem value="compact">Compact view</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button size="sm" variant="outline" onClick={handleClearMarkers} disabled={markers.length === 0}>
+                  <Trash2 className="h-4 w-4" />
+                  Clear
+                </Button>
 
                 <Button
                   size="sm"

@@ -233,6 +233,7 @@ function CourseGraphFlowInner({
   const removeMarker = useGraphStore(state => state.removeMarker);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
   const markersChangedSinceOptimization = useGraphStore(state => state.markersChangedSinceOptimization);
+  const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -275,7 +276,7 @@ function CourseGraphFlowInner({
     // Markers become nodes with userControlled=true
     const markerNodes: CourseNodeType[] = markers.map((marker) => {
       let hasOptimizerOverlap = false;
-      
+
       if (marker.status !== 'banish') {
         if (marker.section === -2) {
           // Must Take: satisfied if course exists in ANY optimizer semester
@@ -651,7 +652,7 @@ function CourseGraphFlowInner({
   if (loadingState === 'loading' && markers.length === 0 && optimizerNodes.length === 0) {
     return (
       <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
-        <LoadingSpinner message="Loading your course schedule..." />
+        <LoadingSpinner message="Loading your autoroad..." />
       </div>
     );
   }
@@ -671,9 +672,15 @@ function CourseGraphFlowInner({
   const COLUMN_WIDTH = 200;
   const numColumns = ALL_SECTIONS.length;
 
+  const borderClass = lastOptimizationStatus === 'OPTIMAL'
+    ? 'border-2 border-green-500'
+    : markersChangedSinceOptimization
+    ? 'border-yellow-500 border'
+    : 'border border-border';
+
   return (
     <div
-      className={`h-full w-full rounded-md ${markersChangedSinceOptimization ? 'border-yellow-500 border' : 'border border-border'} bg-muted/30 relative`}
+      className={`h-full w-full rounded-md ${borderClass} bg-muted/30 relative`}
       style={{ overflow: 'hidden' }}
     >
       <ReactFlow
