@@ -38,6 +38,8 @@ class PrerequisiteEvaluator:
         if isinstance(prereq, PrereqGroup):
             return self._evaluate_group(prereq)
 
+        raise TypeError(f"Unknown prerequisite node type: {type(prereq)}")
+
 
     def _evaluate_course(self, course: PrereqCourse) -> EvaluationResult:
         """Evaluate a simple course requirement."""
