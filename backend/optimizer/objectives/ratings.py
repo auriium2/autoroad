@@ -32,7 +32,7 @@ class MaximizeRating:
                           Default 6.0 is reasonable for MIT (most courses are 4-7).
                           Courses at or above target have no penalty.
         """
-        self.target_rating = target_rating
+        self.target_rating: float = target_rating
 
     def get_name(self) -> str:
         return "Maximize Rating"
@@ -83,8 +83,8 @@ class MaximizeRating:
                 terms.append(var * penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
 
 
 class MaximizeWeightedRating:
@@ -98,16 +98,14 @@ class MaximizeWeightedRating:
            Similar to MaximizeRating but uses Bayesian weighting.
     """
 
-    def __init__(self, min_votes: int = 10, global_mean: float | None = None, target_rating: float = 6.0):
+    def __init__(self, min_votes: int = 10, target_rating: float = 6.0):
         """
         Args:
             min_votes: Minimum number of students for a rating to be fully trusted
-            global_mean: Global average rating. If None, computed from courses_df
             target_rating: Target rating threshold (default 6.0)
         """
-        self.min_votes = min_votes
-        self.global_mean = global_mean
-        self.target_rating = target_rating
+        self.min_votes: int = min_votes
+        self.target_rating: float = target_rating
         self._computed_mean: float | None = None
 
     def get_name(self) -> str:
@@ -119,13 +117,13 @@ class MaximizeWeightedRating:
         )
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        """Compute global mean rating if not provided."""
-        if self.global_mean is None and 'rating' in courses_df.columns:
+        """Compute global mean rating from courses_df."""
+        if 'rating' in courses_df.columns:
             # Compute global mean from courses with ratings
             mean_val = courses_df['rating'].drop_nulls().mean()
             self._computed_mean = float(mean_val) if mean_val is not None else 5.0
         else:
-            self._computed_mean = self.global_mean or 5.0
+            self._computed_mean = 5.0
 
         return {'global_mean': self._computed_mean}
 
@@ -163,5 +161,5 @@ class MaximizeWeightedRating:
                 terms.append(var * penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)

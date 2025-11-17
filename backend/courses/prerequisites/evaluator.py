@@ -22,9 +22,9 @@ class PrerequisiteEvaluator:
         minimal: bool = True,
         course_tags: dict[str, list[str]] | None = None
     ):
-        self.available_courses = set(available_courses)
-        self.allow_reuse_across_requirements = allow_reuse_across_requirements
-        self.minimal = minimal
+        self.available_courses: set[str] = set(available_courses)
+        self.allow_reuse_across_requirements: bool = allow_reuse_across_requirements
+        self.minimal: bool = minimal
         self.course_tags: dict[str, list[str]] = course_tags or {}
         self.used_courses: set[str] = set()
 
@@ -38,7 +38,6 @@ class PrerequisiteEvaluator:
         if isinstance(prereq, PrereqGroup):
             return self._evaluate_group(prereq)
 
-        raise TypeError(f"Unknown prerequisite node type: {type(prereq)}")
 
     def _evaluate_course(self, course: PrereqCourse) -> EvaluationResult:
         """Evaluate a simple course requirement."""

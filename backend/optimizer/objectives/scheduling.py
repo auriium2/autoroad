@@ -52,8 +52,8 @@ class FrontloadCourses:
             terms.append(var * semester * 20)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
 
 
 class BackloadCourses:
@@ -96,8 +96,8 @@ class BackloadCourses:
             terms.append(var * (13 - semester) * 20)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
 
 
 class MinimizeFridayClasses:
@@ -114,7 +114,7 @@ class MinimizeFridayClasses:
         Args:
             penalty: Cost penalty for each course that meets on Friday (default 100)
         """
-        self.penalty = penalty
+        self.penalty: int = penalty
 
     def get_name(self) -> str:
         return "Minimize Friday Classes"
@@ -138,7 +138,7 @@ class MinimizeFridayClasses:
         Cost = sum(penalty * take_var) for courses with Friday classes
         """
         if context.extra is None or 'has_friday' not in context.extra:
-            return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.constant(0)
 
         has_friday = context.extra['has_friday']
         terms = []
@@ -148,8 +148,8 @@ class MinimizeFridayClasses:
                 terms.append(var * self.penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
 
 
 class ClusterCourses:
@@ -170,7 +170,7 @@ class ClusterCourses:
             gap_penalty_per_hour: Penalty for each hour of gap between classes
                                  (default 50, so 2-hour gap costs 100)
         """
-        self.gap_penalty_per_hour = gap_penalty_per_hour
+        self.gap_penalty_per_hour: int = gap_penalty_per_hour
 
     def get_name(self) -> str:
         return "Cluster Courses"
@@ -200,7 +200,7 @@ class ClusterCourses:
         We use start time differences as a proxy.
         """
         if context.extra is None or 'time_slots' not in context.extra:
-            return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.constant(0)
 
         time_slots_map = context.extra['time_slots']
         terms = []
@@ -254,5 +254,5 @@ class ClusterCourses:
                         terms.append(both_taken * penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)

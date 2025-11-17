@@ -135,7 +135,7 @@ class RequirementConstraintBuilder:
     """
 
     def __init__(self, ctx: ConstraintContext):
-        self.ctx = ctx
+        self.ctx: ConstraintContext = ctx
         self.results: list[ConstraintResult] = []
 
     def build(self, node: RequirementNode, parent_path: str = "root") -> ConstraintResult:
@@ -164,12 +164,6 @@ class RequirementConstraintBuilder:
             result = self._build_plain_string(node, parent_path)
         elif isinstance(node, RequirementGroup):
             result = self._build_group(node, parent_path)
-        else:
-            # Should never happen due to type system, but handle gracefully
-            result = ConstraintResult(
-                satisfied_var=None,
-                errors=[f"Unknown requirement type: {type(node).__name__}"]
-            )
 
         self.results.append(result)
         return result

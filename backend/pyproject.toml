@@ -43,7 +43,13 @@ select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]  # Line too long (handled by formatter)
 
 [tool.basedpyright]
-reportArgumentType = false # SHUT THE FUCK UP
+reportArgumentType = false
 reportUnknownMemberType = false
 reportImplicitStringConcatenation = false
 reportUnknownVariableType = false
+reportAny = false
+reportExplicitAny = false
+reportUnusedCallResult = false
+reportUnusedVariable = false
+reportUnusedParameter = false
+reportUnknownArgumentType = false

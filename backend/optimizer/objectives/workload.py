@@ -29,7 +29,7 @@ class MinimizeTotalHours:
             default_hours: Default weekly hours for courses with missing data
                           (12 hours = 4 hours in class + 8 hours out of class, typical for 12-unit course)
         """
-        self.default_hours = default_hours
+        self.default_hours: float = default_hours
 
     def get_name(self) -> str:
         return "Minimize Total Hours"
@@ -63,10 +63,10 @@ class MinimizeTotalHours:
             has_data = False
 
             if in_class is not None:
-                total_hours += float(in_class)  # type: ignore[arg-type]
+                total_hours += float(in_class)
                 has_data = True
             if out_of_class is not None:
-                total_hours += float(out_of_class)  # type: ignore[arg-type]
+                total_hours += float(out_of_class)
                 has_data = True
 
             # If no hours data available, use default
@@ -78,7 +78,7 @@ class MinimizeTotalHours:
             terms.append(var * scaled_hours)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.Sum([])
 
 
@@ -99,8 +99,8 @@ class LimitClassesPerSemester:
             max_classes: Maximum comfortable number of classes per semester
             penalty: Penalty cost for each class beyond max_classes (default 1000)
         """
-        self.max_classes = max_classes
-        self.penalty = penalty
+        self.max_classes: int = max_classes
+        self.penalty: int = penalty
 
     def get_name(self) -> str:
         return "Limit Classes Per Semester"
@@ -142,17 +142,17 @@ class LimitClassesPerSemester:
 
             # Create a variable for number of classes in this semester
             class_count_var = model.NewIntVar(0, len(classes_in_semester), f'classes_sem_{sem}')
-            model.Add(class_count_var == sum(classes_in_semester))
+            _ = model.Add(class_count_var == sum(classes_in_semester))
 
             # Create a variable for excess classes (above threshold)
             excess_var = model.NewIntVar(0, len(classes_in_semester), f'excess_classes_sem_{sem}')
-            model.AddMaxEquality(excess_var, [class_count_var - self.max_classes, 0])
+            _ = model.AddMaxEquality(excess_var, [class_count_var - self.max_classes, 0])
 
             # Add penalty term
             terms.append(excess_var * self.penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.Sum([])
 
 
@@ -174,9 +174,9 @@ class MinimizeMaxSemesterHours:
             penalty: Penalty per hour over the limit
             default_hours: Default weekly hours for courses with missing data
         """
-        self.max_hours = max_hours
-        self.penalty = penalty
-        self.default_hours = default_hours
+        self.max_hours: float = max_hours
+        self.penalty: int = penalty
+        self.default_hours: float = default_hours
 
     def get_name(self) -> str:
         return "Limit Semester Hours"
@@ -251,19 +251,19 @@ class MinimizeMaxSemesterHours:
             max_possible_hours = max(max_possible, 1000)
 
             total_hours_var = model.NewIntVar(0, max_possible_hours, f'total_hours_sem_{sem}')
-            model.Add(total_hours_var == sum(hours_in_semester))
+            _ = model.Add(total_hours_var == sum(hours_in_semester))
 
             # Create variable for excess hours (above threshold)
             # max_hours is in actual hours, but we scaled by 10
             scaled_max_hours = int(self.max_hours * 10)
             excess_var = model.NewIntVar(0, max_possible_hours, f'excess_hours_sem_{sem}')
-            model.AddMaxEquality(excess_var, [total_hours_var - scaled_max_hours, 0])
+            _ = model.AddMaxEquality(excess_var, [total_hours_var - scaled_max_hours, 0])
 
             # Add penalty term
             terms.append(excess_var * self.penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.Sum([])
 
 
@@ -284,8 +284,8 @@ class MinimizeFinalsLoad:
             max_finals: Maximum comfortable number of finals per semester
             penalty: Penalty cost for each final beyond max_finals (default 1000)
         """
-        self.max_finals = max_finals
-        self.penalty = penalty
+        self.max_finals: int = max_finals
+        self.penalty: int = penalty
 
     def get_name(self) -> str:
         return "Minimize Finals Load"
@@ -339,5 +339,5 @@ class MinimizeFinalsLoad:
             terms.append(excess_var * self.penalty)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.Sum([])

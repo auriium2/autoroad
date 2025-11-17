@@ -169,8 +169,8 @@ def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, P
         if prereq_str is not None and prereq_str:
             try:
                 prereq_tree = parse_fireroad(prereq_str)
-                if prereq_tree is not None:
-                    prereq_trees[course_idx] = prereq_tree
+                prereq_trees[course_idx] = prereq_tree
+
             except Exception:
                 pass
 
@@ -237,13 +237,12 @@ async def optimize(request: OptimizationRequest):
                         req_data = requirements_data[req_key]
                         if isinstance(req_data, dict):
                             req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
-                            if req_tree is not None:
-                                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                                if validation.pruned_tree is not None:
-                                    add_requirement_constraints(
-                                        model, take_vars, validation.pruned_tree,
-                                        courses_df, planning_year_start, enforce=True
-                                    )
+                            validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                            if validation.pruned_tree is not None:
+                                add_requirement_constraints(
+                                    model, take_vars, validation.pruned_tree,
+                                    courses_df, planning_year_start, enforce=True
+                                )
 
             await loop.run_in_executor(None, add_requirements)
 

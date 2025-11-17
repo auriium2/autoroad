@@ -80,7 +80,7 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
     Remove junk tokens like ''permission of instructor'', empty quotes, etc.
     Keep only valid course IDs and structure tokens.
     """
-    filtered = []
+    filtered: list[str] = []
     for token in tokens:
         if token.startswith("''") or token.startswith('"'):
             continue
@@ -100,7 +100,7 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
         filtered.pop()
 
     # Remove consecutive operators and operators after opening parens
-    cleaned = []
+    cleaned: list[str] = []
     if filtered:
         cleaned.append(filtered[0])
         for i in range(1, len(filtered)):
@@ -140,23 +140,23 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
 def parse_fireroad(prereq_str: str) -> PrereqNode:
     """
     Parse a Fireroad prerequisite string into PrereqNode structure.
-    
+
     Grammar:
         expr := or_expr
         or_expr := and_expr ( "/" and_expr )*
         and_expr := term ( "," term )*
         term := course_id | "(" expr ")"
-    
+
     Args:
         prereq_str: Prerequisite string from Fireroad
-    
+
     Returns:
         PrereqNode: Parsed prerequisite tree
-    
+
     Examples:
         >>> parse_fireroad("6.100A")
         PrereqCourse(course_id='6.100A')
-        
+
         >>> parse_fireroad("6.100A,6.1200")
         PrereqGroup(threshold=2, items=(PrereqCourse(...), PrereqCourse(...)))
     """
@@ -238,10 +238,10 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
 def prereq_to_string(prereq: PrereqNode) -> str:
     """
     Convert a PrereqNode to a human-readable string.
-    
+
     Args:
         prereq: The prerequisite node to convert
-    
+
     Returns:
         Human-readable string representation
     """

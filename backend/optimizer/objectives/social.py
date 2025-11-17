@@ -29,7 +29,7 @@ class MaximizeCohortOverlap:
             target_enrollment: Target class size. Courses below this get penalized.
                              Default 50 students (scaled by 4 to get ~100 cost per course).
         """
-        self.target_enrollment = target_enrollment
+        self.target_enrollment: int = target_enrollment
 
     def get_name(self) -> str:
         return "Maximize Cohort Overlap"
@@ -70,5 +70,5 @@ class MaximizeCohortOverlap:
                 terms.append(var * self.target_enrollment * 4)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)

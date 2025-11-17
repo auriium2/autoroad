@@ -33,7 +33,7 @@ class ObjectiveBuilder:
                              If False, use weights as-is.
         """
         self.components: list[tuple[ObjectiveComponent, float]] = []
-        self.normalize_weights = normalize_weights
+        self.normalize_weights: bool = normalize_weights
 
     def add(self, component: ObjectiveComponent, weight: float = 1.0) -> ObjectiveBuilder:
         """
@@ -72,7 +72,7 @@ class ObjectiveBuilder:
             Linear expression to minimize
         """
         if not self.components:
-            # No objectives specified, return 0
+            # No objectives specified, return cp_model.LinearExpr.constant(0)
             from ortools.sat.python.cp_model import LinearExpr
             return LinearExpr.Sum([])
 
@@ -116,9 +116,8 @@ class ObjectiveBuilder:
                 terms.append(expr * scaled_weight)
 
         if terms:
-            return sum(terms)  # type: ignore[return-value]
-        from ortools.sat.python.cp_model import LinearExpr
-        return LinearExpr.Sum([])
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.Sum([])
 
     def get_summary(self) -> str:
         """

@@ -74,8 +74,8 @@ class AvoidSmallClasses:
             min_units: Minimum acceptable units for a class (default 3)
             penalty: Penalty cost for each class below min_units (default 1000)
         """
-        self.min_units = min_units
-        self.penalty = penalty
+        self.min_units: int = min_units
+        self.penalty: int = penalty
 
     def get_name(self) -> str:
         return "Avoid Small Classes"
@@ -108,4 +108,4 @@ class AvoidSmallClasses:
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)
-        return cp_model.LinearExpr.Sum([])  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)

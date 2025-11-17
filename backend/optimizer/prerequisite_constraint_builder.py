@@ -76,10 +76,10 @@ class PrerequisiteConstraintBuilder:
     """
 
     def __init__(self, ctx: ConstraintContext):
-        self.ctx = ctx
+        self.ctx: ConstraintContext = ctx
         self.warnings: list[str] = []
         self.errors: list[str] = []
-        self.constraints_added = 0
+        self.constraints_added: int = 0
 
     def add_all_prerequisite_constraints(
         self,

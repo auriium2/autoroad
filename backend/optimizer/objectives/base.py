@@ -57,6 +57,7 @@ class ObjectiveComponent(Protocol):
         Returns:
             A linear expression representing the cost to MINIMIZE.
             For maximization objectives, return negative values.
+            Return LinearExpr.constant(0) if this objective doesn't apply.
         """
         ...
 

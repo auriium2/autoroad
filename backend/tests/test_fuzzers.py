@@ -23,26 +23,26 @@ def fireroad_courses():
 def prerequisite_strings(fireroad_courses):
     """Extract all unique prerequisite strings from Fireroad courses."""
     prereq_strings = set()
-    
+
     for course in fireroad_courses:
         if 'prerequisites' in course and course['prerequisites']:
             prereq_strings.add(course['prerequisites'])
         if 'prereqs' in course and course['prereqs']:
             prereq_strings.add(course['prereqs'])
-    
+
     return {p for p in prereq_strings if p and p.strip()}
 
 
 class TestPrerequisiteParserFuzzer:
     """Integration tests for the prerequisite parser using real Fireroad data."""
-    
+
     def test_parser_handles_all_prerequisites(self, prerequisite_strings):
         """
         Test that the parser can handle ALL prerequisite strings from Fireroad
         without throwing exceptions.
         """
         failures = []
-        
+
         for prereq_str in prerequisite_strings:
             try:
                 result = parse_fireroad(prereq_str)
@@ -52,16 +52,16 @@ class TestPrerequisiteParserFuzzer:
                     'prereq_str': prereq_str,
                     'error': str(e)
                 })
-        
+
         assert len(failures) == 0, f"Parser failed on {len(failures)} prerequisites: {failures[:5]}"
-    
+
     def test_parser_produces_valid_output(self, prerequisite_strings):
         """
         Test that the parser produces valid PrereqNode objects
         (either PrereqCourse or PrereqGroup).
         """
         invalid_results = []
-        
+
         for prereq_str in prerequisite_strings:
             try:
                 result = parse_fireroad(prereq_str)
@@ -73,17 +73,17 @@ class TestPrerequisiteParserFuzzer:
             except Exception:
                 # Already tested in test_parser_handles_all_prerequisites
                 pass
-        
+
         assert len(invalid_results) == 0, \
             f"Parser produced invalid types: {invalid_results[:5]}"
-    
+
     def test_parsed_results_can_be_stringified(self, prerequisite_strings):
         """
         Test that all parsed results can be converted back to strings
         without errors.
         """
         stringification_failures = []
-        
+
         for prereq_str in prerequisite_strings:
             try:
                 parsed = parse_fireroad(prereq_str)
@@ -94,10 +94,10 @@ class TestPrerequisiteParserFuzzer:
                     'prereq_str': prereq_str,
                     'error': str(e)
                 })
-        
+
         assert len(stringification_failures) == 0, \
             f"Stringification failed on {len(stringification_failures)} results: {stringification_failures[:5]}"
-    
+
     def test_no_quoted_strings_in_parsed_courses(self, prerequisite_strings):
         """
         Regression test: Ensure no quoted strings (like ''permission of instructor'')
@@ -109,14 +109,14 @@ class TestPrerequisiteParserFuzzer:
             if isinstance(node, PrereqGroup):
                 return [cid for item in node.items for cid in extract_course_ids(item)]
             return []
-        
+
         quoted_string_failures = []
-        
+
         for prereq_str in prerequisite_strings:
             try:
                 parsed = parse_fireroad(prereq_str)
                 course_ids = extract_course_ids(parsed)
-                
+
                 for course_id in course_ids:
                     if course_id.startswith("''") or course_id.startswith('"'):
                         quoted_string_failures.append({
@@ -127,10 +127,10 @@ class TestPrerequisiteParserFuzzer:
             except Exception:
                 # Already tested in other tests
                 pass
-        
+
         assert len(quoted_string_failures) == 0, \
             f"Found quoted strings parsed as courses: {quoted_string_failures[:5]}"
-    
+
     def test_success_rate_meets_threshold(self, prerequisite_strings):
         """
         Meta-test: Ensure the parser has a high success rate (>99%).
@@ -138,7 +138,7 @@ class TestPrerequisiteParserFuzzer:
         """
         total = len(prerequisite_strings)
         successes = 0
-        
+
         for prereq_str in prerequisite_strings:
             try:
                 result = parse_fireroad(prereq_str)
@@ -146,28 +146,28 @@ class TestPrerequisiteParserFuzzer:
                     successes += 1
             except Exception:
                 pass
-        
+
         success_rate = (successes / total * 100) if total > 0 else 0
-        
+
         assert success_rate >= 99.0, \
             f"Parser success rate ({success_rate:.1f}%) is below 99% threshold"
 
 
 class TestFireroadDataIntegrity:
     """Tests to ensure Fireroad data is accessible and has expected structure."""
-    
+
     def test_fireroad_api_is_accessible(self, fireroad_courses):
         """Test that we can fetch data from Fireroad."""
         assert len(fireroad_courses) > 1000, \
             "Expected at least 1000 courses from Fireroad"
-    
+
     def test_courses_have_expected_fields(self, fireroad_courses):
         """Test that courses have the expected structure."""
         sample_course = fireroad_courses[0]
-        
+
         # Check for key fields
         assert 'subject_id' in sample_course, "Courses should have subject_id"
-    
+
     def test_prerequisite_strings_exist(self, prerequisite_strings):
         """Test that we extracted prerequisite strings."""
         assert len(prerequisite_strings) > 100, \
