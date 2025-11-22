@@ -64,7 +64,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )
@@ -139,7 +138,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )
@@ -214,7 +212,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )
@@ -288,7 +285,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )
@@ -364,7 +360,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )
@@ -436,7 +431,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_per_semester=60,
             max_units_iap=12,
             max_semesters=max_semesters
         )

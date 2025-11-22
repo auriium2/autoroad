@@ -176,10 +176,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   optimizeRoad: async (constraints, showProgress = true) => {
     const { markers } = get();
     
-    // Get objectives, requirements, and year from optimization store
+    // Get objectives, requirements, year, and lockPastSemesters from optimization store
     const selectedObjectives = useOptimizationStore.getState().selectedObjectives;
     const selectedRequirements = useOptimizationStore.getState().selectedRequirements;
     const selectedYear = useOptimizationStore.getState().selectedYear;
+    const lockPastSemesters = useOptimizationStore.getState().lockPastSemesters;
 
     set({
       loadingState: 'loading',
@@ -208,7 +209,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         selectedRequirements,
         constraints,
         selectedObjectives.length > 0 ? selectedObjectives : undefined,
-        planningYear
+        planningYear,
+        lockPastSemesters
       )) {
         // Handle completion status
         if (progress.isComplete && progress.status) {

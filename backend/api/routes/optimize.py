@@ -24,7 +24,11 @@ from optimizer.objectives.registry import (
 )
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
-from utils.utils import find_current_school_year, is_valid_class_semester
+from utils.utils import (
+    find_current_school_year,
+    get_current_semester_index,
+    is_valid_class_semester,
+)
 
 router = APIRouter()
 
@@ -151,7 +155,7 @@ def add_basic_constraints(
     ]
     if semester_1_takes:
         model.Add(sum(semester_1_takes) <= 48)
-    
+
     # Constraint: Hard limit for IAP semesters
     for semester in range(1, max_semesters + 1):
         is_iap = (semester - 2) % 3 == 0 and semester >= 2 and semester <= 11
@@ -163,6 +167,28 @@ def add_basic_constraints(
             ]
             if semester_takes:
                 model.Add(sum(semester_takes) <= max_units_iap)
+
+
+def add_past_semester_constraints(
+    model: cp_model.CpModel,
+    take_vars: dict[tuple[int, int], cp_model.IntVar],
+    courses_df: pl.DataFrame,
+    planning_year_start: int
+) -> None:
+    """Prevent optimizer from placing courses in semesters that have already passed."""
+    current_semester = get_current_semester_index(planning_year_start)
+
+    if current_semester <= 0:
+        return
+
+    print(f"[DEBUG] Locking past semesters: current semester is {current_semester}")
+
+    # For all semesters before the current one, prevent new placements
+    for course_idx in range(len(courses_df)):
+        for semester in range(1, current_semester):
+            if (course_idx, semester) in take_vars:
+                # Force this variable to 0 (cannot take this course in this past semester)
+                model.Add(take_vars[(course_idx, semester)] == 0)
 
 
 def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
@@ -229,6 +255,11 @@ async def optimize(request: OptimizationRequest):
                 model = cp_model.CpModel()
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
                 add_basic_constraints(model, take_vars, courses_df, max_units_iap, max_semesters)
+
+                # Add past semester constraints if enabled
+                if request.lockPastSemesters:
+                    add_past_semester_constraints(model, take_vars, courses_df, planning_year_start)
+
                 return model, take_vars
 
             model, take_vars = await loop.run_in_executor(None, create_model)

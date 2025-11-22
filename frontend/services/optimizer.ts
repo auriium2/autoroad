@@ -133,7 +133,8 @@ export const optimizerApi = {
     requiredCourses: string[],
     constraints?: OptimizationConstraints,
     objectives?: ObjectiveConfig[],
-    planningYear?: string
+    planningYear?: string,
+    lockPastSemesters?: boolean
   ): AsyncGenerator<OptimizationProgress> {
     const requestBody = {
       markers: markers.map(m => ({
@@ -148,6 +149,7 @@ export const optimizerApi = {
       },
       objectives: objectives || undefined,
       planningYear: planningYear || undefined,
+      lockPastSemesters: lockPastSemesters || false,
     };
 
     const response = await fetch(`${BACKEND_URL}/api/optimize`, {

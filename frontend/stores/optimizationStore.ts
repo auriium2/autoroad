@@ -5,12 +5,14 @@ interface OptimizationState {
   selectedObjectives: ObjectiveConfig[];
   selectedRequirements: string[];
   selectedYear?: string;
+  lockPastSemesters: boolean;
   expandedRequirements: string[];
   expandedRequirementNodes: Record<string, Set<string>>;
   
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
   setYear: (year?: string) => void;
+  setLockPastSemesters: (lock: boolean) => void;
   
   addRequirement: (requirement: string) => void;
   removeRequirement: (requirement: string) => void;
@@ -32,12 +34,14 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
   selectedObjectives: [],
   selectedRequirements: [],
   selectedYear: getDefaultYear(),
+  lockPastSemesters: false,
   expandedRequirements: [],
   expandedRequirementNodes: {},
   
   setObjectives: (objectives) => set({ selectedObjectives: objectives }),
   setRequirements: (requirements) => set({ selectedRequirements: requirements }),
   setYear: (year) => set({ selectedYear: year }),
+  setLockPastSemesters: (lock) => set({ lockPastSemesters: lock }),
   
   addRequirement: (requirement) =>
     set((state) => ({

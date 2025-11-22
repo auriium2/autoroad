@@ -199,6 +199,53 @@ def find_current_school_year():
 
     return school_year, planning_for_year
 
+
+def get_current_semester_index(planning_year_start: int) -> int:
+    """
+    Calculate which semester index (1-12) is the current semester.
+    Returns 0 if we're before the planning year starts.
+    
+    Semester mapping:
+    1 = Freshman Fall, 2 = Freshman IAP, 3 = Freshman Spring
+    4 = Sophomore Fall, 5 = Sophomore IAP, 6 = Sophomore Spring
+    ...
+    10 = Senior Fall, 11 = Senior IAP, 12 = Senior Spring
+    """
+    current_date = datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+
+    # Determine which academic year we're in
+    # Note: backend months are 1-indexed (1=January, 12=December)
+    if current_month >= 9:  # Fall semester (September onwards)
+        academic_year_start = current_year
+        semester_in_year = 0  # Fall
+    elif current_month == 1:  # IAP (January only)
+        academic_year_start = current_year - 1
+        semester_in_year = 1  # IAP
+    elif current_month >= 2:  # Spring semester (February onwards)
+        academic_year_start = current_year - 1
+        semester_in_year = 2  # Spring
+    else:  # August or earlier (before fall semester starts)
+        # Still in previous academic year's spring/summer
+        academic_year_start = current_year - 1
+        semester_in_year = 2  # Spring
+
+    # Calculate year offset from planning start
+    years_since_start = academic_year_start - planning_year_start
+
+    # Calculate semester index (1-12)
+    # Each year has 3 semesters (Fall=0, IAP=1, Spring=2)
+    semester_index = years_since_start * 3 + semester_in_year + 1
+
+    # Clamp to valid range
+    if semester_index < 1:
+        return 0  # Not started yet
+    if semester_index > 12:
+        return 12  # Already graduated
+
+    return semester_index
+
 # Tests
 if __name__ == "__main__":
     # Test cases for prerequisite parser

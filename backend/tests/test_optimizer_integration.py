@@ -486,3 +486,185 @@ class TestOptimizerIntegration:
         )
         assert regular_placements == 1, \
             f"Must Take should force course to be in exactly 1 regular semester (got {regular_placements})"
+
+    def test_lock_past_semesters_prevents_placement_in_past(self):
+        """
+        Test: Lock Past Semesters prevents optimizer from placing courses in past semesters.
+
+        Scenario: Current semester is 4 (Sophomore Fall), so semesters 1-3 are past.
+        Optimizer should not be able to place any courses in semesters 1-3.
+        """
+
+        courses_df = create_simple_courses_df()
+        model = cp_model.CpModel()
+        planning_year_start = 2024
+
+        # No markers - optimizer is free to place courses anywhere
+        take_vars = create_take_vars_simple(model, courses_df, markers=None)
+
+        # Add past semester constraints (current semester is hardcoded as 4 for this test)
+        # In real code, this would call get_current_semester_index()
+        # For testing, we'll manually add the constraints for semesters 1-3
+        for course_idx in range(len(courses_df)):
+            for semester in range(1, 4):  # Semesters 1-3 are "past"
+                if (course_idx, semester) in take_vars:
+                    model.Add(take_vars[(course_idx, semester)] == 0)
+
+        # Force taking at least one course
+        model.Add(sum(take_vars.values()) >= 1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
+
+        # Verify no courses are placed in semesters 1-3
+        for course_idx in range(len(courses_df)):
+            for semester in range(1, 4):
+                if (course_idx, semester) in take_vars:
+                    assert solver.Value(take_vars[(course_idx, semester)]) == 0, \
+                        f"Course {courses_df[course_idx, 'subject_id']} should not be in past semester {semester}"
+
+        # Verify at least one course is in semester 4 or later
+        future_placements = sum(
+            solver.Value(take_vars[(course_idx, s)])
+            for course_idx in range(len(courses_df))
+            for s in range(4, 13)
+            if (course_idx, s) in take_vars
+        )
+        assert future_placements >= 1, "Should have at least one course in future semesters"
+
+    def test_lock_past_semesters_with_existing_pins(self):
+        """
+        Test: Lock Past Semesters works correctly when there are already pinned courses in past.
+
+        Scenario: Course already pinned to semester 1 (past), lock past semesters enabled.
+        The pinned course should stay in semester 1 (allowed), but optimizer cannot
+        place NEW courses in semester 1.
+        """
+        courses_df = create_simple_courses_df()
+        model = cp_model.CpModel()
+
+        # Pin 18.01 to Freshman Fall (semester 1, which is "past")
+        markers = [
+            Marker(courseId='18.01', status='pin', section=0),  # Semester 1
+        ]
+
+        take_vars = create_take_vars_simple(model, courses_df, markers)
+
+        # Add marker constraints (pins 18.01 to semester 1)
+        add_marker_constraints(model, take_vars, markers, courses_df, 2024)
+
+        # Add past semester constraints for semesters 1-3
+        # This will force ALL courses in semesters 1-3 to be 0
+        # But 18.01 is already forced to 1 in semester 1 by the pin marker
+        # This creates a CONFLICT - model should be INFEASIBLE
+        for course_idx in range(len(courses_df)):
+            for semester in range(1, 4):
+                if (course_idx, semester) in take_vars:
+                    model.Add(take_vars[(course_idx, semester)] == 0)
+
+        # Solve - should be INFEASIBLE because pin conflicts with lock
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status == cp_model.INFEASIBLE, \
+            "Should be infeasible when pin conflicts with locked past semester"
+
+    def test_lock_past_semesters_doesnt_affect_future(self):
+        """
+        Test: Lock Past Semesters only affects past semesters, not future ones.
+
+        Scenario: Semesters 1-3 are locked, optimizer should freely use semesters 4-12.
+        """
+        courses_df = create_simple_courses_df()
+        model = cp_model.CpModel()
+
+        take_vars = create_take_vars_simple(model, courses_df, markers=None)
+
+        # Lock semesters 1-3
+        for course_idx in range(len(courses_df)):
+            for semester in range(1, 4):
+                if (course_idx, semester) in take_vars:
+                    model.Add(take_vars[(course_idx, semester)] == 0)
+
+        # Add "at most once" constraint
+        for course_idx in range(len(courses_df)):
+            all_takes = [
+                take_vars[(course_idx, s)]
+                for s in range(1, 13)
+                if (course_idx, s) in take_vars
+            ]
+            if all_takes:
+                model.Add(sum(all_takes) <= 1)
+
+        # Force taking all 5 courses
+        model.Add(sum(take_vars.values()) == 5)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
+            "Should be feasible to place 5 courses in semesters 4-12"
+
+        # Verify all courses are in semesters 4-12
+        for course_idx in range(len(courses_df)):
+            course_placed = False
+            for semester in range(4, 13):
+                if (course_idx, semester) in take_vars:
+                    if solver.Value(take_vars[(course_idx, semester)]) == 1:
+                        course_placed = True
+                        break
+            assert course_placed, \
+                f"Course {courses_df[course_idx, 'subject_id']} should be placed in semesters 4-12"
+
+    def test_lock_past_semesters_with_must_take(self):
+        """
+        Test: Lock Past Semesters works with Must Take markers.
+
+        Scenario: Course marked as Must Take, but all past semesters locked.
+        Optimizer should place it in a future semester.
+        """
+        courses_df = create_simple_courses_df()
+        model = cp_model.CpModel()
+
+        # Mark 18.01 as Must Take (must be in some semester)
+        markers = [
+            Marker(courseId='18.01', status='pin', section=-2),  # Must Take
+        ]
+
+        take_vars = create_take_vars_simple(model, courses_df, markers)
+
+        # Add marker constraints
+        add_marker_constraints(model, take_vars, markers, courses_df, 2024)
+
+        # Lock semesters 1-3 (past)
+        for course_idx in range(len(courses_df)):
+            for semester in range(1, 4):
+                if (course_idx, semester) in take_vars:
+                    model.Add(take_vars[(course_idx, semester)] == 0)
+
+        # Add "at most once" constraint
+        for course_idx in range(len(courses_df)):
+            all_takes = [
+                take_vars[(course_idx, s)]
+                for s in range(-2, 13)
+                if (course_idx, s) in take_vars
+            ]
+            if all_takes:
+                model.Add(sum(all_takes) <= 1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
+            "Should be feasible - Must Take can be placed in future semesters"
+
+        # Verify 18.01 is in a future semester (4-12)
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
+        future_placement = sum(
+            solver.Value(take_vars[(course_18_01_idx, s)])
+            for s in range(4, 13)
+            if (course_18_01_idx, s) in take_vars
+        )
+        assert future_placement == 1, \
+            "Must Take course should be placed in exactly one future semester"

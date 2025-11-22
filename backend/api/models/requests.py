@@ -26,3 +26,4 @@ class OptimizationRequest(BaseModel):
     constraints: OptimizationConstraints = Field(default_factory=OptimizationConstraints)
     planningYear: str | None = Field(default=None, description="Planning year (e.g., '2024-2025')")
     objectives: list[ObjectiveConfig] | None = Field(default=None, description="Optimization objectives (if None, uses defaults)")
+    lockPastSemesters: bool = Field(default=False, description="Prevent optimizer from modifying semesters that have already passed")

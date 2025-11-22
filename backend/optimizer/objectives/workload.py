@@ -219,9 +219,9 @@ class LimitUnitsPerSemester:
 
             # Create a variable for number of units in this semester
             max_possible_units = sum(
-                int(context.courses_df[course_idx, 'total_units']) 
-                for course_idx, _ in take_vars.keys() 
-                if 'total_units' in context.courses_df.columns 
+                int(context.courses_df[course_idx, 'total_units'])
+                for course_idx, _ in take_vars.keys()
+                if 'total_units' in context.courses_df.columns
                 and context.courses_df[course_idx, 'total_units'] is not None
                 and context.courses_df[course_idx, 'total_units'] > 0
             )

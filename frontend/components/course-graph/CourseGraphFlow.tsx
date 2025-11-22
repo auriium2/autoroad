@@ -20,11 +20,13 @@ import './reactflow-custom.css';
 
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
 import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode } from "@/stores/roadStore";
+import { useOptimizationStore } from "@/stores/optimizationStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
 import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrerequisites";
 import { toast as showToast } from "@/hooks/useToast";
+import { isPastSemesterById } from "@/lib/semesterUtils";
 
 // Custom node component wrapper for React Flow
 const FlowCourseNode = React.memo(({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) => {
@@ -71,6 +73,10 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
   const COLUMN_WIDTH = 200;
   const transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
 
+  const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
+  const selectedYear = useOptimizationStore((state) => state.selectedYear);
+  const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
+
   return (
     <>
       {/* Column backgrounds */}
@@ -88,7 +94,7 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
         }}
       >
         {sections.map((section, index) => {
-          // Must Take column (id: -2) - purple hazard overlay
+          //must take overlay
           if (section.id === -2) {
             return (
               <div
@@ -104,7 +110,7 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
               />
             );
           }
-          // ASEs column (id: -1) - lighter grey background
+          //ase overlay
           if (section.id === -1) {
             return (
               <div key={`bg-${section.id}`}
@@ -119,6 +125,24 @@ function ColumnHeaders({ sections, viewport }: { sections: Section[]; viewport: 
               />
             );
           }
+
+          //past semesters overlay
+          if (lockPastSemesters && graduationYear && section.id >= 0 && isPastSemesterById(section.id, graduationYear)) {
+            return (
+              <div
+                key={`bg-${section.id}`}
+                style={{
+                  position: 'absolute',
+                  left: index * COLUMN_WIDTH,
+                  top: -2000,
+                  width: COLUMN_WIDTH,
+                  height: 10000,
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                }}
+              />
+            );
+          }
+
           return null;
         })}
       </div>

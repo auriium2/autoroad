@@ -11,7 +11,7 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
-from .base import OBJECTIVE_SCALE, ObjectiveContext
+from .base import ObjectiveContext
 
 
 class DiscourageEquivalentCourses:
@@ -58,29 +58,29 @@ class DiscourageEquivalentCourses:
                 print(f"[DEBUG] Loaded {len(default_overrides)} default equivalency overrides")
             except Exception as e:
                 print(f"[WARNING] Failed to load equivalency overrides: {e}")
-        
+
         # Build merged equivalency map: courseId -> set of equivalent courseIds
         equiv_map: dict[str, set[str]] = {}
-        
+
         # 1. Add equivalencies from Fireroad API
         if 'equivalent_subjects' in courses_df.columns:
             for i in range(len(courses_df)):
                 course_id = courses_df[i, 'subject_id']
                 equiv_data = courses_df[i, 'equivalent_subjects']
-                
+
                 if equiv_data is not None:
                     equiv_list = equiv_data.to_list() if hasattr(equiv_data, 'to_list') else list(equiv_data) if hasattr(equiv_data, '__iter__') else []
                     if equiv_list:
                         if course_id not in equiv_map:
                             equiv_map[course_id] = set()
                         equiv_map[course_id].update(equiv_list)
-        
+
         # 2. Merge default overrides
         for course_id, equivalents in default_overrides.items():
             if course_id not in equiv_map:
                 equiv_map[course_id] = set()
             equiv_map[course_id].update(equivalents)
-        
+
         # 3. Merge custom user equivalencies
         if custom_equivalencies:
             print(f"[DEBUG] Merging {len(custom_equivalencies)} custom equivalencies")
@@ -88,12 +88,12 @@ class DiscourageEquivalentCourses:
                 if course_id not in equiv_map:
                     equiv_map[course_id] = set()
                 equiv_map[course_id].update(equivalents)
-        
+
         # Build equivalency groups from the merged map
         equiv_groups = []
         processed = set()
         course_id_to_idx = {courses_df[i, 'subject_id']: i for i in range(len(courses_df))}
-        
+
         # Debug: check if 6.100A and 6.100L are in the catalog
         print(f"[DEBUG EQUIV PREPROCESS] Checking for 6.100A in catalog: {'6.100A' in course_id_to_idx}")
         print(f"[DEBUG EQUIV PREPROCESS] Checking for 6.100L in catalog: {'6.100L' in course_id_to_idx}")
@@ -173,7 +173,7 @@ class DiscourageEquivalentCourses:
                     # course_taken = 1 if any semester variable is 1
                     model.AddMaxEquality(course_taken, course_takes)
                     course_indicators.append(course_taken)
-                    
+
                     if '18.01' in course_names or 'ES.1801' in course_names:
                         if course_id in ['18.01', 'ES.1801']:
                             print(f"[DEBUG EQUIV] *** {course_id}: found {len(course_takes)} take_vars across semesters")
