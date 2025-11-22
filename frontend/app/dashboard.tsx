@@ -186,7 +186,7 @@ export default function Dashboard() {
     }
   };
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex w-screen h-screen">
         <AppSidebar />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
