@@ -215,7 +215,6 @@ export default function Dashboard() {
                 <Download className="h-4 w-4" />
                 {isExporting ? "Exporting..." : "Export"}
               </Button>
-              <Button size="sm">Open in CourseRoad</Button>
             </div>
           </header>
           <div className="flex flex-col p-4 gap-4 flex-grow min-h-0 relative z-0">

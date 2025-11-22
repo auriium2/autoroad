@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { SimpleSelect } from "@/components/ui/simple-select";
-import { ObjectiveSelector } from "./ObjectiveSelector";
-import { RequirementSelector } from "./RequirementSelector";
+import { UnifiedParameterSelector } from "./UnifiedParameterSelector";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 
 function getGraduationYearOptions() {
@@ -27,8 +26,6 @@ function getGraduationYearOptions() {
 const YEAR_OPTIONS = getGraduationYearOptions();
 
 export function ParametersTab() {
-  const [activeTab, setActiveTab] = React.useState<'degrees' | 'objectives'>('degrees');
-  
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const setYear = useOptimizationStore((state) => state.setYear);
 
@@ -51,43 +48,9 @@ export function ParametersTab() {
         </p>
       </div>
 
-      {/* Tab Headers */}
-      <div className="flex border-b border-border">
-        <button
-          onClick={() => setActiveTab('degrees')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'degrees'
-              ? 'text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Degrees
-        </button>
-        <button
-          onClick={() => setActiveTab('objectives')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-            activeTab === 'objectives'
-              ? 'text-foreground border-b-2 border-primary'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          Objectives
-        </button>
-      </div>
-
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === 'degrees' && (
-          <div className="p-4">
-            <RequirementSelector />
-          </div>
-        )}
-
-        {activeTab === 'objectives' && (
-          <div className="p-4">
-            <ObjectiveSelector />
-          </div>
-        )}
+      {/* Unified Content */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <UnifiedParameterSelector />
       </div>
     </div>
   );
