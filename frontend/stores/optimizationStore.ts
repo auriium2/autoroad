@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ObjectiveConfig } from '@/services/optimizer';
+import { useGraphStore } from './roadStore';
 
 interface OptimizationState {
   selectedObjectives: ObjectiveConfig[];
@@ -30,6 +31,14 @@ function getDefaultYear(): string {
   return String(freshmanGradYear);
 }
 
+function markOptimizationAsStale() {
+  const graphStore = useGraphStore.getState();
+  // Only mark as stale if there's an existing optimization result
+  if (graphStore.optimizerNodes.length > 0) {
+    useGraphStore.setState({ markersChangedSinceOptimization: true });
+  }
+}
+
 export const useOptimizationStore = create<OptimizationState>((set) => ({
   selectedObjectives: [],
   selectedRequirements: [],
@@ -38,20 +47,36 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
   expandedRequirements: [],
   expandedRequirementNodes: {},
   
-  setObjectives: (objectives) => set({ selectedObjectives: objectives }),
-  setRequirements: (requirements) => set({ selectedRequirements: requirements }),
-  setYear: (year) => set({ selectedYear: year }),
-  setLockPastSemesters: (lock) => set({ lockPastSemesters: lock }),
+  setObjectives: (objectives) => {
+    markOptimizationAsStale();
+    set({ selectedObjectives: objectives });
+  },
+  setRequirements: (requirements) => {
+    markOptimizationAsStale();
+    set({ selectedRequirements: requirements });
+  },
+  setYear: (year) => {
+    markOptimizationAsStale();
+    set({ selectedYear: year });
+  },
+  setLockPastSemesters: (lock) => {
+    markOptimizationAsStale();
+    set({ lockPastSemesters: lock });
+  },
   
-  addRequirement: (requirement) =>
+  addRequirement: (requirement) => {
+    markOptimizationAsStale();
     set((state) => ({
       selectedRequirements: [...state.selectedRequirements, requirement],
-    })),
+    }));
+  },
   
-  removeRequirement: (requirement) =>
+  removeRequirement: (requirement) => {
+    markOptimizationAsStale();
     set((state) => ({
       selectedRequirements: state.selectedRequirements.filter((r) => r !== requirement),
-    })),
+    }));
+  },
   
   toggleRequirementExpanded: (requirement) =>
     set((state) => ({

@@ -44,10 +44,11 @@ export function isPastSemesterById(
   }
   
   // Compare with current date
+  // We consider a semester "past" if it has already started (including current semester)
   if (semesterYear < currentYear) {
     return true;
   } else if (semesterYear === currentYear) {
-    return semesterMonth < currentMonth;
+    return semesterMonth <= currentMonth;
   }
   
   return false;
@@ -101,10 +102,11 @@ export function isPastSemester(
   }
   
   // Compare with current date
+  // We consider a semester "past" if it has already started (including current semester)
   if (semesterYear < currentYear) {
     return true;
   } else if (semesterYear === currentYear) {
-    return semesterMonth < currentMonth;
+    return semesterMonth <= currentMonth;
   }
   
   return false;

@@ -555,20 +555,38 @@ class TestOptimizerIntegration:
         # Add marker constraints (pins 18.01 to semester 1)
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
-        # Add past semester constraints for semesters 1-3
-        # This will force ALL courses in semesters 1-3 to be 0
-        # But 18.01 is already forced to 1 in semester 1 by the pin marker
-        # This creates a CONFLICT - model should be INFEASIBLE
-        for course_idx in range(len(courses_df)):
-            for semester in range(1, 4):
-                if (course_idx, semester) in take_vars:
-                    model.Add(take_vars[(course_idx, semester)] == 0)
+        # Import the actual function to test
+        from api.routes.optimize import add_past_semester_constraints
+        
+        # Mock get_current_semester_index to return 4 (Sophomore Fall)
+        # This makes semesters 1-4 past
+        from unittest.mock import patch
+        with patch('api.routes.optimize.get_current_semester_index', return_value=4):
+            add_past_semester_constraints(model, take_vars, courses_df, 2024, markers)
 
-        # Solve - should be INFEASIBLE because pin conflicts with lock
+        # Force taking another course (to verify optimizer can still work)
+        course_18_02_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.02')
+        model.Add(sum(take_vars[(course_18_02_idx, s)] for s in range(5, 13) if (course_18_02_idx, s) in take_vars) >= 1)
+
+        # Solve - should be FEASIBLE because pinned courses are allowed in past
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
-        assert status == cp_model.INFEASIBLE, \
-            "Should be infeasible when pin conflicts with locked past semester"
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
+            "Should be feasible when pinned courses are in past semesters"
+        
+        # Verify 18.01 is in semester 1 (pinned, allowed)
+        course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
+        assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1, \
+            "Pinned course should stay in past semester 1"
+        
+        # Verify no OTHER courses are in semesters 1-4 (locked)
+        for course_idx in range(len(courses_df)):
+            if course_idx == course_18_01_idx:
+                continue  # Skip the pinned course
+            for semester in range(1, 5):
+                if (course_idx, semester) in take_vars:
+                    assert solver.Value(take_vars[(course_idx, semester)]) == 0, \
+                        f"Non-pinned course should not be in past semester {semester}"
 
     def test_lock_past_semesters_doesnt_affect_future(self):
         """

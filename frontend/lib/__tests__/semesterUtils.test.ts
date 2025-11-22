@@ -35,11 +35,12 @@ describe('semesterUtils', () => {
       expect(isPastSemester('Freshman Spring', 2029)).toBe(true);
     });
 
-    it('should return false for current semester', () => {
+    it('should return true for current semester (already started)', () => {
       // Mock current date: September 2025 (Freshman Fall for Class of 2029)
       mockDate(2025, 8); // September
       
-      expect(isPastSemester('Freshman Fall', 2029)).toBe(false);
+      // Current semester is considered "past" since it has already started
+      expect(isPastSemester('Freshman Fall', 2029)).toBe(true);
     });
 
     it('should return false for future semesters', () => {
@@ -57,7 +58,7 @@ describe('semesterUtils', () => {
       mockDate(2026, 0); // January
       
       expect(isPastSemester('Freshman Fall', 2029)).toBe(true);
-      expect(isPastSemester('Freshman IAP', 2029)).toBe(false);
+      expect(isPastSemester('Freshman IAP', 2029)).toBe(true); // Current semester is past
       expect(isPastSemester('Freshman Spring', 2029)).toBe(false);
     });
 
@@ -67,7 +68,7 @@ describe('semesterUtils', () => {
       
       expect(isPastSemester('Freshman Fall', 2029)).toBe(true);
       expect(isPastSemester('Freshman IAP', 2029)).toBe(true);
-      expect(isPastSemester('Freshman Spring', 2029)).toBe(false); // Current semester
+      expect(isPastSemester('Freshman Spring', 2029)).toBe(true); // Current semester is past
       expect(isPastSemester('Sophomore Fall', 2029)).toBe(false);
     });
 
@@ -83,8 +84,8 @@ describe('semesterUtils', () => {
       expect(isPastSemester('Sophomore IAP', 2029)).toBe(true);
       expect(isPastSemester('Sophomore Spring', 2029)).toBe(true);
       
-      // Current and future semesters should not be past
-      expect(isPastSemester('Junior Fall', 2029)).toBe(false);
+      // Current semester is past, future semesters are not
+      expect(isPastSemester('Junior Fall', 2029)).toBe(true); // Current semester
       expect(isPastSemester('Junior IAP', 2029)).toBe(false);
       expect(isPastSemester('Junior Spring', 2029)).toBe(false);
       expect(isPastSemester('Senior Fall', 2029)).toBe(false);
@@ -96,7 +97,7 @@ describe('semesterUtils', () => {
       
       expect(isPastSemester('Senior Fall', 2029)).toBe(true);
       expect(isPastSemester('Senior IAP', 2029)).toBe(true);
-      expect(isPastSemester('Senior Spring', 2029)).toBe(false);
+      expect(isPastSemester('Senior Spring', 2029)).toBe(true); // Current semester is past
     });
 
     it('should return false for invalid semester labels', () => {
@@ -154,8 +155,8 @@ describe('semesterUtils', () => {
       expect(isPastSemesterById(1, 2029)).toBe(true); // Freshman IAP
       expect(isPastSemesterById(2, 2029)).toBe(true); // Freshman Spring
       
-      // Section ID 3 is Sophomore Fall (current)
-      expect(isPastSemesterById(3, 2029)).toBe(false);
+      // Section ID 3 is Sophomore Fall (current - also considered past)
+      expect(isPastSemesterById(3, 2029)).toBe(true);
       
       // Future semesters
       expect(isPastSemesterById(4, 2029)).toBe(false); // Sophomore IAP
@@ -180,13 +181,13 @@ describe('semesterUtils', () => {
       // Freshman IAP (section 1) - January 2026
       mockDate(2026, 0); // January
       expect(isPastSemesterById(0, 2029)).toBe(true); // Freshman Fall is past
-      expect(isPastSemesterById(1, 2029)).toBe(false); // Freshman IAP is current
+      expect(isPastSemesterById(1, 2029)).toBe(true); // Freshman IAP is current (also considered past)
       
       // Freshman Spring (section 2) - February 2026
       mockDate(2026, 1); // February
       expect(isPastSemesterById(0, 2029)).toBe(true); // Freshman Fall is past
       expect(isPastSemesterById(1, 2029)).toBe(true); // Freshman IAP is past
-      expect(isPastSemesterById(2, 2029)).toBe(false); // Freshman Spring is current
+      expect(isPastSemesterById(2, 2029)).toBe(true); // Freshman Spring is current (also considered past)
     });
 
     it('should match isPastSemester results', () => {
@@ -223,13 +224,14 @@ describe('semesterUtils', () => {
       
       const pastSemesters = getPastSemesters(2029);
       
-      // Should include all freshman year semesters
+      // Should include all freshman year semesters and current semester
       expect(pastSemesters).toContain('Freshman Fall');
       expect(pastSemesters).toContain('Freshman IAP');
       expect(pastSemesters).toContain('Freshman Spring');
+      expect(pastSemesters).toContain('Sophomore Fall'); // Current semester is past
       
-      // Should not include current or future semesters
-      expect(pastSemesters).not.toContain('Sophomore Fall');
+      // Should not include future semesters
+      expect(pastSemesters).not.toContain('Sophomore IAP');
       expect(pastSemesters).not.toContain('Senior Spring');
     });
 

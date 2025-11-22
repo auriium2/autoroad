@@ -4,6 +4,7 @@ import { SimpleSelect } from "@/components/ui/simple-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UnifiedParameterSelector } from "./UnifiedParameterSelector";
 import { useOptimizationStore } from "@/stores/optimizationStore";
+import { useGraphStore } from "@/stores/roadStore";
 
 function getGraduationYearOptions() {
   const currentDate = new Date();
@@ -31,6 +32,7 @@ export function ParametersTab() {
   const setYear = useOptimizationStore((state) => state.setYear);
   const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
   const setLockPastSemesters = useOptimizationStore((state) => state.setLockPastSemesters);
+  const isOptimizing = useGraphStore((state) => state.isOptimizing);
 
   return (
     <div className="flex flex-col h-full">
@@ -46,6 +48,7 @@ export function ParametersTab() {
             options={YEAR_OPTIONS}
             value={selectedYear}
             onValueChange={setYear}
+            disabled={isOptimizing}
           />
         </div>
 
@@ -56,11 +59,12 @@ export function ParametersTab() {
             checked={lockPastSemesters}
             onCheckedChange={(checked) => setLockPastSemesters(!!checked)}
             className="mt-0.5"
+            disabled={isOptimizing}
           />
           <div className="flex-1">
             <Label
               htmlFor="lock-past-semesters"
-              className="text-sm font-medium cursor-pointer"
+              className={`text-sm font-medium cursor-pointer ${isOptimizing ? 'opacity-50' : ''}`}
             >
               Lock Past Semesters
             </Label>
@@ -73,7 +77,13 @@ export function ParametersTab() {
 
       {/* Unified Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        <UnifiedParameterSelector />
+        {isOptimizing ? (
+          <div className="text-sm text-muted-foreground py-4">
+            Optimizing schedule, please wait...
+          </div>
+        ) : (
+          <UnifiedParameterSelector />
+        )}
       </div>
     </div>
   );

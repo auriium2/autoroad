@@ -173,9 +173,14 @@ def add_past_semester_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pl.DataFrame,
-    planning_year_start: int
+    planning_year_start: int,
+    markers: Sequence[Marker] | None = None
 ) -> None:
-    """Prevent optimizer from placing courses in semesters that have already passed."""
+    """
+    Prevent optimizer from placing courses in semesters that have already passed.
+    
+    Pinned courses in past semesters are allowed (user explicitly placed them there).
+    """
     current_semester = get_current_semester_index(planning_year_start)
 
     if current_semester <= 0:
@@ -183,10 +188,34 @@ def add_past_semester_constraints(
 
     print(f"[DEBUG] Locking past semesters: current semester is {current_semester}")
 
-    # For all semesters before the current one, prevent new placements
+    # Build a set of (course_id, semester) tuples for pinned courses in past semesters
+    pinned_past_courses = set()
+    if markers:
+        # Build course_id -> course_idx mapping
+        course_id_to_idx = {}
+        for idx in range(len(courses_df)):
+            subject_id = courses_df[idx, 'subject_id']
+            course_id_to_idx[subject_id] = idx
+
+        for marker in markers:
+            if marker.status == "pin" and marker.section >= 0:
+                course_idx = course_id_to_idx.get(marker.courseId)
+                if course_idx is not None:
+                    # Convert section (0-based) to semester (1-based)
+                    semester = marker.section + 1
+                    if semester <= current_semester:
+                        pinned_past_courses.add((course_idx, semester))
+                        print(f"[DEBUG] Allowing pinned course {marker.courseId} in past semester {semester}")
+
+    # For all semesters up to and including the current one, prevent new placements
+    # We lock the current semester too since it's already in progress
     for course_idx in range(len(courses_df)):
-        for semester in range(1, current_semester):
+        for semester in range(1, current_semester + 1):
             if (course_idx, semester) in take_vars:
+                # Skip if this course is pinned to this past semester
+                if (course_idx, semester) in pinned_past_courses:
+                    continue
+                
                 # Force this variable to 0 (cannot take this course in this past semester)
                 model.Add(take_vars[(course_idx, semester)] == 0)
 
@@ -258,7 +287,7 @@ async def optimize(request: OptimizationRequest):
 
                 # Add past semester constraints if enabled
                 if request.lockPastSemesters:
-                    add_past_semester_constraints(model, take_vars, courses_df, planning_year_start)
+                    add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
 
                 return model, take_vars
 

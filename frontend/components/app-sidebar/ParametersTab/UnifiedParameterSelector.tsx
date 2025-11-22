@@ -340,7 +340,7 @@ export function UnifiedParameterSelector() {
               const isExpanded = expandedRequirements.includes(item.key);
 
               return (
-                <div key={`degree-${item.key}`} className="relative border border-border rounded overflow-hidden">
+                <div key={`${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
                   {/* Blue gradient overlay for degrees - bottom-left stays black, top-right becomes blue */}
                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-blue-500/15" />
 
@@ -384,7 +384,7 @@ export function UnifiedParameterSelector() {
               const isExpanded = expandedObjectives.has(item.key);
 
               return (
-                <div key={`objective-${item.key}`} className="border border-border rounded p-3">
+                <div key={`${item.type}-${item.key}`} className="border border-border rounded p-3">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <button

@@ -165,7 +165,7 @@ def is_valid_class_semester(class_idx: int, semester: int, df: pl.DataFrame, pla
         semester_ok = df[class_idx, 'offered_fall']
     elif semester % 3 == 2:  # IAP semester
         semester_year = planning_year_start + (semester // 3)
-        academic_year = f"{semester_year - 1}-{semester_year}"
+        academic_year = f"{semester_year}-{semester_year + 1}"
         semester_ok = df[class_idx, 'offered_IAP']
     else:  # Spring semester
         semester_year = planning_year_start + (semester // 3) - 1
