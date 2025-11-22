@@ -38,9 +38,9 @@ export function DashboardAlerts() {
       title: "Welcome to Autoroad",
       description:
         "Plan semesters, drop in ASEs, and optimize your road whenever you're ready.",
-      durationMs: 5000,
+      durationMs: 30000,
     });
-  }, [showOrReplaceToast]);
+  }, []); // Only run once on mount
 
   return null;
 }

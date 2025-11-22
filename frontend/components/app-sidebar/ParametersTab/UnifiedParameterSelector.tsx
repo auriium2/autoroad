@@ -276,7 +276,7 @@ export function UnifiedParameterSelector() {
                       </div>
                       {objectives.map((item) => (
                         <button
-                          key={`${item.type}-${item.key}`}
+                          key={`search-${item.type}-${item.key}`}
                           onClick={() => handleToggleObjective(item.metadata)}
                           className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
                         >
@@ -298,7 +298,7 @@ export function UnifiedParameterSelector() {
                       </div>
                       {degrees.map((item) => (
                         <button
-                          key={`${item.type}-${item.key}`}
+                          key={`search-${item.type}-${item.key}`}
                           onClick={() => handleAddRequirement(item.key)}
                           className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
                         >
@@ -335,7 +335,7 @@ export function UnifiedParameterSelector() {
               const isExpanded = expandedRequirements.includes(item.key);
 
               return (
-                <div key={`${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
+                <div key={`selected-${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
                   {/* Blue gradient overlay for degrees - bottom-left stays black, top-right becomes blue */}
                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-blue-500/15" />
 
@@ -381,7 +381,7 @@ export function UnifiedParameterSelector() {
               const objectiveTier = objectiveTiers[item.key] ?? 0;
 
               return (
-                <div key={`${item.type}-${item.key}`} className="border border-border rounded p-3">
+                <div key={`selected-${item.type}-${item.key}`} className="border border-border rounded p-3">
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <button

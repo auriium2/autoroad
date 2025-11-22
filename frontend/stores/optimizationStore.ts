@@ -73,9 +73,15 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
   
   addRequirement: (requirement) => {
     markOptimizationAsStale();
-    set((state) => ({
-      selectedRequirements: [...state.selectedRequirements, requirement],
-    }));
+    set((state) => {
+      // Don't add duplicates
+      if (state.selectedRequirements.includes(requirement)) {
+        return state;
+      }
+      return {
+        selectedRequirements: [...state.selectedRequirements, requirement],
+      };
+    });
   },
   
   removeRequirement: (requirement) => {

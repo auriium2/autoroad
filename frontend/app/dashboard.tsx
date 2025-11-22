@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
 import {
@@ -21,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2 } from "lucide-react";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
+import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
 import { useGraphStore } from "@/stores/roadStore";
 import { Toaster } from "@/components/ui/toaster";
 import { toast as showToast } from "@/hooks/useToast";
@@ -34,6 +36,7 @@ import {
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadFile } from "@/lib/roadFormat";
 import { fireroadApi } from "@/services/fireroad";
+import { prefetchCourses } from "@/lib/coursePrefetch";
 
 export default function Dashboard() {
   const [isOptimizing, setIsOptimizing] = React.useState(false);
@@ -41,16 +44,30 @@ export default function Dashboard() {
   const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
 
+  const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
 
   // Get store functions
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
   const optimizationProgress = useGraphStore(state => state.optimizationProgress);
   const markers = useGraphStore(state => state.markers);
+  const optimizerNodes = useGraphStore(state => state.optimizerNodes);
   const loadRoadData = useGraphStore(state => state.loadRoadData);
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
 
   const prevStatusRef = React.useRef<string | null>(null);
+
+  // Prefetch courses from user's schedule on app load
+  React.useEffect(() => {
+    const courseIds = [
+      ...markers.map(m => m.courseId),
+      ...optimizerNodes.map(n => n.courseId)
+    ];
+    
+    if (courseIds.length > 0) {
+      prefetchCourses(queryClient, courseIds);
+    }
+  }, []); // Only run once on mount
 
   React.useEffect(() => {
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
@@ -187,6 +204,7 @@ export default function Dashboard() {
   };
   return (
     <SidebarProvider defaultOpen={true}>
+      <RequirementPrefetcher />
       <div className="flex w-screen h-screen">
         <AppSidebar />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
