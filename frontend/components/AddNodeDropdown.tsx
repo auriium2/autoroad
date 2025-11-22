@@ -23,29 +23,25 @@ interface AddNodeDropdownProps {
 }
 
 function useNodeFiltering(availableNodes: AvailableNode[], searchTerm: string): AvailableNode[] {
-  return React.useMemo(() => {
-    if (!searchTerm) return availableNodes;
+  if (!searchTerm) return availableNodes;
 
-    return availableNodes.filter(
-      (node) =>
-        node.courseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        node.department.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [searchTerm, availableNodes]);
+  return availableNodes.filter(
+    (node) =>
+      node.courseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      node.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      node.department.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 }
 
 function useNodeGrouping(filteredNodes: AvailableNode[]): Record<string, AvailableNode[]> {
-  return React.useMemo(() => {
-    const groups: Record<string, AvailableNode[]> = {};
-    filteredNodes.forEach((node) => {
-      if (!groups[node.department]) {
-        groups[node.department] = [];
-      }
-      groups[node.department].push(node);
-    });
-    return groups;
-  }, [filteredNodes]);
+  const groups: Record<string, AvailableNode[]> = {};
+  filteredNodes.forEach((node) => {
+    if (!groups[node.department]) {
+      groups[node.department] = [];
+    }
+    groups[node.department].push(node);
+  });
+  return groups;
 }
 
 export function AddNodeDropdown({

@@ -26,16 +26,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setIsMounted(true);
   }, []);
 
-  const persister = React.useMemo(
-    () =>
-      isMounted
-        ? createSyncStoragePersister({
-            storage: window.localStorage,
-            key: "autoroad_query_cache",
-          })
-        : undefined,
-    [isMounted]
-  );
+  const persister = isMounted
+    ? createSyncStoragePersister({
+        storage: window.localStorage,
+        key: "autoroad_query_cache",
+      })
+    : undefined;
 
   if (!isMounted || !persister) {
     return (

@@ -29,7 +29,7 @@ import { toast as showToast } from "@/hooks/useToast";
 import { isPastSemesterById } from "@/lib/semesterUtils";
 
 // Custom node component wrapper for React Flow
-const FlowCourseNode = React.memo(({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) => {
+const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean } }) => {
   return (
     <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
       {/* Handles at edges of the circle - centered vertically on the 36px circle */}
@@ -59,7 +59,7 @@ const FlowCourseNode = React.memo(({ data }: { data: CourseNodeType & { disableT
       />
     </div>
   );
-});
+};
 
 FlowCourseNode.displayName = 'FlowCourseNode';
 
@@ -368,21 +368,11 @@ function CourseGraphFlowInner({
     return () => clearTimeout(timer);
   }, [storeNodes, isOptimizing]);
 
-  const nodesToCalculateEdges = React.useMemo(() => {
-    return debouncedNodes;
-  }, [debouncedNodes]);
-
   // Fetch prerequisite edges using the hook
-  const { data: storeEdges = [] } = usePrerequisiteEdges(nodesToCalculateEdges);
+  const { data: storeEdges = [] } = usePrerequisiteEdges(debouncedNodes);
 
   // Fetch missing prerequisites for all nodes (skip during optimization for performance)
-  const nodesToCheck = React.useMemo(() => {
-    if (isOptimizing) {
-      return []; // Skip during optimization for performance
-    } else {
-      return storeNodes; // Check all nodes
-    }
-  }, [isOptimizing, storeNodes]);
+  const nodesToCheck = isOptimizing ? [] : storeNodes;
 
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
 

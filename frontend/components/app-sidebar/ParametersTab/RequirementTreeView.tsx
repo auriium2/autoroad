@@ -19,24 +19,16 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
   const isOptimizing = useGraphStore((state) => state.isOptimizing);
   
   const expandedNodesRecord = useOptimizationStore((state) => state.expandedRequirementNodes);
-  const expandedNodes = React.useMemo(
-    () => expandedNodesRecord[requirementKey] || new Set(),
-    [expandedNodesRecord, requirementKey]
-  );
+  const expandedNodes = expandedNodesRecord[requirementKey] || new Set();
   const toggleNodeExpanded = useOptimizationStore((state) => state.toggleRequirementNodeExpanded);
   
-  const allCourseIds = React.useMemo(() => {
-    const ids = new Set([
-      ...markers.map(m => m.courseId),
-      ...optimizerNodes.map(n => n.courseId)
-    ]);
-    return Array.from(ids);
-  }, [markers, optimizerNodes]);
+  const ids = new Set([
+    ...markers.map(m => m.courseId),
+    ...optimizerNodes.map(n => n.courseId)
+  ]);
+  const allCourseIds = Array.from(ids);
 
-  const courseIdsKey = React.useMemo(() => 
-    allCourseIds.sort().join(','),
-    [allCourseIds]
-  );
+  const courseIdsKey = allCourseIds.sort().join(',');
 
   const { data: requirement, isLoading, error } = useQuery({
     queryKey: ['requirement-progress', requirementKey, courseIdsKey],

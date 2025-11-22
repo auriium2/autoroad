@@ -134,87 +134,81 @@ export function UnifiedParameterSelector() {
   };
 
   // Build unified searchable items list - objectives first, then degrees
-  const searchableItems = React.useMemo((): SearchableItem[] => {
-    const objectives: SearchableItem[] = [];
-    const degrees: SearchableItem[] = [];
+  const objectives: SearchableItem[] = [];
+  const degrees: SearchableItem[] = [];
 
-    // Add objectives (constraints)
-    if (objectivesData) {
-      objectivesData.objectives.forEach(objective => {
-        if (!selectedObjectives.some(o => o.key === objective.key)) {
-          const searchableText = [
-            objective.key,
-            objective.name,
-            objective.description,
-            objective.category,
-          ].join(' ').toLowerCase();
+  // Add objectives (constraints)
+  if (objectivesData) {
+    objectivesData.objectives.forEach(objective => {
+      if (!selectedObjectives.some(o => o.key === objective.key)) {
+        const searchableText = [
+          objective.key,
+          objective.name,
+          objective.description,
+          objective.category,
+        ].join(' ').toLowerCase();
 
-          objectives.push({
-            type: 'objective',
-            key: objective.key,
-            displayName: objective.name,
-            searchableText,
-            metadata: objective,
-          });
-        }
-      });
-    }
+        objectives.push({
+          type: 'objective',
+          key: objective.key,
+          displayName: objective.name,
+          searchableText,
+          metadata: objective,
+        });
+      }
+    });
+  }
 
-    // Add requirements (degrees)
-    if (requirementsList) {
-      Object.entries(requirementsList).forEach(([key, metadata]) => {
-        if (!selectedRequirements.includes(key)) {
-          const displayName = metadata.short || metadata.medium || key;
-          const searchableText = [
-            key,
-            metadata.title,
-            metadata.title_no_degree,
-            metadata.medium,
-            metadata.short,
-          ].filter(Boolean).join(' ').toLowerCase();
+  // Add requirements (degrees)
+  if (requirementsList) {
+    Object.entries(requirementsList).forEach(([key, metadata]) => {
+      if (!selectedRequirements.includes(key)) {
+        const displayName = metadata.short || metadata.medium || key;
+        const searchableText = [
+          key,
+          metadata.title,
+          metadata.title_no_degree,
+          metadata.medium,
+          metadata.short,
+        ].filter(Boolean).join(' ').toLowerCase();
 
-          degrees.push({
-            type: 'degree',
-            key,
-            displayName,
-            searchableText,
-            metadata,
-          });
-        }
-      });
-    }
+        degrees.push({
+          type: 'degree',
+          key,
+          displayName,
+          searchableText,
+          metadata,
+        });
+      }
+    });
+  }
 
-    // Return objectives first, then degrees
-    return [...objectives, ...degrees];
-  }, [requirementsList, objectivesData, selectedRequirements, selectedObjectives]);
+  // Return objectives first, then degrees
+  const searchableItems = [...objectives, ...degrees];
 
   // Filter items for search - show all when empty, otherwise filter
-  const { searchResults, hasMoreResults, totalCounts } = React.useMemo(() => {
-    let filtered: SearchableItem[];
+  let filtered: SearchableItem[];
 
-    if (!searchTerm) {
-      // Show all available items when no search term
-      filtered = searchableItems;
-    } else {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = searchableItems.filter(item => item.searchableText.includes(searchLower));
-    }
+  if (!searchTerm) {
+    // Show all available items when no search term
+    filtered = searchableItems;
+  } else {
+    const searchLower = searchTerm.toLowerCase();
+    filtered = searchableItems.filter(item => item.searchableText.includes(searchLower));
+  }
 
-    const objectivesCount = filtered.filter(item => item.type === 'objective').length;
-    const degreesCount = filtered.filter(item => item.type === 'degree').length;
+  const objectivesCount = filtered.filter(item => item.type === 'objective').length;
+  const degreesCount = filtered.filter(item => item.type === 'degree').length;
 
-    const displayLimit = searchTerm ? 20 : 30;
-    const results = filtered.slice(0, displayLimit);
+  const displayLimit = searchTerm ? 20 : 30;
+  const results = filtered.slice(0, displayLimit);
 
-    return {
-      searchResults: results,
-      hasMoreResults: filtered.length > displayLimit,
-      totalCounts: {
-        objectives: objectivesCount,
-        degrees: degreesCount,
-      }
-    };
-  }, [searchableItems, searchTerm]);
+  const searchResults = results;
+  const hasMoreResults = filtered.length > displayLimit;
+  const totalCounts = {
+    objectives: objectivesCount,
+    degrees: degreesCount,
+  };
 
   const isConstraint = (key: string) => {
     return key.includes('limit') ||
@@ -228,23 +222,21 @@ export function UnifiedParameterSelector() {
   };
 
   // Build unified list of all selected items (degrees first, then objectives)
-  const allSelectedItems = React.useMemo(() => {
-    const degrees: Array<{ type: 'degree' | 'objective'; key: string }> = [];
-    const objectives: Array<{ type: 'degree' | 'objective'; key: string }> = [];
+  const selectedDegrees: Array<{ type: 'degree' | 'objective'; key: string }> = [];
+  const selectedObjectiveItems: Array<{ type: 'degree' | 'objective'; key: string }> = [];
 
-    selectedRequirements.forEach(reqKey => {
-      degrees.push({ type: 'degree', key: reqKey });
-    });
+  selectedRequirements.forEach(reqKey => {
+    selectedDegrees.push({ type: 'degree', key: reqKey });
+  });
 
-    selectedObjectives.forEach(config => {
-      const objective = objectivesData?.objectives.find(o => o.key === config.key);
-      if (objective) {
-        objectives.push({ type: 'objective', key: config.key });
-      }
-    });
+  selectedObjectives.forEach(config => {
+    const objective = objectivesData?.objectives.find(o => o.key === config.key);
+    if (objective) {
+      selectedObjectiveItems.push({ type: 'objective', key: config.key });
+    }
+  });
 
-    return [...degrees, ...objectives];
-  }, [selectedRequirements, selectedObjectives, objectivesData]);
+  const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems];
 
   if (requirementsLoading || objectivesLoading) {
     return <div className="p-4 text-sm text-muted-foreground">Loading...</div>;

@@ -34,22 +34,19 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Check if course is placed in wrong semester
   // Special semesters (-2 for Must Take, -1 for ASE) are always valid
   // Regular semesters: 0,3,6,9 = Fall; 1,4,7,10 = IAP; 2,5,8,11 = Spring
-  const isWrongSemester = React.useMemo(() => {
-    if (section < 0 || !courseDetails) return false; // Special semesters or no data
-    
+  let isWrongSemester = false;
+  if (section >= 0 && courseDetails) {
     const semesterType = section % 3; // 0=Fall, 1=IAP, 2=Spring
     
-    const wrongSemester = 
+    isWrongSemester = 
       (semesterType === 0 && !courseDetails.offered_fall) ||
       (semesterType === 1 && !courseDetails.offered_IAP) ||
       (semesterType === 2 && !courseDetails.offered_spring);
     
-    if (wrongSemester) {
+    if (isWrongSemester) {
       console.log(`[CourseNode] ${courseId} wrong semester - section=${section}, type=${semesterType}, fall=${courseDetails.offered_fall}, IAP=${courseDetails.offered_IAP}, spring=${courseDetails.offered_spring}`);
     }
-    
-    return wrongSemester;
-  }, [section, courseDetails, courseId]);
+  }
 
   // Get node styling from shared utility
   let { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });

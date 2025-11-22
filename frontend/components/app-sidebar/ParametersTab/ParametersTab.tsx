@@ -69,7 +69,7 @@ export function ParametersTab() {
               Lock Past Semesters
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Stop autoroad from time traveling.
+              Stop autoroad from time traveling. I know you regret taking 2.001 with 2.003, but you cant change the past!
             </p>
           </div>
         </div>

@@ -15,23 +15,20 @@ export function DashboardAlerts() {
   const toastRefs = React.useRef<Record<string, { dismiss: () => void }>>({});
   const welcomeShownRef = React.useRef(false);
 
-  const showOrReplaceToast = React.useCallback(
-    (id: string, config: BasicToastConfig) => {
-      toastRefs.current[id]?.dismiss();
-      toastRefs.current[id] = showToast({
-        title: config.title,
-        description: config.description,
-        variant: config.type === "error" ? "destructive" : "default",
-        duration: config.durationMs ?? 6000,
-        onOpenChange: (open) => {
-          if (!open) {
-            delete toastRefs.current[id];
-          }
-        },
-      });
-    },
-    []
-  );
+  const showOrReplaceToast = (id: string, config: BasicToastConfig) => {
+    toastRefs.current[id]?.dismiss();
+    toastRefs.current[id] = showToast({
+      title: config.title,
+      description: config.description,
+      variant: config.type === "error" ? "destructive" : "default",
+      duration: config.durationMs ?? 6000,
+      onOpenChange: (open) => {
+        if (!open) {
+          delete toastRefs.current[id];
+        }
+      },
+    });
+  };
 
   React.useEffect(() => {
     if (welcomeShownRef.current) return;
