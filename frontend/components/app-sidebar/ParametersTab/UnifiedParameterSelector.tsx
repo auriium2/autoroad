@@ -7,6 +7,7 @@ import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { RequirementTreeView } from "./RequirementTreeView";
 import { Label } from "@/components/ui/label";
+import { TierSelector } from "./TierSelector";
 
 type ItemType = 'degree' | 'objective';
 
@@ -38,6 +39,8 @@ export function UnifiedParameterSelector() {
 
   const selectedObjectives = useOptimizationStore((state) => state.selectedObjectives);
   const setObjectives = useOptimizationStore((state) => state.setObjectives);
+  const objectiveTiers = useOptimizationStore((state) => state.objectiveTiers);
+  const setObjectiveTier = useOptimizationStore((state) => state.setObjectiveTier);
 
   const toggleObjectiveExpanded = (key: string) => {
     setExpandedObjectives(prev => {
@@ -383,6 +386,8 @@ export function UnifiedParameterSelector() {
               const isRecommendedType = isRecommended(objective.key);
               const isExpanded = expandedObjectives.has(item.key);
 
+              const objectiveTier = objectiveTiers[item.key] ?? 0;
+
               return (
                 <div key={`${item.type}-${item.key}`} className="border border-border rounded p-3">
                   <div className="space-y-2">
@@ -400,12 +405,18 @@ export function UnifiedParameterSelector() {
                           {objective.name}
                         </span>
                       </button>
-                      <button
-                        onClick={() => handleToggleObjective(objective)}
-                        className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <TierSelector
+                          tier={objectiveTier}
+                          onChange={(tier) => setObjectiveTier(item.key, tier)}
+                        />
+                        <button
+                          onClick={() => handleToggleObjective(objective)}
+                          className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                     {isExpanded && (
                       <>

@@ -9,6 +9,8 @@ interface OptimizationState {
   lockPastSemesters: boolean;
   expandedRequirements: string[];
   expandedRequirementNodes: Record<string, Set<string>>;
+  requirementTiers: Record<string, number>;
+  objectiveTiers: Record<string, number>;
   
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
@@ -20,6 +22,9 @@ interface OptimizationState {
   
   toggleRequirementExpanded: (requirement: string) => void;
   toggleRequirementNodeExpanded: (requirement: string, nodePath: string) => void;
+  
+  setRequirementTier: (requirement: string, tier: number) => void;
+  setObjectiveTier: (objectiveKey: string, tier: number) => void;
 }
 
 function getDefaultYear(): string {
@@ -46,6 +51,8 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
   lockPastSemesters: false,
   expandedRequirements: [],
   expandedRequirementNodes: {},
+  requirementTiers: {},
+  objectiveTiers: {},
   
   setObjectives: (objectives) => {
     markOptimizationAsStale();
@@ -103,4 +110,24 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
         },
       };
     }),
+  
+  setRequirementTier: (requirement, tier) => {
+    markOptimizationAsStale();
+    set((state) => ({
+      requirementTiers: {
+        ...state.requirementTiers,
+        [requirement]: tier,
+      },
+    }));
+  },
+  
+  setObjectiveTier: (objectiveKey, tier) => {
+    markOptimizationAsStale();
+    set((state) => ({
+      objectiveTiers: {
+        ...state.objectiveTiers,
+        [objectiveKey]: tier,
+      },
+    }));
+  },
 }));

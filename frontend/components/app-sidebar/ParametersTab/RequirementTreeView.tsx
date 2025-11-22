@@ -7,6 +7,7 @@ import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Progress } from "@/components/ui/progress";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { TierSelector } from "./TierSelector";
 
 interface RequirementTreeViewProps {
   requirementKey: string;
@@ -53,6 +54,9 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
     toggleNodeExpanded(requirementKey, path);
   };
 
+  const requirementTiers = useOptimizationStore((state) => state.requirementTiers);
+  const setRequirementTier = useOptimizationStore((state) => state.setRequirementTier);
+
   const renderNode = (req: RequirementNode, path: string, depth: number = 0): React.ReactNode => {
     const isExpanded = expandedNodes.has(path);
     const hasChildren = req.reqs && req.reqs.length > 0;
@@ -78,6 +82,7 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
     const progress = req.progress ?? 0;
     const max = req.max ?? 1;
     const percentage = req.percent_fulfilled ?? 0;
+    const nodeTier = requirementTiers[path] ?? 0;
 
     return (
       <div key={path} style={{ marginLeft: `${depth * 12}px` }}>
@@ -102,9 +107,15 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
             </span>
           </div>
           
-          <span className="text-xs text-muted-foreground ml-2 tabular-nums">
-            {progress}/{max}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {progress}/{max}
+            </span>
+            <TierSelector
+              tier={nodeTier}
+              onChange={(tier) => setRequirementTier(path, tier)}
+            />
+          </div>
         </div>
         
         <div className="ml-4 mr-1">
