@@ -68,7 +68,7 @@ export default function Dashboard() {
       ...markers.map(m => m.courseId),
       ...optimizerNodes.map(n => n.courseId)
     ];
-    
+
     if (courseIds.length > 0) {
       prefetchCourses(queryClient, courseIds);
     }
@@ -289,11 +289,44 @@ export default function Dashboard() {
                   variant="outline"
                   onClick={handleOptimize}
                   disabled={isOptimizing}
+                  className="relative"
                 >
                   {isOptimizing ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {optimizationProgress?.solutionNumber ? (
+                        <div className="relative inline-flex items-center mr-2">
+                          <svg className="h-4 w-4 -rotate-90">
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="none"
+                              className="opacity-25"
+                            />
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="6"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 6}`}
+                              strokeDashoffset={`${2 * Math.PI * 6 * (1 - Math.min(optimizationProgress.solutionNumber / 30, 1))}`}
+                              className="transition-all duration-300"
+                            />
+                          </svg>
+                        </div>
+                      ) : (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )}
                       {optimizationProgress?.message || "Optimizing..."}
+                      {optimizationProgress?.solutionNumber && (
+                        <span className="ml-1.5 text-xs text-muted-foreground">
+                          (#{optimizationProgress.solutionNumber})
+                        </span>
+                      )}
                     </>
                   ) : (
                     "Optimize!"

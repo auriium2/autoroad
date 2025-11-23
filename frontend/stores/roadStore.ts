@@ -24,6 +24,7 @@ interface GraphStore {
     step: number;
     totalSteps?: number;
     message?: string;
+    solutionNumber?: number;
   } | null;
 
   // Track if markers have changed since last optimization
@@ -232,6 +233,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 step: progress.step,
                 totalSteps: progress.totalSteps,
                 message: progress.message,
+                solutionNumber: progress.solutionNumber,
               } : null,
             });
           }
@@ -242,6 +244,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
               step: progress.step,
               totalSteps: progress.totalSteps,
               message: progress.message,
+              solutionNumber: progress.solutionNumber,
             } : null,
           });
         }
