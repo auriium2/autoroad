@@ -422,11 +422,11 @@ function CourseGraphFlowInner({
 
   // Close context menu on click outside
   React.useEffect(() => {
+    if (!contextMenu) return;
+
     const handleClick = () => setContextMenu(null);
-    if (contextMenu) {
-      window.addEventListener('click', handleClick);
-      return () => window.removeEventListener('click', handleClick);
-    }
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
   }, [contextMenu]);
 
 

@@ -13,7 +13,6 @@ interface BasicToastConfig {
 
 export function DashboardAlerts() {
   const toastRefs = React.useRef<Record<string, { dismiss: () => void }>>({});
-  const welcomeShownRef = React.useRef(false);
 
   const showOrReplaceToast = (id: string, config: BasicToastConfig) => {
     toastRefs.current[id]?.dismiss();
@@ -31,8 +30,6 @@ export function DashboardAlerts() {
   };
 
   React.useEffect(() => {
-    if (welcomeShownRef.current) return;
-    welcomeShownRef.current = true;
     showOrReplaceToast("welcome", {
       type: "info",
       title: "Welcome to Autoroad",
@@ -40,7 +37,7 @@ export function DashboardAlerts() {
         "Plan semesters, drop in ASEs, and optimize your road whenever you're ready.",
       durationMs: 30000,
     });
-  }, []); // Only run once on mount
+  }, []);
 
   return null;
 }
