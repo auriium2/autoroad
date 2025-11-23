@@ -6,6 +6,7 @@ import { optimizerApi, type RequirementNode } from "@/services/optimizer";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TierSelector } from "./TierSelector";
 
@@ -128,7 +129,32 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
   }
 
   if (isLoading) {
-    return <div className="text-xs text-muted-foreground">Loading requirement tree...</div>;
+    return (
+      <div className="space-y-3">
+        <div className="space-y-2 pb-2 border-b border-border">
+          <div className="flex items-center justify-between px-1">
+            <Skeleton className="h-4 w-28 bg-muted" />
+            <Skeleton className="h-4 w-10 bg-muted" />
+          </div>
+          <div className="mx-1">
+            <Skeleton className="h-1 w-full bg-muted" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center justify-between py-1 px-1">
+                <Skeleton className="h-3.5 w-36 bg-muted" />
+                <Skeleton className="h-3.5 w-14 bg-muted" />
+              </div>
+              <div className="ml-4 mr-1">
+                <Skeleton className="h-1 w-full bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!requirement) {

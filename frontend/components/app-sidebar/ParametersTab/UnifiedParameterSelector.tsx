@@ -7,6 +7,7 @@ import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { RequirementTreeView } from "./RequirementTreeView";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TierSelector } from "./TierSelector";
 
 type ItemType = 'degree' | 'objective';
@@ -239,7 +240,21 @@ export function UnifiedParameterSelector() {
   const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems];
 
   if (requirementsLoading || objectivesLoading) {
-    return <div className="p-4 text-sm text-muted-foreground">Loading...</div>;
+    return (
+      <div className="space-y-2">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="border border-border rounded p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 flex-1">
+                <Skeleton className="h-4 w-4 shrink-0 bg-muted" />
+                <Skeleton className="h-4 w-40 bg-muted" />
+              </div>
+              <Skeleton className="h-4 w-4 rounded-full shrink-0 bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
