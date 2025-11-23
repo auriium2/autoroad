@@ -33,6 +33,9 @@ interface GraphStore {
   // Track optimization result status
   lastOptimizationStatus: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID' | null;
 
+  // Optimization cancellation
+  optimizationAbortController: AbortController | null;
+
   // User info
   userId: string | null;
 
@@ -54,6 +57,7 @@ interface GraphStore {
   fetchRoadData: () => Promise<void>;
   saveRoadData: () => Promise<void>;
   optimizeRoad: (constraints?: OptimizationConstraints, showProgress?: boolean) => Promise<{ success: boolean; error?: string }>;
+  cancelOptimization: () => void;
 
   // Development
   loadInitialData: () => void;
@@ -75,6 +79,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   optimizationProgress: null,
   markersChangedSinceOptimization: false,
   lastOptimizationStatus: null,
+  optimizationAbortController: null,
   userId: null,
 
   // User actions
@@ -183,12 +188,16 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     const selectedYear = useOptimizationStore.getState().selectedYear;
     const lockPastSemesters = useOptimizationStore.getState().lockPastSemesters;
 
+    // Create AbortController for this optimization
+    const abortController = new AbortController();
+
     set({
       loadingState: 'loading',
       error: null,
       isOptimizing: true,
       optimizationProgress: showProgress ? { step: 0 } : null,
       markersChangedSinceOptimization: false,
+      optimizationAbortController: abortController,
     });
 
     try {
@@ -210,6 +219,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         markers,
         selectedRequirements,
         constraints,
+        abortController.signal,
         selectedObjectives.length > 0 ? selectedObjectives : undefined,
         planningYear,
         lockPastSemesters
@@ -278,18 +288,38 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         loadingState: 'success',
         isOptimizing: false,
         optimizationProgress: null,
+        optimizationAbortController: null,
       });
 
       return { success: true };
     } catch (error) {
+      // Check if it was cancelled
+      if (error instanceof Error && error.name === 'AbortError') {
+        set({
+          loadingState: 'idle',
+          isOptimizing: false,
+          optimizationProgress: null,
+          optimizationAbortController: null,
+        });
+        return { success: false, error: 'Optimization cancelled' };
+      }
+
       const errorMessage = error instanceof Error ? error.message : 'Optimization failed';
       set({
         loadingState: 'error',
         error: errorMessage,
         isOptimizing: false,
         optimizationProgress: null,
+        optimizationAbortController: null,
       });
       return { success: false, error: errorMessage };
+    }
+  },
+
+  cancelOptimization: () => {
+    const { optimizationAbortController } = get();
+    if (optimizationAbortController) {
+      optimizationAbortController.abort();
     }
   },
 

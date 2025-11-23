@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2, UserX, BrainCircuit } from "lucide-react";
+import { Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X } from "lucide-react";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
@@ -55,6 +55,7 @@ export default function Dashboard() {
 
   // Get store functions and state
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
+  const cancelOptimization = useGraphStore(state => state.cancelOptimization);
   const optimizationProgress = useGraphStore(state => state.optimizationProgress);
   const markers = useGraphStore(state => state.markers);
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
@@ -221,7 +222,7 @@ export default function Dashboard() {
       } else {
         showToast({
           title: "Optimization complete",
-          description: "Your schedule has been optimized!",
+          description: "Your courses should satisfy degree requirements, but it might not be the absolute best possible. You may be able to improve it further!",
           duration: 3000,
         });
       }
@@ -370,6 +371,17 @@ export default function Dashboard() {
                     "Optimize!"
                   )}
                 </Button>
+
+                {isOptimizing && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={cancelOptimization}
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
 

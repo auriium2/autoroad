@@ -132,6 +132,7 @@ export const optimizerApi = {
     markers: Marker[],
     requiredCourses: string[],
     constraints?: OptimizationConstraints,
+    signal?: AbortSignal,
     objectives?: ObjectiveConfig[],
     planningYear?: string,
     lockPastSemesters?: boolean
@@ -158,6 +159,7 @@ export const optimizerApi = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
+      signal,
     });
 
     if (!response.ok) {
