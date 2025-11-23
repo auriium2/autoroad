@@ -369,7 +369,8 @@ function CourseGraphFlowInner({
   }, [storeNodes, isOptimizing]);
 
   // Fetch prerequisite edges using the hook
-  const { data: storeEdges = [] } = usePrerequisiteEdges(debouncedNodes);
+  const { data: prerequisiteData } = usePrerequisiteEdges(debouncedNodes);
+  const storeEdges = prerequisiteData?.edges ?? [];
 
   // Fetch missing prerequisites for all nodes (skip during optimization for performance)
   const nodesToCheck = isOptimizing ? [] : storeNodes;

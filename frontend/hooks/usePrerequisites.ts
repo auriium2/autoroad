@@ -8,6 +8,13 @@ import { fireroadApi } from '@/services/fireroad';
 import { parseFireroad, extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
 import type { CourseNode } from '@/types';
 
+interface CourseDetailsWithPrereqs {
+  node: CourseNode;
+  prereqCourseIds: string[];
+  tags: string[];
+  prereqString: string;
+}
+
 /**
  * Fetch prerequisites for a single course (non-hook version for internal use)
  */
@@ -106,34 +113,20 @@ export function usePrerequisiteString(courseId: string | null) {
 }
 
 /**
- * Hook to compute prerequisite edges for a graph of courses
+ * Shared hook to fetch course details with prerequisites for all nodes
+ * This prevents duplicate fetches between usePrerequisiteEdges and useMissingPrerequisites
  */
-export function usePrerequisiteEdges(nodes: CourseNode[]) {
+function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
   const queryClient = useQueryClient();
   
-  // Create a stable key from the sorted course IDs and their node uuids
-  // Using useMemo to prevent recreating the key on every render
   const courseKey = React.useMemo(
     () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
     [nodes]
   );
 
   return useQuery({
-    queryKey: ['prerequisites', 'edges', courseKey],
+    queryKey: ['courseDetails', 'batch', courseKey],
     queryFn: async () => {
-      console.log('[Performance] Fetching prerequisite edges for', nodes.length, 'nodes');
-      const startTime = performance.now();
-      const edges: Array<{ fromUuid: string; toUuid: string }> = [];
-
-      // Build a map of courseId -> node for quick lookup
-      const courseToNode = new Map<string, CourseNode>();
-      for (const node of nodes) {
-        courseToNode.set(node.courseId, node);
-      }
-
-      // Fetch all course details in parallel (prerequisites + tags + prereq string)
-      // Use queryClient to leverage cache
-      const fetchStartTime = performance.now();
       const prereqPromises = nodes.map(async (node) => {
         try {
           const courseDetails = await queryClient.fetchQuery({
@@ -143,18 +136,16 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
           });
           const prereqString = courseDetails.prerequisites || '';
           
-          // Extract prerequisite course IDs
           let prereqCourseIds: string[] = [];
           if (prereqString) {
             try {
               const prereqTree = parseFireroad(prereqString);
               prereqCourseIds = extractCourseIds(prereqTree);
-            } catch (error) {
+            } catch {
               // Ignore parse errors
             }
           }
           
-          // Extract tags
           const tags: string[] = [];
           if (courseDetails.gir_attribute) {
             tags.push(`GIR:${courseDetails.gir_attribute}`);
@@ -170,9 +161,43 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
         }
       });
 
-      const results = await Promise.all(prereqPromises);
-      const fetchEndTime = performance.now();
-      console.log(`[Performance] Fetched ${nodes.length} course details in ${(fetchEndTime - fetchStartTime).toFixed(2)}ms`);
+      return await Promise.all(prereqPromises);
+    },
+    staleTime: 60 * 60 * 1000,
+    enabled: nodes.length > 0,
+  });
+}
+
+/**
+ * Hook to compute prerequisite edges for a graph of courses
+ */
+export function usePrerequisiteEdges(nodes: CourseNode[]) {
+  const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
+  
+  const courseKey = React.useMemo(
+    () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
+    [nodes]
+  );
+
+  return useQuery({
+    queryKey: ['prerequisites', 'edges', courseKey],
+    queryFn: async () => {
+      if (!courseDetailsQuery.data) {
+        return { edges: [], tag2courses: new Map() };
+      }
+
+      console.log('[Performance] Computing prerequisite edges for', nodes.length, 'nodes');
+      const startTime = performance.now();
+      const edges: Array<{ fromUuid: string; toUuid: string }> = [];
+
+      // Build a map of courseId -> node for quick lookup
+      const courseToNode = new Map<string, CourseNode>();
+      for (const node of nodes) {
+        courseToNode.set(node.courseId, node);
+      }
+
+      // Use the shared fetched data
+      const results = courseDetailsQuery.data;
 
       // Build tag -> courses map
       const tag2courses = new Map<string, CourseNode[]>();
@@ -225,10 +250,10 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       }
 
       const endTime = performance.now();
-      console.log(`[Performance] Fetched ${edges.length} edges in ${(endTime - startTime).toFixed(2)}ms`);
-      return edges;
+      console.log(`[Performance] Computed ${edges.length} edges in ${(endTime - startTime).toFixed(2)}ms`);
+      return { edges, tag2courses };
     },
-    enabled: nodes.length > 0,
+    enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,
     staleTime: 60 * 60 * 1000,
   });
 }
@@ -238,7 +263,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
  * Returns a map of uuid -> missing prerequisite course IDs
  */
 export function useMissingPrerequisites(nodes: CourseNode[]) {
-  const queryClient = useQueryClient();
+  const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
   
   const courseKey = React.useMemo(
     () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(','),
@@ -248,41 +273,25 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
   return useQuery({
     queryKey: ['prerequisites', 'missing', courseKey],
     queryFn: async () => {
+      if (!courseDetailsQuery.data) {
+        return new Map<string, string[]>();
+      }
+
       console.log('[Performance] Computing missing prerequisites for', nodes.length, 'nodes');
       const startTime = performance.now();
       const uuid2missingPrereqs = new Map<string, string[]>();
 
-      // Fetch all course details in parallel (prerequisites + tags in one fetch)
-      const courseDetailPromises = nodes.map(async (node) => {
-        try {
-          const courseDetails = await queryClient.fetchQuery({
-            queryKey: ['courseDetails', node.courseId],
-            queryFn: () => fireroadApi.getCourseDetails(node.courseId),
-            staleTime: 60 * 60 * 1000,
-          });
-          const tags: string[] = [];
-          if (courseDetails.gir_attribute) {
-            tags.push(`GIR:${courseDetails.gir_attribute}`);
-          }
-          if (courseDetails.hass_attribute) {
-            tags.push(`HASS:${courseDetails.hass_attribute}`);
-          }
-          
-          // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
-          const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'override';
-          
-          return {
-            node,
-            prereqString: skipPrereqCheck ? '' : (courseDetails.prerequisites || ''),
-            tags
-          };
-        } catch (error) {
-          console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
-          return { node, prereqString: '', tags: [] };
-        }
+      // Use the shared fetched data
+      const results = courseDetailsQuery.data.map(({ node, prereqString, tags }) => {
+        // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
+        const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'override';
+        
+        return {
+          node,
+          prereqString: skipPrereqCheck ? '' : prereqString,
+          tags
+        };
       });
-
-      const results = await Promise.all(courseDetailPromises);
 
       // Build course tags map
       const courseId2tags = new Map<string, string[]>();
@@ -341,7 +350,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       console.log(`[Performance] Computed missing prerequisites in ${(endTime - startTime).toFixed(2)}ms`);
       return uuid2missingPrereqs;
     },
-    enabled: nodes.length > 0,
+    enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,
     staleTime: 60 * 60 * 1000,
   });
 }
