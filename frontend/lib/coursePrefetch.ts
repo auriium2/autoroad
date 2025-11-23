@@ -2,11 +2,22 @@ import { QueryClient } from "@tanstack/react-query";
 import { fireroadApi } from "@/services/fireroad";
 import type { RequirementTree, RequirementNode } from "@/services/optimizer";
 
+function isActualCourse(courseId: string): boolean {
+  // Filter out generic requirement placeholders
+  if (courseId.startsWith('GIR:')) return false;
+  if (courseId.startsWith('HASS')) return false;
+  if (courseId.startsWith('CI-')) return false;
+  if (courseId === 'REST') return false;
+  
+  // Actual courses should have a department number and course number (e.g., "6.100A", "18.01")
+  return /^\d+\./.test(courseId);
+}
+
 export async function prefetchCourses(
   queryClient: QueryClient,
   courseIds: string[]
 ): Promise<void> {
-  const uniqueCourseIds = Array.from(new Set(courseIds));
+  const uniqueCourseIds = Array.from(new Set(courseIds)).filter(isActualCourse);
   
   await Promise.all(
     uniqueCourseIds.map(courseId =>

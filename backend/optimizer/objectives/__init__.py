@@ -8,6 +8,7 @@ by combining different components with weights.
 from .base import ObjectiveComponent, ObjectiveContext
 from .builder import ObjectiveBuilder
 from .categories import CategoryRewards
+from .equivalents import DiscourageEquivalentCourses
 from .scheduling import AvoidIAP, MinimizeFridayClasses, MinimumClassesPerSemester
 from .units import AvoidSmallClasses, MinimizeUnits
 from .workload import (
@@ -34,4 +35,5 @@ __all__ = [
     'AvoidIAP',
     'MinimumClassesPerSemester',
     'CategoryRewards',
+    'DiscourageEquivalentCourses',
 ]

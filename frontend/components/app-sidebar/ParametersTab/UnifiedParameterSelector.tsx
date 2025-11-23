@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TierSelector } from "./TierSelector";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { EquivalencyManagerInline } from "./EquivalencyManagerInline";
 
 type ItemType = 'degree' | 'objective' | 'constraint';
 
@@ -83,13 +84,15 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
   const { data: objectivesData, isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['objectives'],
     queryFn: () => optimizerApi.getObjectives(),
-    staleTime: 60 * 60 * 1000,
+    staleTime: process.env.NODE_ENV === 'development' ? 0 : 60 * 60 * 1000,
+    gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
   });
 
   const { data: constraintsData, isLoading: constraintsLoading, error: constraintsError } = useQuery({
     queryKey: ['hard-constraints'],
     queryFn: () => optimizerApi.getHardConstraints(),
-    staleTime: 60 * 60 * 1000,
+    staleTime: process.env.NODE_ENV === 'development' ? 0 : 60 * 60 * 1000,
+    gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
   });
 
   // Initialize with GIRs by default
@@ -102,6 +105,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
   // Initialize with default objectives if none selected
   React.useEffect(() => {
     if (objectivesData && selectedObjectives.length === 0) {
+      console.log('[DEBUG] Initializing with default configuration:', objectivesData.defaultConfiguration);
       setObjectives(objectivesData.defaultConfiguration);
 
       // Also initialize default tiers for these objectives
@@ -156,7 +160,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
     setShowSearchResults(false);
   };
 
-  const handleParameterChange = (key: string, paramName: string, value: number) => {
+  const handleParameterChange = (key: string, paramName: string, value: number | Record<string, string[]> | null) => {
     const newObjectives = selectedObjectives.map(obj =>
       obj.key === key
         ? { ...obj, parameters: { ...obj.parameters, [paramName]: value } }
@@ -558,29 +562,57 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
                             {objective.description}
                           </p>
                         </div>
+                      {(() => {
+                        console.log('[DEBUG] Objective', objective.key, 'hasParameters:', objective.hasParameters, 'defaultParameters:', objective.defaultParameters);
+                        return null;
+                      })()}
                       {/* Parameters */}
                       {objective.hasParameters && (
                         <div className="space-y-2 pt-1">
-                          {Object.entries(objective.defaultParameters).map(([paramName, defaultValue]) => (
-                            <div key={paramName} className="flex items-center gap-2 min-w-0">
-                              <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
-                                {paramName.replace(/_/g, ' ')}:
-                              </Label>
-                              <input
-                                type="number"
-                                value={config.parameters[paramName] ?? defaultValue}
-                                onChange={(e) => handleParameterChange(
-                                  objective.key,
-                                  paramName,
-                                  typeof defaultValue === 'number' && !Number.isInteger(defaultValue)
-                                    ? parseFloat(e.target.value)
-                                    : parseInt(e.target.value)
-                                )}
-                                step={typeof defaultValue === 'number' && !Number.isInteger(defaultValue) ? 0.1 : 1}
-                                className="w-14 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded shrink-0 tabular-nums"
-                              />
-                            </div>
-                          ))}
+                          {(() => {
+                            console.log('[DEBUG] Rendering parameters for', objective.key, objective.defaultParameters);
+                            return null;
+                          })()}
+                          {Object.entries(objective.defaultParameters).map(([paramName, defaultValue]) => {
+                            // Special handling for custom_equivalencies parameter
+                            if (paramName === 'custom_equivalencies') {
+                              console.log('[DEBUG] config for', objective.key, ':', config);
+                              const currentEquiv = config.parameters[paramName];
+                              console.log('[DEBUG] currentEquiv:', currentEquiv);
+                              const equivValue = currentEquiv === null || currentEquiv === undefined ? {} : currentEquiv;
+                              return (
+                                <div key={paramName} className="space-y-2">
+                                  <Label className="text-xs font-medium">Custom Equivalencies</Label>
+                                  <EquivalencyManagerInline 
+                                    customEquivalencies={equivValue as Record<string, string[]>}
+                                    onChange={(newEquiv) => handleParameterChange(objective.key, paramName, newEquiv)}
+                                  />
+                                </div>
+                              );
+                            }
+                            
+                            // Regular numeric parameters
+                            return (
+                              <div key={paramName} className="flex items-center gap-2 min-w-0">
+                                <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
+                                  {paramName.replace(/_/g, ' ')}:
+                                </Label>
+                                <input
+                                  type="number"
+                                  value={config.parameters[paramName] ?? defaultValue}
+                                  onChange={(e) => handleParameterChange(
+                                    objective.key,
+                                    paramName,
+                                    typeof defaultValue === 'number' && !Number.isInteger(defaultValue)
+                                      ? parseFloat(e.target.value)
+                                      : parseInt(e.target.value)
+                                  )}
+                                  step={typeof defaultValue === 'number' && !Number.isInteger(defaultValue) ? 0.1 : 1}
+                                  className="w-14 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded shrink-0 tabular-nums"
+                                />
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                       </>
