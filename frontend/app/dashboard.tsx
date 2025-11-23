@@ -39,7 +39,6 @@ import { fireroadApi } from "@/services/fireroad";
 import { prefetchCourses } from "@/lib/coursePrefetch";
 
 export default function Dashboard() {
-  const [isOptimizing, setIsOptimizing] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
@@ -47,13 +46,14 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
 
-  // Get store functions
+  // Get store functions and state
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
   const optimizationProgress = useGraphStore(state => state.optimizationProgress);
   const markers = useGraphStore(state => state.markers);
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
   const loadRoadData = useGraphStore(state => state.loadRoadData);
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
+  const isOptimizing = useGraphStore(state => state.isOptimizing);
 
   const prevStatusRef = React.useRef<string | null>(null);
 
@@ -171,8 +171,6 @@ export default function Dashboard() {
 
   const handleOptimize = async () => {
     try {
-      setIsOptimizing(true);
-
       const result = await optimizeRoadFromStore(undefined, true);
 
       if (!result.success) {
@@ -198,8 +196,6 @@ export default function Dashboard() {
         variant: "destructive",
         duration: 8000,
       });
-    } finally {
-      setIsOptimizing(false);
     }
   };
   return (

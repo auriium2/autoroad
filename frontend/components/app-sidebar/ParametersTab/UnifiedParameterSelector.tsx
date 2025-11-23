@@ -28,9 +28,17 @@ interface SearchableItem {
 }
 
 export function UnifiedParameterSelector() {
+  const [inputValue, setInputValue] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchResults, setShowSearchResults] = React.useState(false);
   const [expandedObjectives, setExpandedObjectives] = React.useState<Set<string>>(new Set());
+
+  React.useEffect(() => { //debounce
+    const timer = setTimeout(() => {
+      setSearchTerm(inputValue);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
 
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
   const addRequirement = useOptimizationStore((state) => state.addRequirement);
@@ -85,7 +93,7 @@ export function UnifiedParameterSelector() {
     if (!selectedRequirements.includes(key)) {
       addRequirement(key);
     }
-    setSearchTerm("");
+    setInputValue("");
     setShowSearchResults(false);
   };
 
@@ -114,7 +122,7 @@ export function UnifiedParameterSelector() {
       ];
       setObjectives(normalizeWeights(newObjectives));
     }
-    setSearchTerm("");
+    setInputValue("");
     setShowSearchResults(false);
   };
 
@@ -264,9 +272,9 @@ export function UnifiedParameterSelector() {
         <input
           type="text"
           placeholder="Search for degrees or constraints..."
-          value={searchTerm}
+          value={inputValue}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
+            setInputValue(e.target.value);
             setShowSearchResults(true);
           }}
           onFocus={() => setShowSearchResults(true)}
