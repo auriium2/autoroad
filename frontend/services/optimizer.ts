@@ -35,7 +35,7 @@ export interface ObjectiveMetadata {
 
 export interface ObjectiveConfig {
   key: string;
-  parameters: Record<string, number>;
+  parameters: Record<string, number | Record<string, string[]> | null>;
 }
 
 export interface ObjectivesResponse {

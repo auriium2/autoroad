@@ -19,12 +19,15 @@ import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
 
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
+import { GraphStats } from "@/components/course-graph/GraphStats";
+import { GraphOverlay } from "@/components/course-graph/GraphOverlay";
 import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode, AvailableNode } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { Pin, Ban, Trash2, Unlink } from "lucide-react";
 import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrerequisites";
+import { useContextMenu } from "@/hooks/useContextMenu";
 import { toast as showToast } from "@/hooks/useToast";
 import { isPastSemesterById } from "@/lib/semesterUtils";
 
@@ -279,53 +282,6 @@ function CourseGraphFlowInner({
   // Track if we've shown the stale warning alert
   const [hasShownStaleWarning, setHasShownStaleWarning] = React.useState(false);
 
-  // Calculate total units from all displayed nodes
-  const totalUnits = React.useMemo(() => {
-    let total = 0;
-
-    // Add units from optimizer nodes (they have units from backend)
-    optimizerNodes.forEach(node => {
-      total += node.units || 0;
-    });
-
-    // For markers, we need to get units from course data
-    // We'll use the fact that CourseNode component fetches this data
-    // For now, just count markers with default 12 units each
-    // (This will be replaced when course details are fetched)
-    const markerOnlyCourses = markers.filter(m =>
-      !optimizerNodes.some(on => on.courseId === m.courseId && on.section === m.section)
-    );
-
-    // Default to 12 units per marker course
-    // TODO: Fetch actual units from course details
-    total += markerOnlyCourses.length * 12;
-
-    return total;
-  }, [markers, optimizerNodes]);
-
-  // Calculate total cost from cost breakdown
-  const totalCost = lastCostBreakdown
-    ? Object.values(lastCostBreakdown).reduce((sum, cost) => sum + cost, 0)
-    : null;
-
-  // Show warning alert when markers change (once)
-  React.useEffect(() => {
-    if (markersChangedSinceOptimization && !hasShownStaleWarning) {
-      showToast({
-        title: "Optimizer results are stale",
-        description: "You've modified your markers. Press 'Optimize!' to update the schedule.",
-        variant: "default",
-        duration: 5000,
-      });
-      setHasShownStaleWarning(true);
-    }
-
-    // Reset flag when optimization completes
-    if (!markersChangedSinceOptimization && hasShownStaleWarning) {
-      setHasShownStaleWarning(false);
-    }
-  }, [markersChangedSinceOptimization, hasShownStaleWarning]);
-
   // Compute display nodes from markers + optimizer nodes
   const storeNodes = React.useMemo(() => {
     // Build a map of optimizer nodes by (courseId, section) for overlap detection
@@ -396,18 +352,32 @@ function CourseGraphFlowInner({
 
   React.useEffect(() => {
     if (!isOptimizing) {
-      // Not optimizing - update immediately
       setDebouncedNodes(storeNodes);
-      return;
+    } else {
+      // During optimization - debounce updates
+      const timer = setTimeout(() => {
+        setDebouncedNodes(storeNodes);
+      }, 800); // Wait 800ms after last change
+      
+      return () => clearTimeout(timer);
     }
 
-    // During optimization - debounce updates
-    const timer = setTimeout(() => {
-      setDebouncedNodes(storeNodes);
-    }, 800); // Wait 800ms after last change
+    // Handle stale warning toast
+    if (markersChangedSinceOptimization && !hasShownStaleWarning) {
+      showToast({
+        title: "Optimizer results are stale",
+        description: "You've modified your markers. Press 'Optimize!' to update the schedule.",
+        variant: "default",
+        duration: 5000,
+      });
+      setHasShownStaleWarning(true);
+    }
 
-    return () => clearTimeout(timer);
-  }, [storeNodes, isOptimizing]);
+    // Reset warning flag when optimization completes
+    if (!markersChangedSinceOptimization && hasShownStaleWarning) {
+      setHasShownStaleWarning(false);
+    }
+  }, [storeNodes, isOptimizing, markersChangedSinceOptimization, hasShownStaleWarning]);
 
   // Fetch prerequisite edges using the hook
   const { data: prerequisiteData } = usePrerequisiteEdges(debouncedNodes);
@@ -418,12 +388,11 @@ function CourseGraphFlowInner({
 
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
 
-  // Context menu state
-  const [contextMenu, setContextMenu] = React.useState<{
-    nodeUuid: string;
-    x: number;
-    y: number;
-  } | null>(null);
+  // Context menu hook
+  const { contextMenu, setContextMenu, onNodeContextMenu } = useContextMenu({ 
+    setNodes, 
+    isOptimizing 
+  });
 
   // Context menu handlers
   const handlePin = (nodeId: string) => {
@@ -454,40 +423,23 @@ function CourseGraphFlowInner({
     setContextMenu(null);
   };
 
-  // Handle right-click on node
-  const onNodeContextMenu = (event: React.MouseEvent, node: Node) => {
-    event.preventDefault();
-
-    // Don't show context menu during optimization
-    if (isOptimizing) {
-      return;
-    }
-
-    setContextMenu({
-      nodeUuid: node.id,
-      x: event.clientX,
-      y: event.clientY,
-    });
-  };
-
-  // Close context menu on click outside
-  React.useEffect(() => {
-    if (!contextMenu) return;
-
-    const handleClick = () => setContextMenu(null);
-    window.addEventListener('click', handleClick);
-    return () => window.removeEventListener('click', handleClick);
-  }, [contextMenu]);
 
 
+  // Create stable key for edges
+  const storeEdgesKey = React.useMemo(
+    () => storeEdges.map(e => `${e.fromUuid}-${e.toUuid}`).sort().join('|'),
+    [storeEdges]
+  );
 
-  // Convert store nodes to React Flow nodes
+  // Convert store nodes and edges to React Flow nodes and edges in a single batch
+  // This prevents double renders by updating both nodes and edges together
   React.useEffect(() => {
     const startTime = performance.now();
     const COLUMN_WIDTH = 200;
     const NODE_SPACING = 120;
     const VIEWPORT_CENTER_Y = 400;
 
+    // === NODE CONVERSION ===
     const nodesBySection = new Map<number, typeof storeNodes>();
     for (const node of storeNodes) {
       if (!nodesBySection.has(node.section)) {
@@ -503,7 +455,7 @@ function CourseGraphFlowInner({
       });
     }
 
-    const result: Node[] = storeNodes.map((node) => {
+    const flowNodes: Node[] = storeNodes.map((node) => {
       const sectionIndex = SECTION_INDEX_MAP.get(node.section) ?? 0;
       const nodesInSection = nodesBySection.get(node.section)!;
       const nodeIndexInSection = nodeIndicesByUuid.get(node.uuid)!;
@@ -533,47 +485,11 @@ function CourseGraphFlowInner({
       };
     });
 
-    setNodes(result);
-    const endTime = performance.now();
-    console.log(`[Performance] Converted ${storeNodes.length} nodes in ${(endTime - startTime).toFixed(2)}ms`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeNodesKey, setNodes, uuid2missingPrereqs, viewMode]);
-
-  React.useEffect(() => {
-    if (contextMenu) {
-      setNodes((currentNodes) =>
-        currentNodes.map((node) =>
-          node.id === contextMenu.nodeUuid
-            ? { ...node, data: { ...node.data, disableTooltip: true } }
-            : node.data.disableTooltip
-            ? { ...node, data: { ...node.data, disableTooltip: false } }
-            : node
-        )
-      );
-    } else {
-      // Clear all disableTooltip flags when context menu closes
-      setNodes((currentNodes) =>
-        currentNodes.map((node) =>
-          node.data.disableTooltip
-            ? { ...node, data: { ...node.data, disableTooltip: false } }
-            : node
-        )
-      );
-    }
-  }, [contextMenu, setNodes]);
-
-  // Create stable key for edges
-  const storeEdgesKey = React.useMemo(
-    () => storeEdges.map(e => `${e.fromUuid}-${e.toUuid}`).sort().join('|'),
-    [storeEdges]
-  );
-
-  // Convert store edges to React Flow edges
-  React.useEffect(() => {
+    // === EDGE CONVERSION ===
     // Pre-compute node map for O(1) access
     const nodesByUuid = new Map(storeNodes.map(n => [n.uuid, n]));
 
-    const result = storeEdges.map((edge) => {
+    const flowEdges = storeEdges.map((edge) => {
       const fromNode = nodesByUuid.get(edge.fromUuid);
       const toNode = nodesByUuid.get(edge.toUuid);
 
@@ -634,9 +550,14 @@ function CourseGraphFlowInner({
       };
     }).filter(Boolean) as FlowEdge[];
 
-    setEdges(result);
+    // Batch update both nodes and edges together (single render instead of two)
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+
+    const endTime = performance.now();
+    console.log(`[Performance] Converted ${storeNodes.length} nodes and ${flowEdges.length} edges in ${(endTime - startTime).toFixed(2)}ms`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeEdgesKey, storeNodesKey]);
+  }, [storeNodesKey, storeEdgesKey, setNodes, setEdges, uuid2missingPrereqs, viewMode]);
 
   // Handle node drag end
   const onNodeDragStop = (_event: React.MouseEvent, node: Node) => {
@@ -663,8 +584,6 @@ function CourseGraphFlowInner({
   React.useEffect(() => {
     const loadData = async () => {
       try {
-        // Add 1 second delay for testing
-        await new Promise(resolve => setTimeout(resolve, 1000));
         await fetchRoadData();
       } catch (error) {
         console.error('Failed to load road data:', error);
@@ -792,23 +711,15 @@ function CourseGraphFlowInner({
       <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
 
       {/* Total Units and Cost Display */}
-      {viewMode !== "default" && (
-        <div className="absolute top-12 right-4 z-[50] pointer-events-none space-y-1 text-right">
-          <div className="text-white font-mono text-sm">
-            Total Units: <span className="font-bold">{totalUnits}</span>
-          </div>
-          {viewMode === "cost" && totalCost !== null && (
-            <div className="text-orange-400 font-mono text-sm animate-pulse">
-              Total Cost: <span className="font-bold">{totalCost}</span>
-            </div>
-          )}
-        </div>
-      )}
+      <GraphStats 
+        viewMode={viewMode}
+        markers={markers}
+        optimizerNodes={optimizerNodes}
+        lastCostBreakdown={lastCostBreakdown}
+      />
 
       {/* Optimization overlay - disable interactions */}
-      {isOptimizing && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-[1.5px] z-[100] pointer-events-none" />
-      )}
+      <GraphOverlay isOptimizing={isOptimizing} />
 
       {/* Context menu */}
       {contextMenu && (() => {

@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') {
   window.localStorage.removeItem('autoroad_query_cache');
 }
 
-export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode };
+export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode, Marker };
 
 interface GraphStore {
   markers: Marker[]; // User-defined course placements (constraints)
@@ -219,7 +219,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
     try {
       let lastRenderTime = 0;
-      const RENDER_THROTTLE_MS = 1000;
+      const RENDER_THROTTLE_MS = 800;
       let latestNodes: OptimizerNode[] = [];
       let lastProgressUpdate = 0;
       const PROGRESS_THROTTLE_MS = 100;
@@ -246,7 +246,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         console.error('[Optimizer] Failed to fetch course categories:', error);
       }
 
-      // Pass objectives as-is (decay_rate is now a regular parameter in category_rewards)
+      // Pass objectives as-is
       const objectivesWithParams = selectedObjectives.length > 0 ? selectedObjectives : undefined;
 
       // Stream optimization progress
@@ -270,7 +270,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
         if (progress.nodes.length > 0) {
           latestNodes = progress.nodes;
-          
+
           // Store cost breakdown if available
           if (progress.costBreakdown) {
             set({ lastCostBreakdown: progress.costBreakdown });

@@ -48,7 +48,18 @@ export function CourseSearchTab() {
     return "";
   }, [searchQuery, activeFilters]);
 
-  const { data: allCourses = [], isLoading, isError } = useSearchCourses(effectiveSearchQuery, selectedDepartment);
+  // Convert active filters to API format for server-side filtering
+  const apiFilters = React.useMemo(() => {
+    const filters: Record<string, string> = {};
+    for (const filterId of activeFilters) {
+      const [category, value] = filterId.split(":");
+      if (category === "dept") continue; // Department handled separately
+      filters[category] = value;
+    }
+    return Object.keys(filters).length > 0 ? filters : undefined;
+  }, [activeFilters]);
+
+  const { data: allCourses = [], isLoading, isError } = useSearchCourses(effectiveSearchQuery, selectedDepartment, apiFilters);
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14", "15", "16", "17", "18", "20", "21A", "21G", "21H", "21M", "22", "24"];
@@ -94,57 +105,8 @@ export function CourseSearchTab() {
 
   const [showFilterDropdown, setShowFilterDropdown] = React.useState(false);
 
-  // Apply client-side filters
-  const filteredCourses = React.useMemo(() => {
-    return allCourses.filter((course) => {
-      for (const filterId of activeFilters) {
-        const [category, value] = filterId.split(":");
-
-        if (category === "dept") {
-          // Check if course subject_id starts with the department number
-          if (!course.subject_id?.startsWith(`${value}.`)) return false;
-        }
-
-        if (category === "gir") {
-          if (value === "LAB" && !course.gir_attribute?.includes("LAB")) return false;
-          if (value === "REST" && !course.gir_attribute?.includes("REST")) return false;
-        }
-
-        if (category === "hass") {
-          if (!course.hass_attribute?.includes(value)) return false;
-        }
-
-        if (category === "ci") {
-          if (value === "CI-H" && !course.communication_requirement?.includes("CI-H")) return false;
-          if (value === "CI-HW" && !course.communication_requirement?.includes("CI-HW")) return false;
-          if (value === "NONE" && course.communication_requirement) return false;
-        }
-
-        if (category === "level") {
-          if (value === "UG" && course.level !== "U") return false;
-          if (value === "G" && course.level !== "G") return false;
-        }
-
-        if (category === "units") {
-          const units = course.total_units || 0;
-          if (value === "<6" && units >= 6) return false;
-          if (value === "6" && units !== 6) return false;
-          if (value === "9" && units !== 9) return false;
-          if (value === "12" && units !== 12) return false;
-          if (value === "15" && units !== 15) return false;
-          if (value === "6+" && units < 6) return false;
-        }
-
-        if (category === "term") {
-          if (value === "FA" && !course.offered_fall) return false;
-          if (value === "IAP" && !course.offered_IAP) return false;
-          if (value === "SP" && !course.offered_spring) return false;
-        }
-      }
-
-      return true;
-    });
-  }, [allCourses, activeFilters]);
+  // Server-side filtering is now handled by the API, no client-side filtering needed
+  const filteredCourses = allCourses;
 
   const addFilter = (filterId: string) => {
     setActiveFilters(new Set(activeFilters).add(filterId));

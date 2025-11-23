@@ -55,9 +55,11 @@ export interface FireroadSearchParams {
   type?: 'contains' | 'matches' | 'starts' | 'ends';
   gir?: string;
   hass?: string;
-  ci?: boolean;
+  ci?: boolean | string;
   offered?: 'fall' | 'spring' | 'IAP' | 'summer';
-  level?: 'undergrad' | 'grad';
+  level?: 'undergrad' | 'grad' | string;
+  units?: string;
+  term?: string;
   full?: boolean;
   offset?: number;
   limit?: number;
@@ -152,9 +154,11 @@ export const fireroadApi = {
     if (params?.type) searchParams.append('type', params.type);
     if (params?.gir) searchParams.append('gir', params.gir);
     if (params?.hass) searchParams.append('hass', params.hass);
-    if (params?.ci) searchParams.append('ci', 'true');
+    if (params?.ci) searchParams.append('ci', typeof params.ci === 'string' ? params.ci : 'true');
     if (params?.offered) searchParams.append('offered', params.offered);
     if (params?.level) searchParams.append('level', params.level);
+    if (params?.units) searchParams.append('units', params.units);
+    if (params?.term) searchParams.append('term', params.term);
     if (params?.offset !== undefined) searchParams.append('offset', params.offset.toString());
     if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
     if (params?.department) searchParams.append('department', params.department);

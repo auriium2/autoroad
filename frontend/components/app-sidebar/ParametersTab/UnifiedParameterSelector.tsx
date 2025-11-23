@@ -599,7 +599,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
                                 </Label>
                                 <input
                                   type="number"
-                                  value={config.parameters[paramName] ?? defaultValue}
+                                  value={(config.parameters[paramName] as number) ?? defaultValue}
                                   onChange={(e) => handleParameterChange(
                                     objective.key,
                                     paramName,

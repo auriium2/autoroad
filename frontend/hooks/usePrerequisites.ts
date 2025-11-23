@@ -5,7 +5,8 @@
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
-import { parseFireroad, extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
+import { extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
+import { getCachedPrereqTree } from '@/lib/prerequisiteCache';
 import type { CourseNode } from '@/types';
 
 interface CourseDetailsWithPrereqs {
@@ -27,7 +28,7 @@ async function fetchPrerequisitesForCourse(courseId: string): Promise<string[]> 
       return [];
     }
 
-    const prereqTree = parseFireroad(prereqString);
+    const prereqTree = getCachedPrereqTree(prereqString);
     return extractCourseIds(prereqTree);
   } catch (error) {
     console.warn(`Failed to fetch prerequisites for ${courseId}:`, error);
@@ -68,7 +69,7 @@ export function useCheckCoursePlacement(
           return { satisfied: true, missing: [] };
         }
 
-        const prereqTree = parseFireroad(prereqString);
+        const prereqTree = getCachedPrereqTree(prereqString);
 
         const takenCourses = allNodes
           .filter(n => n.section < section)
@@ -139,7 +140,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
           let prereqCourseIds: string[] = [];
           if (prereqString) {
             try {
-              const prereqTree = parseFireroad(prereqString);
+              const prereqTree = getCachedPrereqTree(prereqString);
               prereqCourseIds = extractCourseIds(prereqTree);
             } catch {
               // Ignore parse errors
@@ -216,7 +217,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
         if (!prereqString) continue;
 
         try {
-          const prereqTree = parseFireroad(prereqString);
+          const prereqTree = getCachedPrereqTree(prereqString);
           
           // Get courses taken before this node
           const takenCourseIds = results
@@ -326,7 +327,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         }
 
         try {
-          const prereqTree = parseFireroad(prereqString);
+          const prereqTree = getCachedPrereqTree(prereqString);
 
           // Get courses taken before this node's section (O(1) lookup)
           // This includes special semesters: -2 (Must Take), -1 (ASE)

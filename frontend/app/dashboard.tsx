@@ -119,17 +119,20 @@ export default function Dashboard() {
     } else if (!isOptimizing && optimizationStartTime) {
       setOptimizationStartTime(null);
       setTimeElapsed(0);
+      return;
     }
-  }, [isOptimizing, optimizationStartTime]);
 
-  // Update elapsed time during optimization
-  React.useEffect(() => {
+    // Update elapsed time
     if (!isOptimizing || !optimizationStartTime) return;
-    const interval = setInterval(() => {
+    
+    let rafId: number;
+    const updateTime = () => {
       setTimeElapsed((Date.now() - optimizationStartTime) / 1000);
-    }, 250);
-
-    return () => clearInterval(interval);
+      rafId = requestAnimationFrame(updateTime);
+    };
+    
+    rafId = requestAnimationFrame(updateTime);
+    return () => cancelAnimationFrame(rafId);
   }, [isOptimizing, optimizationStartTime]);
 
   // Prefetch courses from user's schedule on app load
@@ -142,6 +145,7 @@ export default function Dashboard() {
     if (courseIds.length > 0) {
       prefetchCourses(queryClient, courseIds);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
   React.useEffect(() => {

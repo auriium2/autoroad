@@ -21,20 +21,20 @@
 // Types
 // ============================================================================
 
-interface PrereqCourse {
+export interface PrereqCourse {
   type: 'course';
   courseId: string;
   wasPruned?: boolean;
 }
 
-interface PrereqGroup {
+export interface PrereqGroup {
   type: 'group';
   threshold: number;  // number of items required (0 = all, 1 = any one, 2 = any two, etc.)
   items: PrereqNode[];
   wasPruned?: boolean;
 }
 
-type PrereqNode = PrereqCourse | PrereqGroup;
+export type PrereqNode = PrereqCourse | PrereqGroup;
 
 interface EvaluationResult {
   satisfied: boolean;
