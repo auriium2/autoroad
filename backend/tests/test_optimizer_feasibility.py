@@ -17,7 +17,6 @@ from api.routes.optimize import (
 )
 from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.objectives.builder import ObjectiveBuilder
-from optimizer.objectives.ratings import MaximizeRating
 from optimizer.objectives.units import MinimizeUnits
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 
@@ -374,10 +373,9 @@ class TestOptimizerFeasibility:
             override_course_ids=set()
         )
 
-        # Use default objectives
+        # Use minimal objective
         objective_builder = ObjectiveBuilder()
         objective_builder.add(MinimizeUnits(), weight=1.0)
-        objective_builder.add(MaximizeRating(), weight=0.5)
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 

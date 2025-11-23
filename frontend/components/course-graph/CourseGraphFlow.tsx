@@ -19,7 +19,7 @@ import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
 
 import { CourseNode as CourseNodeComponent } from "@/components/course-graph/CourseNode";
-import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode } from "@/stores/roadStore";
+import { useGraphStore, CourseNode as CourseNodeType, Section, OptimizerNode, AvailableNode } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -241,14 +241,20 @@ const SECTION_INDEX_MAP = new Map(
   ALL_SECTIONS.map((section, index) => [section.id, index])
 );
 
+interface CourseGraphFlowProps {
+  viewMode?: string;
+}
+
 function CourseGraphFlowInner({
+  viewMode = "default",
   disableEdgesDuringOptimization = false,
-}: {
+}: CourseGraphFlowProps & {
   disableEdgesDuringOptimization?: boolean;
 }) {
   // Use Zustand selectors for optimal performance - only re-render when specific data changes
   const markers = useGraphStore(state => state.markers);
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
+  const availableNodes = useGraphStore(state => state.availableNodes);
   const loadingState = useGraphStore(state => state.loadingState);
   const error = useGraphStore(state => state.error);
   const fetchRoadData = useGraphStore(state => state.fetchRoadData);
@@ -258,6 +264,7 @@ function CourseGraphFlowInner({
   const isOptimizing = useGraphStore(state => state.isOptimizing);
   const markersChangedSinceOptimization = useGraphStore(state => state.markersChangedSinceOptimization);
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
+  const lastCostBreakdown = useGraphStore(state => state.lastCostBreakdown);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -267,6 +274,35 @@ function CourseGraphFlowInner({
 
   // Track if we've shown the stale warning alert
   const [hasShownStaleWarning, setHasShownStaleWarning] = React.useState(false);
+
+  // Calculate total units from all displayed nodes
+  const totalUnits = React.useMemo(() => {
+    let total = 0;
+
+    // Add units from optimizer nodes (they have units from backend)
+    optimizerNodes.forEach(node => {
+      total += node.units || 0;
+    });
+
+    // For markers, we need to get units from course data
+    // We'll use the fact that CourseNode component fetches this data
+    // For now, just count markers with default 12 units each
+    // (This will be replaced when course details are fetched)
+    const markerOnlyCourses = markers.filter(m =>
+      !optimizerNodes.some(on => on.courseId === m.courseId && on.section === m.section)
+    );
+
+    // Default to 12 units per marker course
+    // TODO: Fetch actual units from course details
+    total += markerOnlyCourses.length * 12;
+
+    return total;
+  }, [markers, optimizerNodes]);
+
+  // Calculate total cost from cost breakdown
+  const totalCost = lastCostBreakdown
+    ? Object.values(lastCostBreakdown).reduce((sum, cost) => sum + cost, 0)
+    : null;
 
   // Show warning alert when markers change (once)
   React.useEffect(() => {
@@ -339,6 +375,7 @@ function CourseGraphFlowInner({
         courseId: on.courseId,
         section: on.section,
         userControlled: false,
+        units: on.units,
       }));
 
     return [...markerNodes, ...optimizerOnlyNodes];
@@ -669,7 +706,7 @@ function CourseGraphFlowInner({
   if (loadingState === 'loading' && markers.length === 0 && optimizerNodes.length === 0) {
     return (
       <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
-        <LoadingSpinner message="Loading your autoroad..." />
+        <LoadingSpinner message="Loading Autoroad..." />
       </div>
     );
   }
@@ -738,6 +775,20 @@ function CourseGraphFlowInner({
 
       {/* Column headers and dividers that move with viewport */}
       <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
+
+      {/* Total Units and Cost Display */}
+      {viewMode !== "default" && (
+        <div className="absolute top-12 right-4 z-[50] pointer-events-none space-y-1 text-right">
+          <div className="text-white font-mono text-sm">
+            Total Units: <span className="font-bold">{totalUnits}</span>
+          </div>
+          {viewMode === "cost" && totalCost !== null && (
+            <div className="text-orange-400 font-mono text-sm animate-pulse">
+              Total Cost: <span className="font-bold">{totalCost}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Optimization overlay - disable interactions */}
       {isOptimizing && (
@@ -814,13 +865,15 @@ function CourseGraphFlowInner({
 }
 
 export function CourseGraphFlow({
+  viewMode = "default",
   disableEdgesDuringOptimization = false,
-}: {
+}: CourseGraphFlowProps & {
   disableEdgesDuringOptimization?: boolean;
 } = {}) {
   return (
     <ReactFlowProvider>
       <CourseGraphFlowInner
+        viewMode={viewMode}
         disableEdgesDuringOptimization={disableEdgesDuringOptimization}
       />
     </ReactFlowProvider>

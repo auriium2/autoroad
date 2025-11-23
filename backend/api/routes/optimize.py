@@ -15,6 +15,11 @@ from courses.prerequisites.parser import parse_fireroad
 from courses.prerequisites.types import PrereqNode
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
+from optimizer.constraints import ConstraintContext
+from optimizer.constraints.registry import (
+    get_all_constraints,
+    instantiate_constraint,
+)
 from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.objectives import ObjectiveBuilder
 from optimizer.objectives.registry import (
@@ -33,12 +38,37 @@ from utils.utils import (
 router = APIRouter()
 
 
+@router.get("/optimize/health")
+async def health_check():
+    """
+    Health check endpoint for the optimizer service.
+    
+    Returns:
+        Status of the optimizer service
+    """
+    return {
+        "status": "healthy",
+        "service": "optimizer"
+    }
+
+
 class StreamingCallback(cp_model.CpSolverSolutionCallback):
     """
     CP-SAT callback that puts solutions into a queue for real-time streaming.
     """
 
-    def __init__(self, take_vars: dict[tuple[int, int], cp_model.IntVar], courses_df: pl.DataFrame, solution_queue: queue.Queue[object]):
+    def __init__(
+        self,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        courses_df: pl.DataFrame,
+        solution_queue: queue.Queue[object],
+        builder: ObjectiveBuilder | None = None,
+        model: cp_model.CpModel | None = None,
+        planning_year_start: int | None = None,
+        objective_tiers: dict[str, int] | None = None,
+        requirement_tiers: dict[str, int] | None = None,
+        marked_course_ids: set[str] | None = None
+    ):
         super().__init__()
         self.take_vars: dict[tuple[int, int], cp_model.IntVar] = take_vars
         self.courses_df: pl.DataFrame = courses_df
@@ -46,6 +76,14 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         self.solution_queue: queue.Queue[object] = solution_queue
         self.best_solution_nodes: list[dict[str, object]] = []  # Track best solution for .road export
         self.best_objective_value: float | None = None
+
+        # For cost breakdown calculation
+        self.builder = builder
+        self.model = model
+        self.planning_year_start = planning_year_start
+        self.objective_tiers = objective_tiers
+        self.requirement_tiers = requirement_tiers
+        self.marked_course_ids = marked_course_ids
 
     def on_solution_callback(self) -> None:
         self.solution_count += 1
@@ -63,13 +101,33 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
                 else:
                     section = semester - 1  # Convert regular semesters to 0-based
 
+                units = self.courses_df[course_idx, 'total_units'] if 'total_units' in self.courses_df.columns else 12
+
                 nodes.append({
                     "courseId": course_id,
                     "section": section,
-                    "title": title
+                    "title": title,
+                    "units": units
                 })
 
         current_objective = self.ObjectiveValue()
+
+        # Calculate cost breakdown if builder is available
+        cost_breakdown = None
+        if self.builder:
+            try:
+                cost_breakdown = self.builder.calculate_cost_breakdown(self)
+                # Debug: Print detailed breakdown
+                print(f"\n[DEBUG] Solution #{self.solution_count} - Objective: {current_objective}")
+                print("[DEBUG] Cost Breakdown:")
+                for name, cost in cost_breakdown.items():
+                    print(f"  - {name}: {cost}")
+                breakdown_total = sum(cost_breakdown.values())
+                print(f"[DEBUG] Total from breakdown: {breakdown_total}")
+                if abs(breakdown_total - current_objective) > 1:
+                    print(f"[WARNING] Breakdown sum ({breakdown_total}) != objective ({current_objective})")
+            except Exception as e:
+                print(f"[WARNING] Failed to calculate cost breakdown: {e}")
 
         # Track best solution for .road export (lower objective = better)
         if self.best_objective_value is None or current_objective < self.best_objective_value:
@@ -82,7 +140,8 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
             "step": self.solution_count,
             "solutionNumber": self.solution_count,  # Explicit sequence number for ordering
             "nodes": nodes,
-            "objectiveValue": current_objective
+            "objectiveValue": current_objective,
+            "costBreakdown": cost_breakdown
         }
 
         # Put solution in queue immediately (thread-safe)
@@ -130,10 +189,9 @@ def add_basic_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pl.DataFrame,
-    max_units_iap: int,
     max_semesters: int
 ) -> None:
-    """Add basic constraints like hard 48 unit limit for first semester, IAP limits, taking course once, etc."""
+    """Add always-on hard constraints (take course once, freshman fall limit, IAP limit)."""
 
     # Constraint: Take each course at most once across ALL semesters (including ASE)
     # This prevents duplicates when a course is pinned to ASE but optimizer tries to schedule it again
@@ -156,7 +214,8 @@ def add_basic_constraints(
     if semester_1_takes:
         model.Add(sum(semester_1_takes) <= 48)
 
-    # Constraint: Hard limit for IAP semesters
+    # Constraint: Hard limit of 12 units for IAP semesters
+    # This is an MIT policy constraint
     for semester in range(1, max_semesters + 1):
         is_iap = (semester - 2) % 3 == 0 and semester >= 2 and semester <= 11
         if is_iap:
@@ -166,7 +225,7 @@ def add_basic_constraints(
                 if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
             ]
             if semester_takes:
-                model.Add(sum(semester_takes) <= max_units_iap)
+                model.Add(sum(semester_takes) <= 12)
 
 
 def add_past_semester_constraints(
@@ -186,8 +245,6 @@ def add_past_semester_constraints(
     if current_semester <= 0:
         return
 
-    print(f"[DEBUG] Locking past semesters: current semester is {current_semester}")
-
     # Build a set of (course_id, semester) tuples for pinned courses in past semesters
     pinned_past_courses = set()
     if markers:
@@ -205,7 +262,6 @@ def add_past_semester_constraints(
                     semester = marker.section + 1
                     if semester <= current_semester:
                         pinned_past_courses.add((course_idx, semester))
-                        print(f"[DEBUG] Allowing pinned course {marker.courseId} in past semester {semester}")
 
     # For all semesters up to and including the current one, prevent new placements
     # We lock the current semester too since it's already in progress
@@ -215,7 +271,7 @@ def add_past_semester_constraints(
                 # Skip if this course is pinned to this past semester
                 if (course_idx, semester) in pinned_past_courses:
                     continue
-                
+
                 # Force this variable to 0 (cannot take this course in this past semester)
                 model.Add(take_vars[(course_idx, semester)] == 0)
 
@@ -273,9 +329,8 @@ async def optimize(request: OptimizationRequest):
                 _, planning_year = find_current_school_year()
             planning_year_start = int(planning_year.split('-')[0])
 
-            # Extract constraints
-            max_semesters = request.constraints.maxSemesters
-            max_units_iap = request.constraints.maxUnitsIAP
+            # Extract configuration
+            max_semesters = request.maxSemesters
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
 
@@ -283,8 +338,8 @@ async def optimize(request: OptimizationRequest):
             def create_model():
                 model = cp_model.CpModel()
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
-                add_basic_constraints(model, take_vars, courses_df, max_units_iap, max_semesters)
-
+                add_basic_constraints(model, take_vars, courses_df, max_semesters)
+                
                 # Add past semester constraints if enabled
                 if request.lockPastSemesters:
                     add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
@@ -333,31 +388,76 @@ async def optimize(request: OptimizationRequest):
 
             marker_result = await loop.run_in_executor(None, add_markers)
 
+            # Add hard constraints (run in thread pool)
+            def add_hard_constraints():
+                if request.hardConstraints:
+                    constraint_context = ConstraintContext(
+                        planning_year_start=planning_year_start,
+                        courses_df=courses_df,
+                        max_semesters=max_semesters,
+                        markers=request.markers,
+                    )
+                    
+                    print(f"[OPTIMIZER] Applying {len(request.hardConstraints)} hard constraints:")
+                    for constraint_key in request.hardConstraints:
+                        try:
+                            constraint = instantiate_constraint(constraint_key)
+                            constraint.add_to_model(model, take_vars, constraint_context)
+                            print(f"  - {constraint_key}: {constraint.get_name()}")
+                        except ValueError as e:
+                            print(f"[WARNING] Invalid constraint {constraint_key}: {e}")
+
+            await loop.run_in_executor(None, add_hard_constraints)
+
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
 
             # Build objective (run in thread pool)
             def build_objective():
                 builder = ObjectiveBuilder()
 
+                # Always add minimize_units as the core base objective
+                from optimizer.objectives import MinimizeUnits
+                builder.add(MinimizeUnits(), key="minimize_units")
+
                 # Use provided objectives or defaults
                 if request.objectives:
                     # Use user-provided objectives
+                    print(f"[OPTIMIZER] Using {len(request.objectives)} user-provided objectives:")
                     for obj_config in request.objectives:
                         try:
                             obj = instantiate_objective(obj_config.key, obj_config.parameters)
-                            builder.add(obj, weight=obj_config.weight)
+                            builder.add(obj, key=obj_config.key)
+                            print(f"  - {obj_config.key}: {obj_config.parameters}")
                         except ValueError as e:
                             print(f"[WARNING] Invalid objective {obj_config.key}: {e}")
                 else:
                     # Use default objectives
-                    for key, weight, params in get_default_objectives():
+                    print("[OPTIMIZER] Using default objectives")
+                    for key, params in get_default_objectives():
                         obj = instantiate_objective(key, params)
-                        builder.add(obj, weight=weight)
+                        builder.add(obj, key=key)
+                        print(f"  - {key}: {params}")
 
-                objective = builder.build(model, take_vars, courses_df, planning_year_start)
+                # Extract marked course IDs from markers
+                marked_course_ids = set(m.courseId for m in request.markers) if request.markers else set()
+
+                print(f"[OPTIMIZER] Objective tiers: {request.objectiveTiers}")
+                print(f"[OPTIMIZER] Requirement tiers: {request.requirementTiers}")
+                print(f"[OPTIMIZER] Marked courses: {marked_course_ids}")
+
+                objective = builder.build(
+                    model,
+                    take_vars,
+                    courses_df,
+                    planning_year_start,
+                    objective_tiers=request.objectiveTiers,
+                    requirement_tiers=request.requirementTiers,
+                    marked_course_ids=marked_course_ids
+                )
                 model.Minimize(objective)
+                return builder
 
-            await loop.run_in_executor(None, build_objective)
+            builder = await loop.run_in_executor(None, build_objective)
 
             msg = {'type': 'progress', 'message': 'Solving...', 'step': 7, 'totalSteps': 10}
             print(f"[SSE] Sending: {msg}")
@@ -366,8 +466,21 @@ async def optimize(request: OptimizationRequest):
             # Create queue for solutions
             solution_queue = queue.Queue()
 
-            # Create callback
-            callback = StreamingCallback(take_vars, courses_df, solution_queue)
+            # Extract marked course IDs from markers
+            marked_course_ids = set(m.courseId for m in request.markers) if request.markers else set()
+
+            # Create callback with builder for cost breakdown
+            callback = StreamingCallback(
+                take_vars,
+                courses_df,
+                solution_queue,
+                builder=builder,
+                model=model,
+                planning_year_start=planning_year_start,
+                objective_tiers=request.objectiveTiers,
+                requirement_tiers=request.requirementTiers,
+                marked_course_ids=marked_course_ids
+            )
 
             # Configure solver
             solver = cp_model.CpSolver()
@@ -487,13 +600,14 @@ async def get_objectives():
             "hasParameters": obj.has_parameters,
             "defaultParameters": obj.default_parameters,
             "parameterTypes": {k: v.__name__ if hasattr(v, '__name__') else str(v) for k, v in obj.parameter_types.items()},
+            "defaultTier": obj.default_tier,
         })
 
     # Also include default configuration
     defaults = get_default_objectives()
     default_config = [
-        {"key": key, "weight": weight, "parameters": params}
-        for key, weight, params in defaults
+        {"key": key, "parameters": params}
+        for key, params in defaults
     ]
 
     return {
@@ -514,3 +628,29 @@ async def get_requirements_list():
     response = requests.get('https://fireroad.mit.edu/requirements/list_reqs')
     response.raise_for_status()
     return response.json()
+
+
+@router.get("/optimize/constraints")
+async def get_hard_constraints():
+    """
+    Get all available hard constraints.
+
+    Returns:
+        List of hard constraint metadata with keys, names, descriptions.
+    """
+    constraints = get_all_constraints()
+
+    # Convert to dict format for JSON response
+    result = []
+    for constraint in constraints:
+        result.append({
+            "key": constraint.key,
+            "name": constraint.name,
+            "description": constraint.description,
+            "category": constraint.category,
+            "defaultEnabled": constraint.default_enabled,
+        })
+
+    return {
+        "constraints": result
+    }

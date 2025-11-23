@@ -11,6 +11,6 @@
 - the workers are designed to be horizontally scalable, since all they have to do is run the optimization and then die
 
 ## ai usage
-- frontend built entirely with ai assistance. I used a combination of chatgpt's codex agent and copilot to generate the frontend code. I had to do some manual work to connect the frontend to the backend, but overall it was a huge time saver.
+- frontend built entirely with ai assistance. I used a combination of claude and copilot to generate the frontend code. I had to do some manual work to connect the frontend to the backend, but overall it was a huge time saver.
 - backend unit testing, regression testing, etc done by ai. no human should be forced to write unit tests.
 - please employ me

@@ -11,19 +11,16 @@ class Marker(BaseModel):
 
 class ObjectiveConfig(BaseModel):
     key: str = Field(..., description="Objective key (e.g., 'minimize_units')")
-    weight: float = Field(..., ge=0, le=1, description="Weight for this objective (0-1)")
     parameters: dict[str, object] = Field(default_factory=dict, description="Optional parameters for the objective")
-
-
-class OptimizationConstraints(BaseModel):
-    maxSemesters: int = Field(default=12, ge=1, le=12, description="Maximum number of semesters")
-    maxUnitsIAP: int = Field(default=12, ge=0, le=50, description="Maximum units for IAP semesters")
 
 
 class OptimizationRequest(BaseModel):
     markers: list[Marker] = Field(default_factory=list, description="User-placed course markers")
     requirements: list[str] = Field(default=["major6-3new", "girs"], description="Requirement keys to satisfy")
-    constraints: OptimizationConstraints = Field(default_factory=OptimizationConstraints)
+    maxSemesters: int = Field(default=12, ge=1, le=12, description="Maximum number of semesters to plan")
     planningYear: str | None = Field(default=None, description="Planning year (e.g., '2024-2025')")
     objectives: list[ObjectiveConfig] | None = Field(default=None, description="Optimization objectives (if None, uses defaults)")
+    hardConstraints: list[str] = Field(default_factory=list, description="Hard constraint keys to enable (e.g., ['ban_iap'])")
     lockPastSemesters: bool = Field(default=False, description="Prevent optimizer from modifying semesters that have already passed")
+    requirementTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for requirement tree nodes (0-3)")
+    objectiveTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for objectives (1-4)")

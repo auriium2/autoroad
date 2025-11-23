@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X } from "lucide-react";
+import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
@@ -100,6 +101,7 @@ export default function Dashboard() {
   }, []); // Only run once on mount
 
   React.useEffect(() => {
+    console.log('[Dashboard] lastOptimizationStatus changed:', lastOptimizationStatus, 'prev:', prevStatusRef.current);
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
       showToast({
         title: "Optimal solution found!",
@@ -241,7 +243,7 @@ export default function Dashboard() {
     <SidebarProvider defaultOpen={true}>
       <RequirementPrefetcher />
       <div className="flex w-screen h-screen">
-        <AppSidebar />
+        <AppSidebar viewMode={viewMode} />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/50 px-4 relative z-10 glass dark:glass-dark">
             <div className="flex items-center gap-2">
@@ -260,6 +262,7 @@ export default function Dashboard() {
               </Breadcrumb>
             </div>
             <div className="ml-auto flex items-center gap-2">
+              <HealthIndicator />
               <Button variant="outline" size="sm" onClick={handleImport} disabled={isImporting}>
                 <Upload className="h-4 w-4" />
                 {isImporting ? "Importing..." : "Import"}
@@ -284,6 +287,7 @@ export default function Dashboard() {
                   <SelectContent>
                     <SelectItem value="default">Default view</SelectItem>
                     <SelectItem value="compact">Compact view</SelectItem>
+                    <SelectItem value="cost">Cost view</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -390,7 +394,7 @@ export default function Dashboard() {
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">
-              <CourseGraphFlow />
+              <CourseGraphFlow viewMode={viewMode} />
             </div>
           </div>
         </SidebarInset>

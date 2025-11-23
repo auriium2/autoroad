@@ -1,5 +1,5 @@
 """
-Schedule-based objectives: frontload, backload, minimize Fridays, clustering.
+Schedule-based objectives: minimize Fridays, avoid IAP.
 """
 
 from __future__ import annotations
@@ -9,118 +9,26 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
-from .base import ObjectiveContext
+from .base import ObjectiveContext, get_tier_penalty
 from .utils import preprocess_schedule_data
-
-
-class FrontloadCourses:
-    """
-    Objective to frontload courses (prefer earlier semesters).
-
-    This encourages taking courses earlier in the academic career,
-    which can be useful for unlocking prerequisites or graduating early.
-
-    Scale: Normalized to ~100 per course (semester 6 × 20 = 120).
-    """
-
-    def get_name(self) -> str:
-        return "Frontload Courses"
-
-    def get_description(self) -> str:
-        return "Prefer taking courses in earlier semesters"
-
-    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {}
-
-    def add_to_model(
-        self,
-        model: cp_model.CpModel,
-        take_vars: dict[tuple[int, int], cp_model.IntVar],
-        context: ObjectiveContext
-    ) -> cp_model.LinearExpr:
-        """
-        Minimize sum of (semester_number * 20 * take_var).
-
-        Later semesters have higher numbers, so this penalizes taking courses late.
-        Scaled by 20 to normalize to ~100 per course.
-        """
-        terms = []
-
-        for (course_idx, semester), var in take_vars.items():
-            # Semester 1 costs 20, semester 2 costs 40, etc.
-            # Average semester ~6 → 120
-            terms.append(var * semester * 20)
-
-        if terms:
-            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.constant(0)
-
-
-class BackloadCourses:
-    """
-    Objective to backload courses (prefer later semesters).
-
-    This encourages taking courses later in the academic career,
-    which can be useful for maintaining enrollment status or
-    spreading out difficult courses.
-
-    Scale: Normalized to ~100 per course (semester 6 → (13-6) × 20 = 140).
-    """
-
-    def get_name(self) -> str:
-        return "Backload Courses"
-
-    def get_description(self) -> str:
-        return "Prefer taking courses in later semesters"
-
-    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {}
-
-    def add_to_model(
-        self,
-        model: cp_model.CpModel,
-        take_vars: dict[tuple[int, int], cp_model.IntVar],
-        context: ObjectiveContext
-    ) -> cp_model.LinearExpr:
-        """
-        Minimize sum of ((13 - semester_number) * 20 * take_var).
-
-        Earlier semesters have higher costs, so this penalizes taking courses early.
-        Assumes 12 semesters max. Scaled by 20 to normalize to ~100 per course.
-        """
-        terms = []
-
-        for (course_idx, semester), var in take_vars.items():
-            # Semester 1 costs 240, semester 2 costs 220, ..., semester 12 costs 20
-            # Average semester ~6 → (13-6) × 20 = 140
-            terms.append(var * (13 - semester) * 20)
-
-        if terms:
-            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.constant(0)
 
 
 class MinimizeFridayClasses:
     """
-    Objective to minimize classes that meet on Friday.
+    Tier-based soft constraint to avoid classes that meet on Friday.
 
     This maximizes long weekends for students who want to minimize Friday schedules.
-
-    Scale: Normalized to ~100 per Friday course (penalty=100).
     """
 
-    def __init__(self, penalty: int = 100):
-        """
-        Args:
-            penalty: Cost penalty for each course that meets on Friday (default 100)
-        """
-        self.penalty: int = penalty
+    def __init__(self):
+        """Initialize MinimizeFridayClasses."""
+        pass
 
     def get_name(self) -> str:
         return "Minimize Friday Classes"
 
     def get_description(self) -> str:
-        return "Avoid courses that meet on Fridays"
+        return "Avoid courses that meet on Fridays (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         """Preprocess schedule data to identify Friday classes."""
@@ -133,10 +41,17 @@ class MinimizeFridayClasses:
         context: ObjectiveContext
     ) -> cp_model.LinearExpr:
         """
-        Add penalty for each course taken that meets on Friday.
+        Add tier-based penalty for courses that meet on Friday.
 
-        Cost = sum(penalty * take_var) for courses with Friday classes
+        Formula: penalty = violations × 3^tier × 1
         """
+        # Get tier for this objective (default tier 2 if not set)
+        tier = 2
+        if context.objective_tiers and 'minimize_friday_classes' in context.objective_tiers:
+            tier = context.objective_tiers['minimize_friday_classes']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
         if context.extra is None or 'has_friday' not in context.extra:
             return cp_model.LinearExpr.constant(0)
 
@@ -145,42 +60,33 @@ class MinimizeFridayClasses:
 
         for (course_idx, semester), var in take_vars.items():
             if has_friday.get(course_idx, False):
-                terms.append(var * self.penalty)
+                terms.append(var * penalty)
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.constant(0)
 
 
-class ClusterCourses:
+class AvoidIAP:
     """
-    Objective to cluster courses together in the day (minimize time gaps).
-
-    This encourages schedules where classes are back-to-back rather than
-    spread throughout the day with long gaps.
-
-    Uses actual time slot parsing to calculate gaps in minutes.
-
-    Scale: Normalized to ~100 per course assuming ~1 hour average gap × 50 penalty = 50.
+    Tier-based soft constraint to avoid placing classes during IAP (January term).
+    
+    IAP is semester index % 3 == 2 (Freshman IAP = 2, Sophomore IAP = 5, Junior IAP = 8, Senior IAP = 11)
     """
 
-    def __init__(self, gap_penalty_per_hour: int = 50):
-        """
-        Args:
-            gap_penalty_per_hour: Penalty for each hour of gap between classes
-                                 (default 50, so 2-hour gap costs 100)
-        """
-        self.gap_penalty_per_hour: int = gap_penalty_per_hour
+    def __init__(self):
+        """Initialize AvoidIAP."""
+        pass
 
     def get_name(self) -> str:
-        return "Cluster Courses"
+        return "Avoid IAP Classes"
 
     def get_description(self) -> str:
-        return f"Minimize time gaps between classes (penalty: {self.gap_penalty_per_hour} per hour)"
+        return "Penalize placing classes during IAP (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        """Preprocess schedule data to extract time slots."""
-        return preprocess_schedule_data(courses_df)
+        """No preprocessing needed for IAP constraint."""
+        return {}
 
     def add_to_model(
         self,
@@ -189,69 +95,112 @@ class ClusterCourses:
         context: ObjectiveContext
     ) -> cp_model.LinearExpr:
         """
-        Add penalty for time gaps between classes.
+        Add tier-based penalty for courses taken during IAP.
 
-        For each semester and each day:
-        1. Identify which courses are taken on that day
-        2. For each pair of courses, calculate the time gap
-        3. Penalize the gap proportionally
-
-        Note: This is an approximation since we can't know exact end times.
-        We use start time differences as a proxy.
+        Formula: penalty = violations × 3^tier × 1
         """
-        if context.extra is None or 'time_slots' not in context.extra:
-            return cp_model.LinearExpr.constant(0)
+        # Get tier for this objective (default tier 2 if not set)
+        tier = 2
+        if context.objective_tiers and 'avoid_iap' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_iap']
 
-        time_slots_map = context.extra['time_slots']
+        penalty = get_tier_penalty(tier, base_cost=1)
+
         terms = []
 
-        # Group by semester
-        semesters = set(semester for _, semester in take_vars.keys())
+        for (course_idx, semester), var in take_vars.items():
+            # IAP semesters: 2, 5, 8, 11 (semester % 3 == 2 and semester >= 1)
+            # Must exclude ASE (semester -1) which also has -1 % 3 == 2 in Python
+            if semester >= 1 and semester % 3 == 2:
+                terms.append(var * penalty)
 
-        for sem in semesters:
-            # For each day, collect courses with their time slots
-            day_courses: dict[str, list[tuple[int, int, cp_model.IntVar]]] = {
-                'M': [], 'T': [], 'W': [], 'R': [], 'F': []
-            }
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
 
-            for (course_idx, semester), var in take_vars.items():
-                if semester != sem:
-                    continue
 
-                slots = time_slots_map.get(course_idx, [])
-                for days, start_time_minutes in slots:
-                    # Days is like "MWF" or "TR"
-                    for day_char in days:
-                        if day_char in day_courses:
-                            day_courses[day_char].append((course_idx, start_time_minutes, var))
+class MinimumClassesPerSemester:
+    """
+    Tier-based soft constraint to penalize semesters with too few classes.
+    
+    This prevents the optimizer from creating unrealistic schedules with single-class semesters.
+    """
 
-            # For each day, calculate gaps between consecutive classes
-            for day, courses_on_day in day_courses.items():
-                if len(courses_on_day) < 2:
-                    continue
+    def __init__(self, min_classes: int = 2):
+        """
+        Initialize MinimumClassesPerSemester.
+        
+        Args:
+            min_classes: Minimum number of classes per semester (default 2)
+        """
+        self.min_classes: int = min_classes
 
-                # Sort by time
-                courses_on_day.sort(key=lambda x: x[1])
+    def get_name(self) -> str:
+        return f"Min {self.min_classes} Classes Per Semester"
 
-                # For each consecutive pair, add gap penalty if both are taken
-                for i in range(len(courses_on_day) - 1):
-                    course1_idx, time1, var1 = courses_on_day[i]
-                    course2_idx, time2, var2 = courses_on_day[i + 1]
+    def get_description(self) -> str:
+        return f"Penalize semesters with fewer than {self.min_classes} classes (tier-based)"
 
-                    # Calculate gap in minutes
-                    # Assume 1-hour class duration, so gap = (time2 - time1 - 60)
-                    gap_minutes = max(0, time2 - time1 - 60)
-                    gap_hours = gap_minutes / 60.0
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        """No preprocessing needed."""
+        return {}
 
-                    if gap_hours > 0:
-                        # Penalty applies only if BOTH courses are taken
-                        # Create a variable for "both taken"
-                        both_taken = model.NewBoolVar(f'both_taken_{sem}_{day}_{i}')
-                        model.AddMultiplicationEquality(both_taken, [var1, var2])
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        """
+        Add tier-based penalty for semesters with too few classes.
 
-                        # Add gap penalty (scaled to integer)
-                        penalty = int(gap_hours * self.gap_penalty_per_hour)
-                        terms.append(both_taken * penalty)
+        For each semester with at least 1 class, penalize if class count < min_classes.
+        """
+        # Get tier for this objective (default tier 3 if not set)
+        tier = 3
+        if context.objective_tiers and 'minimum_classes_per_semester' in context.objective_tiers:
+            tier = context.objective_tiers['minimum_classes_per_semester']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
+        # Group take_vars by semester
+        semesters_with_vars: dict[int, list[cp_model.IntVar]] = {}
+        for (course_idx, semester), var in take_vars.items():
+            if semester not in semesters_with_vars:
+                semesters_with_vars[semester] = []
+            semesters_with_vars[semester].append(var)
+
+        terms = []
+
+        for semester, vars_in_semester in semesters_with_vars.items():
+            # Skip IAP semesters (2, 5, 8, 11) - it's normal to have 0-1 classes during IAP
+            # Also skip ASE (semester -1) which also has -1 % 3 == 2 in Python
+            if semester >= 1 and semester % 3 == 2:
+                continue
+            # Skip ASE explicitly
+            if semester < 1:
+                continue
+
+            # Count how many classes are taken in this semester
+            class_count = model.NewIntVar(0, len(vars_in_semester), f'class_count_s{semester}')
+            model.Add(class_count == cp_model.LinearExpr.Sum(vars_in_semester))
+
+            # Check if semester is active (has at least 1 class)
+            semester_active = model.NewBoolVar(f'semester_active_s{semester}')
+            model.Add(class_count >= 1).OnlyEnforceIf(semester_active)
+            model.Add(class_count == 0).OnlyEnforceIf(semester_active.Not())
+
+            # If semester is active and has fewer than min_classes, incur penalty
+            # Penalty = (min_classes - class_count) for active semesters with < min_classes
+            for target_count in range(1, self.min_classes):
+                # If semester has exactly target_count classes (which is < min_classes)
+                has_target_count = model.NewBoolVar(f'semester_s{semester}_has_{target_count}')
+                model.Add(class_count == target_count).OnlyEnforceIf(has_target_count)
+                model.Add(class_count != target_count).OnlyEnforceIf(has_target_count.Not())
+
+                # Penalty = (min_classes - target_count) * penalty
+                shortage = self.min_classes - target_count
+                terms.append(has_target_count * shortage * penalty)
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]

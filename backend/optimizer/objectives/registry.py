@@ -6,20 +6,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from . import (
+    AvoidIAP,
     AvoidSmallClasses,
-    BackloadCourses,
-    ClusterCourses,
-    FrontloadCourses,
     LimitClassesPerSemester,
     LimitUnitsPerSemester,
-    MaximizeCohortOverlap,
-    MaximizeRating,
-    MaximizeWeightedRating,
     MinimizeFinalsLoad,
     MinimizeFridayClasses,
     MinimizeMaxSemesterHours,
-    MinimizeTotalHours,
-    MinimizeUnits,
+    MinimumClassesPerSemester,
 )
 from .base import ObjectiveComponent
 
@@ -35,148 +29,98 @@ class ObjectiveMetadata:
     default_parameters: dict[str, Any]
     parameter_types: dict[str, Any]
     category: str
+    default_tier: int = 2  # Default tier for this objective
 
 
 OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
-    "minimize_units": ObjectiveMetadata(
-        key="minimize_units",
-        class_ref=MinimizeUnits,
-        name="Minimize Units",
-        description="Minimize the total number of units taken across all semesters",
-        has_parameters=False,
-        default_parameters={},
-        parameter_types={},
-        category="units",
-    ),
+    # Note: minimize_units is the core objective and is NOT user-selectable
+    # It is always active and forms the base of the optimization
     "avoid_small_classes": ObjectiveMetadata(
         key="avoid_small_classes",
         class_ref=AvoidSmallClasses,
         name="Avoid Small Classes",
-        description="Penalize classes with very few units (e.g., seminars)",
+        description="Penalize taking classes with very few units. This is used to stop the optimizer from taking hundreds of 0 or 3 unit classes in order to 'technically' satisfy degree requirements in a way that would be impossible to do for a human (10 seminar classes in one semester, for example)",
         has_parameters=True,
-        default_parameters={"min_units": 3, "penalty": 1000},
-        parameter_types={"min_units": int, "penalty": int},
+        default_parameters={"min_units": 3},
+        parameter_types={"min_units": int},
         category="units",
-    ),
-    "maximize_rating": ObjectiveMetadata(
-        key="maximize_rating",
-        class_ref=MaximizeRating,
-        name="Maximize Rating",
-        description="Prefer courses with higher ratings (penalize low-rated courses)",
-        has_parameters=True,
-        default_parameters={"target_rating": 6.0},
-        parameter_types={"target_rating": float},
-        category="ratings",
-    ),
-    "maximize_weighted_rating": ObjectiveMetadata(
-        key="maximize_weighted_rating",
-        class_ref=MaximizeWeightedRating,
-        name="Maximize Weighted Rating",
-        description="Prefer courses with high Bayesian-weighted ratings",
-        has_parameters=True,
-        default_parameters={"target_rating": 6.0, "min_votes": 10, "global_mean": None},
-        parameter_types={"target_rating": float, "min_votes": int, "global_mean": (float, type(None))},
-        category="ratings",
-    ),
-    "minimize_total_hours": ObjectiveMetadata(
-        key="minimize_total_hours",
-        class_ref=MinimizeTotalHours,
-        name="Minimize Total Hours",
-        description="Minimize total weekly hours across all semesters",
-        has_parameters=True,
-        default_parameters={"default_hours": 12.0},
-        parameter_types={"default_hours": float},
-        category="workload",
+        default_tier=4,
     ),
     "minimize_max_semester_hours": ObjectiveMetadata(
         key="minimize_max_semester_hours",
         class_ref=MinimizeMaxSemesterHours,
         name="Limit Semester Hours",
-        description="Penalize semesters with excessive hours per week",
+        description="Penalize semesters with excessive hours per week (tier-based, per 3 hours)",
         has_parameters=True,
-        default_parameters={"max_hours": 60.0, "penalty": 100, "default_hours": 12.0},
-        parameter_types={"max_hours": float, "penalty": int, "default_hours": float},
+        default_parameters={"max_hours": 60.0, "default_hours": 12.0},
+        parameter_types={"max_hours": float, "default_hours": float},
         category="workload",
     ),
     "limit_classes_per_semester": ObjectiveMetadata(
         key="limit_classes_per_semester",
         class_ref=LimitClassesPerSemester,
         name="Limit Classes Per Semester",
-        description="Penalize semesters with too many classes. Not recommended to disable this objective.",
+        description="Penalize semesters with too many classes (tier-based)",
         has_parameters=True,
-        default_parameters={"max_classes": 4, "penalty": 1000},
-        parameter_types={"max_classes": int, "penalty": int},
+        default_parameters={"max_classes": 4},
+        parameter_types={"max_classes": int},
         category="workload",
+        default_tier=4,
     ),
     "limit_units_per_semester": ObjectiveMetadata(
         key="limit_units_per_semester",
         class_ref=LimitUnitsPerSemester,
         name="Limit Units Per Semester",
-        description="Penalize semesters with too many units.",
+        description="Penalize semesters with too many units (tier-based, per 3 units)",
         has_parameters=True,
-        default_parameters={"max_units": 60, "penalty": 100},
-        parameter_types={"max_units": int, "penalty": int},
+        default_parameters={"max_units": 60},
+        parameter_types={"max_units": int},
         category="workload",
+        default_tier=3,
     ),
     "minimize_finals_load": ObjectiveMetadata(
         key="minimize_finals_load",
         class_ref=MinimizeFinalsLoad,
         name="Minimize Finals Load",
-        description="Penalize semesters with too many finals",
+        description="Penalize semesters with too many finals (tier-based)",
         has_parameters=True,
-        default_parameters={"max_finals": 4, "penalty": 1000},
-        parameter_types={"max_finals": int, "penalty": int},
+        default_parameters={"max_finals": 4},
+        parameter_types={"max_finals": int},
         category="workload",
-    ),
-    "frontload_courses": ObjectiveMetadata(
-        key="frontload_courses",
-        class_ref=FrontloadCourses,
-        name="Frontload Courses",
-        description="Prefer taking courses in earlier semesters",
-        has_parameters=False,
-        default_parameters={},
-        parameter_types={},
-        category="scheduling",
-    ),
-    "backload_courses": ObjectiveMetadata(
-        key="backload_courses",
-        class_ref=BackloadCourses,
-        name="Backload Courses",
-        description="Prefer taking courses in later semesters",
-        has_parameters=False,
-        default_parameters={},
-        parameter_types={},
-        category="scheduling",
+        default_tier=3,
     ),
     "minimize_friday_classes": ObjectiveMetadata(
         key="minimize_friday_classes",
         class_ref=MinimizeFridayClasses,
         name="Minimize Friday Classes",
-        description="Avoid courses that meet on Fridays",
-        has_parameters=True,
-        default_parameters={"penalty": 100},
-        parameter_types={"penalty": int},
+        description="Avoid courses that meet on Fridays (tier-based)",
+        has_parameters=False,
+        default_parameters={},
+        parameter_types={},
         category="scheduling",
+        default_tier=1,
     ),
-    "cluster_courses": ObjectiveMetadata(
-        key="cluster_courses",
-        class_ref=ClusterCourses,
-        name="Cluster Courses",
-        description="Minimize time gaps between classes",
-        has_parameters=True,
-        default_parameters={"gap_penalty_per_hour": 50},
-        parameter_types={"gap_penalty_per_hour": int},
+    "avoid_iap": ObjectiveMetadata(
+        key="avoid_iap",
+        class_ref=AvoidIAP,
+        name="Avoid IAP Classes",
+        description="Penalize the optimizer placing classes during IAP. This does not penalize any classes that you place yourself inside of iap.",
+        has_parameters=False,
+        default_parameters={},
+        parameter_types={},
         category="scheduling",
+        default_tier=2,
     ),
-    "maximize_cohort_overlap": ObjectiveMetadata(
-        key="maximize_cohort_overlap",
-        class_ref=MaximizeCohortOverlap,
-        name="Maximize Cohort Overlap",
-        description="Prefer courses with higher enrollment",
+    "minimum_classes_per_semester": ObjectiveMetadata(
+        key="minimum_classes_per_semester",
+        class_ref=MinimumClassesPerSemester,
+        name="Minimum Classes Per Semester",
+        description="Penalize semesters with too few classes to prevent single-class semesters (Autoroad likes producing these, and some students like having these. Remove as needed)",
         has_parameters=True,
-        default_parameters={"target_enrollment": 50},
-        parameter_types={"target_enrollment": int},
-        category="social",
+        default_parameters={"min_classes": 2},
+        parameter_types={"min_classes": int},
+        category="workload",
+        default_tier=2,
     ),
 }
 
@@ -230,15 +174,15 @@ def instantiate_objective(key: str, parameters: dict[str, Any] | None = None) ->
         raise ValueError(f"Invalid parameters for {key}: {e}")
 
 
-def get_default_objectives() -> list[tuple[str, float, dict[str, Any]]]:
+def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
     """
     Get the default objective configuration.
 
     Returns:
-        List of (key, weight, parameters) tuples
+        List of (key, parameters) tuples
     """
     return [
-        ("minimize_units", 0.5, {}),
-        ("limit_classes_per_semester", 0.3, {"max_classes": 4, "penalty": 1000}),
-        ("avoid_small_classes", 0.2, {"min_units": 3, "penalty": 1000}),
+        ("limit_classes_per_semester", {"max_classes": 4}),
+        ("avoid_small_classes", {"min_units": 3}),
+        ("minimum_classes_per_semester", {"min_classes": 2}),
     ]

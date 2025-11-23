@@ -1,3 +1,10 @@
+// DEBUG: Clear optimization storage FIRST before any imports (remove this in production)
+if (typeof window !== 'undefined') {
+  console.log('DEBUG: Clearing optimization-storage BEFORE imports...');
+  window.localStorage.removeItem('optimization-storage');
+  window.localStorage.removeItem('autoroad_query_cache');
+}
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ObjectiveConfig } from '@/services/optimizer';
@@ -8,6 +15,7 @@ interface OptimizationState {
   selectedRequirements: string[];
   selectedYear?: string;
   lockPastSemesters: boolean;
+  selectedHardConstraints: string[];
   expandedRequirements: string[];
   expandedRequirementNodes: Record<string, Set<string>>;
   requirementTiers: Record<string, number>;
@@ -18,6 +26,8 @@ interface OptimizationState {
   setRequirements: (requirements: string[]) => void;
   setYear: (year?: string) => void;
   setLockPastSemesters: (lock: boolean) => void;
+  setHardConstraints: (constraints: string[]) => void;
+  toggleHardConstraint: (constraintKey: string) => void;
   
   addRequirement: (requirement: string) => void;
   removeRequirement: (requirement: string) => void;
@@ -56,6 +66,7 @@ export const useOptimizationStore = create<OptimizationState>()(
   selectedRequirements: [],
   selectedYear: getDefaultYear(),
   lockPastSemesters: false,
+  selectedHardConstraints: [],
   expandedRequirements: [],
   expandedRequirementNodes: {},
   requirementTiers: {},
@@ -77,6 +88,25 @@ export const useOptimizationStore = create<OptimizationState>()(
   setLockPastSemesters: (lock) => {
     markOptimizationAsStale();
     set({ lockPastSemesters: lock });
+  },
+  setHardConstraints: (constraints) => {
+    markOptimizationAsStale();
+    set({ selectedHardConstraints: constraints });
+  },
+  toggleHardConstraint: (constraintKey) => {
+    markOptimizationAsStale();
+    set((state) => {
+      const isEnabled = state.selectedHardConstraints.includes(constraintKey);
+      if (isEnabled) {
+        return {
+          selectedHardConstraints: state.selectedHardConstraints.filter(k => k !== constraintKey)
+        };
+      } else {
+        return {
+          selectedHardConstraints: [...state.selectedHardConstraints, constraintKey]
+        };
+      }
+    });
   },
   
   addRequirement: (requirement) => {
@@ -198,6 +228,7 @@ export const useOptimizationStore = create<OptimizationState>()(
         selectedRequirements: state.selectedRequirements,
         selectedYear: state.selectedYear,
         lockPastSemesters: state.lockPastSemesters,
+        selectedHardConstraints: state.selectedHardConstraints,
         requirementTiers: state.requirementTiers,
         objectiveTiers: state.objectiveTiers,
         customEquivalencies: state.customEquivalencies,

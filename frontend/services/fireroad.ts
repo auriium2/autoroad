@@ -140,6 +140,24 @@ function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
 }
 
 export const fireroadApi = {
+  async checkHealth(): Promise<{ status: string; service: string }> {
+    try {
+      const response = await fetch(`${FIREROAD_API_URL}/requirements/list_reqs`, {
+        method: 'HEAD', // Just check if the endpoint is reachable
+        signal: AbortSignal.timeout(3000), // 3 second timeout
+      });
+      if (!response.ok) {
+        throw new Error('Fireroad health check failed');
+      }
+      return {
+        status: 'healthy',
+        service: 'fireroad'
+      };
+    } catch (error) {
+      throw new Error('Fireroad service unavailable');
+    }
+  },
+
   async searchCourses(
     query: string,
     params?: FireroadSearchParams

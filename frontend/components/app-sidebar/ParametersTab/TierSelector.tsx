@@ -29,7 +29,7 @@ export function TierSelector({ tier, onChange, maxTier = 4 }: TierSelectorProps)
   return (
     <button
       onClick={handleClick}
-      className="shrink-0 transition-all hover:scale-110 flex items-center gap-0.5"
+      className="shrink-0 transition-all hover:scale-110 flex items-center gap-0.5 relative z-20 cursor-pointer"
       title={tier === 0 ? "Click to set priority tier" : `Tier ${tier} - Click to change`}
     >
       <Star

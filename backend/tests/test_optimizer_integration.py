@@ -556,11 +556,11 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Import the actual function to test
-        from api.routes.optimize import add_past_semester_constraints
-        
         # Mock get_current_semester_index to return 4 (Sophomore Fall)
         # This makes semesters 1-4 past
         from unittest.mock import patch
+
+        from api.routes.optimize import add_past_semester_constraints
         with patch('api.routes.optimize.get_current_semester_index', return_value=4):
             add_past_semester_constraints(model, take_vars, courses_df, 2024, markers)
 
@@ -573,12 +573,12 @@ class TestOptimizerIntegration:
         status = solver.Solve(model)
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
             "Should be feasible when pinned courses are in past semesters"
-        
+
         # Verify 18.01 is in semester 1 (pinned, allowed)
         course_18_01_idx = next(i for i in range(len(courses_df)) if courses_df[i, 'subject_id'] == '18.01')
         assert solver.Value(take_vars[(course_18_01_idx, 1)]) == 1, \
             "Pinned course should stay in past semester 1"
-        
+
         # Verify no OTHER courses are in semesters 1-4 (locked)
         for course_idx in range(len(courses_df)):
             if course_idx == course_18_01_idx:

@@ -7,10 +7,7 @@ import type { Marker, OptimizerNode } from '@/types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
-export interface OptimizationConstraints {
-  maxSemesters?: number;
-  maxUnitsIAP?: number;
-}
+
 
 export interface OptimizationProgress {
   nodes: OptimizerNode[];
@@ -19,6 +16,7 @@ export interface OptimizationProgress {
   message?: string;
   objectiveValue?: number;
   solutionNumber?: number;
+  costBreakdown?: Record<string, number>;
   status?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID';
   isComplete?: boolean;
 }
@@ -31,17 +29,28 @@ export interface ObjectiveMetadata {
   hasParameters: boolean;
   defaultParameters: Record<string, number>;
   parameterTypes: Record<string, string>;
+  defaultTier: number;
 }
 
 export interface ObjectiveConfig {
   key: string;
-  weight: number;
   parameters: Record<string, number>;
 }
 
 export interface ObjectivesResponse {
   objectives: ObjectiveMetadata[];
   defaultConfiguration: ObjectiveConfig[];
+}
+
+export interface HardConstraintMetadata {
+  key: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface HardConstraintsResponse {
+  constraints: HardConstraintMetadata[];
 }
 
 export interface RequirementMetadata {
@@ -84,10 +93,32 @@ export interface RequirementTree {
 }
 
 export const optimizerApi = {
+  async checkHealth(): Promise<{ status: string; service: string }> {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/optimize/health`, {
+        signal: AbortSignal.timeout(3000), // 3 second timeout
+      });
+      if (!response.ok) {
+        throw new Error('Health check failed');
+      }
+      return response.json();
+    } catch (error) {
+      throw new Error('Optimizer service unavailable');
+    }
+  },
+
   async getObjectives(): Promise<ObjectivesResponse> {
     const response = await fetch(`${BACKEND_URL}/api/optimize/objectives`);
     if (!response.ok) {
       throw new Error(`Failed to fetch objectives: ${response.statusText}`);
+    }
+    return response.json();
+  },
+
+  async getHardConstraints(): Promise<HardConstraintsResponse> {
+    const response = await fetch(`${BACKEND_URL}/api/optimize/constraints`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch constraints: ${response.statusText}`);
     }
     return response.json();
   },
@@ -131,11 +162,14 @@ export const optimizerApi = {
   async *optimize(
     markers: Marker[],
     requiredCourses: string[],
-    constraints?: OptimizationConstraints,
+    maxSemesters: number,
     signal?: AbortSignal,
     objectives?: ObjectiveConfig[],
+    hardConstraints?: string[],
     planningYear?: string,
-    lockPastSemesters?: boolean
+    lockPastSemesters?: boolean,
+    requirementTiers?: Record<string, number>,
+    objectiveTiers?: Record<string, number>
   ): AsyncGenerator<OptimizationProgress> {
     const requestBody = {
       markers: markers.map(m => ({
@@ -144,13 +178,13 @@ export const optimizerApi = {
         status: m.status,
       })),
       requirements: requiredCourses.length > 0 ? requiredCourses : ['girs', 'major6-3new'],
-      constraints: {
-        maxSemesters: constraints?.maxSemesters || 12,
-        maxUnitsIAP: constraints?.maxUnitsIAP || 12,
-      },
+      maxSemesters: maxSemesters || 12,
       objectives: objectives || undefined,
+      hardConstraints: hardConstraints || [],
       planningYear: planningYear || undefined,
       lockPastSemesters: lockPastSemesters || false,
+      requirementTiers: requirementTiers || {},
+      objectiveTiers: objectiveTiers || {},
     };
 
     const response = await fetch(`${BACKEND_URL}/api/optimize`, {
@@ -207,6 +241,7 @@ export const optimizerApi = {
                   message: message.message,
                   objectiveValue: message.objectiveValue,
                   solutionNumber: message.solutionNumber,
+                  costBreakdown: message.costBreakdown,
                 };
               } else if (message.type === 'complete') {
                 // Check if optimization failed or has warnings

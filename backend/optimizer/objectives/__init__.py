@@ -7,16 +7,13 @@ by combining different components with weights.
 
 from .base import ObjectiveComponent, ObjectiveContext
 from .builder import ObjectiveBuilder
-from .ratings import MaximizeRating, MaximizeWeightedRating
-from .scheduling import BackloadCourses, ClusterCourses, FrontloadCourses, MinimizeFridayClasses
-from .social import MaximizeCohortOverlap
+from .scheduling import AvoidIAP, MinimizeFridayClasses, MinimumClassesPerSemester
 from .units import AvoidSmallClasses, MinimizeUnits
 from .workload import (
     LimitClassesPerSemester,
     LimitUnitsPerSemester,
     MinimizeFinalsLoad,
     MinimizeMaxSemesterHours,
-    MinimizeTotalHours,
 )
 
 __all__ = [
@@ -28,16 +25,11 @@ __all__ = [
     # Objectives
     'MinimizeUnits',
     'AvoidSmallClasses',
-    'MaximizeRating',
-    'MaximizeWeightedRating',
-    'MinimizeTotalHours',
     'MinimizeMaxSemesterHours',
     'LimitClassesPerSemester',
     'LimitUnitsPerSemester',
     'MinimizeFinalsLoad',
-    'FrontloadCourses',
-    'BackloadCourses',
     'MinimizeFridayClasses',
-    'ClusterCourses',
-    'MaximizeCohortOverlap',
+    'AvoidIAP',
+    'MinimumClassesPerSemester',
 ]

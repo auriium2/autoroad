@@ -27,7 +27,11 @@ function getGraduationYearOptions() {
 
 const YEAR_OPTIONS = getGraduationYearOptions();
 
-export function ParametersTab() {
+interface ParametersTabProps {
+  viewMode?: string;
+}
+
+export function ParametersTab({ viewMode }: ParametersTabProps) {
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const setYear = useOptimizationStore((state) => state.setYear);
   const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
@@ -66,10 +70,10 @@ export function ParametersTab() {
               htmlFor="lock-past-semesters"
               className={`text-sm font-medium cursor-pointer ${isOptimizing ? 'opacity-50' : ''}`}
             >
-              Lock Past Semesters
+              Freeze Past Semesters
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Stops autoroad from time traveling. 2.001...
+              Stops autoroad from time traveling.
             </p>
           </div>
         </div>
@@ -82,7 +86,7 @@ export function ParametersTab() {
             Optimizing schedule, please wait...
           </div>
         ) : (
-          <UnifiedParameterSelector />
+          <UnifiedParameterSelector viewMode={viewMode} />
         )}
       </div>
     </div>

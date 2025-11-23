@@ -10,7 +10,11 @@ import {
 import { CourseSearchTab } from "./CourseSearchTab/CourseSearchTab";
 import { ParametersTab } from "./ParametersTab/ParametersTab";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  viewMode?: string;
+}
+
+export function AppSidebar({ viewMode, ...props }: AppSidebarProps) {
   const [activeTab, setActiveTab] = React.useState<'courses' | 'objectives'>('courses');
 
   return (
@@ -44,7 +48,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       
       <SidebarContent className="overflow-hidden">
-        {activeTab === 'courses' ? <CourseSearchTab /> : <ParametersTab />}
+        {activeTab === 'courses' ? <CourseSearchTab /> : <ParametersTab viewMode={viewMode} />}
       </SidebarContent>
     </Sidebar>
   );

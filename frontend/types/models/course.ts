@@ -10,6 +10,7 @@ export interface Marker {
 export interface OptimizerNode {
   courseId: string;
   section: number;
+  units?: number;
 }
 
 export interface CourseNode {

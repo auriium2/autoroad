@@ -2,15 +2,17 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { optimizerApi, type ObjectiveMetadata, type ObjectiveConfig } from "@/services/optimizer";
+import { optimizerApi, type ObjectiveMetadata, type ObjectiveConfig, type HardConstraintMetadata } from "@/services/optimizer";
 import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
+import { useGraphStore } from "@/stores/roadStore";
 import { RequirementTreeView } from "./RequirementTreeView";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TierSelector } from "./TierSelector";
+import { Checkbox } from "@/components/ui/checkbox";
 
-type ItemType = 'degree' | 'objective';
+type ItemType = 'degree' | 'objective' | 'constraint';
 
 interface RequirementMetadata {
   title_no_degree?: string;
@@ -24,10 +26,14 @@ interface SearchableItem {
   key: string;
   displayName: string;
   searchableText: string;
-  metadata?: RequirementMetadata | ObjectiveMetadata;
+  metadata?: RequirementMetadata | ObjectiveMetadata | HardConstraintMetadata;
 }
 
-export function UnifiedParameterSelector() {
+interface UnifiedParameterSelectorProps {
+  viewMode?: string;
+}
+
+export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorProps) {
   const [inputValue, setInputValue] = React.useState("");
   const [searchTerm, setSearchTerm] = React.useState("");
   const [showSearchResults, setShowSearchResults] = React.useState(false);
@@ -50,6 +56,10 @@ export function UnifiedParameterSelector() {
   const setObjectives = useOptimizationStore((state) => state.setObjectives);
   const objectiveTiers = useOptimizationStore((state) => state.objectiveTiers);
   const setObjectiveTier = useOptimizationStore((state) => state.setObjectiveTier);
+  const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);
+  const toggleHardConstraint = useOptimizationStore((state) => state.toggleHardConstraint);
+
+  const lastCostBreakdown = useGraphStore((state) => state.lastCostBreakdown);
 
   const toggleObjectiveExpanded = (key: string) => {
     setExpandedObjectives(prev => {
@@ -63,15 +73,21 @@ export function UnifiedParameterSelector() {
     });
   };
 
-  const { data: requirementsList, isLoading: requirementsLoading } = useQuery({
+  const { data: requirementsList, isLoading: requirementsLoading, error: requirementsError } = useQuery({
     queryKey: ['requirements-list'],
     queryFn: () => optimizerApi.getRequirementsList(),
     staleTime: 60 * 60 * 1000,
   });
 
-  const { data: objectivesData, isLoading: objectivesLoading } = useQuery({
+  const { data: objectivesData, isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['objectives'],
     queryFn: () => optimizerApi.getObjectives(),
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const { data: constraintsData, isLoading: constraintsLoading, error: constraintsError } = useQuery({
+    queryKey: ['hard-constraints'],
+    queryFn: () => optimizerApi.getHardConstraints(),
     staleTime: 60 * 60 * 1000,
   });
 
@@ -86,8 +102,16 @@ export function UnifiedParameterSelector() {
   React.useEffect(() => {
     if (objectivesData && selectedObjectives.length === 0) {
       setObjectives(objectivesData.defaultConfiguration);
+
+      // Also initialize default tiers for these objectives
+      objectivesData.defaultConfiguration.forEach(config => {
+        const metadata = objectivesData.objectives.find(o => o.key === config.key);
+        if (metadata && objectiveTiers[config.key] === undefined) {
+          setObjectiveTier(config.key, metadata.defaultTier);
+        }
+      });
     }
-  }, [objectivesData, selectedObjectives.length, setObjectives]);
+  }, [objectivesData, selectedObjectives.length, setObjectives, objectiveTiers, setObjectiveTier]);
 
   const handleAddRequirement = (key: string) => {
     if (!selectedRequirements.includes(key)) {
@@ -110,27 +134,25 @@ export function UnifiedParameterSelector() {
 
     if (existing) {
       const newObjectives = selectedObjectives.filter(o => o.key !== objective.key);
-      setObjectives(normalizeWeights(newObjectives));
+      setObjectives(newObjectives);
     } else {
       const newObjectives = [
         ...selectedObjectives,
         {
           key: objective.key,
-          weight: 0.1,
           parameters: { ...objective.defaultParameters },
         },
       ];
-      setObjectives(normalizeWeights(newObjectives));
+      setObjectives(newObjectives);
     }
     setInputValue("");
     setShowSearchResults(false);
   };
 
-  const handleWeightChange = (key: string, newWeight: number) => {
-    const newObjectives = selectedObjectives.map(obj =>
-      obj.key === key ? { ...obj, weight: newWeight } : obj
-    );
-    setObjectives(normalizeWeights(newObjectives));
+  const handleToggleConstraint = (key: string) => {
+    toggleHardConstraint(key);
+    setInputValue("");
+    setShowSearchResults(false);
   };
 
   const handleParameterChange = (key: string, paramName: string, value: number) => {
@@ -142,9 +164,35 @@ export function UnifiedParameterSelector() {
     setObjectives(newObjectives);
   };
 
-  // Build unified searchable items list - objectives first, then degrees
+  // Build unified searchable items list - objectives first, then degrees, then hard constraints
   const objectives: SearchableItem[] = [];
   const degrees: SearchableItem[] = [];
+  const constraints: SearchableItem[] = [];
+
+  // Add hard constraints from API (only show in search if not enabled)
+  if (constraintsData) {
+    constraintsData.constraints.forEach(constraint => {
+      const isEnabled = selectedHardConstraints.includes(constraint.key);
+
+      // Only add to searchable list if not enabled
+      if (!isEnabled) {
+        const searchableText = [
+          constraint.key,
+          constraint.name,
+          constraint.description,
+          constraint.category,
+        ].join(' ').toLowerCase();
+
+        constraints.push({
+          type: 'constraint',
+          key: constraint.key,
+          displayName: constraint.name,
+          searchableText,
+          metadata: constraint,
+        });
+      }
+    });
+  }
 
   // Add objectives (constraints)
   if (objectivesData) {
@@ -192,8 +240,8 @@ export function UnifiedParameterSelector() {
     });
   }
 
-  // Return objectives first, then degrees
-  const searchableItems = [...objectives, ...degrees];
+  // Return objectives first, then degrees, then constraints
+  const searchableItems = [...objectives, ...degrees, ...constraints];
 
   // Filter items for search - show all when empty, otherwise filter
   let filtered: SearchableItem[];
@@ -208,6 +256,7 @@ export function UnifiedParameterSelector() {
 
   const objectivesCount = filtered.filter(item => item.type === 'objective').length;
   const degreesCount = filtered.filter(item => item.type === 'degree').length;
+  const constraintsCount = filtered.filter(item => item.type === 'constraint').length;
 
   const displayLimit = searchTerm ? 20 : 30;
   const results = filtered.slice(0, displayLimit);
@@ -217,22 +266,17 @@ export function UnifiedParameterSelector() {
   const totalCounts = {
     objectives: objectivesCount,
     degrees: degreesCount,
-  };
-
-  const isConstraint = (key: string) => {
-    return key.includes('limit') ||
-           key.includes('avoid') ||
-           key.includes('minimize_max') ||
-           key.includes('minimize_finals');
+    constraints: constraintsCount,
   };
 
   const isRecommended = (key: string) => {
     return objectivesData?.defaultConfiguration.some(d => d.key === key) ?? false;
   };
 
-  // Build unified list of all selected items (degrees first, then objectives)
-  const selectedDegrees: Array<{ type: 'degree' | 'objective'; key: string }> = [];
-  const selectedObjectiveItems: Array<{ type: 'degree' | 'objective'; key: string }> = [];
+  // Build unified list of all selected items (degrees first, then objectives, then constraints)
+  const selectedDegrees: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
+  const selectedObjectiveItems: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
+  const selectedConstraintItems: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
 
   selectedRequirements.forEach(reqKey => {
     selectedDegrees.push({ type: 'degree', key: reqKey });
@@ -245,7 +289,17 @@ export function UnifiedParameterSelector() {
     }
   });
 
-  const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems];
+  // Add enabled hard constraints to selected items
+  if (constraintsData) {
+    constraintsData.constraints.forEach(constraint => {
+      const isEnabled = selectedHardConstraints.includes(constraint.key);
+      if (isEnabled) {
+        selectedConstraintItems.push({ type: 'constraint', key: constraint.key });
+      }
+    });
+  }
+
+  const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems, ...selectedConstraintItems];
 
   if (requirementsLoading || objectivesLoading) {
     return (
@@ -283,12 +337,13 @@ export function UnifiedParameterSelector() {
         />
 
         {/* Search Results Dropdown */}
-        {showSearchResults && searchResults.length > 0 && (
+        {showSearchResults && (searchResults.length > 0 || inputValue.length > 0) && (
           <div className="absolute z-20 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-xl max-h-80 overflow-y-auto backdrop-blur-sm">
-            {/* Group results by type - objectives first, then degrees */}
+            {/* Group results by type - objectives first, then degrees, then constraints */}
             {(() => {
               const degrees = searchResults.filter(item => item.type === 'degree');
               const objectives = searchResults.filter(item => item.type === 'objective');
+              const constraints = searchResults.filter(item => item.type === 'constraint');
 
               return (
                 <>
@@ -337,6 +392,34 @@ export function UnifiedParameterSelector() {
                           )}
                         </button>
                       ))}
+                    </div>
+                  )}
+
+                  {constraints.length > 0 && (
+                    <div>
+                      <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-orange-400 uppercase tracking-wider border-b border-gray-700/50">
+                        Hard Constraints
+                      </div>
+                      {constraints.map((item) => (
+                        <button
+                          key={`search-${item.type}-${item.key}`}
+                          onClick={() => handleToggleConstraint(item.key)}
+                          className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
+                        >
+                          <div className="font-medium">{item.displayName}</div>
+                          {item.metadata && 'description' in item.metadata && item.metadata.description && (
+                            <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {item.metadata.description}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.length === 0 && (
+                    <div className="px-3 py-6 text-sm text-muted-foreground text-center">
+                      No results found for &quot;{searchTerm}&quot;
                     </div>
                   )}
 
@@ -395,21 +478,26 @@ export function UnifiedParameterSelector() {
                   </div>
                 </div>
               );
-            } else {
+            } else if (item.type === 'objective') {
               // Objective card
               const config = selectedObjectives.find(o => o.key === item.key);
               const objective = objectivesData?.objectives.find(o => o.key === item.key);
               if (!objective || !config) return null;
 
-              const isConstraintType = isConstraint(objective.key);
               const isRecommendedType = isRecommended(objective.key);
               const isExpanded = expandedObjectives.has(item.key);
 
-              const objectiveTier = objectiveTiers[item.key] ?? 0;
+              // Get tier from state, or use the backend's default tier for this objective
+              const objectiveTier = objectiveTiers[item.key] ?? objective.defaultTier;
 
               return (
-                <div key={`selected-${item.type}-${item.key}`} className="border border-border rounded p-3">
-                  <div className="space-y-2">
+                <div key={`selected-${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
+                  {/* Red gradient overlay for recommended objectives - bottom-left stays black, top-right becomes red */}
+                  {isRecommendedType && (
+                    <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-red-500/15" />
+                  )}
+
+                  <div className="relative z-10 p-3 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <button
                         onClick={() => toggleObjectiveExpanded(item.key)}
@@ -425,6 +513,11 @@ export function UnifiedParameterSelector() {
                         </span>
                       </button>
                       <div className="flex items-center gap-1.5">
+                        {viewMode === "cost" && lastCostBreakdown && lastCostBreakdown[objective.key] !== undefined && (
+                          <span className="text-xs font-mono tabular-nums text-orange-400 animate-pulse">
+                            {lastCostBreakdown[objective.key]}
+                          </span>
+                        )}
                         <TierSelector
                           tier={objectiveTier}
                           onChange={(tier) => setObjectiveTier(item.key, tier)}
@@ -440,41 +533,10 @@ export function UnifiedParameterSelector() {
                     {isExpanded && (
                       <>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {isConstraintType && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium border border-orange-500/30 shrink-0">
-                                CONSTRAINT
-                              </span>
-                            )}
-                            {isRecommendedType && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium shrink-0">
-                                RECOMMENDED
-                              </span>
-                            )}
-                          </div>
                           <p className="text-xs text-muted-foreground">
                             {objective.description}
                           </p>
                         </div>
-                      {/* Weight slider for non-constraints */}
-                      {!isConstraintType && (
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Label className="text-xs text-muted-foreground w-16 shrink-0">Weight:</Label>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            step="1"
-                            value={Math.round(config.weight * 100)}
-                            onChange={(e) => handleWeightChange(objective.key, Number(e.target.value) / 100)}
-                            className="flex-1 min-w-0 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:cursor-pointer"
-                          />
-                          <span className="text-xs font-medium w-10 text-right shrink-0 tabular-nums">
-                            {Math.round(config.weight * 100)}
-                          </span>
-                        </div>
-                      )}
-
                       {/* Parameters */}
                       {objective.hasParameters && (
                         <div className="space-y-2 pt-1">
@@ -505,8 +567,42 @@ export function UnifiedParameterSelector() {
                   </div>
                 </div>
               );
+            } else if (item.type === 'constraint') {
+              // Hard constraint card
+              const constraint = constraintsData?.constraints.find(c => c.key === item.key);
+              if (!constraint) return null;
+
+              // Determine if constraint is enabled
+              return (
+                <div key={`selected-${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
+                  {/* Purple gradient overlay for hard constraints */}
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-purple-500/15" />
+
+                  <div className="relative z-10 p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm font-semibold">
+                            {constraint.name}
+                          </Label>
+                          <button
+                            onClick={() => handleToggleConstraint(constraint.key)}
+                            className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {constraint.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
             }
           })}
+
         </div>
       ) : (
         <p className="text-sm text-muted-foreground text-center py-8">
@@ -515,19 +611,4 @@ export function UnifiedParameterSelector() {
       )}
     </div>
   );
-}
-
-function normalizeWeights(objectives: ObjectiveConfig[]): ObjectiveConfig[] {
-  if (objectives.length === 0) return objectives;
-
-  const totalWeight = objectives.reduce((sum, obj) => sum + obj.weight, 0);
-
-  if (totalWeight === 0) {
-    return objectives.map(obj => ({ ...obj, weight: 1 / objectives.length }));
-  }
-
-  return objectives.map(obj => ({
-    ...obj,
-    weight: obj.weight / totalWeight,
-  }));
 }

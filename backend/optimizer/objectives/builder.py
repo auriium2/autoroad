@@ -9,7 +9,7 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
-from .base import OBJECTIVE_SCALE, ObjectiveComponent, ObjectiveContext
+from .base import ObjectiveComponent, ObjectiveContext
 
 
 class ObjectiveBuilder:
@@ -18,38 +18,32 @@ class ObjectiveBuilder:
 
     Usage:
         builder = ObjectiveBuilder()
-        builder.add(MinimizeUnits(), weight=0.3)
-        builder.add(MaximizeRating(), weight=0.5)
-        builder.add(FrontloadCourses(), weight=0.2)
+        builder.add(MinimizeUnits())
+        builder.add(LimitClassesPerSemester(max_classes=4))
 
         objective = builder.build(model, take_vars, courses_df, planning_year_start)
         model.Minimize(objective)
     """
 
-    def __init__(self, normalize_weights: bool = True):
-        """
-        Args:
-            normalize_weights: If True, normalize weights to sum to 1.0.
-                             If False, use weights as-is.
-        """
-        self.components: list[tuple[ObjectiveComponent, float]] = []
-        self.normalize_weights: bool = normalize_weights
+    def __init__(self):
+        """Initialize the builder."""
+        self.components: list[ObjectiveComponent] = []
+        self.component_keys: list[str | None] = []  # Store keys for each component
+        self.component_expressions: list[tuple[str, cp_model.LinearExpr]] = []  # Store (key, expr) for breakdown
 
-    def add(self, component: ObjectiveComponent, weight: float = 1.0) -> ObjectiveBuilder:
+    def add(self, component: ObjectiveComponent, key: str | None = None) -> ObjectiveBuilder:
         """
-        Add an objective component with a weight.
+        Add an objective component.
 
         Args:
             component: Objective component to add
-            weight: Weight for this component (will be normalized if normalize_weights=True)
+            key: Optional key for the objective (used for cost breakdown matching)
 
         Returns:
             Self for method chaining
         """
-        if weight < 0:
-            raise ValueError(f"Weight must be non-negative, got {weight}")
-
-        self.components.append((component, weight))
+        self.components.append(component)
+        self.component_keys.append(key)
         return self
 
     def build(
@@ -57,7 +51,10 @@ class ObjectiveBuilder:
         model: cp_model.CpModel,
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         courses_df: pl.DataFrame,
-        planning_year_start: int
+        planning_year_start: int,
+        objective_tiers: dict[str, int] | None = None,
+        requirement_tiers: dict[str, int] | None = None,
+        marked_course_ids: set[str] | None = None
     ) -> cp_model.LinearExpr:
         """
         Build the combined objective function.
@@ -67,27 +64,19 @@ class ObjectiveBuilder:
             take_vars: Decision variables mapping (course_idx, semester) -> BoolVar
             courses_df: DataFrame with course data
             planning_year_start: Starting year for planning
+            objective_tiers: Tier priorities for objectives (1-4)
+            requirement_tiers: Tier priorities for requirement tree nodes (0-3)
 
         Returns:
             Linear expression to minimize
         """
         if not self.components:
-            # No objectives specified, return cp_model.LinearExpr.constant(0)
-            from ortools.sat.python.cp_model import LinearExpr
-            return LinearExpr.Sum([])
-
-        # Normalize weights if requested
-        if self.normalize_weights:
-            total_weight = sum(w for _, w in self.components)
-            if total_weight == 0:
-                raise ValueError("Total weight is 0, cannot normalize")
-            weights = [(c, w / total_weight) for c, w in self.components]
-        else:
-            weights = self.components
+            # No objectives specified, return empty sum
+            return cp_model.LinearExpr.Sum([])
 
         # Preprocess: collect all preprocessing data
         extra_data: dict[str, Any] = {}
-        for component, _ in self.components:
+        for component in self.components:
             preprocessed = component.preprocess(courses_df)
             extra_data.update(preprocessed)
 
@@ -95,25 +84,30 @@ class ObjectiveBuilder:
         context = ObjectiveContext(
             planning_year_start=planning_year_start,
             courses_df=courses_df,
+            objective_tiers=objective_tiers,
+            requirement_tiers=requirement_tiers,
+            marked_course_ids=marked_course_ids,
             extra=extra_data
         )
 
         # Build objective terms
         terms = []
-        for component, weight in weights:
+        self.component_expressions = []  # Clear previous expressions
+
+        for i, component in enumerate(self.components):
             # Get the linear expression from this component
             expr = component.add_to_model(model, take_vars, context)
 
-            # Scale weight to integer
-            scaled_weight = int(weight * OBJECTIVE_SCALE)
+            # Skip zero expressions
+            if isinstance(expr, int) and expr == 0:
+                continue
 
-            # Add weighted term
-            # Note: expr might be 0 (int) or LinearExpr, check weight only
-            if scaled_weight != 0:
-                if isinstance(expr, int) and expr == 0:
-                    # Skip zero expressions
-                    continue
-                terms.append(expr * scaled_weight)
+            # Use key if available, otherwise fall back to name
+            identifier = self.component_keys[i] if self.component_keys[i] else component.get_name()
+
+            # Store the expression for later breakdown calculation
+            self.component_expressions.append((identifier, expr))
+            terms.append(expr)
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
@@ -124,26 +118,18 @@ class ObjectiveBuilder:
         Get a human-readable summary of the objectives.
 
         Returns:
-            Multi-line string describing the objectives and their weights
+            Multi-line string describing the objectives
         """
         if not self.components:
             return "No objectives defined"
 
-        # Compute normalized weights
-        if self.normalize_weights:
-            total_weight = sum(w for _, w in self.components)
-            weights = [(c, w / total_weight) for c, w in self.components]
-        else:
-            weights = self.components
-
         lines = ["Objective Function:"]
-        for component, weight in weights:
-            percentage = weight * 100
+        for component in self.components:
             name = component.get_name()
             desc = component.get_description()
-            lines.append(f"  {percentage:5.1f}% - {name}")
+            lines.append(f"  - {name}")
             if desc:
-                lines.append(f"         {desc}")
+                lines.append(f"    {desc}")
 
         return "\n".join(lines)
 
@@ -155,7 +141,40 @@ class ObjectiveBuilder:
     def remove_by_type(self, component_type: type) -> ObjectiveBuilder:
         """Remove all components of a specific type."""
         self.components = [
-            (c, w) for c, w in self.components
+            c for c in self.components
             if not isinstance(c, component_type)
         ]
         return self
+
+    def calculate_cost_breakdown(
+        self,
+        solver: cp_model.CpSolver
+    ) -> dict[str, int]:
+        """
+        Calculate the cost breakdown for the current solution.
+        
+        Uses the expressions stored during build() to evaluate costs.
+
+        Args:
+            solver: Solved CP-SAT solver with solution
+
+        Returns:
+            Dictionary mapping objective name to cost contribution
+        """
+        breakdown = {}
+
+        for name, expr in self.component_expressions:
+            # Evaluate the expression with the current solution
+            if isinstance(expr, int):
+                cost = expr
+            else:
+                # Use solver.Value() to evaluate the linear expression
+                try:
+                    cost = solver.Value(expr)
+                except Exception as e:
+                    print(f"[WARNING] Failed to evaluate cost for {name}: {e}")
+                    cost = 0
+
+            breakdown[name] = cost
+
+        return breakdown

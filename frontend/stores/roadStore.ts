@@ -2,8 +2,16 @@ import { create } from 'zustand';
 import { storage } from '@/lib/storage';
 import { fireroadApi } from '@/services/fireroad';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
-import { optimizerApi, type OptimizationConstraints } from '@/services/optimizer';
+import { optimizerApi } from '@/services/optimizer';
 import { useOptimizationStore } from '@/stores/optimizationStore';
+
+// DEBUG: Clear localStorage on every page load (remove this in production)
+if (typeof window !== 'undefined') {
+  console.log('DEBUG: Clearing localStorage on module load...');
+  window.localStorage.removeItem('autoroad_data');
+  window.localStorage.removeItem('optimization-storage');
+  window.localStorage.removeItem('autoroad_query_cache');
+}
 
 export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode };
 
@@ -26,6 +34,9 @@ interface GraphStore {
     message?: string;
     solutionNumber?: number;
   } | null;
+
+  // Cost breakdown from last optimization
+  lastCostBreakdown: Record<string, number> | null;
 
   // Track if markers have changed since last optimization
   markersChangedSinceOptimization: boolean;
@@ -56,7 +67,7 @@ interface GraphStore {
   // API actions
   fetchRoadData: () => Promise<void>;
   saveRoadData: () => Promise<void>;
-  optimizeRoad: (constraints?: OptimizationConstraints, showProgress?: boolean) => Promise<{ success: boolean; error?: string }>;
+  optimizeRoad: (maxSemesters?: number, showProgress?: boolean) => Promise<{ success: boolean; error?: string }>;
   cancelOptimization: () => void;
 
   // Development
@@ -76,6 +87,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   error: null,
   isSaving: false,
   isOptimizing: false,
+  lastCostBreakdown: null,
   optimizationProgress: null,
   markersChangedSinceOptimization: false,
   lastOptimizationStatus: null,
@@ -142,6 +154,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       console.log('DEBUG: Clearing localStorage on page reload...');
       window.localStorage.removeItem('autoroad_data');
       window.localStorage.removeItem('optimization-storage');
+      window.localStorage.removeItem('autoroad_query_cache');
     }
 
     // Load from localStorage
@@ -179,14 +192,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   },
 
   // Optimization - always streams progress
-  optimizeRoad: async (constraints, showProgress = true) => {
+  optimizeRoad: async (maxSemesters = 12, showProgress = true) => {
     const { markers } = get();
 
-    // Get objectives, requirements, year, and lockPastSemesters from optimization store
+    // Get objectives, requirements, year, lockPastSemesters, hard constraints, and tiers from optimization store
     const selectedObjectives = useOptimizationStore.getState().selectedObjectives;
     const selectedRequirements = useOptimizationStore.getState().selectedRequirements;
     const selectedYear = useOptimizationStore.getState().selectedYear;
     const lockPastSemesters = useOptimizationStore.getState().lockPastSemesters;
+    const selectedHardConstraints = useOptimizationStore.getState().selectedHardConstraints;
+    const requirementTiers = useOptimizationStore.getState().requirementTiers;
+    const objectiveTiers = useOptimizationStore.getState().objectiveTiers;
 
     // Create AbortController for this optimization
     const abortController = new AbortController();
@@ -198,6 +214,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       optimizationProgress: showProgress ? { step: 0 } : null,
       markersChangedSinceOptimization: false,
       optimizationAbortController: abortController,
+      lastOptimizationStatus: null,  // Reset status so toast will trigger again
     });
 
     try {
@@ -218,11 +235,14 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       for await (const progress of optimizerApi.optimize(
         markers,
         selectedRequirements,
-        constraints,
+        maxSemesters,
         abortController.signal,
         selectedObjectives.length > 0 ? selectedObjectives : undefined,
+        selectedHardConstraints,
         planningYear,
-        lockPastSemesters
+        lockPastSemesters,
+        requirementTiers,
+        objectiveTiers
       )) {
         // Handle completion status
         if (progress.isComplete && progress.status) {
@@ -232,6 +252,11 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
         if (progress.nodes.length > 0) {
           latestNodes = progress.nodes;
+          
+          // Store cost breakdown if available
+          if (progress.costBreakdown) {
+            set({ lastCostBreakdown: progress.costBreakdown });
+          }
 
           // Throttle UI updates to reduce rendering lag
           const now = Date.now();
