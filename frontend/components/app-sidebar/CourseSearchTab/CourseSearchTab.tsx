@@ -23,12 +23,27 @@ type TermFilter = "ANY" | "FA" | "IAP" | "SP";
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterQuery, setFilterQuery] = React.useState("");
-  const [selectedDepartment, setSelectedDepartment] = React.useState<string>("all");
   const [activeFilters, setActiveFilters] = React.useState<Set<string>>(new Set());
   const [displayCount, setDisplayCount] = React.useState(COURSES_PER_PAGE);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
-  const { data: allCourses = [], isLoading, isError } = useSearchCourses(searchQuery, selectedDepartment);
+  // Determine which department to search based on active filters
+  const selectedDepartment = React.useMemo(() => {
+    const deptFilter = Array.from(activeFilters).find(f => f.startsWith("dept:"));
+    if (deptFilter) {
+      return deptFilter.split(":")[1];
+    }
+    return "all";
+  }, [activeFilters]);
+
+  // Trigger search when filters are active but no search query
+  const effectiveSearchQuery = React.useMemo(() => {
+    if (searchQuery) return searchQuery;
+    if (activeFilters.size > 0) return "*"; // Wildcard to fetch all courses
+    return "";
+  }, [searchQuery, activeFilters]);
+
+  const { data: allCourses = [], isLoading, isError } = useSearchCourses(effectiveSearchQuery, selectedDepartment);
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14", "15", "16", "17", "18", "20", "21A", "21G", "21H", "21M", "22", "24"];
@@ -140,7 +155,7 @@ export function CourseSearchTab() {
   // Reset display count when search params or filters change
   React.useEffect(() => {
     setDisplayCount(COURSES_PER_PAGE);
-  }, [searchQuery, selectedDepartment, activeFilters]);
+  }, [effectiveSearchQuery, selectedDepartment, activeFilters]);
 
   // Paginate courses for display
   const courses = filteredCourses.slice(0, displayCount);
