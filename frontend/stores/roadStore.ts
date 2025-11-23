@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { storage } from '@/lib/storage';
-import { ApiError, fireroadApi } from '@/services/fireroad';
+import { fireroadApi } from '@/services/fireroad';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
-import { optimizerApi, type OptimizationConstraints, type OptimizationProgress, type ObjectiveConfig } from '@/services/optimizer';
+import { optimizerApi, type OptimizationConstraints } from '@/services/optimizer';
 import { useOptimizationStore } from '@/stores/optimizationStore';
 
 export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode };

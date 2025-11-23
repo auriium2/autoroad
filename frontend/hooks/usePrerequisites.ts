@@ -106,20 +106,6 @@ export function usePrerequisiteString(courseId: string | null) {
 }
 
 /**
- * Hook to get cached course details
- */
-function useCachedCourseDetails(courseId: string) {
-  return useQuery({
-    queryKey: ['courseDetails', courseId],
-    queryFn: async () => {
-      return await fireroadApi.getCourseDetails(courseId);
-    },
-    staleTime: 60 * 60 * 1000, // Cache for 1 hour
-    retry: 2,
-  });
-}
-
-/**
  * Hook to compute prerequisite edges for a graph of courses
  */
 export function usePrerequisiteEdges(nodes: CourseNode[]) {
