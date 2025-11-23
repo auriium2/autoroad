@@ -205,15 +205,15 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
 
       {/* Course name in friendly mode - absolute positioned to not affect node width */}
       {viewMode === "default" && courseDetails?.name && (
-        <div className="absolute text-[10px] text-muted-foreground text-center max-w-[120px] h-[28px] flex items-center justify-center left-1/2 -translate-x-1/2" style={{ top: '64px' }}>
-          {courseDetails.name.length > 30 ? (
-            <div className="overflow-hidden whitespace-nowrap w-full">
-              <div className="inline-block animate-marquee">
+        <div className="absolute text-[10px] text-muted-foreground w-[120px] h-[28px] flex items-center justify-center left-1/2 -translate-x-1/2" style={{ top: '64px' }}>
+          {courseDetails.name.length > 20 ? (
+            <div className="overflow-hidden w-full">
+              <div className="inline-block whitespace-nowrap animate-marquee">
                 {courseDetails.name}&nbsp;&nbsp;&nbsp;{courseDetails.name}
               </div>
             </div>
           ) : (
-            <div className="line-clamp-2">{courseDetails.name}</div>
+            <div className="text-center w-full truncate">{courseDetails.name}</div>
           )}
         </div>
       )}
