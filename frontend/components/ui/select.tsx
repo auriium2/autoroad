@@ -30,6 +30,8 @@ function SelectTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+  className?: string
+  children?: React.ReactNode
   size?: "sm" | "default"
 }) {
   return (
@@ -55,7 +57,10 @@ function SelectContent({
   children,
   position = "popper",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  className?: string
+  children?: React.ReactNode
+}) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -102,7 +107,10 @@ function SelectItem({
   className,
   children,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.ComponentProps<typeof SelectPrimitive.Item> & {
+  className?: string
+  children?: React.ReactNode
+}) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"

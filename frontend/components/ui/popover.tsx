@@ -22,7 +22,9 @@ function PopoverContent({
   align = "center",
   sideOffset = 4,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  className?: string
+}) {
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content

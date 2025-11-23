@@ -63,7 +63,6 @@ const Toast = React.forwardRef<
         className={cn(toastVariants({ variant }), className)}
         style={{
           ...(props.style || {}),
-          // @ts-expect-error custom property
           "--toast-duration": `${toastDuration}ms`,
         }}
         {...props}
@@ -85,7 +84,9 @@ Toast.displayName = ToastPrimitives.Root.displayName
 
 const ToastAction = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Action>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action> & {
+    children?: React.ReactNode
+  }
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Action
     ref={ref}

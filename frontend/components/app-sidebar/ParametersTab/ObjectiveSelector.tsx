@@ -54,7 +54,7 @@ export function ObjectiveSelector() {
     setObjectives(normalizeWeights(newObjectives));
   };
 
-  const handleParameterChange = (key: string, paramName: string, value: any) => {
+  const handleParameterChange = (key: string, paramName: string, value: number) => {
     const newObjectives = selectedObjectives.map(obj =>
       obj.key === key
         ? { ...obj, parameters: { ...obj.parameters, [paramName]: value } }
@@ -210,7 +210,7 @@ export function ObjectiveSelector() {
 
       <div className="pt-4 border-t border-border">
         <p className="text-xs text-muted-foreground">
-          Weights are automatically normalized to sum to 100%. Higher weights prioritize that objective. Fuck S and anyone else who treats me like that while i'm at my lowest.
+          Weights are automatically normalized to sum to 100%. Higher weights prioritize that objective.
         </p>
       </div>
     </div>

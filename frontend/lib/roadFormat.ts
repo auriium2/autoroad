@@ -1,5 +1,7 @@
 import type { Marker } from '@/types';
 
+// handle imports from courseroad and general .road file format, which we must use to be Compatible
+
 export interface RoadFormatSubject {
   overrideWarnings?: boolean;
   semester: number;
@@ -44,7 +46,7 @@ export async function exportToRoadFormat(
 
     try {
       const details = await getCourseDetails(marker.courseId);
-      
+
       selectedSubjects.push({
         overrideWarnings: marker.status === 'override',
         semester: sectionToSemester(marker.section),
@@ -89,7 +91,7 @@ export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
     const isGenericCI = /^CI-[HM]/i.test(subjectId);
     // Plain GIR codes used by CourseRoad (CAL1, CAL2, BIOL, CHEM, PHY1, PHY2, REST)
     const isPlainGIR = /^(CAL1|CAL2|BIOL|CHEM|PHY1|PHY2|REST)$/i.test(subjectId);
-    
+
     if (isGenericGIR || isGenericHASS || isGenericCI || isPlainGIR) {
       warnings.push(
         `Generic requirement "${subjectId}" (${subject.title}) cannot be imported. ` +
@@ -104,7 +106,7 @@ export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
       section: semesterToSection(subject.semester),
       status: subject.overrideWarnings ? 'override' : 'pin',
     };
-    
+
     markers.push(marker);
   }
 
@@ -115,14 +117,14 @@ export function downloadRoadFile(roadData: RoadFormat, filename = 'autoroad.road
   const jsonStr = JSON.stringify(roadData);
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  
+
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   URL.revokeObjectURL(url);
 }
 
@@ -131,14 +133,14 @@ export function uploadRoadFile(): Promise<RoadFormat | null> {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.road,application/json';
-    
+
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {
         resolve(null);
         return;
       }
-      
+
       try {
         const text = await file.text();
         const data = JSON.parse(text) as RoadFormat;
@@ -147,11 +149,11 @@ export function uploadRoadFile(): Promise<RoadFormat | null> {
         reject(new Error('Failed to parse .road file: ' + (error instanceof Error ? error.message : 'Unknown error')));
       }
     };
-    
+
     input.oncancel = () => {
       resolve(null);
     };
-    
+
     input.click();
   });
 }

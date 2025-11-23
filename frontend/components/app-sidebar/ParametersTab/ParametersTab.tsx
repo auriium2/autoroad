@@ -57,7 +57,7 @@ export function ParametersTab() {
           <Checkbox
             id="lock-past-semesters"
             checked={lockPastSemesters}
-            onCheckedChange={(checked) => setLockPastSemesters(!!checked)}
+            onCheckedChange={(checked: boolean) => setLockPastSemesters(!!checked)}
             className="mt-0.5"
             disabled={isOptimizing}
           />
@@ -69,7 +69,7 @@ export function ParametersTab() {
               Lock Past Semesters
             </Label>
             <p className="text-xs text-muted-foreground mt-1">
-              Stop autoroad from time traveling. I know you regret taking 2.001 with 2.003, but you cant change the past!
+              Stops autoroad from time traveling. 2.001...
             </p>
           </div>
         </div>

@@ -11,6 +11,7 @@ interface OptimizationState {
   expandedRequirementNodes: Record<string, Set<string>>;
   requirementTiers: Record<string, number>;
   objectiveTiers: Record<string, number>;
+  customEquivalencies: Record<string, string[]>;
   
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
@@ -25,6 +26,9 @@ interface OptimizationState {
   
   setRequirementTier: (requirement: string, tier: number) => void;
   setObjectiveTier: (objectiveKey: string, tier: number) => void;
+  
+  addCustomEquivalency: (courseA: string, courseB: string) => void;
+  removeCustomEquivalency: (courseA: string, courseB: string) => void;
 }
 
 function getDefaultYear(): string {
@@ -53,6 +57,7 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
   expandedRequirementNodes: {},
   requirementTiers: {},
   objectiveTiers: {},
+  customEquivalencies: {},
   
   setObjectives: (objectives) => {
     markOptimizationAsStale();
@@ -135,5 +140,51 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
         [objectiveKey]: tier,
       },
     }));
+  },
+  
+  addCustomEquivalency: (courseA, courseB) => {
+    markOptimizationAsStale();
+    set((state) => {
+      const newEquivalencies = { ...state.customEquivalencies };
+      
+      if (!newEquivalencies[courseA]) {
+        newEquivalencies[courseA] = [];
+      }
+      if (!newEquivalencies[courseB]) {
+        newEquivalencies[courseB] = [];
+      }
+      
+      if (!newEquivalencies[courseA].includes(courseB)) {
+        newEquivalencies[courseA] = [...newEquivalencies[courseA], courseB];
+      }
+      if (!newEquivalencies[courseB].includes(courseA)) {
+        newEquivalencies[courseB] = [...newEquivalencies[courseB], courseA];
+      }
+      
+      return { customEquivalencies: newEquivalencies };
+    });
+  },
+  
+  removeCustomEquivalency: (courseA, courseB) => {
+    markOptimizationAsStale();
+    set((state) => {
+      const newEquivalencies = { ...state.customEquivalencies };
+      
+      if (newEquivalencies[courseA]) {
+        newEquivalencies[courseA] = newEquivalencies[courseA].filter((c) => c !== courseB);
+        if (newEquivalencies[courseA].length === 0) {
+          delete newEquivalencies[courseA];
+        }
+      }
+      
+      if (newEquivalencies[courseB]) {
+        newEquivalencies[courseB] = newEquivalencies[courseB].filter((c) => c !== courseA);
+        if (newEquivalencies[courseB].length === 0) {
+          delete newEquivalencies[courseB];
+        }
+      }
+      
+      return { customEquivalencies: newEquivalencies };
+    });
   },
 }));

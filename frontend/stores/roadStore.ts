@@ -5,6 +5,8 @@ import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, Op
 import { optimizerApi, type OptimizationConstraints, type OptimizationProgress, type ObjectiveConfig } from '@/services/optimizer';
 import { useOptimizationStore } from '@/stores/optimizationStore';
 
+export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode };
+
 interface GraphStore {
   markers: Marker[]; // User-defined course placements (constraints)
   optimizerNodes: OptimizerNode[]; // Optimizer-suggested placements
@@ -183,7 +185,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       loadingState: 'loading',
       error: null,
       isOptimizing: true,
-      optimizationProgress: showProgress ? {} as any : null,
+      optimizationProgress: showProgress ? { step: 0 } : null,
       markersChangedSinceOptimization: false,
     });
 

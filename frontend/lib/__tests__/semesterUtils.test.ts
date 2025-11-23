@@ -22,7 +22,7 @@ describe('semesterUtils', () => {
       static now() {
         return new originalDate(year, month, 15).getTime();
       }
-    } as any;
+    } as unknown as typeof Date;
   };
 
   describe('isPastSemester', () => {

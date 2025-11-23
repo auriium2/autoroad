@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { fireroadApi } from "@/services/fireroad";
+import type { RequirementTree, RequirementNode } from "@/services/optimizer";
 
 export async function prefetchCourses(
   queryClient: QueryClient,
@@ -29,13 +30,13 @@ export async function extractCoursesFromRequirement(
     
     const courseIds: string[] = [];
     
-    function traverseRequirement(node: any) {
-      if (node.req) {
+    function traverseRequirement(node: RequirementTree | RequirementNode) {
+      if ('req' in node && node.req) {
         // This is a course requirement - extract course ID
         courseIds.push(node.req);
       }
       
-      if (node.reqs && Array.isArray(node.reqs)) {
+      if ('reqs' in node && node.reqs && Array.isArray(node.reqs)) {
         node.reqs.forEach(traverseRequirement);
       }
     }

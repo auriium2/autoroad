@@ -10,9 +10,7 @@ import {
 import { CourseSearchTab } from "./CourseSearchTab/CourseSearchTab";
 import { ParametersTab } from "./ParametersTab/ParametersTab";
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {}
-
-export function AppSidebar({ ...props }: AppSidebarProps) {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [activeTab, setActiveTab] = React.useState<'courses' | 'objectives'>('courses');
 
   return (

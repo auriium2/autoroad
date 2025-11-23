@@ -277,7 +277,11 @@ export function UnifiedParameterSelector() {
                       {objectives.map((item) => (
                         <button
                           key={`search-${item.type}-${item.key}`}
-                          onClick={() => handleToggleObjective(item.metadata)}
+                          onClick={() => {
+                            if (item.metadata && 'key' in item.metadata) {
+                              handleToggleObjective(item.metadata as ObjectiveMetadata);
+                            }
+                          }}
                           className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
                         >
                           <div className="font-medium">{item.displayName}</div>

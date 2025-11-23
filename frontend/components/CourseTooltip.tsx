@@ -31,7 +31,7 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Tooltip open={isOpen && !disabled} onOpenChange={(open) => !disabled && setIsOpen(open)}>
+      <Tooltip open={isOpen && !disabled} onOpenChange={(open: boolean) => !disabled && setIsOpen(open)}>
         <TooltipTrigger asChild>
           {children}
         </TooltipTrigger>

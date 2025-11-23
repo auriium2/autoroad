@@ -72,8 +72,8 @@ export function EquivalencyManager() {
     const pairs: Array<{ courseA: string; courseB: string }> = [];
     const seen = new Set<string>();
 
-    Object.entries(customEquivalencies).forEach(([courseId, equivalents]) => {
-      equivalents.forEach((equiv) => {
+    Object.entries(customEquivalencies).forEach(([courseId, equivalents]: [string, string[]]) => {
+      equivalents.forEach((equiv: string) => {
         const key1 = `${courseId}:${equiv}`;
         const key2 = `${equiv}:${courseId}`;
 

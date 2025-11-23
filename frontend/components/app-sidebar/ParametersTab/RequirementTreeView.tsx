@@ -143,13 +143,13 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
   // Calculate overall progress from the top-level requirements
   const rootProgress = requirement.reqs
     ? requirement.reqs.reduce((acc, req) => ({
-        progress: acc.progress + (req.progress ?? 0),
-        max: acc.max + (req.max ?? 1),
+        progress: (acc.progress ?? 0) + (req.progress ?? 0),
+        max: (acc.max ?? 0) + (req.max ?? 1),
       }), { progress: 0, max: 0 })
     : { progress: 0, max: 0 };
 
-  const rootPercentage = rootProgress.max > 0 
-    ? (rootProgress.progress / rootProgress.max) * 100 
+  const rootPercentage = (rootProgress.max ?? 0) > 0 
+    ? ((rootProgress.progress ?? 0) / (rootProgress.max ?? 1)) * 100 
     : 0;
 
   return (

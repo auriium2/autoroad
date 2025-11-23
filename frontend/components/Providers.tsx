@@ -17,7 +17,7 @@ const queryClient = new QueryClient({
 });
 
 const persister = createSyncStoragePersister({
-  storage: typeof window !== "undefined" ? window.localStorage : undefined as any,
+  storage: typeof window !== "undefined" ? window.localStorage : ({} as Storage),
   key: "autoroad_query_cache",
 });
 

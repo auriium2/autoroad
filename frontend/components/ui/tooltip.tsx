@@ -30,7 +30,9 @@ function Tooltip({
 
 function TooltipTrigger({
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger> & {
+  children?: React.ReactNode
+}) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 }
 
@@ -39,7 +41,10 @@ function TooltipContent({
   sideOffset = 0,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
+  className?: string
+  children?: React.ReactNode
+}) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content

@@ -89,7 +89,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       {hasUnsatisfiedPrereqs && !isBanished && (
         <div className="absolute" style={{ top: -8, left: 46, zIndex: 1000 }}>
           <div className="flex flex-col gap-0.5">
-            {displayedPrereqs.map((prereq, index) => (
+            {displayedPrereqs.map((prereq: string, index: number) => (
               <div
                 key={index}
                 className="glass-card px-1 py-0 rounded text-[9px] font-medium text-red-400 whitespace-nowrap shadow-sm border border-red-500/30"

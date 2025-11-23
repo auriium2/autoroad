@@ -29,14 +29,14 @@ export interface ObjectiveMetadata {
   description: string;
   category: string;
   hasParameters: boolean;
-  defaultParameters: Record<string, any>;
+  defaultParameters: Record<string, number>;
   parameterTypes: Record<string, string>;
 }
 
 export interface ObjectiveConfig {
   key: string;
   weight: number;
-  parameters: Record<string, any>;
+  parameters: Record<string, number>;
 }
 
 export interface ObjectivesResponse {

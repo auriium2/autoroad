@@ -20,12 +20,12 @@ export function CourseSearchTab() {
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   const departments = ["all", "6", "18"];
-  
+
   // Reset display count when search params change
   React.useEffect(() => {
     setDisplayCount(COURSES_PER_PAGE);
   }, [searchQuery, selectedDepartment]);
-  
+
   // Paginate courses for display
   const courses = allCourses.slice(0, displayCount);
   const hasMore = displayCount < allCourses.length;
@@ -187,7 +187,7 @@ export function CourseSearchTab() {
             {searchQuery === "" && selectedDepartment === "all" ? (
               <>
                 <div className="mb-2">Select a department or search for courses</div>
-                <div className="text-xs opacity-70">Tip: Try selecting "6" or "18" to browse courses</div>
+                <div className="text-xs opacity-70">Tip: Try selecting &quot;6&quot; or &quot;18&quot; to browse courses</div>
               </>
             ) : (
               "No courses found"
