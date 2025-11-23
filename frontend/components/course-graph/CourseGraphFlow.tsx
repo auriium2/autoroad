@@ -29,9 +29,13 @@ import { toast as showToast } from "@/hooks/useToast";
 import { isPastSemesterById } from "@/lib/semesterUtils";
 
 // Custom node component wrapper for React Flow
-const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean; viewMode?: string } }) => {
+const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean; viewMode?: string; isOptimizing?: boolean } }) => {
   return (
-    <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
+    <div style={{ 
+      position: 'relative', 
+      transform: 'translate(-50%, 0)',
+      willChange: data.isOptimizing ? 'transform' : 'auto'
+    }}>
       <Handle
         type="target"
         position={Position.Left}
@@ -523,6 +527,7 @@ function CourseGraphFlowInner({
           ...node,
           missingPrereqs,
           viewMode,
+          isOptimizing,
         },
         draggable: !isOptimizing && (node.userControlled || false),
       };
