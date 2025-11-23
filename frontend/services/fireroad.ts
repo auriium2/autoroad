@@ -3,6 +3,8 @@
  * Interface to MIT's Fireroad course catalog API
  */
 
+import type { FireroadCourse } from '@/lib/fireroad-utils';
+
 // Toggle between direct API calls and proxy
 const USE_DIRECT_API = true;
 const FIREROAD_API_URL = 'https://fireroad.mit.edu';
@@ -47,36 +49,7 @@ async function apiFetch<T>(
   return await response.json();
 }
 
-export interface FireroadCourse {
-  subject_id: string;
-  title: string;
-  total_units: number;
-  description?: string;
-  prerequisites?: string;
-  corequisites?: string;
-  is_variable_units?: boolean;
-  is_historical?: boolean;
-  offered_fall?: boolean;
-  offered_spring?: boolean;
-  offered_IAP?: boolean;
-  offered_summer?: boolean;
-  public?: boolean;
-  level?: string;
-  lecture_units?: number;
-  lab_units?: number;
-  preparation_units?: number;
-  in_class_hours?: number;
-  out_of_class_hours?: number;
-  joint_subjects?: string[];
-  equivalent_subjects?: string[];
-  meets_with_subjects?: string[];
-  instructors?: string[];
-  rating?: number[];
-  enrollment?: number[];
-  gir_attribute?: string;
-  hass_attribute?: string;
-  communication_requirement?: string;
-}
+export type { FireroadCourse };
 
 export interface FireroadSearchParams {
   type?: 'contains' | 'matches' | 'starts' | 'ends';
@@ -86,6 +59,17 @@ export interface FireroadSearchParams {
   offered?: 'fall' | 'spring' | 'IAP' | 'summer';
   level?: 'undergrad' | 'grad';
   full?: boolean;
+  offset?: number;
+  limit?: number;
+  department?: string;
+}
+
+export interface PaginatedCoursesResponse {
+  courses: FireroadCourse[];
+  total: number;
+  offset: number;
+  limit: number;
+  has_more: boolean;
 }
 
 export interface CourseDetails {
@@ -104,8 +88,9 @@ export interface CourseDetails {
   offered_fall?: boolean;
   offered_spring?: boolean;
   offered_IAP?: boolean;
-  rating?: number[];
-  enrollment?: number[];
+  rating?: number;
+  enrollment_number?: number;
+  imdb_rating?: number | null;
   in_class_hours?: number;
   out_of_class_hours?: number;
 }
@@ -133,7 +118,8 @@ function normalizeFireroadCourse(course: FireroadCourse): CourseDetails {
     offered_spring: course.offered_spring,
     offered_IAP: course.offered_IAP,
     rating: course.rating,
-    enrollment: course.enrollment,
+    enrollment_number: course.enrollment_number,
+    imdb_rating: course.imdb_rating,
     in_class_hours: course.in_class_hours,
     out_of_class_hours: course.out_of_class_hours,
   };
@@ -161,7 +147,7 @@ export const fireroadApi = {
   async searchCourses(
     query: string,
     params?: FireroadSearchParams
-  ): Promise<FireroadCourse[]> {
+  ): Promise<PaginatedCoursesResponse> {
     const searchParams = new URLSearchParams();
     if (params?.type) searchParams.append('type', params.type);
     if (params?.gir) searchParams.append('gir', params.gir);
@@ -169,20 +155,27 @@ export const fireroadApi = {
     if (params?.ci) searchParams.append('ci', 'true');
     if (params?.offered) searchParams.append('offered', params.offered);
     if (params?.level) searchParams.append('level', params.level);
-    if (params?.full) searchParams.append('full', 'true');
+    if (params?.offset !== undefined) searchParams.append('offset', params.offset.toString());
+    if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
+    if (params?.department) searchParams.append('department', params.department);
 
-    const url = `${BASE_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
-    return apiFetch<FireroadCourse[]>(url);
+    // Always use proxy for paginated search (has full course data)
+    const url = `${FIREROAD_PROXY_URL}/courses/search/${encodeURIComponent(query)}?${searchParams}`;
+    return apiFetch<PaginatedCoursesResponse>(url);
   },
 
-  async getCoursesByDepartment(dept: string, full = false): Promise<FireroadCourse[]> {
-    const params = full ? '?full=true' : '';
-    return apiFetch<FireroadCourse[]>(`${BASE_URL}/courses/dept/${dept}${params}`);
+  async getCoursesByDepartment(dept: string, offset = 0, limit = 20): Promise<PaginatedCoursesResponse> {
+    const params = new URLSearchParams();
+    params.append('offset', offset.toString());
+    params.append('limit', limit.toString());
+    // Always use proxy for paginated department search (has full course data)
+    return apiFetch<PaginatedCoursesResponse>(`${FIREROAD_PROXY_URL}/courses/dept/${dept}?${params}`);
   },
 
   async getCourseDetails(subjectId: string): Promise<CourseDetails> {
+    // Always use proxy for lookup to get enriched data with IMDB rating
     const course = await apiFetch<FireroadCourse>(
-      `${BASE_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
+      `${FIREROAD_PROXY_URL}/courses/lookup/${encodeURIComponent(subjectId)}`
     );
     return normalizeFireroadCourse(course);
   },

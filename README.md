@@ -14,3 +14,10 @@
 - frontend built entirely with ai assistance. the frontend design, however, was mine. I used a combination of claude and copilot to generate the frontend code. I had to do some manual work to connect the frontend to the backend, but overall it was a huge time saver.
 - backend unit testing, regression testing, etc done by ai. no human should be forced to write unit tests.
 - please employ me
+
+# le architecture
+please fill this out later
+
+frontend -> fireroad api(fireroad.mit.edu) -> fetch single data
+         -> next.js proxy(auriium.xyz) -> fetch bulk data
+         -> autoroad api(google cloud) -> google cloud server ->

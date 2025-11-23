@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCourseDetails } from "@/hooks/useCourseData";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users, TicketPercent } from "lucide-react";
 
 export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -62,7 +62,7 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                 <div className="text-xs font-medium text-muted-foreground">{courseDetails.name}</div>
               </div>
 
-              {/* Quick info - includes hours breakdown */}
+              {/* Quick info */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                 <span>{courseDetails.units} units</span>
                 {courseDetails.terms_offered.length > 0 && (
@@ -71,17 +71,62 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                     <span>{courseDetails.terms_offered.join(", ")}</span>
                   </>
                 )}
-                {(courseDetails.in_class_hours || courseDetails.out_of_class_hours) && (
-                  <>
-                    <span>•</span>
-                    <span>
-                      {courseDetails.in_class_hours && courseDetails.out_of_class_hours && `${Number((courseDetails.in_class_hours + courseDetails.out_of_class_hours).toFixed(2))}h`}
-{/*
-                      {courseDetails.in_class_hours && `${courseDetails.in_class_hours}h in`}
-                      {courseDetails.in_class_hours && courseDetails.out_of_class_hours && ', '}
-                      {courseDetails.out_of_class_hours && `${courseDetails.out_of_class_hours}h out`}*/}
-                    </span>
-                  </>
+              </div>
+
+              {/* Course metrics */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
+                {courseDetails.in_class_hours !== undefined && courseDetails.in_class_hours !== null ? (
+                  <span className="flex items-center gap-1 whitespace-nowrap">
+                    <span className="font-semibold">{courseDetails.in_class_hours}h</span>
+                    <span className="opacity-60 text-[10px]">in</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground/40">
+                    <span className="font-semibold">—</span>
+                    <span className="opacity-60 text-[10px]">in</span>
+                  </span>
+                )}
+                {courseDetails.out_of_class_hours !== undefined && courseDetails.out_of_class_hours !== null ? (
+                  <span className="flex items-center gap-1 whitespace-nowrap">
+                    <span className="font-semibold">{courseDetails.out_of_class_hours}h</span>
+                    <span className="opacity-60 text-[10px]">out</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground/40">
+                    <span className="font-semibold">—</span>
+                    <span className="opacity-60 text-[10px]">out</span>
+                  </span>
+                )}
+                {courseDetails.enrollment_number !== undefined && courseDetails.enrollment_number !== null ? (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap">
+                    <Users className="w-3 h-3 opacity-60" />
+                    <span className="font-semibold">{Math.round(courseDetails.enrollment_number)}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
+                    <Users className="w-3 h-3 opacity-60" />
+                    <span className="font-semibold">—</span>
+                  </span>
+                )}
+                {courseDetails.rating !== undefined && courseDetails.rating !== null ? (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap">
+                    <span className="font-semibold">★{courseDetails.rating.toFixed(1)}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
+                    <span className="font-semibold">★—</span>
+                  </span>
+                )}
+                {courseDetails.imdb_rating !== undefined && courseDetails.imdb_rating !== null ? (
+                  <span className="flex items-center gap-0.5 whitespace-nowrap">
+                    <TicketPercent className="w-3 h-3 opacity-60" />
+                    <span className="font-semibold">{courseDetails.imdb_rating}</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-0.5 text-muted-foreground/40 whitespace-nowrap">
+                    <TicketPercent className="w-3 h-3 opacity-60" />
+                    <span className="font-semibold">—</span>
+                  </span>
                 )}
               </div>
 
@@ -118,15 +163,18 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                       ? `${courseDetails.description.substring(0, 150)}...`
                       : courseDetails.description}
                   {courseDetails.description.length > 150 && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowFullDescription(!showFullDescription);
-                      }}
-                      className="ml-1 text-primary hover:underline focus:outline-none"
-                    >
-                      {showFullDescription ? "Show less" : "Show more"}
-                    </button>
+                    <>
+                      {" "}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowFullDescription(!showFullDescription);
+                        }}
+                        className="text-primary/70 hover:text-primary hover:underline focus:outline-none text-[11px]"
+                      >
+                        {showFullDescription ? "less" : "more"}
+                      </button>
+                    </>
                   )}
                 </div>
               )}

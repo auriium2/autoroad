@@ -197,6 +197,10 @@
   .animate-pulse-warning {
     animation: pulse-warning 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  .animate-marquee {
+    animation: marquee 20s linear infinite;
+  }
 }
 
 @keyframes toast-progress {
@@ -216,5 +220,14 @@
   50% {
     opacity: 0.5;
     transform: scale(1.1);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }

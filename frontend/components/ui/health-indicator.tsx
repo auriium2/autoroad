@@ -2,17 +2,23 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { optimizerApi } from '@/services/optimizer';
 import { fireroadApi } from '@/services/fireroad';
+import { BrainCircuit, Globe, Server } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface HealthIndicatorProps {
   className?: string;
 }
 
 export function HealthIndicator({ className }: HealthIndicatorProps) {
-  // Check optimizer health
-  const { data: optimizerHealth, isError: optimizerError } = useQuery({
-    queryKey: ['optimizer-health'],
+  // Check backend (optimizer) health
+  const { data: backendHealth, isError: backendError } = useQuery({
+    queryKey: ['backend-health'],
     queryFn: () => optimizerApi.checkHealth(),
-    refetchInterval: 30000, // Check every 30 seconds
+    refetchInterval: 30000,
     retry: 1,
   });
 
@@ -20,40 +26,59 @@ export function HealthIndicator({ className }: HealthIndicatorProps) {
   const { data: fireroadHealth, isError: fireroadError } = useQuery({
     queryKey: ['fireroad-health'],
     queryFn: () => fireroadApi.checkHealth(),
-    refetchInterval: 30000, // Check every 30 seconds
+    refetchInterval: 30000,
     retry: 1,
   });
 
-  const optimizerHealthy = !optimizerError && optimizerHealth?.status === 'healthy';
+  // Check Next.js health
+  const { data: nextjsHealth, isError: nextjsError } = useQuery({
+    queryKey: ['nextjs-health'],
+    queryFn: async () => {
+      const response = await fetch('/api/health', {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!response.ok) throw new Error('Health check failed');
+      return response.json();
+    },
+    refetchInterval: 30000,
+    retry: 1,
+  });
+
+  const backendHealthy = !backendError && backendHealth?.status === 'healthy';
   const fireroadHealthy = !fireroadError && fireroadHealth?.status === 'healthy';
+  const nextjsHealthy = !nextjsError && nextjsHealth?.status === 'healthy';
 
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      {/* Optimizer status */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-foreground text-right w-16">
-          Autoroad
-        </span>
-        <div
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            optimizerHealthy ? 'bg-green-500' : 'bg-red-500'
-          }`}
-          title={optimizerHealthy ? 'Optimizer: Healthy' : 'Optimizer: Unavailable'}
-        />
-      </div>
+    <div className={`flex flex-row gap-2 ${className}`}>
+      {/* Backend status */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={`${backendHealthy ? 'text-green-500' : 'text-red-500'}`}>
+            <BrainCircuit className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{backendHealthy ? 'Optimizer: Healthy' : 'Optimizer: Unavailable'}</TooltipContent>
+      </Tooltip>
 
       {/* Fireroad status */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-[10px] text-foreground text-right w-16">
-          Fireroad
-        </span>
-        <div
-          className={`w-2 h-2 rounded-full flex-shrink-0 ${
-            fireroadHealthy ? 'bg-green-500' : 'bg-red-500'
-          }`}
-          title={fireroadHealthy ? 'Fireroad: Healthy' : 'Fireroad: Unavailable'}
-        />
-      </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={`${fireroadHealthy ? 'text-green-500' : 'text-red-500'}`}>
+            <Globe className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{fireroadHealthy ? 'Fireroad: Healthy' : 'Fireroad: Unavailable'}</TooltipContent>
+      </Tooltip>
+
+      {/* Next.js status */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={`${nextjsHealthy ? 'text-green-500' : 'text-red-500'}`}>
+            <Server className="h-4 w-4" />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>{nextjsHealthy ? 'Auriium.xyz: Healthy' : 'Auriium.xyz: Unavailable'}</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

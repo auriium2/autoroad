@@ -1,9 +1,11 @@
 /**
  * Fireroad API Proxy - Department Courses
- * Proxies department course listing requests to Fireroad API
+ * Proxies department course listing requests with pagination support
+ * Adds enrichment. I need a baddie
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { enrichCourse, type FireroadCourse } from '@/lib/fireroad-utils';
 
 const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 
@@ -13,7 +15,7 @@ export async function GET(
 ) {
   try {
     const { dept } = await params;
-    
+
     if (!dept) {
       return NextResponse.json(
         { error: 'Department is required' },
@@ -21,14 +23,13 @@ export async function GET(
       );
     }
 
-    // Forward query parameters from the client request
-    const searchParams = new URLSearchParams();
-    req.nextUrl.searchParams.forEach((value, key) => {
-      searchParams.append(key, value);
-    });
+    // Get pagination params
+    const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0', 10);
+    const limit = parseInt(req.nextUrl.searchParams.get('limit') || '20', 10);
 
-    const url = `${FIREROAD_API_URL}/courses/dept/${dept}${searchParams.toString() ? '?' + searchParams : ''}`;
-    
+    // Always request full data from Fireroad
+    const url = `${FIREROAD_API_URL}/courses/dept/${dept}?full=true`;
+
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
@@ -42,11 +43,27 @@ export async function GET(
       );
     }
 
-    const data = await response.json();
-    
-    return NextResponse.json(data, {
+    const allCourses: FireroadCourse[] = await response.json();
+
+    // Filter out historical courses
+    const filteredCourses = allCourses.filter((course) => !course.is_historical);
+
+    // Enrich courses with computed fields (IMDB rating)
+    const enrichedCourses = filteredCourses.map(enrichCourse);
+
+    // Apply pagination
+    const total = enrichedCourses.length;
+    const paginatedCourses = enrichedCourses.slice(offset, offset + limit);
+
+    return NextResponse.json({
+      courses: paginatedCourses,
+      total,
+      offset,
+      limit,
+      has_more: offset + limit < total,
+    }, {
       headers: {
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200', // Cache for 1 hour, serve stale for 2 hours
       },
     });
   } catch (error) {

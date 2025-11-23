@@ -13,20 +13,19 @@ export function useSearchCourses(query: string, department?: string) {
     queryKey: ['courses', 'search', query, department],
     queryFn: async () => {
       if (USE_FIREROAD) {
-        // Use Fireroad API
+        // Use Fireroad API with pagination
         if (query.trim()) {
           // Search by query - use 'starts' for better department matching
           const searchType = query.includes('.') ? 'starts' : 'contains';
-          const results = await fireroadApi.searchCourses(query, {
+          const response = await fireroadApi.searchCourses(query, {
             type: searchType,
-            full: false,
+            department: department,
+            offset: 0,
+            limit: 1000, // Get a large batch since we'll cache it
           });
 
-          // Filter out historical courses to match backend behavior
-          const nonHistorical = results.filter(course => !course.is_historical);
-
           // Sort results to prioritize exact department matches
-          const sorted = nonHistorical.sort((a, b) => {
+          const sorted = response.courses.sort((a, b) => {
             const aDept = a.subject_id.split('.')[0];
             const bDept = b.subject_id.split('.')[0];
             const queryDept = query.split('.')[0];
@@ -42,16 +41,11 @@ export function useSearchCourses(query: string, department?: string) {
             return a.subject_id.localeCompare(b.subject_id);
           });
 
-          // Filter by department if specified
-          if (department && department !== 'all') {
-            return sorted.filter(course => course.subject_id.startsWith(department + '.'));
-          }
           return sorted;
         } else if (department && department !== 'all') {
           // List by department
-          const deptCourses = await fireroadApi.getCoursesByDepartment(department, false);
-          // Filter out historical courses to match backend behavior
-          return deptCourses.filter(course => !course.is_historical);
+          const response = await fireroadApi.getCoursesByDepartment(department, 0, 1000);
+          return response.courses;
         } else {
           // Return empty for "all" with no query (too many courses)
           return [];
