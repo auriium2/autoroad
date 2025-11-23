@@ -442,12 +442,20 @@ function CourseGraphFlowInner({
     setContextMenu(null);
   };
 
+  const handleConvertToMarker = (nodeId: string) => {
+    const node = storeNodes.find(n => n.uuid === nodeId);
+    if (node) {
+      addMarker(node.courseId, node.section, 'pin');
+    }
+    setContextMenu(null);
+  };
+
   // Handle right-click on node
   const onNodeContextMenu = (event: React.MouseEvent, node: Node) => {
     event.preventDefault();
 
-    // Only show context menu for user-controlled nodes, and not during optimization
-    if (!node.data.userControlled || isOptimizing) {
+    // Don't show context menu during optimization
+    if (isOptimizing) {
       return;
     }
 
@@ -801,11 +809,12 @@ function CourseGraphFlowInner({
         const node = storeNodes.find(n => n.uuid === contextMenu.nodeUuid);
         if (!node) return null;
 
+        const isUserControlled = node.userControlled;
         const currentStatus = node.nodeStatus || 'pin';
 
         return (
           <div
-            className="fixed bg-card border border-border rounded-md shadow-lg p-1 min-w-[180px]"
+            className="fixed bg-popover/95 border border-border rounded-lg shadow-lg backdrop-blur-md p-1"
             style={{
               top: contextMenu.y,
               left: contextMenu.x,
@@ -813,51 +822,63 @@ function CourseGraphFlowInner({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handlePin(contextMenu.nodeUuid)}
-              disabled={currentStatus === 'pin'}
-            >
-              <Pin className="w-4 h-4" />
-              <span>Pin (default)</span>
-              {currentStatus === 'pin' && (
-                <span className="ml-auto text-xs text-muted-foreground">✓</span>
-              )}
-            </button>
+            {isUserControlled ? (
+              <>
+                <button
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handlePin(contextMenu.nodeUuid)}
+                  disabled={currentStatus === 'pin'}
+                >
+                  <Pin className="w-3 h-3" />
+                  <span>Pin (default)</span>
+                  {currentStatus === 'pin' && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+                  )}
+                </button>
 
-            <button
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handleOverride(contextMenu.nodeUuid)}
-              disabled={currentStatus === 'override'}
-            >
-              <Unlink className="w-4 h-4" />
-              <span>Pin + ignore prerequisites</span>
-              {currentStatus === 'override' && (
-                <span className="ml-auto text-xs text-muted-foreground">✓</span>
-              )}
-            </button>
+                <button
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleOverride(contextMenu.nodeUuid)}
+                  disabled={currentStatus === 'override'}
+                >
+                  <Unlink className="w-3 h-3" />
+                  <span>Pin + ignore prerequisites</span>
+                  {currentStatus === 'override' && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+                  )}
+                </button>
 
-            <button
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => handleBanish(contextMenu.nodeUuid)}
-              disabled={currentStatus === 'banish'}
-            >
-              <Ban className="w-4 h-4" />
-              <span>Banish</span>
-              {currentStatus === 'banish' && (
-                <span className="ml-auto text-xs text-muted-foreground">✓</span>
-              )}
-            </button>
+                <button
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleBanish(contextMenu.nodeUuid)}
+                  disabled={currentStatus === 'banish'}
+                >
+                  <Ban className="w-3 h-3" />
+                  <span>Banish</span>
+                  {currentStatus === 'banish' && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+                  )}
+                </button>
 
-            <div className="h-px bg-border my-1" />
+                <div className="h-px bg-border/50 my-0.5" />
 
-            <button
-              className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
-              onClick={() => handleRemoveNode(contextMenu.nodeUuid)}
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Remove marker</span>
-            </button>
+                <button
+                  className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
+                  onClick={() => handleRemoveNode(contextMenu.nodeUuid)}
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Remove marker</span>
+                </button>
+              </>
+            ) : (
+              <button
+                className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left"
+                onClick={() => handleConvertToMarker(contextMenu.nodeUuid)}
+              >
+                <Pin className="w-3 h-3" />
+                <span>Convert to marker</span>
+              </button>
+            )}
           </div>
         );
       })()}

@@ -70,7 +70,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
     borderColor = 'border-red-500';
     bgColor = 'bg-red-500/10';
     textColor = 'text-red-400';
-    boxShadow = 'none';
+    // Override nodes keep their glow even with errors
+    boxShadow = isOverride ? "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)" : 'none';
   } else if (isOverride) {
     // Yellow glow for override nodes (but keep blue colors)
     boxShadow = "0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.3)";
