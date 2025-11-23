@@ -771,6 +771,7 @@ function CourseGraphFlowInner({
           [numColumns * COLUMN_WIDTH, Infinity]
         ]}
         defaultViewport={{ x: 0, y: 20, zoom: 1 }}
+        onlyRenderVisibleElements={true}
         proOptions={{ hideAttribution: true }}
         style={{ background: 'transparent' }}
       >
