@@ -47,6 +47,8 @@ export default function Dashboard() {
   const [isExporting, setIsExporting] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
+  const [optimizationStartTime, setOptimizationStartTime] = React.useState<number | null>(null);
+  const [timeElapsed, setTimeElapsed] = React.useState(0);
 
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
@@ -61,6 +63,28 @@ export default function Dashboard() {
   const isOptimizing = useGraphStore(state => state.isOptimizing);
 
   const prevStatusRef = React.useRef<string | null>(null);
+
+  const SOLVER_TIMEOUT_SECONDS = 30;
+
+  // Track optimization time
+  React.useEffect(() => {
+    if (isOptimizing && !optimizationStartTime) {
+      setOptimizationStartTime(Date.now());
+    } else if (!isOptimizing && optimizationStartTime) {
+      setOptimizationStartTime(null);
+      setTimeElapsed(0);
+    }
+  }, [isOptimizing, optimizationStartTime]);
+
+  // Update elapsed time during optimization
+  React.useEffect(() => {
+    if (!isOptimizing || !optimizationStartTime) return;
+    const interval = setInterval(() => {
+      setTimeElapsed((Date.now() - optimizationStartTime) / 1000);
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isOptimizing, optimizationStartTime]);
 
   // Prefetch courses from user's schedule on app load
   React.useEffect(() => {
@@ -296,6 +320,7 @@ export default function Dashboard() {
                       {optimizationProgress?.solutionNumber ? (
                         <div className="relative inline-flex items-center mr-2">
                           <svg className="h-4 w-4 -rotate-90">
+                            {/* Background circle */}
                             <circle
                               cx="8"
                               cy="8"
@@ -305,6 +330,7 @@ export default function Dashboard() {
                               fill="none"
                               className="opacity-25"
                             />
+                            {/* Solution progress */}
                             <circle
                               cx="8"
                               cy="8"
@@ -315,6 +341,18 @@ export default function Dashboard() {
                               strokeDasharray={`${2 * Math.PI * 6}`}
                               strokeDashoffset={`${2 * Math.PI * 6 * (1 - Math.min(optimizationProgress.solutionNumber / 30, 1))}`}
                               className="transition-all duration-300"
+                            />
+                            {/* Timeout progress*/}
+                            <circle
+                              cx="8"
+                              cy="8"
+                              r="4"
+                              stroke="rgb(34, 211, 238)"
+                              strokeWidth="2"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 4}`}
+                              strokeDashoffset={`${2 * Math.PI * 4 * (1 - Math.min(timeElapsed / SOLVER_TIMEOUT_SECONDS, 1))}`}
+                              className="transition-all duration-100"
                             />
                           </svg>
                         </div>

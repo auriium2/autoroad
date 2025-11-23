@@ -176,7 +176,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // Optimization - always streams progress
   optimizeRoad: async (constraints, showProgress = true) => {
     const { markers } = get();
-    
+
     // Get objectives, requirements, year, and lockPastSemesters from optimization store
     const selectedObjectives = useOptimizationStore.getState().selectedObjectives;
     const selectedRequirements = useOptimizationStore.getState().selectedRequirements;
@@ -193,8 +193,10 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
     try {
       let lastRenderTime = 0;
-      const RENDER_THROTTLE_MS = 500;
+      const RENDER_THROTTLE_MS = 1000;
       let latestNodes: OptimizerNode[] = [];
+      let lastProgressUpdate = 0;
+      const PROGRESS_THROTTLE_MS = 100;
 
       // Convert graduation year to planning year if selected
       let planningYear: string | undefined;
@@ -217,15 +219,18 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
           set({ lastOptimizationStatus: progress.status });
           continue;
         }
-        
+
         if (progress.nodes.length > 0) {
           latestNodes = progress.nodes;
 
           // Throttle UI updates to reduce rendering lag
           const now = Date.now();
           const timeSinceLastRender = now - lastRenderTime;
+          const timeSinceLastProgress = now - lastProgressUpdate;
+
           if (timeSinceLastRender >= RENDER_THROTTLE_MS) {
             lastRenderTime = now;
+            lastProgressUpdate = now;
 
             set({
               optimizerNodes: latestNodes,
@@ -235,6 +240,17 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 message: progress.message,
                 solutionNumber: progress.solutionNumber,
               } : null,
+            });
+          } else if (showProgress && timeSinceLastProgress >= PROGRESS_THROTTLE_MS) {
+            // Update progress without nodes for smoother progress indicator
+            lastProgressUpdate = now;
+            set({
+              optimizationProgress: {
+                step: progress.step,
+                totalSteps: progress.totalSteps,
+                message: progress.message,
+                solutionNumber: progress.solutionNumber,
+              },
             });
           }
         } else {

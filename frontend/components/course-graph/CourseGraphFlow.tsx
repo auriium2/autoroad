@@ -346,7 +346,7 @@ function CourseGraphFlowInner({
 
   // Create a stable key for storeNodes to prevent infinite loops
   const storeNodesKey = React.useMemo(
-    () => storeNodes.map(n => `${n.uuid}:${n.courseId}:${n.section}:${n.nodeStatus || ''}`).sort().join('|'),
+    () => `${storeNodes.length}-${storeNodes.map(n => n.uuid).join(',')}`,
     [storeNodes]
   );
 
@@ -463,7 +463,9 @@ function CourseGraphFlowInner({
       const startY = VIEWPORT_CENTER_Y - (totalNodesHeight / 2);
 
       // Get missing prerequisites for this node
-      const missingPrereqs = uuid2missingPrereqs?.get(node.uuid) || [];
+      const missingPrereqs = (uuid2missingPrereqs && uuid2missingPrereqs instanceof Map)
+        ? (uuid2missingPrereqs.get(node.uuid) || [])
+        : [];
 
       return {
         id: node.uuid,
