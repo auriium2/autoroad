@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2 } from "lucide-react";
+import { Download, Upload, Loader2, Trash2, UserX, BrainCircuit } from "lucide-react";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
@@ -33,6 +33,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadFile } from "@/lib/roadFormat";
 import { fireroadApi } from "@/services/fireroad";
@@ -85,6 +90,15 @@ export default function Dashboard() {
     showToast({
       title: "Markers cleared",
       description: "All course markers have been removed",
+      duration: 2000,
+    });
+  };
+
+  const handleClearOptimizer = () => {
+    loadRoadData({ optimizerNodes: [] });
+    showToast({
+      title: "Optimizer results cleared",
+      description: "All optimizer-suggested courses have been removed",
       duration: 2000,
     });
   };
@@ -248,10 +262,27 @@ export default function Dashboard() {
                   </SelectContent>
                 </Select>
 
-                <Button size="sm" variant="outline" onClick={handleClearMarkers} disabled={markers.length === 0}>
-                  <Trash2 className="h-4 w-4" />
-                  Clear
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button size="icon" variant="outline" onClick={handleClearMarkers} disabled={markers.length === 0} className="h-8 w-8">
+                        <UserX className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Clear Markers</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button size="icon" variant="outline" onClick={handleClearOptimizer} disabled={optimizerNodes.length === 0} className="h-8 w-8">
+                        <BrainCircuit className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Clear Optimizer Results</TooltipContent>
+                </Tooltip>
 
                 <Button
                   size="sm"
