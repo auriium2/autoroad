@@ -14,7 +14,7 @@ export function useSearchCourses(query: string, department?: string) {
     queryFn: async () => {
       if (USE_FIREROAD) {
         // Use Fireroad API with pagination
-        if (query.trim()) {
+        if (query.trim() && query !== '*') {
           // Search by query - use 'starts' for better department matching
           const searchType = query.includes('.') ? 'starts' : 'contains';
           const response = await fireroadApi.searchCourses(query, {
@@ -42,12 +42,22 @@ export function useSearchCourses(query: string, department?: string) {
           });
 
           return sorted;
-        } else if (department && department !== 'all') {
-          // List by department
+        } else if (query === '*' && department && department !== 'all') {
+          // Wildcard with specific department - list by department
           const response = await fireroadApi.getCoursesByDepartment(department, 0, 1000);
           return response.courses;
+        } else if (query === '*' && department === 'all') {
+          // Wildcard with all departments - search for a common number pattern
+          // This will match courses across all departments (e.g., x.0, x.1, x.2, etc.)
+          const response = await fireroadApi.searchCourses('.0', {
+            type: 'contains',
+            department: undefined,
+            offset: 0,
+            limit: 2000,
+          });
+          return response.courses;
         } else {
-          // Return empty for "all" with no query (too many courses)
+          // Return empty for no query and no wildcard
           return [];
         }
       } else {

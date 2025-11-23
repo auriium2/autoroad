@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
 import {
@@ -15,6 +15,8 @@ import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
+import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { optimizerApi } from "@/services/optimizer";
 import { useGraphStore } from "@/stores/roadStore";
 import { Toaster } from "@/components/ui/toaster";
 import { toast as showToast } from "@/hooks/useToast";
@@ -44,6 +46,57 @@ export default function Dashboard() {
 
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
+
+  // Check health of services - use useQuery hooks directly instead of getQueryState
+  const { isError: backendError } = useQuery({
+    queryKey: ['backend-health'],
+    queryFn: async () => {
+      const response = await fetch('/api/health/backend', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error('Backend health check failed');
+      return response.json();
+    },
+    refetchInterval: 30000,
+    retry: 1,
+  });
+
+  const { isError: fireroadError } = useQuery({
+    queryKey: ['fireroad-health'],
+    queryFn: async () => {
+      const response = await fetch('/api/health/fireroad', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error('Fireroad health check failed');
+      return response.json();
+    },
+    refetchInterval: 30000,
+    retry: 1,
+  });
+
+  const { isError: nextjsError } = useQuery({
+    queryKey: ['nextjs-health'],
+    queryFn: async () => {
+      const response = await fetch('/api/health', {
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!response.ok) throw new Error('Health check failed');
+      return response.json();
+    },
+    refetchInterval: 30000,
+    retry: 1,
+  });
+
+  const hasHealthIssue = backendError || fireroadError || nextjsError;
+
+  const healthErrorMessage =
+    backendError
+    ? "Backend optimization service is unavailable. This means something on our Google Cloud workers has failed. Please contact me at mlui2@mit.edu if you see this."
+    : fireroadError
+    ? "Fireroad API is unavailable. Course data cannot be loaded. This is a Courseroad issue, not an Autoroad issue, so please contact the Courseroad team if you see this."
+    : nextjsError
+    ? "Next.js server is unavailable. This usually means auriium.xyz has gone down or broken somehow. Please contact me at mlui2@mit.edu if you see this."
+    : "";
 
   // Get store functions and state
   const optimizeRoadFromStore = useGraphStore(state => state.optimizeRoad);
@@ -372,7 +425,14 @@ export default function Dashboard() {
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">
-              <CourseGraphFlow viewMode={viewMode} />
+              {hasHealthIssue ? (
+                <ErrorDisplay
+                  error={healthErrorMessage}
+                  title="Service Unavailable"
+                />
+              ) : (
+                <CourseGraphFlow viewMode={viewMode} />
+              )}
             </div>
           </div>
         </SidebarInset>

@@ -1,7 +1,5 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { optimizerApi } from '@/services/optimizer';
-import { fireroadApi } from '@/services/fireroad';
 import { BrainCircuit, Globe, Server } from 'lucide-react';
 import {
   Tooltip,
@@ -14,18 +12,30 @@ interface HealthIndicatorProps {
 }
 
 export function HealthIndicator({ className }: HealthIndicatorProps) {
-  // Check backend (optimizer) health
+  // Check backend (optimizer) health via Next.js proxy
   const { data: backendHealth, isError: backendError } = useQuery({
     queryKey: ['backend-health'],
-    queryFn: () => optimizerApi.checkHealth(),
+    queryFn: async () => {
+      const response = await fetch('/api/health/backend', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error('Backend health check failed');
+      return response.json();
+    },
     refetchInterval: 30000,
     retry: 1,
   });
 
-  // Check Fireroad health
+  // Check Fireroad health via Next.js proxy
   const { data: fireroadHealth, isError: fireroadError } = useQuery({
     queryKey: ['fireroad-health'],
-    queryFn: () => fireroadApi.checkHealth(),
+    queryFn: async () => {
+      const response = await fetch('/api/health/fireroad', {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error('Fireroad health check failed');
+      return response.json();
+    },
     refetchInterval: 30000,
     retry: 1,
   });

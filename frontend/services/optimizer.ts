@@ -98,12 +98,15 @@ export const optimizerApi = {
     try {
       const response = await fetch(`${BACKEND_URL}/api/optimize/health`, {
         signal: AbortSignal.timeout(3000), // 3 second timeout
+        mode: 'cors',
       });
       if (!response.ok) {
         throw new Error('Health check failed');
       }
       return response.json();
     } catch (error) {
+      // This will catch network errors, CORS errors, and timeouts
+      console.error('Backend health check failed:', error);
       throw new Error('Optimizer service unavailable');
     }
   },

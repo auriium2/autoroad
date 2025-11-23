@@ -33,13 +33,18 @@ export function CourseSearchTab() {
     if (deptFilter) {
       return deptFilter.split(":")[1];
     }
+    // If there are non-department filters but no department specified, search all departments
+    if (activeFilters.size > 0) {
+      return "all";
+    }
     return "all";
   }, [activeFilters]);
 
   // Trigger search when filters are active but no search query
   const effectiveSearchQuery = React.useMemo(() => {
     if (searchQuery) return searchQuery;
-    if (activeFilters.size > 0) return "*"; // Wildcard to fetch all courses
+    // If any filter is active, trigger a wildcard search to get courses
+    if (activeFilters.size > 0) return "*";
     return "";
   }, [searchQuery, activeFilters]);
 
