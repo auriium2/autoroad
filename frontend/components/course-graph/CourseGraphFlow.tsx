@@ -32,15 +32,14 @@ import { isPastSemesterById } from "@/lib/semesterUtils";
 const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean; viewMode?: string } }) => {
   return (
     <div style={{ position: 'relative', transform: 'translate(-50%, 0)' }}>
-      {/* Handles at edges of the circle - centered vertically on the 36px circle */}
       <Handle
         type="target"
         position={Position.Left}
         style={{
           background: 'transparent',
           border: 'none',
-          left: '0px', // Left edge of circle
-          top: '18px', // Center of 36px circle
+          left: '0px',
+          top: '18px',
         }}
       />
       <Handle
@@ -49,8 +48,8 @@ const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: bo
         style={{
           background: 'transparent',
           border: 'none',
-          left: '36px', // Right edge of circle (36px width)
-          top: '18px', // Center of 36px circle
+          left: '36px',
+          top: '18px',
         }}
       />
       <CourseNodeComponent
@@ -525,7 +524,7 @@ function CourseGraphFlowInner({
     const endTime = performance.now();
     console.log(`[Performance] Converted ${storeNodes.length} nodes in ${(endTime - startTime).toFixed(2)}ms`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeNodesKey, setNodes, uuid2missingPrereqs]);
+  }, [storeNodesKey, setNodes, uuid2missingPrereqs, viewMode]);
 
   React.useEffect(() => {
     if (contextMenu) {

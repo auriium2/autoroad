@@ -11,6 +11,7 @@
 - Don't add __init__ files please. If you need to import something from a subdirectory, just use the full path. For example, if you have a file called utils.py in a subdirectory called helpers, you can import it with from helpers.utils import function_name. This way you don't have to worry about __init__ files and it keeps the code cleaner.
 - Check types with basedpyright
 - In constructors, please use type annotations for all parameters and assigments to local variables. This helps with readability and allows for better type checking.
+- Run the unit tests via pytest once you finish implementing a feature or doing a large change.
 
 # web specific
 - For simple, configuration-like JSX components with static props (especially UI library components like Handle, Icon, Button, etc.), format them on a single line when:

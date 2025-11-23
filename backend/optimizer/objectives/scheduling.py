@@ -43,7 +43,7 @@ class MinimizeFridayClasses:
         """
         Add tier-based penalty for courses that meet on Friday.
 
-        Formula: penalty = violations × 3^tier × 1
+        Formula: penalty = violations × TIER_BASE^tier × 1
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
@@ -97,7 +97,7 @@ class AvoidIAP:
         """
         Add tier-based penalty for courses taken during IAP.
 
-        Formula: penalty = violations × 3^tier × 1
+        Formula: penalty = violations × TIER_BASE^tier × 1
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2

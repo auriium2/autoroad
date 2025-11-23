@@ -34,11 +34,12 @@ class TestAvoidSmallClasses:
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={}
+            extra={},
+            objective_tiers={'avoid_small_classes': 2}
         )
 
         # Test with default threshold (min_units=3)
-        objective = AvoidSmallClasses(min_units=3, penalty=1000)
+        objective = AvoidSmallClasses(min_units=3)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force all courses to be taken
@@ -51,11 +52,11 @@ class TestAvoidSmallClasses:
 
         assert status == cp_model.OPTIMAL
 
-        # Expected: Only 21M.401 (3 units) and 6.1010 (1 unit) should be penalized
+        # Expected: Only 6.1010 (1 unit) should be penalized
         # 21M.401 is NOT penalized because it equals min_units (3 >= 3 is False)
         # 6.1010 IS penalized because 1 < 3
-        # Total penalty: 1000 (for the 1-unit course)
-        assert solver.ObjectiveValue() == 1000
+        # Total penalty: tier 2 -> 5^2 = 25
+        assert solver.ObjectiveValue() == 25
 
     def test_no_penalty_for_courses_at_or_above_threshold(self):
         """Courses with units >= min_units should not be penalized."""
@@ -73,10 +74,11 @@ class TestAvoidSmallClasses:
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={}
+            extra={},
+            objective_tiers={'avoid_small_classes': 2}
         )
 
-        objective = AvoidSmallClasses(min_units=6, penalty=1000)
+        objective = AvoidSmallClasses(min_units=6)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force both courses to be taken
@@ -105,10 +107,11 @@ class TestAvoidSmallClasses:
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={}
+            extra={},
+            objective_tiers={'avoid_small_classes': 2}
         )
 
-        objective = AvoidSmallClasses(min_units=15, penalty=1000)
+        objective = AvoidSmallClasses(min_units=15)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force course to be taken
@@ -120,10 +123,10 @@ class TestAvoidSmallClasses:
 
         assert status == cp_model.OPTIMAL
         # Default is 12 units, which is < 15, so penalty applies
-        assert solver.ObjectiveValue() == 1000
+        assert solver.ObjectiveValue() == 25
 
     def test_different_penalty_values(self):
-        """Test that penalty parameter is correctly applied."""
+        """Test that tier parameter affects penalty correctly."""
         courses_df = pl.DataFrame({
             'course_id': ['6.1010'],
             'total_units': [1],
@@ -135,11 +138,12 @@ class TestAvoidSmallClasses:
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={}
+            extra={},
+            objective_tiers={'avoid_small_classes': 3}
         )
 
-        # Test with custom penalty
-        objective = AvoidSmallClasses(min_units=3, penalty=5000)
+        # Test with tier 3
+        objective = AvoidSmallClasses(min_units=3)
         expr = objective.add_to_model(model, take_vars, context)
 
         model.Add(take_vars[(0, 1)] == 1)
@@ -149,7 +153,7 @@ class TestAvoidSmallClasses:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        assert solver.ObjectiveValue() == 5000
+        assert solver.ObjectiveValue() == 125
 
 
 class TestMinimizeUnits:
@@ -186,8 +190,8 @@ class TestMinimizeUnits:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        # Total units: (12 + 6) * 10 = 180
-        assert solver.ObjectiveValue() == 180
+        # Total units: 12 + 6 = 18 (no scaling in tier-based system)
+        assert solver.ObjectiveValue() == 18
 
     def test_handles_nan_units(self):
         """Should skip courses with NaN units."""
@@ -219,8 +223,8 @@ class TestMinimizeUnits:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        # Only first course counted: 12 * 10 = 120
-        assert solver.ObjectiveValue() == 120
+        # Only first course counted: 12 (no scaling)
+        assert solver.ObjectiveValue() == 12
 
 
 

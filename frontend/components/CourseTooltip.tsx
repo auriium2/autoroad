@@ -172,7 +172,7 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                         }}
                         className="text-primary/70 hover:text-primary hover:underline focus:outline-none text-[11px]"
                       >
-                        {showFullDescription ? "less" : "more"}
+                        {showFullDescription ? "Less" : "More"}
                       </button>
                     </>
                   )}

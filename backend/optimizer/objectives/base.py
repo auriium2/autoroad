@@ -13,27 +13,36 @@ from ortools.sat.python import cp_model
 # Global scaling factor for converting float weights to integers (DEPRECATED in tier-based system)
 OBJECTIVE_SCALE = 10000
 
-# Tier penalty multiplier (base = 5, so tier N gives penalty of 5^N)
+# Tier penalty multiplier
 TIER_BASE = 5
 
 def get_tier_penalty(tier: int, base_cost: int = 1) -> int:
     """
     Calculate penalty for a given tier.
-    
+
     Args:
         tier: Tier level (1-4)
         base_cost: Base cost per violation (default 1 unit)
-    
+
     Returns:
-        Penalty = base_cost × (5^tier)
-        
-    Examples:
-        tier=1: 1 × 5 = 5 units/violation
-        tier=2: 1 × 25 = 25 units/violation
-        tier=3: 1 × 125 = 125 units/violation
-        tier=4: 1 × 625 = 625 units/violation
+        Penalty = base_cost × (TIER_BASE^tier)
     """
     if tier < 1 or tier > 4:
+        tier = 2  # Default to tier 2 if invalid
+    return base_cost * (TIER_BASE ** tier)
+
+def get_tier_penalty_hacked(tier: int, base_cost: int = 1) -> int:
+    """
+    Calculate penalty for a given tier. Hacked so that a certain equivalents constraint can use it
+
+    Args:
+        tier: Tier level (1-5)
+        base_cost: Base cost per violation (default 1 unit)
+
+    Returns:
+        Penalty = base_cost × (TIER_BASE^tier)
+    """
+    if tier < 1 or tier > 5:
         tier = 2  # Default to tier 2 if invalid
     return base_cost * (TIER_BASE ** tier)
 
@@ -111,5 +120,3 @@ class ObjectiveComponent(Protocol):
             Dictionary of preprocessed data to be stored in ObjectiveContext
         """
         ...
-
-

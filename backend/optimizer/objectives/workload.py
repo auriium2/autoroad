@@ -50,7 +50,7 @@ class LimitClassesPerSemester:
         """
         Add tier-based penalty for semesters exceeding max_classes.
 
-        Formula: penalty = violations × 3^tier × 1
+        Formula: penalty = violations × TIER_BASE^tier × 1
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
@@ -123,7 +123,7 @@ class LimitUnitsPerSemester:
         """
         Add tier-based penalty for semesters exceeding max_units.
 
-        Formula: penalty = (excess_units / 3) × 3^tier × 1
+        Formula: penalty = (excess_units / 3) × TIER_BASE^tier × 1
         Dividing by 3 makes penalty comparable to class-based constraints.
         """
         # Get tier for this objective (default tier 2 if not set)
@@ -215,7 +215,7 @@ class MinimizeMaxSemesterHours:
         """
         Add tier-based penalty for semesters exceeding max_hours.
 
-        Formula: penalty = (excess_hours / 3) × 3^tier × 1
+        Formula: penalty = (excess_hours / 3) × TIER_BASE^tier × 1
         Dividing by 3 makes penalty comparable to class-based constraints.
         """
         # Get tier for this objective (default tier 2 if not set)
@@ -328,7 +328,7 @@ class MinimizeFinalsLoad:
         """
         Add tier-based penalty for semesters exceeding max_finals.
 
-        Formula: penalty = violations × 3^tier × 1
+        Formula: penalty = violations × TIER_BASE^tier × 1
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2

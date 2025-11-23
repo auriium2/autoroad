@@ -162,7 +162,7 @@ class RequirementConstraintBuilder:
         if hasattr(node, 'was_pruned') and node.was_pruned:
             result = ConstraintResult(
                 satisfied_var=None,
-                warnings=[]
+                warnings=[f"Skipping pruned requirement: {parent_path}"]
             )
             self.results.append(result)
             return result
@@ -211,7 +211,7 @@ class RequirementConstraintBuilder:
         if course_idx is None:
             return ConstraintResult(
                 satisfied_var=None,
-                errors=[]
+                errors=[f"Course '{course_id}' not found in course database"]
             )
 
         # Record that this course can satisfy this requirement path (for category rewards)
@@ -238,7 +238,7 @@ class RequirementConstraintBuilder:
             self.ctx.model.Add(satisfied_var == 0)
             return ConstraintResult(
                 satisfied_var=satisfied_var,
-                warnings=[]
+                warnings=[f"Course '{course_id}' is never offered in any semester"]
             )
 
         # Satisfied if taken at least once
@@ -300,10 +300,9 @@ class RequirementConstraintBuilder:
         course_indices = self.ctx.schedule.get_courses_by_attribute(attribute, value)
 
         if not course_indices:
-            # Silently skip - requirements data may reference missing courses
             return ConstraintResult(
                 satisfied_var=None,
-                warnings=[]
+                warnings=[f"No courses found with {attribute}='{value}'"]
             )
 
         # Record that all these courses can satisfy this requirement path

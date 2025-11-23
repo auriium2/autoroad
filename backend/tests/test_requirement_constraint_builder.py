@@ -496,13 +496,14 @@ class TestAddRequirementConstraints:
         # Simple requirement
         req = RequirementCourse(course_id="6.100A")
 
-        aux_vars, var_name_map = add_requirement_constraints(
+        aux_vars, var_name_map, course_to_requirements = add_requirement_constraints(
             model, take_vars, req, df, 2024, enforce=True
         )
 
         # Should return a dict of auxiliary variables and a var name map
         assert isinstance(aux_vars, dict)
         assert isinstance(var_name_map, dict)
+        assert isinstance(course_to_requirements, dict)
 
     def test_add_requirement_without_enforce(self):
         """Test adding constraints without enforcing the requirement."""
@@ -517,11 +518,12 @@ class TestAddRequirementConstraints:
 
         req = RequirementCourse(course_id="6.100A")
 
-        aux_vars, var_name_map = add_requirement_constraints(
+        aux_vars, var_name_map, course_to_requirements = add_requirement_constraints(
             model, take_vars, req, df, 2024, enforce=False
         )
 
         assert isinstance(aux_vars, dict)
+        assert isinstance(course_to_requirements, dict)
         assert isinstance(var_name_map, dict)
         # Requirement not enforced, so model could have solution without taking the course
 

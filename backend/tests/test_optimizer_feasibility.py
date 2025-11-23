@@ -63,7 +63,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -80,7 +79,7 @@ class TestOptimizerFeasibility:
 
         # Add minimal objective (minimize total courses)
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 
@@ -137,7 +136,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -152,7 +150,7 @@ class TestOptimizerFeasibility:
         )
 
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 
@@ -211,7 +209,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -227,7 +224,7 @@ class TestOptimizerFeasibility:
         )
 
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 
@@ -284,7 +281,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -300,7 +296,7 @@ class TestOptimizerFeasibility:
         )
 
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 
@@ -359,7 +355,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -375,7 +370,7 @@ class TestOptimizerFeasibility:
 
         # Use minimal objective
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 
@@ -429,7 +424,6 @@ class TestOptimizerFeasibility:
             model,
             take_vars,
             fireroad_courses_df,
-            max_units_iap=12,
             max_semesters=max_semesters
         )
 
@@ -444,7 +438,7 @@ class TestOptimizerFeasibility:
         )
 
         objective_builder = ObjectiveBuilder()
-        objective_builder.add(MinimizeUnits(), weight=1.0)
+        objective_builder.add(MinimizeUnits())
         objective = objective_builder.build(model, take_vars, fireroad_courses_df, planning_year_start)
         model.Minimize(objective)
 

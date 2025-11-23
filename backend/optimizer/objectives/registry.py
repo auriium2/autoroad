@@ -147,6 +147,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={"custom_equivalencies": dict},
         category="scheduling",
         default_tier=4,
+        unremovable=True,
     ),
 }
 

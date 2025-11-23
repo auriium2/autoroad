@@ -19,6 +19,7 @@ class DiscourageEquivalentCourses:
     Applies a tier-based penalty for each pair of equivalent courses taken. Taking both courses
     in an equivalency group is fundamentally redundant since they satisfy the same requirements.
 
+    Formula: penalty = 2 × TIER_BASE^tier per pair
     """
 
     def __init__(self, custom_equivalencies: dict[str, list[str]] | None = None):
@@ -105,6 +106,8 @@ class DiscourageEquivalentCourses:
 
         For each equivalency group, we count how many courses from that group are taken,
         then penalize for taking more than one.
+
+        Formula: penalty = 2 × TIER_BASE^tier per pair
         """
         if context.extra is None or 'equiv_groups' not in context.extra:
             return cp_model.LinearExpr.constant(0)
@@ -118,7 +121,7 @@ class DiscourageEquivalentCourses:
         if context.objective_tiers and 'discourage_equivalent_courses' in context.objective_tiers:
             tier = context.objective_tiers['discourage_equivalent_courses']
 
-        penalty = get_tier_penalty(tier, base_cost=1)
+        penalty = get_tier_penalty(tier + 1, base_cost=1)
 
         terms = []
         pair_counter = 0
