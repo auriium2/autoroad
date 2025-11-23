@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { ObjectiveConfig } from '@/services/optimizer';
 import { useGraphStore } from './roadStore';
 
@@ -48,7 +49,9 @@ function markOptimizationAsStale() {
   }
 }
 
-export const useOptimizationStore = create<OptimizationState>((set) => ({
+export const useOptimizationStore = create<OptimizationState>()(
+  persist(
+    (set) => ({
   selectedObjectives: [],
   selectedRequirements: [],
   selectedYear: getDefaultYear(),
@@ -187,4 +190,18 @@ export const useOptimizationStore = create<OptimizationState>((set) => ({
       return { customEquivalencies: newEquivalencies };
     });
   },
-}));
+}),
+    {
+      name: 'optimization-storage',
+      partialize: (state) => ({
+        selectedObjectives: state.selectedObjectives,
+        selectedRequirements: state.selectedRequirements,
+        selectedYear: state.selectedYear,
+        lockPastSemesters: state.lockPastSemesters,
+        requirementTiers: state.requirementTiers,
+        objectiveTiers: state.objectiveTiers,
+        customEquivalencies: state.customEquivalencies,
+      }),
+    }
+  )
+);

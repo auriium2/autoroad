@@ -135,6 +135,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     if (DEBUG_CLEAR_ON_RELOAD && typeof window !== 'undefined') {
       console.log('DEBUG: Clearing localStorage on page reload...');
       window.localStorage.removeItem('autoroad_data');
+      window.localStorage.removeItem('optimization-storage');
     }
 
     // Load from localStorage
