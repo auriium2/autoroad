@@ -7,6 +7,7 @@ interface TierSelectorProps {
   tier: number;
   onChange: (tier: number) => void;
   maxTier?: number;
+  minTier?: number;
 }
 
 const TIER_COLORS = [
@@ -17,10 +18,10 @@ const TIER_COLORS = [
   "rgb(239, 68, 68)",    // red-500 for tier 4
 ];
 
-export function TierSelector({ tier, onChange, maxTier = 4 }: TierSelectorProps) {
+export function TierSelector({ tier, onChange, maxTier = 4, minTier = 0 }: TierSelectorProps) {
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const nextTier = tier >= maxTier ? 0 : tier + 1;
+    const nextTier = tier >= maxTier ? minTier : tier + 1;
     onChange(nextTier);
   };
 
@@ -30,7 +31,7 @@ export function TierSelector({ tier, onChange, maxTier = 4 }: TierSelectorProps)
     <button
       onClick={handleClick}
       className="shrink-0 transition-all hover:scale-110 flex items-center gap-0.5 relative z-20 cursor-pointer"
-      title={tier === 0 ? "Click to set priority tier" : `Tier ${tier} - Click to change`}
+      title={tier === minTier && minTier === 0 ? "Click to set priority tier" : `Tier ${tier} - Click to change`}
     >
       <Star
         className="w-3.5 h-3.5"

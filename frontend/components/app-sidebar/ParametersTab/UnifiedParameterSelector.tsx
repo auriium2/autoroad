@@ -521,6 +521,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
                         <TierSelector
                           tier={objectiveTier}
                           onChange={(tier) => setObjectiveTier(item.key, tier)}
+                          minTier={1}
                         />
                         <button
                           onClick={() => handleToggleObjective(objective)}
