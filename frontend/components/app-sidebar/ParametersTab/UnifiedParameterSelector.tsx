@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { optimizerApi, type ObjectiveMetadata, type ObjectiveConfig, type HardConstraintMetadata } from "@/services/optimizer";
-import { X, ChevronDown, ChevronRight } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { RequirementTreeView } from "./RequirementTreeView";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TierSelector } from "./TierSelector";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 
 type ItemType = 'degree' | 'objective' | 'constraint';
 
@@ -329,7 +330,8 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
     <div className="space-y-4">
       {/* Unified Search Bar */}
       <div className="relative">
-        <input
+        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
           type="text"
           placeholder="Search for degrees or constraints..."
           value={inputValue}
@@ -339,7 +341,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
           }}
           onFocus={() => setShowSearchResults(true)}
           onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-          className="w-full px-3 py-2 text-sm bg-gray-800 border border-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+          className="pl-8"
         />
 
         {/* Search Results Dropdown */}
