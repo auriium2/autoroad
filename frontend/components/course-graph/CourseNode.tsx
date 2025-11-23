@@ -131,70 +131,61 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
             )}
           </div>
 
-          {/* Diagonal slash for banished nodes */}
-          {isBanished && (
+          {/* Combined SVG overlay for all decorations */}
+          {(isBanished || termHighlight || optimizerAgreed) && (
             <svg
               className="pointer-events-none absolute inset-0"
               viewBox="0 0 36 36"
               preserveAspectRatio="xMidYMid meet"
             >
-              <line
-                x1="4"
-                y1="4"
-                x2="32"
-                y2="32"
-                stroke="rgb(239, 68, 68)"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          )}
+              {/* Diagonal slash for banished nodes */}
+              {isBanished && (
+                <line
+                  x1="4"
+                  y1="4"
+                  x2="32"
+                  y2="32"
+                  stroke="rgb(239, 68, 68)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              )}
 
-          {/* Term highlight ring */}
-          {termHighlight && !isBanished && (
-            <svg
-              className="pointer-events-none absolute inset-0"
-              viewBox="0 0 36 36"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="16"
-                fill="none"
-                stroke={
-                  isWrongSemester
-                    ? "rgba(234, 179, 8, 0.9)" // Yellow for wrong semester
-                    : hasUnsatisfiedPrereqs
-                    ? "rgba(239, 68, 68, 0.8)" // Red for any node with errors
-                    : userControlled
-                    ? "rgba(147, 197, 253, 0.8)" // Blue for user-controlled without errors
-                    : "rgba(255,255,255,0.35)" // White for optimizer nodes without errors
-                }
-                strokeWidth="4"
-                pathLength={1}
-                strokeDasharray={termHighlight.dasharray}
-                strokeDashoffset={termHighlight.dashoffset}
-                strokeLinecap="butt"
-              />
-            </svg>
-          )}
+              {/* Term highlight ring */}
+              {termHighlight && !isBanished && (
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="16"
+                  fill="none"
+                  stroke={
+                    isWrongSemester
+                      ? "rgba(234, 179, 8, 0.9)" // Yellow for wrong semester
+                      : hasUnsatisfiedPrereqs
+                      ? "rgba(239, 68, 68, 0.8)" // Red for any node with errors
+                      : userControlled
+                      ? "rgba(147, 197, 253, 0.8)" // Blue for user-controlled without errors
+                      : "rgba(255,255,255,0.35)" // White for optimizer nodes without errors
+                  }
+                  strokeWidth="4"
+                  pathLength={1}
+                  strokeDasharray={termHighlight.dasharray}
+                  strokeDashoffset={termHighlight.dashoffset}
+                  strokeLinecap="butt"
+                />
+              )}
 
-          {/* Double ring indicator when optimizer agrees with marker placement */}
-          {optimizerAgreed && !isBanished && (
-            <svg
-              className="pointer-events-none absolute inset-0"
-              viewBox="0 0 36 36"
-              preserveAspectRatio="xMidYMid meet"
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="11"
-                fill="none"
-                stroke="rgba(34, 197, 94, 1)"
-                strokeWidth="1.5"
-              />
+              {/* Double ring indicator when optimizer agrees with marker placement */}
+              {optimizerAgreed && !isBanished && (
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="11"
+                  fill="none"
+                  stroke="rgba(34, 197, 94, 1)"
+                  strokeWidth="1.5"
+                />
+              )}
             </svg>
           )}
         </div>
