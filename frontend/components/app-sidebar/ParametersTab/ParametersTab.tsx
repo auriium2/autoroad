@@ -2,6 +2,7 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { SimpleSelect } from "@/components/ui/simple-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { UnifiedParameterSelector } from "./UnifiedParameterSelector";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
@@ -57,14 +58,7 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
         </div>
 
         {/* Lock Past Semesters */}
-        <div className="flex items-start gap-2">
-          <Checkbox
-            id="lock-past-semesters"
-            checked={lockPastSemesters}
-            onCheckedChange={(checked: boolean) => setLockPastSemesters(!!checked)}
-            className="mt-0.5"
-            disabled={isOptimizing}
-          />
+        <div className="flex items-center justify-between gap-3">
           <div className="flex-1">
             <Label
               htmlFor="lock-past-semesters"
@@ -72,10 +66,25 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
             >
               Freeze Past Semesters
             </Label>
-            <p className="text-xs text-muted-foreground mt-1">
-              Stops autoroad from time traveling.
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Stops autoroad from{' '}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="underline decoration-dotted cursor-help">time traveling</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  This parameter changes whether autoroad can place classes in semesters that you have already taken (determined by your selected class year)
+                </TooltipContent>
+              </Tooltip>
+              .
             </p>
           </div>
+          <Checkbox
+            id="lock-past-semesters"
+            checked={lockPastSemesters}
+            onCheckedChange={(checked: boolean) => setLockPastSemesters(!!checked)}
+            disabled={isOptimizing}
+          />
         </div>
       </div>
 

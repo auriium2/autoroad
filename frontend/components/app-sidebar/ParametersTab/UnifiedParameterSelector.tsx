@@ -273,10 +273,11 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
     return objectivesData?.defaultConfiguration.some(d => d.key === key) ?? false;
   };
 
-  // Build unified list of all selected items (degrees first, then objectives, then constraints)
+  // Build unified list of all selected items (degrees first, then objectives, then constraints, then category_rewards at bottom)
   const selectedDegrees: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
   const selectedObjectiveItems: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
   const selectedConstraintItems: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
+  const categoryRewardsItem: Array<{ type: 'degree' | 'objective' | 'constraint'; key: string }> = [];
 
   selectedRequirements.forEach(reqKey => {
     selectedDegrees.push({ type: 'degree', key: reqKey });
@@ -285,7 +286,12 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
   selectedObjectives.forEach(config => {
     const objective = objectivesData?.objectives.find(o => o.key === config.key);
     if (objective) {
-      selectedObjectiveItems.push({ type: 'objective', key: config.key });
+      // Separate category_rewards to show at bottom
+      if (config.key === 'category_rewards') {
+        categoryRewardsItem.push({ type: 'objective', key: config.key });
+      } else {
+        selectedObjectiveItems.push({ type: 'objective', key: config.key });
+      }
     }
   });
 
@@ -299,7 +305,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
     });
   }
 
-  const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems, ...selectedConstraintItems];
+  const allSelectedItems = [...selectedDegrees, ...selectedObjectiveItems, ...selectedConstraintItems, ...categoryRewardsItem];
 
   if (requirementsLoading || objectivesLoading) {
     return (
@@ -472,7 +478,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
 
                   {isExpanded && (
                     <div className="pt-2">
-                      <RequirementTreeView requirementKey={item.key} />
+                      <RequirementTreeView requirementKey={item.key} viewMode={viewMode} />
                     </div>
                   )}
                   </div>
@@ -486,14 +492,22 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
 
               const isRecommendedType = isRecommended(objective.key);
               const isExpanded = expandedObjectives.has(item.key);
+              const isUnremovable = objective.unremovable ?? false;
+              const isCategoryRewards = objective.key === 'category_rewards';
 
               // Get tier from state, or use the backend's default tier for this objective
               const objectiveTier = objectiveTiers[item.key] ?? objective.defaultTier;
 
               return (
                 <div key={`selected-${item.type}-${item.key}`} className="relative border border-border rounded overflow-hidden">
+                  {/* Diagonal stripes pattern for category_rewards */}
+                  {isCategoryRewards && (
+                    <div className="absolute inset-0 pointer-events-none opacity-10" style={{
+                      backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgb(239 68 68) 10px, rgb(239 68 68) 20px)'
+                    }} />
+                  )}
                   {/* Red gradient overlay for recommended objectives - bottom-left stays black, top-right becomes red */}
-                  {isRecommendedType && (
+                  {isRecommendedType && !isCategoryRewards && (
                     <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-red-500/15" />
                   )}
 
@@ -518,17 +532,21 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
                             {lastCostBreakdown[objective.key]}
                           </span>
                         )}
-                        <TierSelector
-                          tier={objectiveTier}
-                          onChange={(tier) => setObjectiveTier(item.key, tier)}
-                          minTier={1}
-                        />
-                        <button
-                          onClick={() => handleToggleObjective(objective)}
-                          className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                        {!isCategoryRewards && (
+                          <TierSelector
+                            tier={objectiveTier}
+                            onChange={(tier) => setObjectiveTier(item.key, tier)}
+                            minTier={1}
+                          />
+                        )}
+                        {!isUnremovable && (
+                          <button
+                            onClick={() => handleToggleObjective(objective)}
+                            className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     {isExpanded && (

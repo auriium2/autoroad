@@ -6,16 +6,20 @@ import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle } from "@/lib/nodeStyles";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
+import { useOptimizationStore } from "@/stores/optimizationStore";
+import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
 
 type CourseNodeComponentProps = {
   node: CourseNode & { optimizerAgreed?: boolean; missingPrereqs?: string[] };
   disableTooltip?: boolean;
+  viewMode?: string;
 };
 
 function CourseNodeComponent(props: CourseNodeComponentProps) {
   const {
     node,
     disableTooltip = false,
+    viewMode = "default",
   } = props;
 
   const { courseId, userControlled, disabled, section, nodeStatus: markerStatus } = node;
@@ -26,6 +30,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const isBanished = markerStatus === 'banish';
   const isOverride = markerStatus === 'override';
   const hasUnsatisfiedPrereqs = missingPrereqs.length > 0;
+
+  const getCourseCategoryTier = useOptimizationStore((state) => state.getCourseCategoryTier);
+  const categoryTier = getCourseCategoryTier(courseId);
 
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
@@ -195,6 +202,23 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       <div className={`text-xs font-medium text-center mt-2 ${isBanished ? 'text-red-400' : textColor}`}>
         {courseId}
       </div>
+
+      {/* Category tier stars - always show if tier > 0 */}
+      {categoryTier > 0 && (
+        <div className="flex justify-center mt-1" onClick={(e) => e.stopPropagation()}>
+          {isOverride ? (
+            // Pulsing purple star for must-take courses
+            <div className="text-purple-400 animate-pulse text-lg">★</div>
+          ) : (
+            <TierSelector
+              tier={categoryTier}
+              onChange={() => {}} // Read-only display
+              maxTier={3}
+              minTier={0}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

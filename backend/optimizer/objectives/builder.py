@@ -54,7 +54,8 @@ class ObjectiveBuilder:
         planning_year_start: int,
         objective_tiers: dict[str, int] | None = None,
         requirement_tiers: dict[str, int] | None = None,
-        marked_course_ids: set[str] | None = None
+        marked_course_ids: set[str] | None = None,
+        course_to_requirements: dict[int, set[str]] | None = None
     ) -> cp_model.LinearExpr:
         """
         Build the combined objective function.
@@ -66,6 +67,8 @@ class ObjectiveBuilder:
             planning_year_start: Starting year for planning
             objective_tiers: Tier priorities for objectives (1-4)
             requirement_tiers: Tier priorities for requirement tree nodes (0-3)
+            marked_course_ids: Set of course IDs that have markers
+            course_to_requirements: Mapping from course indices to requirement paths they satisfy
 
         Returns:
             Linear expression to minimize
@@ -79,6 +82,10 @@ class ObjectiveBuilder:
         for component in self.components:
             preprocessed = component.preprocess(courses_df)
             extra_data.update(preprocessed)
+
+        # Add course_to_requirements mapping to extra data for category rewards
+        if course_to_requirements is not None:
+            extra_data['course_to_requirements'] = course_to_requirements
 
         # Create context
         context = ObjectiveContext(
@@ -105,8 +112,17 @@ class ObjectiveBuilder:
             # Use key if available, otherwise fall back to name
             identifier = self.component_keys[i] if self.component_keys[i] else component.get_name()
 
-            # Store the expression for later breakdown calculation
-            self.component_expressions.append((identifier, expr))
+            # Check if this is CategoryRewards with per-category breakdowns
+            from .categories import CategoryRewards
+            if isinstance(component, CategoryRewards) and component.category_terms:
+                # Store per-category expressions for detailed breakdown
+                for req_path, category_terms in component.category_terms.items():
+                    category_expr = cp_model.LinearExpr.Sum(category_terms)
+                    self.component_expressions.append((f"category:{req_path}", category_expr))
+            else:
+                # Store the expression for later breakdown calculation
+                self.component_expressions.append((identifier, expr))
+
             terms.append(expr)
 
         if terms:

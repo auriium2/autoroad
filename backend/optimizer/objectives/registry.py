@@ -8,6 +8,7 @@ from typing import Any
 from . import (
     AvoidIAP,
     AvoidSmallClasses,
+    CategoryRewards,
     LimitClassesPerSemester,
     LimitUnitsPerSemester,
     MinimizeFinalsLoad,
@@ -30,6 +31,7 @@ class ObjectiveMetadata:
     parameter_types: dict[str, Any]
     category: str
     default_tier: int = 2  # Default tier for this objective
+    unremovable: bool = False  # If True, user cannot remove this objective
 
 
 OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
@@ -39,7 +41,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="avoid_small_classes",
         class_ref=AvoidSmallClasses,
         name="Avoid Small Classes",
-        description="Penalize taking classes with very few units. This is used to stop the optimizer from taking hundreds of 0 or 3 unit classes in order to 'technically' satisfy degree requirements in a way that would be impossible to do for a human (10 seminar classes in one semester, for example)",
+        description="Penalize taking classes with very few units. This is used to stop the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements",
         has_parameters=True,
         default_parameters={"min_units": 3},
         parameter_types={"min_units": int},
@@ -93,7 +95,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="minimize_friday_classes",
         class_ref=MinimizeFridayClasses,
         name="Minimize Friday Classes",
-        description="Avoid courses that meet on Fridays (tier-based)",
+        description="Give yourself a three day weekend",
         has_parameters=False,
         default_parameters={},
         parameter_types={},
@@ -121,6 +123,18 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={"min_classes": int},
         category="workload",
         default_tier=2,
+    ),
+    "category_rewards": ObjectiveMetadata(
+        key="category_rewards",
+        class_ref=CategoryRewards,
+        name="Category Rewards",
+        description="Reward taking courses in priority categories with diminishing returns",
+        has_parameters=True,
+        default_parameters={"max_courses_per_category": 20, "decay_rate": 0.70},
+        parameter_types={"max_courses_per_category": int, "decay_rate": float},
+        category="categories",
+        default_tier=2,
+        unremovable=True,
     ),
 }
 
@@ -185,4 +199,5 @@ def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
         ("limit_classes_per_semester", {"max_classes": 4}),
         ("avoid_small_classes", {"min_units": 3}),
         ("minimum_classes_per_semester", {"min_classes": 2}),
+        ("category_rewards", {"max_courses_per_category": 20, "decay_rate": 0.70}),
     ]

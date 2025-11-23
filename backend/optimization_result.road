@@ -3,128 +3,226 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "11.014",
-      "semester": 1,
-      "title": "History of the Built Environment in the US",
+      "subject_id": "11.139",
+      "semester": 3,
+      "title": "The City in Film",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "15.301",
-      "semester": 4,
-      "title": "People, Teams, and Organizations Laboratory",
+      "subject_id": "16.C20",
+      "semester": 6,
+      "title": "Introduction to Computational Science and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "17.395",
-      "semester": 10,
-      "title": "Innovation Systems for Science, Technology, Energy, Manufacturing, and Health",
+      "subject_id": "17.567",
+      "semester": 8,
+      "title": "Israel: History, Politics, Culture, and Identity",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.01L",
+      "subject_id": "18.02A",
       "semester": 5,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.02A",
-      "semester": 6,
-      "title": "Calculus",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "2.001",
-      "semester": 12,
-      "title": "Mechanics and Materials I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21A.500",
-      "semester": 6,
-      "title": "Technology and Culture",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21L.591",
-      "semester": 8,
-      "title": "Literary London",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.041",
+      "subject_id": "18.05",
       "semester": 9,
+      "title": "Introduction to Probability and Statistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.4041",
+      "semester": 4,
+      "title": "Theory of Computation",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21G.073",
+      "semester": 2,
+      "title": "The Spanish Incubator",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.321",
+      "semester": 6,
+      "title": "Downtown",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21L.000",
+      "semester": 7,
       "title": "Writing About Literature",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.095",
-      "semester": 9,
-      "title": "Introduction to Metalsmithing",
+      "subject_id": "21W.781",
+      "semester": 11,
+      "title": "Race, Place, and Modernity in the Americas",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "5.112",
-      "semester": 1,
-      "title": "Principles of Chemical Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "5.601",
-      "semester": 7,
-      "title": "Thermodynamics I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "5.602",
-      "semester": 10,
-      "title": "Thermodynamics II and Kinetics",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "7.014",
+      "subject_id": "3.091",
       "semester": 12,
+      "title": "Introduction to Solid-State Chemistry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.096",
+      "semester": 7,
+      "title": "Architectural Ironwork",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.983",
+      "semester": 10,
+      "title": "Ancient Mesoamerican Civilization",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100A",
+      "semester": 1,
+      "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100B",
+      "semester": 3,
+      "title": "Introduction to Computational Thinking and Data Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1010",
+      "semester": 7,
+      "title": "Fundamentals of Programming",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1020",
+      "semester": 9,
+      "title": "Software Construction",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1200",
+      "semester": 3,
+      "title": "Mathematics for Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1210",
+      "semester": 4,
+      "title": "Introduction to Algorithms",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1400",
+      "semester": 12,
+      "title": "Computability and Complexity Theory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1800",
+      "semester": 6,
+      "title": "Computer Systems Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1903",
+      "semester": 6,
+      "title": "Introduction to Low-level Programming in C and Assembly",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1910",
+      "semester": 4,
+      "title": "Computation Structures",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.4880",
+      "semester": 12,
+      "title": "Biological Circuit Engineering Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5620",
+      "semester": 10,
+      "title": "Foundations of Cryptography",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5900",
+      "semester": 7,
+      "title": "Computer System Architecture",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5951",
+      "semester": 9,
+      "title": "Secure Hardware Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.8721",
+      "semester": 1,
+      "title": "Principles of Synthetic Biology",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.1801",
+      "semester": 1,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.7012",
+      "semester": 9,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.02",
-      "semester": 12,
-      "title": "Physics II",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "CC.801",
-      "semester": 7,
+      "subject_id": "ES.8012",
+      "semester": 4,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.043",
-      "semester": 6,
-      "title": "Technology and Self: Science, Technology, and Memoir",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "WGS.120",
-      "semester": 4,
-      "title": "Science in Action: Technologies and Controversies in Everyday Life",
+      "subject_id": "ES.8022",
+      "semester": 12,
+      "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     }

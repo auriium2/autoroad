@@ -339,7 +339,7 @@ async def optimize(request: OptimizationRequest):
                 model = cp_model.CpModel()
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
                 add_basic_constraints(model, take_vars, courses_df, max_semesters)
-                
+
                 # Add past semester constraints if enabled
                 if request.lockPastSemesters:
                     add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
@@ -351,7 +351,11 @@ async def optimize(request: OptimizationRequest):
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
 
             # Add requirement constraints (run in thread pool)
+            course_to_requirements = {}
             def add_requirements():
+                nonlocal course_to_requirements
+                # Collect course-to-requirement mappings from all requirements
+                all_mappings = []
                 for req_key in request.requirements:
                     if req_key in requirements_data:
                         req_data = requirements_data[req_key]
@@ -359,10 +363,18 @@ async def optimize(request: OptimizationRequest):
                             req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
                             validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
                             if validation.pruned_tree is not None:
-                                add_requirement_constraints(
+                                _, _, mapping = add_requirement_constraints(
                                     model, take_vars, validation.pruned_tree,
                                     courses_df, planning_year_start, enforce=True
                                 )
+                                all_mappings.append(mapping)
+
+                # Merge all mappings into a single dict
+                for mapping in all_mappings:
+                    for course_idx, req_paths in mapping.items():
+                        if course_idx not in course_to_requirements:
+                            course_to_requirements[course_idx] = set()
+                        course_to_requirements[course_idx].update(req_paths)
 
             await loop.run_in_executor(None, add_requirements)
 
@@ -397,7 +409,7 @@ async def optimize(request: OptimizationRequest):
                         max_semesters=max_semesters,
                         markers=request.markers,
                     )
-                    
+
                     print(f"[OPTIMIZER] Applying {len(request.hardConstraints)} hard constraints:")
                     for constraint_key in request.hardConstraints:
                         try:
@@ -444,6 +456,13 @@ async def optimize(request: OptimizationRequest):
                 print(f"[OPTIMIZER] Objective tiers: {request.objectiveTiers}")
                 print(f"[OPTIMIZER] Requirement tiers: {request.requirementTiers}")
                 print(f"[OPTIMIZER] Marked courses: {marked_course_ids}")
+                print(f"[OPTIMIZER] Course-to-requirements mapping: {len(course_to_requirements)} courses mapped")
+                if course_to_requirements:
+                    # Show a sample
+                    sample = list(course_to_requirements.items())[:3]
+                    for course_idx, paths in sample:
+                        course_id = courses_df[course_idx, 'subject_id']
+                        print(f"  - {course_id} -> {len(paths)} requirement paths")
 
                 objective = builder.build(
                     model,
@@ -452,7 +471,8 @@ async def optimize(request: OptimizationRequest):
                     planning_year_start,
                     objective_tiers=request.objectiveTiers,
                     requirement_tiers=request.requirementTiers,
-                    marked_course_ids=marked_course_ids
+                    marked_course_ids=marked_course_ids,
+                    course_to_requirements=course_to_requirements
                 )
                 model.Minimize(objective)
                 return builder
@@ -601,6 +621,7 @@ async def get_objectives():
             "defaultParameters": obj.default_parameters,
             "parameterTypes": {k: v.__name__ if hasattr(v, '__name__') else str(v) for k, v in obj.parameter_types.items()},
             "defaultTier": obj.default_tier,
+            "unremovable": obj.unremovable,
         })
 
     # Also include default configuration
@@ -654,3 +675,65 @@ async def get_hard_constraints():
     return {
         "constraints": result
     }
+
+
+@router.post("/optimize/course-categories")
+async def get_course_categories(request: OptimizationRequest):
+    """
+    Get which requirement categories each course can satisfy.
+    
+    This is used by the frontend to display category tier stars on courses.
+    
+    Returns:
+        Dictionary mapping course IDs to lists of requirement paths they satisfy
+    """
+    try:
+        # Get data
+        loop = asyncio.get_event_loop()
+        courses_data = await loop.run_in_executor(None, get_courses_data)
+        requirements_data = await loop.run_in_executor(None, get_requirements, tuple(request.requirements))
+        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+
+        # Get planning year
+        planning_year = request.planningYear
+        if not planning_year:
+            _, planning_year = find_current_school_year()
+        planning_year_start = int(planning_year.split('-')[0])
+
+        # Create a minimal model just to build requirement constraints
+        model = cp_model.CpModel()
+        take_vars = create_take_vars(model, courses_df, planning_year_start, request.maxSemesters, request.markers)
+
+        # Build requirement constraints to get course-to-requirement mapping
+        def build_mappings():
+            course_to_requirements = {}
+            for req_key in request.requirements:
+                if req_key in requirements_data:
+                    req_data = requirements_data[req_key]
+                    if isinstance(req_data, dict):
+                        req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                        validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                        if validation.pruned_tree is not None:
+                            _, _, mapping = add_requirement_constraints(
+                                model, take_vars, validation.pruned_tree,
+                                courses_df, planning_year_start, enforce=False
+                            )
+                            # Merge this mapping into the combined dict
+                            for course_idx, req_paths in mapping.items():
+                                if course_idx not in course_to_requirements:
+                                    course_to_requirements[course_idx] = set()
+                                course_to_requirements[course_idx].update(req_paths)
+            return course_to_requirements
+
+        course_to_requirements = await loop.run_in_executor(None, build_mappings)
+
+        # Convert to course ID -> requirement paths
+        result = {}
+        for course_idx, req_paths in course_to_requirements.items():
+            course_id = courses_df[course_idx, 'subject_id']
+            result[course_id] = list(req_paths)
+
+        return result
+
+    except Exception as e:
+        return {"error": str(e), "details": type(e).__name__}

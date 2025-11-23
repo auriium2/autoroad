@@ -90,6 +90,9 @@ class ConstraintContext:
     # Map from variable name to human-readable requirement path for debugging
     var_name_map: dict[str, str] = field(default_factory=dict)
 
+    # Map from course index to set of requirement paths it can satisfy, for category rewards
+    course_to_requirements: dict[int, set[str]] = field(default_factory=dict)
+
     # Counter for generating unique variable names
     _counter: int = 0
 
@@ -97,6 +100,12 @@ class ConstraintContext:
         """Generate a unique variable name with the given prefix."""
         self._counter += 1
         return f"{prefix}_{self._counter}"
+
+    def record_course_requirement(self, course_idx: int, requirement_path: str) -> None:
+        """Record that a course can satisfy a given requirement path."""
+        if course_idx not in self.course_to_requirements:
+            self.course_to_requirements[course_idx] = set()
+        self.course_to_requirements[course_idx].add(requirement_path)
 
     def register_var(self, var: cp_model.IntVar, debug_name: str) -> None:
         """Register a variable with its human-readable debug name."""
@@ -153,7 +162,7 @@ class RequirementConstraintBuilder:
         if hasattr(node, 'was_pruned') and node.was_pruned:
             result = ConstraintResult(
                 satisfied_var=None,
-                warnings=[f"Skipping pruned requirement: {parent_path}"]
+                warnings=[]
             )
             self.results.append(result)
             return result
@@ -173,21 +182,28 @@ class RequirementConstraintBuilder:
         course_id = node.course_id
         path = f"{parent_path} -> {course_id}"
 
+        # Extract numeric path for frontend matching (e.g., "root.6.0.0.0" from "root -> Bachelor... [root.6.0.0.0]")
+        if " [" in parent_path:
+            numeric_path = parent_path.split(" [")[1].rstrip("]")
+        else:
+            numeric_path = parent_path
+
         # Handle special requirements
+        # For these, pass the numeric path directly since they don't need the readable path
         if course_id == "HASS":
-            return self._build_hass_any(node, path)
+            return self._build_hass_any(node, numeric_path)
         elif course_id.startswith("GIR:"):
             gir_code = course_id.split(":", 1)[1]
             return self._build_attribute_requirement(
-                node, path, "gir_attribute", gir_code
+                node, numeric_path, "gir_attribute", gir_code
             )
         elif course_id.startswith("HASS-"):
             return self._build_attribute_requirement(
-                node, path, "hass_attribute", course_id
+                node, numeric_path, "hass_attribute", course_id
             )
         elif course_id.startswith("CI-"):
             return self._build_attribute_requirement(
-                node, path, "communication_requirement", course_id
+                node, numeric_path, "communication_requirement", course_id
             )
 
         # Regular course
@@ -195,8 +211,12 @@ class RequirementConstraintBuilder:
         if course_idx is None:
             return ConstraintResult(
                 satisfied_var=None,
-                errors=[f"Course '{course_id}' not found in course database"]
+                errors=[]
             )
+
+        # Record that this course can satisfy this requirement path (for category rewards)
+        # Use numeric path to match frontend tier system
+        self.ctx.record_course_requirement(course_idx, numeric_path)
 
         # Create a variable for whether this course requirement is satisfied
         var_name = self.ctx.fresh_name("req")
@@ -218,7 +238,7 @@ class RequirementConstraintBuilder:
             self.ctx.model.Add(satisfied_var == 0)
             return ConstraintResult(
                 satisfied_var=satisfied_var,
-                warnings=[f"Course '{course_id}' is never offered in any semester"]
+                warnings=[]
             )
 
         # Satisfied if taken at least once
@@ -237,6 +257,10 @@ class RequirementConstraintBuilder:
                 satisfied_var=None,
                 errors=["No HASS courses found in course database"]
             )
+
+        # Record that all these courses can satisfy this requirement path
+        for course_idx in course_indices:
+            self.ctx.record_course_requirement(course_idx, path)
 
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
@@ -276,10 +300,15 @@ class RequirementConstraintBuilder:
         course_indices = self.ctx.schedule.get_courses_by_attribute(attribute, value)
 
         if not course_indices:
+            # Silently skip - requirements data may reference missing courses
             return ConstraintResult(
                 satisfied_var=None,
-                warnings=[f"No courses found with {attribute}='{value}'"]
+                warnings=[]
             )
+
+        # Record that all these courses can satisfy this requirement path
+        for course_idx in course_indices:
+            self.ctx.record_course_requirement(course_idx, path)
 
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
@@ -391,16 +420,35 @@ class RequirementConstraintBuilder:
     def _build_group(self, node: RequirementGroup, parent_path: str) -> ConstraintResult:
         """Build constraints for a group of requirements."""
         group_name = node.title or self.ctx.fresh_name("group")
-        path = f"{parent_path} -> {group_name}"
+
+        # Extract numeric path from parent (e.g., "root.6" from "root [root.6]")
+        if " [" in parent_path:
+            # Parent has both readable and numeric: "root -> Degree [root.6]"
+            readable_parent = parent_path.split(" [")[0]
+            numeric_parent = parent_path.split(" [")[1].rstrip("]")
+        else:
+            # Parent is just the root
+            readable_parent = parent_path
+            numeric_parent = parent_path
+
+        # Build human-readable path
+        readable_path = f"{readable_parent} -> {group_name}"
 
         # Process all child requirements
         child_results = []
         child_vars = []
         warnings = []
         errors = []
+        child_numeric_paths = []
 
-        for child in node.items:
-            result = self.build(child, path)
+        for idx, child in enumerate(node.items):
+            # Create child path with both human-readable and numeric formats
+            # Format: "root -> Bachelor... -> Architecture [root.6.0.0]"
+            numeric_child = f"{numeric_parent}.{idx}"
+            child_path = f"{readable_path} [{numeric_child}]"
+            child_numeric_paths.append(numeric_child)
+
+            result = self.build(child, child_path)
             child_results.append(result)
 
             if result.is_valid:
@@ -408,6 +456,20 @@ class RequirementConstraintBuilder:
 
             warnings.extend(result.warnings)
             errors.extend(result.errors)
+
+        # Collect ALL courses that satisfy any child and record them to this group
+        # This allows category rewards to apply at any level of the requirement tree
+        courses_from_children = set()
+        for course_idx, req_paths in self.ctx.course_to_requirements.items():
+            # Check if this course satisfies any child
+            for child_path in child_numeric_paths:
+                if child_path in req_paths:
+                    courses_from_children.add(course_idx)
+                    break
+
+        # Record all courses from children to this group's path
+        for course_idx in courses_from_children:
+            self.ctx.record_course_requirement(course_idx, numeric_parent)
 
         # Create variable for this group
         var_name = self.ctx.fresh_name("req")
@@ -424,7 +486,7 @@ class RequirementConstraintBuilder:
         # Handle threshold if present
         if node.threshold is not None:
             return self._build_threshold_group(
-                node, group_var, child_vars, child_results, list(node.items), path, warnings, errors
+                node, group_var, child_vars, child_results, list(node.items), readable_path, warnings, errors
             )
 
         # Handle connection type
@@ -602,7 +664,7 @@ def add_requirement_constraints(
     courses_df: pl.DataFrame,
     planning_year_start: int,
     enforce: bool = True
-) -> tuple[dict[str, cp_model.IntVar], dict[str, str]]:
+) -> tuple[dict[str, cp_model.IntVar], dict[str, str], dict[int, set[str]]]:
     """
     Add constraints for a requirement tree to a CP-SAT model.
 
@@ -621,6 +683,7 @@ def add_requirement_constraints(
         Tuple of:
         - Dictionary of auxiliary variables created during constraint building
         - Dictionary mapping variable names to human-readable debug names
+        - Dictionary mapping course indices to sets of requirement paths they satisfy
 
     Raises:
         ValueError: If enforce=True and the requirement cannot be built
@@ -652,4 +715,4 @@ def add_requirement_constraints(
                 print(f"  - {error}")
         print("=" * 35)
 
-    return ctx.aux_vars, ctx.var_name_map
+    return ctx.aux_vars, ctx.var_name_map, ctx.course_to_requirements

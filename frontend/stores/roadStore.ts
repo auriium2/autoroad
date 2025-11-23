@@ -231,13 +231,31 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         planningYear = graduationYearToPlanningYear(selectedYear);
       }
 
+      // Fetch course categories for displaying category tier stars
+      try {
+        console.log('[Optimizer] Fetching course categories...');
+        const courseCategories = await optimizerApi.getCourseCategories(
+          markers,
+          selectedRequirements,
+          maxSemesters,
+          planningYear
+        );
+        console.log(`[Optimizer] Fetched categories for ${Object.keys(courseCategories).length} courses`);
+        useOptimizationStore.getState().setCourseCategories(courseCategories);
+      } catch (error) {
+        console.error('[Optimizer] Failed to fetch course categories:', error);
+      }
+
+      // Pass objectives as-is (decay_rate is now a regular parameter in category_rewards)
+      const objectivesWithParams = selectedObjectives.length > 0 ? selectedObjectives : undefined;
+
       // Stream optimization progress
       for await (const progress of optimizerApi.optimize(
         markers,
         selectedRequirements,
         maxSemesters,
         abortController.signal,
-        selectedObjectives.length > 0 ? selectedObjectives : undefined,
+        objectivesWithParams,
         selectedHardConstraints,
         planningYear,
         lockPastSemesters,

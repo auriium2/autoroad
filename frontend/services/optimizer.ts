@@ -30,6 +30,7 @@ export interface ObjectiveMetadata {
   defaultParameters: Record<string, number>;
   parameterTypes: Record<string, string>;
   defaultTier: number;
+  unremovable?: boolean;
 }
 
 export interface ObjectiveConfig {
@@ -105,6 +106,38 @@ export const optimizerApi = {
     } catch (error) {
       throw new Error('Optimizer service unavailable');
     }
+  },
+
+  async getCourseCategories(
+    markers: Marker[],
+    requiredCourses: string[],
+    maxSemesters: number,
+    planningYear?: string
+  ): Promise<Record<string, string[]>> {
+    const requestBody = {
+      markers: markers.map(m => ({
+        courseId: m.courseId,
+        section: m.section,
+        status: m.status,
+      })),
+      requirements: requiredCourses.length > 0 ? requiredCourses : ['girs', 'major6-3new'],
+      maxSemesters: maxSemesters || 12,
+      planningYear: planningYear || undefined,
+    };
+
+    const response = await fetch(`${BACKEND_URL}/api/optimize/course-categories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch course categories: ${response.statusText}`);
+    }
+    
+    return response.json();
   },
 
   async getObjectives(): Promise<ObjectivesResponse> {

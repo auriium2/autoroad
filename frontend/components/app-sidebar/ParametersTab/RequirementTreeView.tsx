@@ -12,17 +12,19 @@ import { TierSelector } from "./TierSelector";
 
 interface RequirementTreeViewProps {
   requirementKey: string;
+  viewMode?: string;
 }
 
-export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps) {
+export function RequirementTreeView({ requirementKey, viewMode = "default" }: RequirementTreeViewProps) {
   const markers = useGraphStore((state) => state.markers);
   const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
   const isOptimizing = useGraphStore((state) => state.isOptimizing);
-  
+  const lastCostBreakdown = useGraphStore((state) => state.lastCostBreakdown);
+
   const expandedNodesRecord = useOptimizationStore((state) => state.expandedRequirementNodes);
   const expandedNodes = expandedNodesRecord[requirementKey] || new Set();
   const toggleNodeExpanded = useOptimizationStore((state) => state.toggleRequirementNodeExpanded);
-  
+
   const ids = new Set([
     ...markers.map(m => m.courseId),
     ...optimizerNodes.map(n => n.courseId)
@@ -56,12 +58,12 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
 
     // Determine the title
     let title = req.title || req['threshold-desc'];
-    
+
     // If no title and this is a course requirement, show the course ID
     if (!title && req.req) {
       title = req.req;
     }
-    
+
     // If still no title, use a generic label
     if (!title) {
       title = 'Requirement';
@@ -94,23 +96,38 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
               </button>
             )}
             {!hasChildren && <div className="w-3" />}
-            
+
             <span className={`text-xs truncate ${req.req ? 'font-mono' : ''}`}>
               {title}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground tabular-nums">
               {progress}/{max}
             </span>
+            {viewMode === "cost" && lastCostBreakdown && nodeTier > 0 && (() => {
+              // green THROBBING cost indicator
+              const categoryKey = `category:${path}`;
+              const categoryCost = lastCostBreakdown[categoryKey];
+
+              if (categoryCost !== undefined) {
+                return (
+                  <span className="text-xs font-mono tabular-nums text-green-400 animate-pulse" title={`Category reward for ${path}`}>
+                    {categoryCost}
+                  </span>
+                );
+              }
+              return null;
+            })()}
             <TierSelector
               tier={nodeTier}
               onChange={(tier) => setRequirementTier(path, tier)}
+              maxTier={3}
             />
           </div>
         </div>
-        
+
         <div className="ml-4 mr-1">
           <Progress value={percentage} className="h-1" />
         </div>
@@ -174,8 +191,8 @@ export function RequirementTreeView({ requirementKey }: RequirementTreeViewProps
       }), { progress: 0, max: 0 })
     : { progress: 0, max: 0 };
 
-  const rootPercentage = (rootProgress.max ?? 0) > 0 
-    ? ((rootProgress.progress ?? 0) / (rootProgress.max ?? 1)) * 100 
+  const rootPercentage = (rootProgress.max ?? 0) > 0
+    ? ((rootProgress.progress ?? 0) / (rootProgress.max ?? 1)) * 100
     : 0;
 
   return (

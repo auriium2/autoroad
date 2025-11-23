@@ -21,6 +21,7 @@ interface OptimizationState {
   requirementTiers: Record<string, number>;
   objectiveTiers: Record<string, number>;
   customEquivalencies: Record<string, string[]>;
+  courseCategories: Record<string, string[]>; // Maps course ID to requirement paths it satisfies
   
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
@@ -40,6 +41,9 @@ interface OptimizationState {
   
   addCustomEquivalency: (courseA: string, courseB: string) => void;
   removeCustomEquivalency: (courseA: string, courseB: string) => void;
+  
+  setCourseCategories: (categories: Record<string, string[]>) => void;
+  getCourseCategoryTier: (courseId: string) => number;
 }
 
 function getDefaultYear(): string {
@@ -72,6 +76,7 @@ export const useOptimizationStore = create<OptimizationState>()(
   requirementTiers: {},
   objectiveTiers: {},
   customEquivalencies: {},
+  courseCategories: {},
   
   setObjectives: (objectives) => {
     markOptimizationAsStale();
@@ -118,6 +123,7 @@ export const useOptimizationStore = create<OptimizationState>()(
       }
       return {
         selectedRequirements: [...state.selectedRequirements, requirement],
+        expandedRequirements: [...state.expandedRequirements, requirement],
       };
     });
   },
@@ -219,6 +225,27 @@ export const useOptimizationStore = create<OptimizationState>()(
       
       return { customEquivalencies: newEquivalencies };
     });
+  },
+  
+  setCourseCategories: (categories) => {
+    set({ courseCategories: categories });
+  },
+  
+  getCourseCategoryTier: (courseId) => {
+    const state = useOptimizationStore.getState();
+    const categories = state.courseCategories[courseId] || [];
+    const requirementTiers = state.requirementTiers;
+    
+    // Find the highest tier among all requirement categories this course belongs to
+    let maxTier = 0;
+    for (const reqPath of categories) {
+      const tier = requirementTiers[reqPath] || 0;
+      if (tier > maxTier) {
+        maxTier = tier;
+      }
+    }
+    
+    return maxTier;
   },
 }),
     {

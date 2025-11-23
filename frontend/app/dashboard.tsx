@@ -5,15 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
@@ -248,21 +239,9 @@ export default function Dashboard() {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b border-border/50 px-4 relative z-10 glass dark:glass-dark">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
-              <Separator orientation="vertical" className="mr-2 h-4" />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem className="hidden md:block">
-                    <BreadcrumbLink href="https://auriium.xyz">auriium.xyz</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>autoroad</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
+              <HealthIndicator />
             </div>
             <div className="ml-auto flex items-center gap-2">
-              <HealthIndicator />
               <Button variant="outline" size="sm" onClick={handleImport} disabled={isImporting}>
                 <Upload className="h-4 w-4" />
                 {isImporting ? "Importing..." : "Import"}
@@ -285,9 +264,8 @@ export default function Dashboard() {
                     <SelectValue placeholder="View mode" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="default">Default view</SelectItem>
-                    <SelectItem value="compact">Compact view</SelectItem>
-                    <SelectItem value="cost">Cost view</SelectItem>
+                    <SelectItem value="default">Friendly view</SelectItem>
+                    <SelectItem value="cost">Nerd view</SelectItem>
                   </SelectContent>
                 </Select>
 
