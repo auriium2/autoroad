@@ -200,12 +200,12 @@ class TestFireroadParser:
     def test_empty_string(self):
         """Test parsing empty string."""
         result = parse_fireroad("")
-        assert result == PrereqGroup(threshold=0, items=())
+        assert result is None
 
     def test_only_junk(self):
         """Test parsing string with only junk text."""
         result = parse_fireroad("''permission of instructor''")
-        assert result == PrereqGroup(threshold=0, items=())
+        assert result is None
 
 
 class TestPrereqToString:

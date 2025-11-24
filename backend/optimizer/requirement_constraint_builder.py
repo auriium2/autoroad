@@ -647,8 +647,11 @@ class RequirementConstraintBuilder:
                     self.ctx.model.Add(child_var == 1).OnlyEnforceIf(group_var)
         elif node.connection_type == "any":
             # ANY: At least one child must be satisfied (in addition to threshold)
+            # We add a one-way implication: if group is satisfied, at least one child must be satisfied
+            # We do NOT use AddMaxEquality because that would override the threshold
             if child_vars:
-                self.ctx.model.AddMaxEquality(group_var, child_vars)
+                # If group_var is 1, then at least one child must be 1
+                self.ctx.model.Add(sum(child_vars) >= 1).OnlyEnforceIf(group_var)
 
         return ConstraintResult(
             satisfied_var=group_var,

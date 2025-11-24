@@ -137,7 +137,7 @@ def filter_junk_tokens(tokens: list[str]) -> list[str]:
 
     return final
 
-def parse_fireroad(prereq_str: str) -> PrereqNode:
+def parse_fireroad(prereq_str: str) -> PrereqNode | None:
     """
     Parse a Fireroad prerequisite string into PrereqNode structure.
 
@@ -151,7 +151,7 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
         prereq_str: Prerequisite string from Fireroad
 
     Returns:
-        PrereqNode: Parsed prerequisite tree
+        PrereqNode | None: Parsed prerequisite tree, or None if unparseable
 
     Examples:
         >>> parse_fireroad("6.100A")
@@ -161,13 +161,14 @@ def parse_fireroad(prereq_str: str) -> PrereqNode:
         PrereqGroup(threshold=2, items=(PrereqCourse(...), PrereqCourse(...)))
     """
     if not prereq_str or not prereq_str.strip():
-        return PrereqGroup(threshold=0, items=())
+        return None
 
     tokens = tokenize(prereq_str)
     tokens = filter_junk_tokens(tokens)
 
     if not tokens:
-        return PrereqGroup(threshold=0, items=())
+        # No valid tokens - likely unparseable text like "Permission of instructor"
+        return None
 
     index = [0]
 

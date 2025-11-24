@@ -3,30 +3,100 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "11.014",
+      "subject_id": "1.000",
+      "semester": 7,
+      "title": "Introduction to Computer Programming and Numerical Methods for Engineering Applications",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.010A",
+      "semester": 4,
+      "title": "Probability: Concepts and Applications",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.013",
+      "semester": 6,
+      "title": "Senior Civil and Environmental Engineering Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.035",
+      "semester": 6,
+      "title": "Mechanics of Materials",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.036",
       "semester": 1,
-      "title": "History of the Built Environment in the US",
+      "title": "Structural Mechanics and Design",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "11.047",
-      "semester": 8,
-      "title": "Race, Place, and Modernity in the Americas",
+      "subject_id": "1.050",
+      "semester": 4,
+      "title": "Solid Mechanics",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "12.011",
+      "subject_id": "1.056",
+      "semester": 6,
+      "title": "Introduction to Structural Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.060",
+      "semester": 3,
+      "title": "Fluid Mechanics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.074",
+      "semester": 10,
+      "title": "Multivariate Data Analysis",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.101",
+      "semester": 7,
+      "title": "Introduction to Civil and Environmental Engineering Design",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.102",
+      "semester": 9,
+      "title": "Introduction to Civil and Environmental Engineering Design II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "1.104",
+      "semester": 9,
+      "title": "Sensing and Intelligent Systems",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "10.07",
+      "semester": 9,
+      "title": "Debating About Society and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "11.139",
       "semester": 12,
-      "title": "Archaeological Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "17.567",
-      "semester": 11,
-      "title": "Israel: History, Politics, Culture, and Identity",
+      "title": "The City in Film",
       "units": 12,
       "overrideWarnings": false
     },
@@ -46,211 +116,92 @@
     },
     {
       "subject_id": "18.03",
-      "semester": 10,
+      "semester": 3,
       "title": "Differential Equations",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "2.00",
-      "semester": 10,
-      "title": "Introduction to Design",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "2.001",
-      "semester": 4,
-      "title": "Mechanics and Materials I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "2.003",
+      "subject_id": "21A.104",
       "semester": 6,
-      "title": "Dynamics and Control I",
+      "title": "Memory, Culture, and Forgetting",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "2.005",
+      "subject_id": "21H.321",
       "semester": 12,
-      "title": "Thermal-Fluids Engineering I",
+      "title": "Downtown",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "2.013",
-      "semester": 7,
-      "title": "Engineering Systems Design",
+      "subject_id": "21T.409",
+      "semester": 12,
+      "title": "Performance and Design Intensive",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "2.086",
-      "semester": 9,
-      "title": "Numerical Computation for Mechanical Engineers",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "2.671",
-      "semester": 10,
-      "title": "Measurement and Instrumentation",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "2.678",
+      "subject_id": "21W.012",
       "semester": 4,
-      "title": "Electronics for Mechanical Systems",
+      "title": "Writing and Rhetoric: Food for Thought",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21L.592",
-      "semester": 2,
-      "title": "Race, Place, and Modernity in the Americas",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21W.011",
-      "semester": 6,
-      "title": "Writing and Rhetoric: Rhetoric and Contemporary Issues",
+      "subject_id": "21W.733",
+      "semester": 9,
+      "title": "Debating About Society and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "3.091",
-      "semester": 9,
+      "semester": 7,
       "title": "Introduction to Solid-State Chemistry",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "3.095",
-      "semester": 6,
-      "title": "Introduction to Metalsmithing",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "4.02A",
-      "semester": 5,
-      "title": "Design Studio: How to Design Intensive",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "6.100A",
-      "semester": 1,
+      "semester": 10,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100B",
-      "semester": 3,
+      "semester": 12,
       "title": "Introduction to Computational Thinking and Data Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1010",
-      "semester": 7,
-      "title": "Fundamentals of Programming",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1020",
-      "semester": 12,
-      "title": "Software Construction",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1200",
-      "semester": 3,
-      "title": "Mathematics for Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1210",
+      "subject_id": "7.012",
       "semester": 4,
-      "title": "Introduction to Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1220",
-      "semester": 6,
-      "title": "Design and Analysis of Algorithms",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1420",
-      "semester": 7,
-      "title": "Fixed Parameter and Fine-grained Computation",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1800",
-      "semester": 9,
-      "title": "Computer Systems Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1904",
-      "semester": 12,
-      "title": "Introduction to Low-level Programming in C and Assembly",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.1910",
-      "semester": 7,
-      "title": "Computation Structures",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.2061",
-      "semester": 9,
-      "title": "Microcomputer Project Laboratory - Independent Inquiry",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.3800",
-      "semester": 4,
-      "title": "Introduction to Inference",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "7.015",
-      "semester": 10,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.01L",
+      "subject_id": "CC.802",
+      "semester": 3,
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.801",
       "semester": 1,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "CC.8022",
-      "semester": 3,
-      "title": "Physics II",
+      "subject_id": "STS.051",
+      "semester": 7,
+      "title": "Documenting MIT Communities",
       "units": 12,
       "overrideWarnings": false
     }

@@ -84,7 +84,9 @@ def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
         if prereq_str is not None and prereq_str:
             try:
                 prereq_tree = parse_fireroad(prereq_str)
-                prereq_trees[course_idx] = prereq_tree
+                # Only add to prereq_trees if parser returned a valid tree
+                if prereq_tree is not None:
+                    prereq_trees[course_idx] = prereq_tree
             except Exception:
                 pass
 

@@ -317,6 +317,15 @@ class PrerequisiteConstraintBuilder:
             if child_var is not None:
                 child_vars.append(child_var)
 
+        # Threshold logic: satisfied if at least 'threshold' children are satisfied
+        threshold = node.threshold
+
+        # TEMPORARY FIX: Handle empty groups with threshold=0 (from unparseable prereqs like "Permission of instructor")
+        # TODO: This should be fixed in the parser instead - don't create PrereqGroup(threshold=0, items=())
+        if threshold <= 0 and not child_vars:
+            # Empty threshold and no children - treat as "no prerequisites" (always satisfied)
+            return self.ctx.model.NewConstant(1)
+
         if not child_vars:
             # No valid children - cannot be satisfied
             return self.ctx.model.NewConstant(0)
@@ -324,9 +333,6 @@ class PrerequisiteConstraintBuilder:
         # Create variable for group satisfaction
         var_name = self.ctx.fresh_name(f"prereq_group_for_{course_id.replace('.', '_')}_s{semester}")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
-
-        # Threshold logic: satisfied if at least 'threshold' children are satisfied
-        threshold = node.threshold
 
         if threshold <= 0:
             # Empty threshold - always satisfied
