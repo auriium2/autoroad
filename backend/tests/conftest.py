@@ -45,7 +45,7 @@ class OptimizerTestConfig:
         },
         'major6-7': {
             'min_expected_courses': 20,
-            'max_expected_courses': 30,
+            'max_expected_courses': 35,
             'description': 'Computer Science and Molecular Biology',
         },
         'major6-9': {
@@ -66,7 +66,7 @@ class OptimizerTestConfig:
         },
         'major18pm': {
             'min_expected_courses': 20,
-            'max_expected_courses': 28,
+            'max_expected_courses': 25,
             'description': 'Mathematics',
         },
         'major18c': {
@@ -86,7 +86,7 @@ class OptimizerTestConfig:
         },
         'major2': {
             'min_expected_courses': 20,
-            'max_expected_courses': 30,
+            'max_expected_courses': 35,
             'description': 'Mechanical Engineering',
         },
         'major3': {

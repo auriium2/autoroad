@@ -79,15 +79,15 @@ jobs:
         run: |
           uv sync --extra dev
       
-      - name: Run comprehensive E2E tests
+      - name: Run full optimizer E2E tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_optimizer_e2e_comprehensive.py -v -s
-      
+          uv run pytest tests/test_full_optimizer_e2e.py -v -s
+
       - name: Run regression tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_optimizer_e2e_comprehensive.py::TestRegressionBugs -v
+          uv run pytest tests/test_full_optimizer_e2e.py::TestRegressionBugs -v
 
   test-sanity:
     name: Sanity Checks (Critical Majors)
@@ -115,9 +115,9 @@ jobs:
       - name: Test most popular majors
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_optimizer_e2e_comprehensive.py::TestOptimizerE2EComprehensive::test_course_6_3_computer_science -v
-          uv run pytest tests/test_optimizer_e2e_comprehensive.py::TestOptimizerE2EComprehensive::test_course_6_2_eecs -v
-          uv run pytest tests/test_optimizer_e2e_comprehensive.py::TestOptimizerE2EComprehensive::test_course_18_mathematics -v
+          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_6_3_new_girs_feasible -v
+          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_6_2_eecs -v
+          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_18_girs_feasible -v
       
       - name: Upload test results if failed
         if: failure()
