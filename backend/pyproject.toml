@@ -37,7 +37,6 @@ markers = [
     "e2e: end-to-end integration tests (deselect with '-m \"not e2e\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
-addopts = "-m 'not e2e'"  # Skip e2e tests by default
 
 [tool.ruff]
 line-length = 100

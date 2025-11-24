@@ -342,7 +342,11 @@ class TestFullOptimizerE2E:
             f"Course 6-2 (new) + GIRs should be feasible, got status {status}"
 
     def test_course_7_biology(self):
-        """Test Course 7 (Biology) remains feasible."""
+        """Test Course 7 (Biology) remains feasible.
+        
+        Note: Course 7 requires 10 semesters due to the prerequisite chain for 7.19
+        (Biology Capstone Subject), which requires 7.06, which requires 7.03 and 7.05.
+        """
         courses_data = get_courses_data()
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
@@ -350,8 +354,8 @@ class TestFullOptimizerE2E:
         prereq_trees = get_parsed_prerequisites(courses_df)
 
         model = cp_model.CpModel()
-        take_vars = create_take_vars(model, courses_df, 2024, max_semesters=8, markers=None)
-        add_basic_constraints(model, take_vars, courses_df, max_semesters=8)
+        take_vars = create_take_vars(model, courses_df, 2024, max_semesters=10, markers=None)
+        add_basic_constraints(model, take_vars, courses_df, max_semesters=10)
 
         add_prerequisite_constraints(model, take_vars, courses_df, 2024, prereq_trees, set())
 
