@@ -38,10 +38,10 @@ class TestOptimizerFeasibility:
     def test_girs_only_is_feasible(self, fireroad_courses_df):
         """
         Test that scheduling just GIRs is feasible.
-        
+
         This is the most basic scenario - student needs to complete:
         - 2 Physics (PHY1, PHY2)
-        - 2 Calculus (CAL1, CAL2)  
+        - 2 Calculus (CAL1, CAL2)
         - 1 Chemistry (CHEM)
         - 1 Biology (BIOL)
         """
@@ -94,10 +94,10 @@ class TestOptimizerFeasibility:
     def test_pinned_courses_is_feasible(self, fireroad_courses_df):
         """
         Test that pinning common freshman courses is feasible.
-        
+
         Pins:
         - 18.01 (Calculus 1) - Semester 1
-        - 8.01 (Physics 1) - Semester 1  
+        - 8.01 (Physics 1) - Semester 1
         - 6.100A (Intro CS) - Semester 1
         - 5.111 (Chemistry) - Semester 1
         """
@@ -164,14 +164,14 @@ class TestOptimizerFeasibility:
     def test_ase_with_markers_is_feasible(self, fireroad_courses_df):
         """
         Test that ASE (Advanced Standing Exam) with markers is feasible.
-        
+
         ASE:
         - 18.01 (got credit, semester -1)
-        
+
         Pins:
         - 18.02 (Calculus 2) - Semester 1
         - 8.01 (Physics 1) - Semester 1
-        - 6.100A (Intro CS) - Semester 1  
+        - 6.100A (Intro CS) - Semester 1
         - 5.111 (Chemistry) - Semester 1
         """
         model = cp_model.CpModel()
@@ -238,10 +238,10 @@ class TestOptimizerFeasibility:
     def test_override_marker_is_feasible(self, fireroad_courses_df):
         """
         Test that override markers (ignoring prerequisites) work.
-        
+
         Override:
         - 18.02 (normally requires 18.01, but we override) - Semester 1
-        
+
         Pins:
         - 8.01 (Physics 1) - Semester 1
         - 6.100A (Intro CS) - Semester 1
@@ -310,7 +310,7 @@ class TestOptimizerFeasibility:
     def test_realistic_course_load_is_feasible(self, fireroad_courses_df):
         """
         Test a realistic full 4-year schedule with various course types.
-        
+
         This tests a more complex scenario with:
         - Multiple semesters of courses
         - Prerequisites that need to be satisfied
@@ -384,10 +384,10 @@ class TestOptimizerFeasibility:
     def test_banish_marker_is_feasible(self, fireroad_courses_df):
         """
         Test that banish markers (preventing courses in specific semesters) work.
-        
+
         Banish:
         - 18.01 from Semester 1 (will be placed elsewhere)
-        
+
         Pin:
         - 8.01 in Semester 1
         """
