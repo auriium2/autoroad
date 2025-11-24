@@ -1,24 +1,71 @@
 # autoroad
+> fixed horizon trajectory optimization for your mit degree
 
-## architecture: frontend
-- i used nextjs/react for the frontend since react is well known by llms and i don't want to debug frontend myself when i don't have to
-- i tried to avoid as much backend surface as possible by routing as much work as possible to the fireroad api via cors. 
-- this means I don't have to maintain boilerplate for authentication, etc, and can focus on the optimization logic on the backend
+# TLDR
+- pick classes you *want* to take
+- pick degrees and concentrations you want
+- pick semester or 4year goals that matter to *you*
+- let autoroad fill out the rest
 
-## architecture: backend
-- i used python/fastapi for the optimizer endpoint. python was chosen ~~so i can get a job~~ so i can use the ortools library for integer programming. fastapi was chosen for its speed and ease of use.
-- serverless!!!!!!!!!
-- the workers are designed to be horizontally scalable, since all they have to do is run the optimization and then die
+## How do I use this?
+Try it out at [autoroad.auriium.xyz](https://autoroad.auriium.xyz)
 
-## ai usage
+## Why does this exist?
+
+To plan one (1) feasible degree at mit, you have to consider:
+- the degree requirements of the girs
+  - all of the girs and their placement
+  - which of the girs to take (some are worse than others)
+  - the hass requirement, which states that you must
+    - take at least 8 humanities classes
+    - from these 8, one of each must be a hass h, hass a, hass s
+  - you must also take 4 ci-h writing-type classes (which *may or may not also be hasses*)
+    - two must be ci-h classes (writing type under the hass requirement)
+    - two must be ci-m classes (writing type under the major)
+    - not all hasses are ci-type
+  - you must take a REST (Restricted Elective in SomeThing) class
+- the degree requirements of your current degree
+  - depending on your major, these can be arbitrarily nested [in increasingly convoluted ways](https://fireroad.mit.edu/requirements/edit/major6-3new).
+- the class requirements of your mandatory [humanities concentration](https://registrar.mit.edu/registration-academics/academic-requirements/hass-requirement/hass-concentrations)
+  - this is *not the same thing* as the hasses OR ci-types
+  - yes, you have to have a humanities concentration at mit
+  - no, i do not want a concentration in linguistics
+- the fact that all of these courses have *prerequisites* that may break down if you fail or decide to take a different class
+
+If you want your degree to not kill you or make you bald, you have to consider and exploit:
+- classes have different amounts of units
+- classes have different amounts of hours (you want less of these)
+- classes have different ratings and enrollments (do not take a class rated under 5)
+
+As both a fake mechanical engineer and a fake CS major, trying to solve this convoluted mess by hand for *two different degrees* was wasting time. So, I sat down and built autoroad!
+
+## How does it work?
+
+Define binary decision variables for every (course, semester) pair. Add constraints:
+- Prerequisites must come before dependent courses
+- Degree requirements (reverse-engineered from Fireroad's source)
+- Unit caps, no double-counting, user pins
+
+Then optimize across 11 objectives with diminishing returns:
+- Minimize total units
+- Balance workload per semester
+- Avoid finals conflicts
+- Minimize friday classes
+- Prioritize requirement satisfaction
+- etc.
+
+The solver runs multi-threaded and streams solutions in real-time over SSE.
+
+## Stack
+
+**Backend**: Python, FastAPI, OR-Tools  
+**Frontend**: Next.js + React  
+**Deploy**: Vercel + Google Cloud Run
+
+## AI Usage
 - Ah, you think vibe coding is your ally? You merely adopted the full stack. I was born in it, molded by it. I didn't touch the grass until I was already a man, by then it was nothing to me but frightening!
 
-# le architecture
-please fill this out later
-
-frontend -> next.js proxy(auriium.xyz) -> fireroad api to fetch bulk data
-         -> autoroad api(google cloud) -> google cloud server ->
-         
-# constraint related bug hit list
-- 2.005ening: 2.005 was getting placed after 2.013 for some ungodly reason. It turns out the reason this was happening was 2.013 had a dependency on (2.005/2.051) and 2.051 had a single prereq 'permission of instructor', which our tokenizer and parser block turned into a single prereq group with nothing in it. (it was a prereq group with something in it, and then it gets deleted by the validator in the parser). This gives you a prereq group that is completely empty, which is then marked instantly as satisfied. This was done because previously weird strings like 'permission o' or 'ballet training' and other stupid shit instructors would put would sneak past my shitty handmade tokenizer, but now that we have a robust tokenizer and parser that doesnt happen, so what ended up happening was 2.051 was instantly satisfied and there was no need to the optimizer to handle it correctly.
-- the course 7-ening: course 7
+## Credits
+- auriium2
+- reactflow, for their great graph library
+- SIPB, for making and maintaining the fireroad api and the original Courseroad!
