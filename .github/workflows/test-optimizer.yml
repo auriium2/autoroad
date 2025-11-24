@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --extra dev
       
       - name: Run prerequisite parser unit tests
         working-directory: ./backend
@@ -77,7 +77,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --extra dev
       
       - name: Run comprehensive E2E tests
         working-directory: ./backend
@@ -110,7 +110,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --extra dev
       
       - name: Test most popular majors
         working-directory: ./backend
@@ -148,7 +148,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --extra dev
       
       - name: Run basedpyright
         working-directory: ./backend
@@ -176,7 +176,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./backend
         run: |
-          uv pip install -e ".[dev]"
+          uv sync --extra dev
       
       - name: Run ruff
         working-directory: ./backend
