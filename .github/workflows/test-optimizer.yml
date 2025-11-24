@@ -2,15 +2,18 @@ name: Optimizer Comprehensive Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'backend/**'
       - '.github/workflows/test-optimizer.yml'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'backend/**'
-  workflow_dispatch:  # Allow manual triggers
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
 
 jobs:
   test-unit:
@@ -20,28 +23,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
           enable-cache: true
-          cache-dependency-glob: "**/uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('backend/uv.lock') }}
 
       - name: Install dependencies
         working-directory: ./backend
-        run: |
-          uv sync --extra dev
+        run: uv sync --frozen --extra dev
 
       - name: Run all unit tests
         working-directory: ./backend
-        run: |
-          uv run pytest tests/unit/ -v
+        run: uv run pytest tests/unit/ -v
 
   test-feasibility:
     name: Feasibility - Group ${{ matrix.group }}
@@ -66,28 +74,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
           enable-cache: true
-          cache-dependency-glob: "**/uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('backend/uv.lock') }}
 
       - name: Install dependencies
         working-directory: ./backend
-        run: |
-          uv sync --extra dev
+        run: uv sync --frozen --extra dev
 
       - name: Run feasibility tests (group ${{ matrix.group }})
         working-directory: ./backend
-        run: |
-          uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -k "${{ matrix.tests }}" -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -k "${{ matrix.tests }}" -v -s
 
   test-quality:
     name: Quality - Group ${{ matrix.group }}
@@ -110,28 +123,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
           enable-cache: true
-          cache-dependency-glob: "**/uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('backend/uv.lock') }}
 
       - name: Install dependencies
         working-directory: ./backend
-        run: |
-          uv sync --extra dev
+        run: uv sync --frozen --extra dev
 
       - name: Run quality tests (group ${{ matrix.group }})
         working-directory: ./backend
-        run: |
-          uv run pytest tests/integration/optimizer/test_optimizer_quality.py -k "${{ matrix.tests }}" -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py -k "${{ matrix.tests }}" -v -s
 
   type-check:
     name: Type Checking
@@ -140,28 +158,33 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
           enable-cache: true
-          cache-dependency-glob: "**/uv.lock"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-${{ hashFiles('backend/uv.lock') }}
 
       - name: Install dependencies
         working-directory: ./backend
-        run: |
-          uv sync --extra dev
+        run: uv sync --frozen --extra dev
 
       - name: Run basedpyright
         working-directory: ./backend
-        run: |
-          uv run basedpyright courses/ optimizer/ api/
+        run: uv run basedpyright courses/ optimizer/ api/
 
   all-tests-passed:
     name: All Tests Passed
