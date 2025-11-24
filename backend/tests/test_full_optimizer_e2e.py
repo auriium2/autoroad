@@ -664,5 +664,77 @@ class TestFullOptimizerE2E:
         )
 
 
+class TestRegressionBugs:
+    """
+    Regression tests for specific bugs found during development.
+
+    These tests should never be removed - they document and prevent
+    regressions of critical bugs.
+    """
+
+    def test_regression_course_1_091_permission_of_instructor(self):
+        """
+        Regression test: Course 1.091 with 'Permission of instructor' prerequisite.
+
+        Bug: Parser returned PrereqGroup(threshold=0, items=()) which was treated
+        as unsatisfiable, making Course 1 infeasible with 6+ courses.
+
+        Fix: Parser now returns None for unparseable prerequisites.
+        """
+        from courses.prerequisites.parser import parse_fireroad
+
+        # Test 1: Parser returns None for unparseable prerequisites
+        result = parse_fireroad("''Permission of instructor''")
+        assert result is None, \
+            "Parser should return None for 'Permission of instructor'"
+
+        # Test 2: Course 1 should be feasible (integration test would go here)
+        # This is covered by test_course_1_civil_engineering above
+
+    def test_regression_course_7_requires_10_semesters(self, optimizer_config):
+        """
+        Regression test: Course 7 requires 10 semesters, not 8.
+
+        Bug: Test used max_semesters=8 but Course 7.19 (Biology Capstone)
+        has prerequisite chain 7.19 → 7.06 → (7.03, 7.05) requiring 10 semesters.
+
+        Fix: Updated test configuration to use 10 semesters for Course 7.
+        """
+        degree_config = optimizer_config.get_config_for_degree('major7')
+
+        assert degree_config['max_semesters'] >= 10, \
+            "Course 7 configuration must allow at least 10 semesters"
+
+        print(f"[TEST] ✅ Course 7 correctly configured for {degree_config['max_semesters']} semesters")
+
+    def test_regression_empty_prereq_groups_never_created(self):
+        """
+        Regression test: Parser should never create empty PrereqGroups.
+
+        Bug: Empty groups were treated as unsatisfiable.
+
+        Fix: Parser returns None instead.
+        """
+        from courses.prerequisites.parser import parse_fireroad
+        from courses.prerequisites.types import PrereqGroup
+
+        test_cases = [
+            "",
+            "   ",
+            "''permission of instructor''",
+            "''Permission required''",
+        ]
+
+        for test_str in test_cases:
+            result = parse_fireroad(test_str)
+
+            # Should be None, not an empty group
+            if result is not None:
+                assert not (isinstance(result, PrereqGroup) and len(result.items) == 0), \
+                    f"Parser should not return empty PrereqGroup for '{test_str}'"
+
+        print("[TEST] ✅ Parser never returns empty PrereqGroups")
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v', '-s'])

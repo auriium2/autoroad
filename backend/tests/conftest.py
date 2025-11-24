@@ -64,7 +64,7 @@ class OptimizerTestConfig:
             'max_semesters': 10,  # Override: 7.19 requires longer chain
             'description': 'Biology',
         },
-        'major18': {
+        'major18pm': {
             'min_expected_courses': 20,
             'max_expected_courses': 28,
             'description': 'Mathematics',

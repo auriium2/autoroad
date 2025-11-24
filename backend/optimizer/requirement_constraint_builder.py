@@ -624,9 +624,11 @@ class RequirementConstraintBuilder:
                     self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
                     contribution_vars.append(contribution_var)
                 elif isinstance(child_node, RequirementGroup):
-                    # Check Fireroad's condition: connection_type='all' AND has children
-                    if child_node.connection_type == "all" and len(child_node.items) > 0:
-                        # ALL group with children: contributes 1 when satisfied
+                    # Check Fireroad's condition: connection_type='all' AND has children AND no threshold
+                    # From progress.py lines 809-816: ALL groups without thresholds contribute 1 when satisfied,
+                    # but ALL groups WITH thresholds contribute their course count (like any other group)
+                    if child_node.connection_type == "all" and len(child_node.items) > 0 and child_node.threshold is None:
+                        # ALL group with children but NO threshold: contributes 1 when satisfied
                         contribution_var = self.ctx.model.NewIntVar(0, 1, f"{group_name}_child{idx}_contribution")
                         self.ctx.model.Add(contribution_var == 1).OnlyEnforceIf(child_result.satisfied_var)
                         self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
