@@ -2,6 +2,7 @@
 my poor decision of courses will be forever memorialized in this pytest. FUCK 6.1010.
 """
 import json
+import tempfile
 
 import polars as pl
 import pytest
@@ -175,11 +176,9 @@ def test_feasibility_bug_major_6_3_with_markers():
         'selectedSubjects': solution_courses
     }
 
-    import os
-    output_path = os.path.join(os.path.dirname(__file__), '..', 'bug_reproduction_result.road')
-    with open(output_path, 'w') as f:
+    with tempfile.NamedTemporaryFile(mode='w', suffix='_bug_reproduction_result.road', delete=False) as f:
         json.dump(road_output, f, indent=2)
-    print(f"[TEST] Saved solution to {output_path}")
+        print(f"[TEST] Saved solution to {f.name}")
 
     # Now validate against Fireroad API
     # This is what the frontend does to check if requirements are satisfied
@@ -265,10 +264,9 @@ def test_feasibility_bug_major_6_3_with_markers():
         fireroad_result = response.json()
 
         # Save the full Fireroad response for debugging
-        debug_path = os.path.join(os.path.dirname(__file__), '..', f'fireroad_response_{req_key}.json')
-        with open(debug_path, 'w') as f:
+        with tempfile.NamedTemporaryFile(mode='w', suffix=f'_fireroad_response_{req_key}.json', delete=False) as f:
             json.dump(fireroad_result, f, indent=2)
-        print(f"[TEST] Saved Fireroad response for {req_key} to {debug_path}")
+            print(f"[TEST] Saved Fireroad response for {req_key} to {f.name}")
 
         # Check if this requirement is fulfilled
         req_fulfilled = check_requirement_fulfilled(fireroad_result, req_key)

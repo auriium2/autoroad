@@ -6,6 +6,7 @@ how threshold counting and connection types actually work.
 """
 
 import json
+import tempfile
 from typing import Any
 
 import requests
@@ -111,11 +112,11 @@ def print_requirement_status(req: dict, indent: int = 0) -> None:
 
 
 def save_full_response(major_key: str, courses: list[str], filename: str) -> None:
-    """Save full API response to a file for inspection."""
+    """Save full API response to a temp file for inspection."""
     result = query_fireroad_progress(major_key, courses)
-    with open(filename, 'w') as f:
+    with tempfile.NamedTemporaryFile(mode='w', suffix=f'_{filename}', delete=False) as f:
         json.dump(result, f, indent=2)
-    print(f"Full response saved to {filename}")
+        print(f"Full response saved to {f.name}")
 
 
 def test_major6_3new_aus_bug():
