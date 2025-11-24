@@ -262,7 +262,7 @@ class TestRequirementConstraintBuilder:
         assert result.is_valid
         assert result.satisfied_var is not None
         assert len(result.warnings) > 0
-        assert "can't be validated" in result.warnings[0]
+        assert "cannot be validated" in result.warnings[0]
 
     def test_group_all_connection(self):
         """Test a group with ALL connection (all children required)."""
