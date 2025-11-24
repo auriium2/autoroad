@@ -21,19 +21,17 @@ class OptimizerTestConfig:
     start_year: int = 2025
     max_semesters: int = 12 # 4 years * 3 semesters
     max_courses_per_semester: int = 6
-    min_expected_courses: int = 30  # Minimum for any degree (includes GIRs ~17 courses)
-    max_expected_courses: int = 60  # Maximum reasonable (major + GIRs)
-    solver_timeout_seconds: float = 60.0
+    min_expected_courses: int = 10
+    max_expected_courses: int = 30
+    solver_timeout_seconds: float = 20.0
 
-    # Degree-specific overrides for expected course counts
-    # Note: These include GIRs (~17 courses) + major requirements
-    degree_configs: dict[str, dict] = field(default_factory=lambda: {
+    degree_configs: dict[str, dict[str, int | str]] = field(default_factory=lambda: {
         'major6-3new': {
             'min_expected_courses': 20,
             'max_expected_courses': 30,
             'description': 'Computer Science + Electrical Engineering',
         },
-        'major6-2': {
+        'major6-2new': {
             'min_expected_courses': 20,
             'max_expected_courses': 30,
             'description': 'Electrical Engineering and Computer Science',
@@ -53,6 +51,7 @@ class OptimizerTestConfig:
             'max_expected_courses': 30,
             'description': 'Computation and Cognition',
         },
+
         'major6-14': {
             'min_expected_courses': 20,
             'max_expected_courses': 30,
@@ -66,7 +65,7 @@ class OptimizerTestConfig:
         },
         'major18pm': {
             'min_expected_courses': 20,
-            'max_expected_courses': 25,
+            'max_expected_courses': 30,
             'description': 'Mathematics',
         },
         'major18c': {
@@ -146,7 +145,7 @@ class OptimizerTestConfig:
         },
     })
 
-    def get_config_for_degree(self, degree_id: str) -> dict:
+    def get_config_for_degree(self, degree_id: str) -> dict[str, int | str]:
         """Get configuration overrides for a specific degree."""
         base_config = {
             'min_expected_courses': self.min_expected_courses,

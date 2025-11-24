@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TypedDict
-import re
 
 import polars as pl
 from ortools.sat.python import cp_model
@@ -681,10 +680,16 @@ class RequirementConstraintBuilder:
             # ANY: At least one child must be satisfied (in addition to threshold)
             # We add a one-way implication: if group is satisfied, at least one child must be satisfied
             # We do NOT use AddMaxEquality because that would override the threshold
-            if child_vars:
+
+            if child_vars and cutoff > 0: # we should ignore optional requirements
                 # If group_var is 1, then at least one child must be 1
                 self.ctx.model.Add(sum(child_vars) >= 1).OnlyEnforceIf(group_var)
 
+                #
+                # IMPORTANT: For threshold >= 0 (optional) groups, we should NOT add this constraint.
+                # When cutoff is 0, the group is satisfied even with 0 courses, so requiring
+                # "at least one child satisfied" would incorrectly force courses to be taken.
+                # The threshold constraint alone is sufficient for optional groups.
         return ConstraintResult(
             satisfied_var=group_var,
             warnings=warnings,

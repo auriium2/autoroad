@@ -56,8 +56,13 @@ jobs:
         run: |
           uv run pytest tests/test_prerequisites_constraint_builder.py -v
 
-  test-integration:
-    name: Integration Tests (E2E)
+      - name: Run regression tests
+        working-directory: ./backend
+        run: |
+          uv run pytest tests/test_optimizer_feasibility.py::TestRegressionBugs -v
+
+  test-feasibility:
+    name: Feasibility Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
@@ -79,20 +84,15 @@ jobs:
         run: |
           uv sync --extra dev
       
-      - name: Run full optimizer E2E tests
+      - name: Run optimizer feasibility tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_full_optimizer_e2e.py -v -s
+          uv run pytest tests/test_optimizer_feasibility.py::TestOptimizerFeasibility -v -s
 
-      - name: Run regression tests
-        working-directory: ./backend
-        run: |
-          uv run pytest tests/test_full_optimizer_e2e.py::TestRegressionBugs -v
-
-  test-sanity:
-    name: Sanity Checks (Critical Majors)
+  test-quality:
+    name: Quality Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     
     steps:
       - uses: actions/checkout@v4
@@ -112,20 +112,10 @@ jobs:
         run: |
           uv sync --extra dev
       
-      - name: Test most popular majors
+      - name: Run optimizer quality tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_6_3_new_girs_feasible -v
-          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_6_2_eecs -v
-          uv run pytest tests/test_full_optimizer_e2e.py::TestFullOptimizerE2E::test_course_18_girs_feasible -v
-      
-      - name: Upload test results if failed
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-failures
-          path: backend/pytest-report.xml
-          retention-days: 7
+          uv run pytest tests/test_optimizer_quality.py -v -s
 
   type-check:
     name: Type Checking
@@ -186,15 +176,15 @@ jobs:
   all-tests-passed:
     name: All Tests Passed
     runs-on: ubuntu-latest
-    needs: [test-unit, test-integration, test-sanity, type-check, lint]
+    needs: [test-unit, test-feasibility, test-quality, type-check, lint]
     if: always()
     
     steps:
       - name: Check all jobs succeeded
         run: |
           if [ "${{ needs.test-unit.result }}" != "success" ] || \
-             [ "${{ needs.test-integration.result }}" != "success" ] || \
-             [ "${{ needs.test-sanity.result }}" != "success" ] || \
+             [ "${{ needs.test-feasibility.result }}" != "success" ] || \
+             [ "${{ needs.test-quality.result }}" != "success" ] || \
              [ "${{ needs.type-check.result }}" != "success" ] || \
              [ "${{ needs.lint.result }}" != "success" ]; then
             echo "One or more test jobs failed"

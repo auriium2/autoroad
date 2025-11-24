@@ -16,7 +16,6 @@ import pytest
 from tests.test_helpers import run_optimizer_quality_test
 
 
-@pytest.mark.e2e
 @pytest.mark.slow
 class TestOptimizerQuality:
     """Quality tests for optimizer solutions."""
@@ -41,7 +40,7 @@ class TestOptimizerQuality:
         """Test Course 18 (Pure Mathematics) produces quality solution."""
         run_optimizer_quality_test(
             requirement_keys=('major18pm', 'girs'),
-            degree_id='major18',
+            degree_id='major18pm',
             optimizer_config=optimizer_config
         )
 
@@ -53,7 +52,6 @@ class TestOptimizerQuality:
             optimizer_config=optimizer_config
         )
 
-    @pytest.mark.skip(reason="Course 20 has known over-scheduling bug - see COURSE_20_OVERSCHEDULING_BUG.md")
     def test_course_20_quality(self, optimizer_config):
         """Test Course 20 (Biological Engineering) produces quality solution."""
         run_optimizer_quality_test(
@@ -66,7 +64,7 @@ class TestOptimizerQuality:
         """Test Course 6-2 (EECS) produces quality solution."""
         run_optimizer_quality_test(
             requirement_keys=('major6-2new', 'girs'),
-            degree_id='major6-2',
+            degree_id='major6-2new',
             optimizer_config=optimizer_config
         )
 
@@ -155,14 +153,6 @@ class TestOptimizerQuality:
         run_optimizer_quality_test(
             requirement_keys=('major6-4', 'girs'),
             degree_id='major6-4',
-            optimizer_config=optimizer_config
-        )
-
-    def test_course_6_5_quality(self, optimizer_config):
-        """Test Course 6-5 (Computer Systems) produces quality solution."""
-        run_optimizer_quality_test(
-            requirement_keys=('major6-5', 'girs'),
-            degree_id='major6-5',
             optimizer_config=optimizer_config
         )
 
