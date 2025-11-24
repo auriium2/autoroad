@@ -60,3 +60,6 @@ backend/uv.lock
 
 .zed
 .ropeproject
+*.md
+!README.md
+!CLAUDE.md
