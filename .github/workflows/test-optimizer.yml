@@ -36,30 +36,10 @@ jobs:
         run: |
           uv sync --extra dev
       
-      - name: Run prerequisite parser unit tests
+      - name: Run all unit tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_prerequisites_parser.py -v
-      
-      - name: Run property-based tests
-        working-directory: ./backend
-        run: |
-          uv run pytest tests/test_prerequisites_parser_property.py -v --hypothesis-show-statistics
-      
-      - name: Run requirement constraint builder unit tests
-        working-directory: ./backend
-        run: |
-          uv run pytest tests/test_requirement_constraint_builder.py -v
-      
-      - name: Run prerequisite constraint builder unit tests
-        working-directory: ./backend
-        run: |
-          uv run pytest tests/test_prerequisites_constraint_builder.py -v
-
-      - name: Run regression tests
-        working-directory: ./backend
-        run: |
-          uv run pytest tests/test_optimizer_feasibility.py::TestRegressionBugs -v
+          uv run pytest tests/unit/ -v
 
   test-feasibility:
     name: Feasibility Tests
@@ -87,7 +67,7 @@ jobs:
       - name: Run optimizer feasibility tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_optimizer_feasibility.py::TestOptimizerFeasibility -v -s
+          uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -v -s
 
   test-quality:
     name: Quality Tests
@@ -115,7 +95,7 @@ jobs:
       - name: Run optimizer quality tests
         working-directory: ./backend
         run: |
-          uv run pytest tests/test_optimizer_quality.py -v -s
+          uv run pytest tests/integration/optimizer/test_optimizer_quality.py -v -s
 
   type-check:
     name: Type Checking
@@ -190,4 +170,4 @@ jobs:
             echo "One or more test jobs failed"
             exit 1
           fi
-          echo "All tests passed! ✅"
+          echo "All tests passed!"
