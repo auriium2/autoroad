@@ -200,7 +200,7 @@ async def optimize(request: OptimizationRequest):
     async def event_stream():
         try:
             # Performance tracking
-            perf_timings = {}
+            perf_timings: dict[str, float] = {}
             perf_start_total = time.time()
 
             # Send initial progress
@@ -505,7 +505,7 @@ async def optimize(request: OptimizationRequest):
             solver_thread.join()
 
             # Calculate total time
-            perf_timings['solving'] = solve_time_seconds
+            perf_timings['solving'] = solve_time_seconds if solve_time_seconds is not None else 0.0
             perf_timings['total'] = time.time() - perf_start_total
 
             # Print performance summary

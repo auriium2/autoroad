@@ -204,7 +204,9 @@ class TestIDGeneration:
         }
         result = parse_requirement(req_data)
 
+        assert isinstance(result, RequirementGroup)
         assert result.req_id == "parent"
+        assert isinstance(result.items[0], RequirementGroup)
         assert result.items[0].req_id == "parent/child"
 
 
@@ -366,6 +368,7 @@ class TestRealWorldStructures:
         result = parse_requirement(req_data)
 
         assert isinstance(result, RequirementGroup)
+        assert result.threshold is not None
         assert result.threshold.cutoff == 2
         assert result.threshold_desc == "at least 2"
         assert len(result.items) == 4
@@ -383,5 +386,7 @@ class TestRealWorldStructures:
         }
         result = parse_requirement(req_data)
 
+        assert isinstance(result, RequirementGroup)
+        assert result.threshold is not None
         assert result.threshold.criterion == "units"
         assert result.threshold.cutoff == 27

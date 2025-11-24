@@ -7,10 +7,12 @@ We use the real major6-3new requirement structure and test edge cases to underst
 3. Are constraints bidirectional?
 """
 
+from typing import Any
+
 import requests
 
 
-def query_fireroad(courses: list[str]) -> dict:
+def query_fireroad(courses: list[str]) -> dict[str, Any]:
     """Query Fireroad API for major6-3new with given courses."""
     # Convert course IDs to the format Fireroad expects
     selected_subjects = []
@@ -57,7 +59,7 @@ def find_requirement(node, title):
     return None
 
 
-def print_requirement_status(req: dict, indent: int = 0):
+def print_requirement_status(req: dict[str, Any], indent: int = 0) -> None:
     """Print requirement status in a readable format."""
     prefix = "  " * indent
     title = req.get('title', req.get('req', 'unnamed'))

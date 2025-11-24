@@ -110,6 +110,7 @@ def test_aus_bug_with_exact_solution():
 
     # Add requirement constraints
     req_data = requirements_data['major6-3new']
+    assert isinstance(req_data, dict)
     req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': 'major6-3new'})
 
     print("\n=== VALIDATION DEBUG ===")
@@ -223,6 +224,10 @@ def test_aus_bug_with_exact_solution():
 
     print("=== END VALIDATION DEBUG ===\n")
 
+    # Initialize vars that may be set inside conditional block
+    aux_vars: dict[str, cp_model.IntVar] = {}
+    aus_vars: dict[str, cp_model.IntVar] = {}
+
     if validation.pruned_tree is not None:
         # Before constraint building, check AUS one more time
         aus_node_before = find_requirement(validation.pruned_tree, 'AUS')
@@ -261,10 +266,11 @@ def test_aus_bug_with_exact_solution():
                                 gc_pruned = hasattr(gc, 'was_pruned') and gc.was_pruned
                                 print(f"        Course {j}: {gc.course_id}, was_pruned={gc_pruned}")
 
-        aux_vars, debug_names, mapping = add_requirement_constraints(
+        aux_vars_result, debug_names, mapping = add_requirement_constraints(
             model, take_vars, validation.pruned_tree,
             courses_df, planning_year_start, enforce=True
         )
+        aux_vars.update(aux_vars_result)
         print(f"\nCreated {len(aux_vars)} auxiliary variables")
 
         # Print ALL aux var keys to see what's there
@@ -277,7 +283,6 @@ def test_aus_bug_with_exact_solution():
 
         # Find AUS aux var
         print("\nAux vars containing 'aus' (case-insensitive):")
-        aus_vars = {}
         for path, var in aux_vars.items():
             if 'aus' in str(path).lower():
                 print(f"  {path}")
@@ -305,9 +310,9 @@ def test_aus_bug_with_exact_solution():
 
     if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
         # Check which courses are taken
-        c01_taken = any(solver.Value(take_vars.get((c01_idx, s), 0)) == 1 for s in range(-1, max_semesters + 1) if (c01_idx, s) in take_vars)
-        c011_taken = any(solver.Value(take_vars.get((c011_idx, s), 0)) == 1 for s in range(-1, max_semesters + 1) if (c011_idx, s) in take_vars)
-        c404_taken = any(solver.Value(take_vars.get((c404_idx, s), 0)) == 1 for s in range(-1, max_semesters + 1) if (c404_idx, s) in take_vars)
+        c01_taken = any(solver.Value(take_vars[(c01_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c01_idx, s) in take_vars)
+        c011_taken = any(solver.Value(take_vars[(c011_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c011_idx, s) in take_vars)
+        c404_taken = any(solver.Value(take_vars[(c404_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c404_idx, s) in take_vars)
 
         print(f"\n6.C01 taken: {c01_taken}")
         print(f"6.C011 taken: {c011_taken}")

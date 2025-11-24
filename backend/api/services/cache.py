@@ -5,6 +5,8 @@ import polars as pl
 import requests
 from cachetools import TTLCache, cached
 
+from courses.prerequisites.types import PrereqNode
+
 _courses_cache: TTLCache[str, list[dict[str, object]]] = TTLCache(maxsize=1, ttl=3600)
 _courses_lock = threading.RLock()
 
@@ -65,7 +67,7 @@ def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
     return {k: get_requirement(k) for k in requirement_keys}
 
 
-def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
+def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
     """
     Parse prerequisite trees for all courses.
 
@@ -77,7 +79,7 @@ def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
     """
     from courses.prerequisites.parser import parse_fireroad
 
-    prereq_trees = {}
+    prereq_trees: dict[int, PrereqNode] = {}
     for course_idx in range(len(courses_df)):
         prereq_str = courses_df[course_idx, 'prerequisites']
 

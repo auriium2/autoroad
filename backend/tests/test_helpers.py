@@ -137,7 +137,7 @@ def run_optimizer_quality_test(
     max_semesters: int | None = None,
     start_year: int | None = None,
     solver_timeout: float | None = None
-) -> tuple[cp_model.CpSolver, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame, dict]:
+) -> tuple[cp_model.CpSolver, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame, dict[int, PrereqNode]]:
     """
     Run a comprehensive optimizer quality test.
 
@@ -168,9 +168,9 @@ def run_optimizer_quality_test(
     from optimizer.requirement_constraint_builder import add_requirement_constraints
 
     # Use config values or overrides
-    max_semesters = max_semesters or optimizer_config.max_semesters
-    start_year = start_year or optimizer_config.start_year
-    solver_timeout = solver_timeout or optimizer_config.solver_timeout_seconds
+    max_semesters_val: int = max_semesters if max_semesters is not None else optimizer_config.max_semesters
+    start_year_val: int = start_year if start_year is not None else optimizer_config.start_year
+    solver_timeout_val: float = solver_timeout if solver_timeout is not None else optimizer_config.solver_timeout_seconds
 
     # Fetch data
     courses_data = get_courses_data()
@@ -180,9 +180,9 @@ def run_optimizer_quality_test(
 
     # Create model
     model = cp_model.CpModel()
-    take_vars = create_take_vars(model, courses_df, start_year, max_semesters=max_semesters, markers=None)
-    add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-    add_prerequisite_constraints(model, take_vars, courses_df, start_year, prereq_trees, set())
+    take_vars = create_take_vars(model, courses_df, start_year_val, max_semesters=max_semesters_val, markers=None)
+    add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters_val)
+    add_prerequisite_constraints(model, take_vars, courses_df, start_year_val, prereq_trees, set())
 
     # Add requirements
     for req_key in requirement_keys:
@@ -192,14 +192,14 @@ def run_optimizer_quality_test(
                 req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
                 validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
                 if validation.pruned_tree is not None:
-                    add_requirement_constraints(model, take_vars, validation.pruned_tree, courses_df, start_year, enforce=True)
+                    add_requirement_constraints(model, take_vars, validation.pruned_tree, courses_df, start_year_val, enforce=True)
 
     # Add objectives
-    setup_optimizer_with_objectives(model, take_vars, courses_df, start_year)
+    setup_optimizer_with_objectives(model, take_vars, courses_df, start_year_val)
 
     # Solve
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = solver_timeout
+    solver.parameters.max_time_in_seconds = solver_timeout_val
     status = solver.Solve(model)
 
     assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -216,7 +216,7 @@ def run_optimizer_quality_test(
         min_courses=int(degree_config['min_expected_courses']),
         max_courses=int(degree_config['max_expected_courses']),
         max_courses_per_semester=optimizer_config.max_courses_per_semester,
-        max_semesters=max_semesters,
+        max_semesters=max_semesters_val,
         min_objective_value=int(degree_config['min_objective_value']),
         max_objective_value=int(degree_config['max_objective_value'])
     )

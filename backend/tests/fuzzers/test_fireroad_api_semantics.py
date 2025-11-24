@@ -55,7 +55,7 @@ def query_fireroad_progress(major_key: str, courses: list[str]) -> dict[str, Any
         raise Exception(f"API request failed: {response.status_code}\n{response.text}")
 
 
-def find_requirement_by_title(node: Any, title: str) -> dict | None:
+def find_requirement_by_title(node: Any, title: str) -> dict[str, Any] | None:
     """Recursively find a requirement by title in the response tree."""
     if isinstance(node, dict):
         if node.get('title') == title:
@@ -68,7 +68,7 @@ def find_requirement_by_title(node: Any, title: str) -> dict | None:
     return None
 
 
-def find_requirement_by_path(node: Any, path_segments: list[str]) -> dict | None:
+def find_requirement_by_path(node: Any, path_segments: list[str]) -> dict[str, Any] | None:
     """Find a requirement by following a path of titles."""
     current = node
     for segment in path_segments:
@@ -78,7 +78,7 @@ def find_requirement_by_path(node: Any, path_segments: list[str]) -> dict | None
     return current
 
 
-def print_requirement_status(req: dict, indent: int = 0) -> None:
+def print_requirement_status(req: dict[str, Any], indent: int = 0) -> None:
     """Pretty print requirement status."""
     prefix = "  " * indent
     title = req.get('title', 'untitled')
