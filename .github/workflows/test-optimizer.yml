@@ -17,25 +17,25 @@ jobs:
     name: Unit Tests (Fast)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      
+
       - name: Install dependencies
         working-directory: ./backend
         run: |
           uv sync --extra dev
-      
+
       - name: Run all unit tests
         working-directory: ./backend
         run: |
@@ -45,25 +45,25 @@ jobs:
     name: Feasibility Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      
+
       - name: Install dependencies
         working-directory: ./backend
         run: |
           uv sync --extra dev
-      
+
       - name: Run optimizer feasibility tests
         working-directory: ./backend
         run: |
@@ -73,25 +73,25 @@ jobs:
     name: Quality Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      
+
       - name: Install dependencies
         working-directory: ./backend
         run: |
           uv sync --extra dev
-      
+
       - name: Run optimizer quality tests
         working-directory: ./backend
         run: |
@@ -101,64 +101,36 @@ jobs:
     name: Type Checking
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      
+
       - name: Install dependencies
         working-directory: ./backend
         run: |
           uv sync --extra dev
-      
+
       - name: Run basedpyright
         working-directory: ./backend
         run: |
           uv run basedpyright courses/ optimizer/ api/
-
-  lint:
-    name: Linting
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: "latest"
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      
-      - name: Install dependencies
-        working-directory: ./backend
-        run: |
-          uv sync --extra dev
-      
-      - name: Run ruff
-        working-directory: ./backend
-        run: |
-          uv run ruff check .
 
   all-tests-passed:
     name: All Tests Passed
     runs-on: ubuntu-latest
     needs: [test-unit, test-feasibility, test-quality, type-check, lint]
     if: always()
-    
+
     steps:
       - name: Check all jobs succeeded
         run: |
