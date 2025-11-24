@@ -448,8 +448,9 @@ class TestRegressionBugs:
         assert isinstance(req_tree, RequirementGroup)
 
         # Load real course data
-        from api.services.cache import get_courses_data
         import polars as pl
+
+        from api.services.cache import get_courses_data
 
         courses_data = get_courses_data()
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
