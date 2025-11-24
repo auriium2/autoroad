@@ -1,0 +1,394 @@
+{
+  "title-no-degree": "Civil and Environmental Engineering",
+  "list-id": "major1.reql",
+  "sat_courses": [
+    "1.020",
+    "1.041",
+    "18.03"
+  ],
+  "title": "Engineering as Recommended by the Department of Civil and Environmental Engineering",
+  "max": 20,
+  "percent_fulfilled": 5,
+  "medium-title": "1-ENG Major",
+  "fulfilled": false,
+  "reqs": [
+    {
+      "sat_courses": [
+        "18.03"
+      ],
+      "threshold-desc": "select all",
+      "max": 6,
+      "percent_fulfilled": 17,
+      "title": "General Department Requirements (GDRs)",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "1.000",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "1.010A",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select either",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.073",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.074",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [
+            "18.03"
+          ],
+          "max": 1,
+          "percent_fulfilled": 100,
+          "req": "18.03",
+          "fulfilled": true,
+          "progress": 1
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "1.013",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "1.101",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 1
+    },
+    {
+      "sat_courses": [
+        "1.020",
+        "1.041"
+      ],
+      "threshold-desc": "select any",
+      "max": 8,
+      "percent_fulfilled": 0,
+      "title": "Core Subjects",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "threshold-desc": "select all",
+          "max": 8,
+          "percent_fulfilled": 0,
+          "title": "Environment",
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.018",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.060",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.061A",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.070A",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.080",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.091",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.106",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.107",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select all",
+          "max": 6,
+          "percent_fulfilled": 0,
+          "title": "Mechanics & Materials",
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.035",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.036",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.050",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.056",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.060",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.104",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [
+            "1.020",
+            "1.041"
+          ],
+          "threshold-desc": "select all",
+          "max": 6,
+          "percent_fulfilled": 33,
+          "title": "Energy, Transportation, and Societal Systems",
+          "reqs": [
+            {
+              "sat_courses": [
+                "1.020"
+              ],
+              "max": 1,
+              "percent_fulfilled": 100,
+              "req": "1.020",
+              "fulfilled": true,
+              "progress": 1
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.022",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [
+                "1.041"
+              ],
+              "max": 1,
+              "percent_fulfilled": 100,
+              "req": "1.041",
+              "fulfilled": true,
+              "progress": 1
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "15.053",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.102",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "threshold-desc": "select either",
+              "max": 1,
+              "percent_fulfilled": 0,
+              "reqs": [
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "1.050",
+                  "fulfilled": false,
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "1.060",
+                  "fulfilled": false,
+                  "progress": 0
+                }
+              ],
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 2
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0,
+      "desc": "Select one area of core coursework (54-66 units)."
+    },
+    {
+      "sat_courses": [],
+      "plain-string": true,
+      "threshold-desc": "select any 48 units",
+      "max": 48,
+      "percent_fulfilled": 0,
+      "req": "48-60 units",
+      "fulfilled": false,
+      "progress": 0,
+      "threshold": {
+        "cutoff": 48,
+        "criterion": "units",
+        "type": "GTE"
+      },
+      "title": "Elective Subjects with Engineering Content",
+      "desc": "Students are required to take at least four Restricted Electives selected from subjects offered within or outside CEE to form a coherent program of study under supervision by CEE faculty."
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select all",
+      "max": 2,
+      "percent_fulfilled": 0,
+      "title": "Communication-Intensive Subjects",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "1.013",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select either",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.107",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "1.102",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0
+    }
+  ],
+  "short-title": "1",
+  "progress": 1
+}

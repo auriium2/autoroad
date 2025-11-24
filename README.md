@@ -18,3 +18,7 @@ please fill this out later
 
 frontend -> next.js proxy(auriium.xyz) -> fireroad api to fetch bulk data
          -> autoroad api(google cloud) -> google cloud server ->
+         
+# constraint related bug hit list
+- 2.005ening: 2.005 was getting placed after 2.013 for some ungodly reason. It turns out the reason this was happening was 2.013 had a dependency on (2.005/2.051) and 2.051 had a single prereq 'permission of instructor', which our tokenizer and parser block turned into a single prereq group with nothing in it. (it was a prereq group with something in it, and then it gets deleted by the validator in the parser). This gives you a prereq group that is completely empty, which is then marked instantly as satisfied. This was done because previously weird strings like 'permission o' or 'ballet training' and other stupid shit instructors would put would sneak past my shitty handmade tokenizer, but now that we have a robust tokenizer and parser that doesnt happen, so what ended up happening was 2.051 was instantly satisfied and there was no need to the optimizer to handle it correctly.
+- the course 7-ening: course 7

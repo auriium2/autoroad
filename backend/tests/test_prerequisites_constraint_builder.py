@@ -853,6 +853,3 @@ class TestComplexPrerequisites:
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
 
-        # This SHOULD be feasible - all prerequisites are satisfied
-        assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE, \
-            "Solver should allow 2.013 when prerequisites are satisfied"

@@ -1,0 +1,5887 @@
+{
+  "title-no-degree": "Computer Science",
+  "list-id": "major6-3new.reql",
+  "sat_courses": [
+    "6.C01",
+    "18.404"
+  ],
+  "title": "Bachelor of Science in Computer Science and Engineering (New)",
+  "max": 20,
+  "percent_fulfilled": 15,
+  "medium-title": "6-3 Major (New)",
+  "fulfilled": false,
+  "reqs": [
+    {
+      "sat_courses": [],
+      "threshold-desc": "select all",
+      "max": 2,
+      "percent_fulfilled": 0,
+      "title": "Programming Skills",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "threshold-desc": "select either",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.100A",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.100L",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select either",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1903",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1904",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0
+    },
+    {
+      "sat_courses": [],
+      "title": "Discrete Math",
+      "max": 1,
+      "percent_fulfilled": 0,
+      "req": "6.1200",
+      "fulfilled": false,
+      "progress": 0
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select any",
+      "max": 1,
+      "percent_fulfilled": 0,
+      "title": "6-3 Math",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "18.05",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "18.06",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "18.C06",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3700",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3800",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C06",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select all",
+      "max": 3,
+      "percent_fulfilled": 0,
+      "title": "Foundation",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1010",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1210",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1910",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select all",
+      "max": 3,
+      "percent_fulfilled": 0,
+      "title": "Header",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1020",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select either",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1220",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "threshold-desc": "select any",
+          "max": 1,
+          "percent_fulfilled": 0,
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1800",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1810",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5830",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5831",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5660",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5840",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "progress": 0
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select any 2",
+      "max": 2,
+      "percent_fulfilled": 0,
+      "title": "Communication-Intensive",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1800",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1850",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2040",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2050",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2060",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2061",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2220",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2221",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2370",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2600",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4200",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4210",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4590",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4860",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4880",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8301",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8611",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.9030",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.UAR",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.UAT",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "threshold": {
+        "cutoff": 2,
+        "criterion": "subjects",
+        "type": "GTE"
+      },
+      "progress": 0
+    },
+    {
+      "sat_courses": [
+        "6.C01",
+        "18.404"
+      ],
+      "threshold-desc": "select all",
+      "max": 5,
+      "percent_fulfilled": 40,
+      "title": "Electives",
+      "reqs": [
+        {
+          "sat_courses": [
+            "18.404"
+          ],
+          "threshold-desc": "select any 4 subjects",
+          "max": 4,
+          "percent_fulfilled": 25,
+          "title": "Subjects from Two Tracks",
+          "reqs": [
+            {
+              "sat_courses": [],
+              "distinct-threshold": {
+                "cutoff": 1,
+                "criterion": "subjects",
+                "type": "GTE"
+              },
+              "threshold-desc": "select any 2 from at least 1 category",
+              "max": 2,
+              "percent_fulfilled": 0,
+              "title": "2 Additional Subjects from a CS Track",
+              "reqs": [
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Architecture",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1920",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2050",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5890",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5900",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5930",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5931",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5940",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5951",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Computers and Society",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1850",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3950",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4590",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C35",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C85",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S041",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Human Computer Interaction",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1040",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4500",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4510",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4550",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8510",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C35",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C85",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Programming Principles and Tools",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1040",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1100",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1120",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5080",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5081",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5110",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5120",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S057",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1600",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1810",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1820",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5610",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5660",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5810",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5820",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5830",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5831",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5840",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5850",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [
+                    "18.404"
+                  ],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 50,
+                  "title": "Theory",
+                  "reqs": [
+                    {
+                      "sat_courses": [
+                        "18.404"
+                      ],
+                      "max": 1,
+                      "percent_fulfilled": 100,
+                      "req": "18.404",
+                      "fulfilled": true,
+                      "progress": 1
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1220",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1400",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1420",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5210",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5220",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5230",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5240",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5250",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5310",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5320",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5340",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5350",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5400",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5410",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5420",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5430",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5490",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5620",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5630",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 1
+                }
+              ],
+              "fulfilled": false,
+              "threshold": {
+                "cutoff": 2,
+                "criterion": "subjects",
+                "type": "GTE"
+              },
+              "progress": 0
+            },
+            {
+              "sat_courses": [
+                "18.404"
+              ],
+              "distinct-threshold": {
+                "cutoff": 1,
+                "criterion": "subjects",
+                "type": "GTE"
+              },
+              "threshold-desc": "select any 2 from at least 1 category",
+              "max": 2,
+              "percent_fulfilled": 50,
+              "title": "2 Additional Subjects from a Different AI+D, CS, or EE Track",
+              "reqs": [
+                {
+                  "sat_courses": [
+                    "18.404"
+                  ],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 50,
+                  "title": "Application_CIM or AI+D_AUS",
+                  "reqs": [
+                    {
+                      "sat_courses": [
+                        "18.404"
+                      ],
+                      "max": 1,
+                      "percent_fulfilled": 100,
+                      "req": "18.404",
+                      "fulfilled": true,
+                      "progress": 1
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3020",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3730",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4200",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4210",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4300",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5151",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5831",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5931",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.7411",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8371",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8611",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8701",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8711",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8801",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S058",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S899",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 1
+                },
+                {
+                  "sat_courses": [
+                    "6.C01",
+                    "18.404"
+                  ],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 3,
+                  "percent_fulfilled": 67,
+                  "title": "Centers and (Application_CIM or AI+D_AUS)",
+                  "reqs": [
+                    {
+                      "sat_courses": [
+                        "6.C01"
+                      ],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1220",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1400",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3000",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3100",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3260",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3720",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3900",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3950",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4110",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4120",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4400",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4590",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.7201",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [
+                            "6.C01"
+                          ],
+                          "threshold-desc": "select all",
+                          "max": 2,
+                          "percent_fulfilled": 50,
+                          "reqs": [
+                            {
+                              "sat_courses": [
+                                "6.C01"
+                              ],
+                              "max": 1,
+                              "percent_fulfilled": 100,
+                              "req": "6.C01",
+                              "fulfilled": true,
+                              "progress": 1
+                            },
+                            {
+                              "sat_courses": [],
+                              "max": 1,
+                              "percent_fulfilled": 0,
+                              "req": "6.C011",
+                              "fulfilled": false,
+                              "progress": 0
+                            }
+                          ],
+                          "fulfilled": false,
+                          "progress": 1
+                        },
+                        {
+                          "sat_courses": [],
+                          "threshold-desc": "select all",
+                          "max": 2,
+                          "percent_fulfilled": 0,
+                          "reqs": [
+                            {
+                              "sat_courses": [],
+                              "max": 1,
+                              "percent_fulfilled": 0,
+                              "req": "6.C51",
+                              "fulfilled": false,
+                              "progress": 0
+                            },
+                            {
+                              "sat_courses": [],
+                              "max": 1,
+                              "percent_fulfilled": 0,
+                              "req": "6.C511",
+                              "fulfilled": false,
+                              "progress": 0
+                            }
+                          ],
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C35",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C571",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.S041",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "9.660",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [
+                        "18.404"
+                      ],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 100,
+                      "reqs": [
+                        {
+                          "sat_courses": [
+                            "18.404"
+                          ],
+                          "max": 1,
+                          "percent_fulfilled": 100,
+                          "req": "18.404",
+                          "fulfilled": true,
+                          "progress": 1
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3020",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3730",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4200",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4210",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4300",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5151",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5831",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5931",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.7411",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8371",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8611",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8701",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8711",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8801",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.S058",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.S899",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": true,
+                      "progress": 1
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 2
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Architecture",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1920",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2050",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5890",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5900",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5930",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5931",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5940",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5951",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Computers and Society",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1850",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3950",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4590",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C35",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C85",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S041",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Human Computer Interaction",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1040",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4500",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4510",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4550",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8510",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.8530",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C35",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C85",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Programming Principles and Tools",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1040",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1100",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1120",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5080",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5081",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5110",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5120",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S057",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1600",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1810",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1820",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5610",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5660",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5810",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5820",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5830",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5831",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5840",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5850",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [
+                    "18.404"
+                  ],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 50,
+                  "title": "Theory",
+                  "reqs": [
+                    {
+                      "sat_courses": [
+                        "18.404"
+                      ],
+                      "max": 1,
+                      "percent_fulfilled": 100,
+                      "req": "18.404",
+                      "fulfilled": true,
+                      "progress": 1
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1220",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1400",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1420",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5210",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5220",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5230",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5240",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5250",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5310",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5320",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5340",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5350",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5400",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5410",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5420",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5430",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5490",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5620",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.5630",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 1
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Biomedical Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4800",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4810",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4820",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4830",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4860",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Communication and Networks",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.7411",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1800",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3000",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.3010",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Devices, Circuits, and Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2040",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2080",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2090",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2040",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2050",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2060",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2080",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2090",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2220",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2221",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2300",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2320",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2500",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Electromagnetics and Photonic Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2210",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2300",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2320",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2370",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.6320",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.6331",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Embedded Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1820",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2050",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4510",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Energy Systems",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2200",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2210",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2220",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2221",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.7120",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Hardware Design",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1920",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2050",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2060",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.6010",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [
+                    "18.404"
+                  ],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 50,
+                  "title": "Hardware and Software",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.1800",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [
+                        "18.404"
+                      ],
+                      "threshold-desc": "select any",
+                      "max": 1,
+                      "percent_fulfilled": 100,
+                      "reqs": [
+                        {
+                          "sat_courses": [
+                            "18.404"
+                          ],
+                          "max": 1,
+                          "percent_fulfilled": 100,
+                          "req": "18.404",
+                          "fulfilled": true,
+                          "progress": 1
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1040",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1060",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1100",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1120",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1220",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1400",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1420",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1600",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1810",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1820",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.1850",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4500",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4510",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4530",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4550",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.4590",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5060",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5080",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5081",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5110",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5120",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5210",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5220",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5230",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5230",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5250",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5310",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5320",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5340",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5350",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5400",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5410",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5420",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "5.5430",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5490",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5610",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5620",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5630",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5660",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5810",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5820",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5830",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5831",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5840",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.5850",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8510",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.8530",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C35",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C85",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.S041",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.S057",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": true,
+                      "progress": 1
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 1
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2 subjects",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Nanoelectronics",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2500",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select either",
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2540",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.2600",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Quantum Systems Engineering",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2400",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.2410",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [
+                    "6.C01"
+                  ],
+                  "threshold-desc": "select any 2",
+                  "max": 2,
+                  "percent_fulfilled": 0,
+                  "title": "Systems Science",
+                  "reqs": [
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3000",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3010",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3260",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3720",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.3900",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4110",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4200",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.4210",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.7120",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.7201",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.7960",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [
+                        "6.C01"
+                      ],
+                      "threshold-desc": "select all",
+                      "max": 2,
+                      "percent_fulfilled": 50,
+                      "reqs": [
+                        {
+                          "sat_courses": [
+                            "6.C01"
+                          ],
+                          "max": 1,
+                          "percent_fulfilled": 100,
+                          "req": "6.C01",
+                          "fulfilled": true,
+                          "progress": 1
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C011",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 1
+                    },
+                    {
+                      "sat_courses": [],
+                      "threshold-desc": "select all",
+                      "max": 2,
+                      "percent_fulfilled": 0,
+                      "reqs": [
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C51",
+                          "fulfilled": false,
+                          "progress": 0
+                        },
+                        {
+                          "sat_courses": [],
+                          "max": 1,
+                          "percent_fulfilled": 0,
+                          "req": "6.C511",
+                          "fulfilled": false,
+                          "progress": 0
+                        }
+                      ],
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C27",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.C571",
+                      "fulfilled": false,
+                      "progress": 0
+                    },
+                    {
+                      "sat_courses": [],
+                      "max": 1,
+                      "percent_fulfilled": 0,
+                      "req": "6.S058",
+                      "fulfilled": false,
+                      "progress": 0
+                    }
+                  ],
+                  "fulfilled": false,
+                  "threshold": {
+                    "cutoff": 2,
+                    "criterion": "subjects",
+                    "type": "GTE"
+                  },
+                  "progress": 0
+                }
+              ],
+              "fulfilled": false,
+              "threshold": {
+                "cutoff": 2,
+                "criterion": "subjects",
+                "type": "GTE"
+              },
+              "progress": 1
+            }
+          ],
+          "fulfilled": false,
+          "threshold": {
+            "cutoff": 4,
+            "criterion": "subjects",
+            "type": "GTE"
+          },
+          "progress": 1
+        },
+        {
+          "sat_courses": [
+            "6.C01",
+            "18.404"
+          ],
+          "threshold-desc": "select any",
+          "max": 1,
+          "percent_fulfilled": 100,
+          "title": "One Additional EECS",
+          "reqs": [
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.03",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.032",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.05",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.06",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [
+                "18.404"
+              ],
+              "max": 1,
+              "percent_fulfilled": 100,
+              "req": "18.404",
+              "fulfilled": true,
+              "progress": 1
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.600",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "18.C06",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "threshold-desc": "select all",
+              "max": 2,
+              "percent_fulfilled": 0,
+              "reqs": [
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "6.100A",
+                  "fulfilled": false,
+                  "progress": 0
+                },
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "6.100B",
+                  "fulfilled": false,
+                  "progress": 0
+                }
+              ],
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1010",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1020",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1040",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1060",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1100",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1120",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1200",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1220",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1800",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1810",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1820",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1850",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1910",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.1920",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2000",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2040",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2050",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2060",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2061",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2080",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2090",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2092",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2200",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2220",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2221",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2300",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2370",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2410",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2500",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2530",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2540",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.2600",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3000",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3010",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3020",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3100",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3102",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3260",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3700",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3720",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3730",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3800",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3900",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.3950",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4100",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4110",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4120",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4200",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4300",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4420",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4510",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4530",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4550",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4570",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4590",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4580",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4810",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4820",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4830",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4860",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4880",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.4900",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5060",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5080",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5081",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5110",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5120",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5151",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5220",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5230",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5240",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5250",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5310",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5320",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5340",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5350",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5400",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5410",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5420",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5430",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5490",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5610",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5620",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5630",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5660",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5810",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5820",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5830",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5831",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5840",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5850",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5890",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5900",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5930",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5931",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5940",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.5951",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.6010",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.6210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.6320",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.6331",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7100",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7120",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7201",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7220",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7230",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7250",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7260",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7300",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7310",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7320",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7330",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7340",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7411",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7370",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7480",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7700",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7710",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7720",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7800",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7810",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7830",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7900",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7910",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7920",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7930",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7940",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7940",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.7960",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8200",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8210",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8300",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8370",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8371",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8420",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8510",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8530",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8611",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8620",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8701",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8710",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8711",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8721",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8801",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.8850",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.9000",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.9010",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.9030",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.9080",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.9160",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [
+                "6.C01"
+              ],
+              "threshold-desc": "select all",
+              "max": 2,
+              "percent_fulfilled": 50,
+              "reqs": [
+                {
+                  "sat_courses": [
+                    "6.C01"
+                  ],
+                  "max": 1,
+                  "percent_fulfilled": 100,
+                  "req": "6.C01",
+                  "fulfilled": true,
+                  "progress": 1
+                },
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "6.C011",
+                  "fulfilled": false,
+                  "progress": 0
+                }
+              ],
+              "fulfilled": false,
+              "progress": 1
+            },
+            {
+              "sat_courses": [
+                "6.C01"
+              ],
+              "threshold-desc": "select all",
+              "max": 2,
+              "percent_fulfilled": 50,
+              "reqs": [
+                {
+                  "sat_courses": [
+                    "6.C01"
+                  ],
+                  "max": 1,
+                  "percent_fulfilled": 100,
+                  "req": "6.C01",
+                  "fulfilled": true,
+                  "progress": 1
+                },
+                {
+                  "sat_courses": [],
+                  "max": 1,
+                  "percent_fulfilled": 0,
+                  "req": "6.C511",
+                  "fulfilled": false,
+                  "progress": 0
+                }
+              ],
+              "fulfilled": false,
+              "progress": 1
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C06",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C25",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C27",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C35",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C40",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C571",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C85",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S041",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S057",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S058",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S899",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S963",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.S966",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.UAR",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.UAT",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "9.660",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "CC.1803",
+              "fulfilled": false,
+              "progress": 0
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "ES.1803",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": true,
+          "threshold": {
+            "cutoff": 1,
+            "criterion": "subjects",
+            "type": "GTE"
+          },
+          "progress": 1
+        }
+      ],
+      "fulfilled": false,
+      "progress": 2
+    },
+    {
+      "sat_courses": [
+        "6.C01",
+        "18.404"
+      ],
+      "threshold-desc": "select any 2",
+      "max": 2,
+      "percent_fulfilled": 50,
+      "title": "AUS",
+      "reqs": [
+        {
+          "sat_courses": [
+            "18.404"
+          ],
+          "max": 1,
+          "percent_fulfilled": 100,
+          "req": "18.404",
+          "fulfilled": true,
+          "progress": 1
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1040",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1060",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1100",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1120",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1420",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1600",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1810",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1820",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1920",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2040",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2050",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2060",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2061",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2080",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2090",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2200",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2220",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2221",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2320",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2400",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2530",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3100",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3260",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3720",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3730",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4210",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4300",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4400",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4420",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4510",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4830",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4860",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5081",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5151",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5831",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5931",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5951",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.6331",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.7120",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.7201",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8371",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8611",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8701",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8711",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8721",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8801",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.9000",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [
+            "6.C01"
+          ],
+          "threshold-desc": "select all",
+          "max": 2,
+          "percent_fulfilled": 50,
+          "reqs": [
+            {
+              "sat_courses": [
+                "6.C01"
+              ],
+              "max": 1,
+              "percent_fulfilled": 100,
+              "req": "6.C01",
+              "fulfilled": true,
+              "progress": 1
+            },
+            {
+              "sat_courses": [],
+              "max": 1,
+              "percent_fulfilled": 0,
+              "req": "6.C011",
+              "fulfilled": false,
+              "progress": 0
+            }
+          ],
+          "fulfilled": false,
+          "progress": 1
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C25",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C27",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C571",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.S058",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "threshold": {
+        "cutoff": 2,
+        "criterion": "subjects",
+        "type": "GTE"
+      },
+      "progress": 1
+    },
+    {
+      "sat_courses": [],
+      "threshold-desc": "select any",
+      "max": 1,
+      "percent_fulfilled": 0,
+      "title": "Independent Inquiry",
+      "reqs": [
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1040",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1060",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1100",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1120",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1420",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1820",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.1850",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2040",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2050",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2061",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2221",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2370",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.2410",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.3730",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4120",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4200",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4210",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4420",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4510",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4530",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4590",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.4880",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.5151",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8301",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8611",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.8701",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.9000",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.9030",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C01.6.S052",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C25",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.C35",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.S041",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.S079",
+          "fulfilled": false,
+          "progress": 0
+        },
+        {
+          "sat_courses": [],
+          "max": 1,
+          "percent_fulfilled": 0,
+          "req": "6.UAR",
+          "fulfilled": false,
+          "progress": 0
+        }
+      ],
+      "fulfilled": false,
+      "threshold": {
+        "cutoff": 1,
+        "criterion": "subjects",
+        "type": "GTE"
+      },
+      "progress": 0
+    }
+  ],
+  "short-title": "6-3",
+  "progress": 3
+}

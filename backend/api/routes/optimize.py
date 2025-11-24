@@ -4,7 +4,6 @@ import os
 import queue
 import threading
 import time
-from collections.abc import Sequence
 from ctypes import c_double, c_int
 from multiprocessing import Value
 from threading import RLock
@@ -14,12 +13,17 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker, OptimizationRequest
+from api.models.requests import OptimizationRequest
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.prerequisites.types import PrereqNode
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
 from optimizer.constraints import ConstraintContext
+from optimizer.constraints.basic import (
+    add_basic_constraints,
+    add_past_semester_constraints,
+    create_take_vars,
+)
 from optimizer.constraints.registry import (
     get_all_constraints,
     instantiate_constraint,
@@ -33,11 +37,7 @@ from optimizer.objectives.registry import (
 )
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
-from utils.utils import (
-    find_current_school_year,
-    get_current_semester_index,
-    is_valid_class_semester,
-)
+from utils.utils import find_current_school_year
 
 router = APIRouter()
 
@@ -172,130 +172,6 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         # Queue.put is thread-safe by default
         self.solution_queue.put(solution)
         print(f"[SSE] Callback: Solution {solution_num} queued with objective={current_objective}, {len(nodes)} courses")
-
-
-def create_take_vars(model: cp_model.CpModel, courses_df: pl.DataFrame, planning_year_start: int, max_semesters: int, markers: Sequence[Marker] | None = None) -> dict[tuple[int, int], cp_model.IntVar]:
-    """Create decision variables for taking courses."""
-    take_vars = {}
-
-    # Build a set of course_ids for ASE markers only
-    # Must Take (section=-2) is handled as a requirement constraint, not a placement
-    # ASE (section=-1) creates a special semester variable
-    ase_courses = set()
-    if markers:
-        print(f"[DEBUG] Processing {len(markers)} markers")
-        for marker in markers:
-            print(f"[DEBUG] Marker: {marker.courseId} section={marker.section} status={marker.status}")
-            if marker.section == -1:  # ASE
-                ase_courses.add(marker.courseId)
-                print(f"[DEBUG] Added {marker.courseId} to ASE semester -1")
-
-    for course_idx in range(len(courses_df)):
-        subject_id = courses_df[course_idx, 'subject_id']
-
-        # For regular semesters (1 to max_semesters)
-        for semester in range(1, max_semesters + 1):
-            if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
-                var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
-                take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
-
-        # For ASE semester, only create var if there's an ASE marker
-        if subject_id in ase_courses:
-            var_name = f"take_{subject_id.replace('.', '_')}_s-1"
-            take_vars[(course_idx, -1)] = model.NewBoolVar(var_name)
-
-    return take_vars
-
-
-def add_basic_constraints(
-    model: cp_model.CpModel,
-    take_vars: dict[tuple[int, int], cp_model.IntVar],
-    courses_df: pl.DataFrame,
-    max_semesters: int
-) -> None:
-    """Add always-on hard constraints (take course once, freshman fall limit, IAP limit)."""
-
-    # Constraint: Take each course at most once across ALL semesters (including ASE)
-    # This prevents duplicates when a course is pinned to ASE but optimizer tries to schedule it again
-    for course_idx in range(len(courses_df)):
-        all_semester_takes = [
-            take_vars[(course_idx, s)]
-            for s in range(-1, max_semesters + 1)  # Include ASE (-1) and regular semesters (1-12)
-            if (course_idx, s) in take_vars
-        ]
-        if all_semester_takes:
-            model.Add(sum(all_semester_takes) <= 1)
-
-    # Constraint: Hard limit of 48 units for first semester (Freshman Fall)
-    # This is an MIT policy constraint
-    semester_1_takes = [
-        take_vars[(c, 1)] * courses_df[c, 'total_units']
-        for c in range(len(courses_df))
-        if (c, 1) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
-    ]
-    if semester_1_takes:
-        model.Add(sum(semester_1_takes) <= 48)
-
-    # Constraint: Hard limit of 12 units for IAP semesters
-    # This is an MIT policy constraint
-    for semester in range(1, max_semesters + 1):
-        is_iap = (semester - 2) % 3 == 0 and semester >= 2 and semester <= 11
-        if is_iap:
-            semester_takes = [
-                take_vars[(c, semester)] * courses_df[c, 'total_units']
-                for c in range(len(courses_df))
-                if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
-            ]
-            if semester_takes:
-                model.Add(sum(semester_takes) <= 12)
-
-
-def add_past_semester_constraints(
-    model: cp_model.CpModel,
-    take_vars: dict[tuple[int, int], cp_model.IntVar],
-    courses_df: pl.DataFrame,
-    planning_year_start: int,
-    markers: Sequence[Marker] | None = None
-) -> None:
-    """
-    Prevent optimizer from placing courses in semesters that have already passed.
-
-    Pinned courses in past semesters are allowed (user explicitly placed them there).
-    """
-    current_semester = get_current_semester_index(planning_year_start)
-
-    if current_semester <= 0:
-        return
-
-    # Build a set of (course_id, semester) tuples for pinned courses in past semesters
-    pinned_past_courses = set()
-    if markers:
-        # Build course_id -> course_idx mapping
-        course_id_to_idx = {}
-        for idx in range(len(courses_df)):
-            subject_id = courses_df[idx, 'subject_id']
-            course_id_to_idx[subject_id] = idx
-
-        for marker in markers:
-            if (marker.status == "pin" or marker.status == "override") and marker.section >= 0:
-                course_idx = course_id_to_idx.get(marker.courseId)
-                if course_idx is not None:
-                    # Convert section (0-based) to semester (1-based)
-                    semester = marker.section + 1
-                    if semester <= current_semester:
-                        pinned_past_courses.add((course_idx, semester))
-
-    # For all semesters up to and including the current one, prevent new placements
-    # We lock the current semester too since it's already in progress
-    for course_idx in range(len(courses_df)):
-        for semester in range(1, current_semester + 1):
-            if (course_idx, semester) in take_vars:
-                # Skip if this course is pinned to this past semester
-                if (course_idx, semester) in pinned_past_courses:
-                    continue
-
-                # Force this variable to 0 (cannot take this course in this past semester)
-                model.Add(take_vars[(course_idx, semester)] == 0)
 
 
 def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
@@ -750,19 +626,6 @@ async def get_objectives():
         "defaultConfiguration": default_config
     }
 
-
-@router.get("/optimize/requirements")
-async def get_requirements_list():
-    """
-    Get all available requirements from Fireroad API.
-
-    Returns:
-        Dictionary mapping requirement IDs to their metadata (titles, etc.)
-    """
-    import requests
-    response = requests.get('https://fireroad.mit.edu/requirements/list_reqs')
-    response.raise_for_status()
-    return response.json()
 
 
 @router.get("/optimize/constraints")

@@ -560,8 +560,8 @@ class TestOptimizerIntegration:
         # This makes semesters 1-4 past
         from unittest.mock import patch
 
-        from api.routes.optimize import add_past_semester_constraints
-        with patch('api.routes.optimize.get_current_semester_index', return_value=4):
+        from optimizer.constraints.basic import add_past_semester_constraints
+        with patch('utils.utils.get_current_semester_index', return_value=4):
             add_past_semester_constraints(model, take_vars, courses_df, 2024, markers)
 
         # Force taking another course (to verify optimizer can still work)

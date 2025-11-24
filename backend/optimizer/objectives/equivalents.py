@@ -121,7 +121,7 @@ class DiscourageEquivalentCourses:
         if context.objective_tiers and 'discourage_equivalent_courses' in context.objective_tiers:
             tier = context.objective_tiers['discourage_equivalent_courses']
 
-        penalty = get_tier_penalty(tier + 1, base_cost=1)
+        penalty = get_tier_penalty(tier + 1, base_cost=1) * 2000
 
         terms = []
         pair_counter = 0

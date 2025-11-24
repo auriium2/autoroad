@@ -39,7 +39,7 @@ class TestNamespacedCategoryRewards:
         # - User stars "Science Requirement" (root.0) in GIR with tier 3
         # - "Programming Skills" (root.0) in major6-3 should have tier 0 (not starred)
         # With the fix, these are now "gir:root.0" and "major6-3:root.0" (separate)
-        
+
         requirement_tiers = {
             'gir:root.0': 3,        # Science Requirement starred (tier 3)
             'major6-3:root.0': 0,   # Programming Skills NOT starred (tier 0)
@@ -71,7 +71,7 @@ class TestNamespacedCategoryRewards:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        
+
         # Expected behavior:
         # - gir:root.0 has tier 3, so courses in it get tier 3 rewards
         # - major6-3:root.0 has tier 0, so courses in it get NO rewards
@@ -79,7 +79,7 @@ class TestNamespacedCategoryRewards:
         # - 6.100A: in both, but max tier is 3 → gets tier 3 reward
         # - 18.01: in gir:root.1 (not starred) → no reward
         # - 6.1200: only in major6-3:root.0 (tier 0) → no reward
-        
+
         # The objective value should be negative (rewards applied)
         # At least 8.01 and 6.100A should get tier 3 rewards
         assert solver.ObjectiveValue() < 0, "Should have negative cost due to tier 3 rewards"
@@ -133,7 +133,7 @@ class TestNamespacedCategoryRewards:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        
+
         # Each course should get a different tier reward
         # Higher tier = more negative cost (better)
         # The objective value should reflect tier 1 + tier 2 + tier 3 rewards
@@ -158,7 +158,7 @@ class TestNamespacedCategoryRewards:
 
         # OLD BUG: If user starred GIR root.2, it would also star major root.2
         # NEW FIX: They are separate - gir:root.2 vs major:root.2
-        
+
         requirement_tiers = {
             'gir:root.2': 3,    # GIR subcategory 2 is starred (tier 3)
             'major:root.2': 0,  # Major subcategory 2 is NOT starred (tier 0)
@@ -188,13 +188,13 @@ class TestNamespacedCategoryRewards:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        
+
         # Only the GIR course should get a reward (tier 3)
         # The major course should get no reward (tier 0)
         # The objective should be negative but not as negative as if both had tier 3
         cost = solver.ObjectiveValue()
         assert cost < 0, "GIR course should get tier 3 reward"
-        
+
         # If the bug existed, both would get tier 3 rewards and the cost would be more negative
         # With the fix, only one gets the reward
 

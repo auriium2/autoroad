@@ -12,12 +12,18 @@ import polars as pl
 import pytest
 from ortools.sat.python import cp_model
 
-from api.routes.optimize import add_basic_constraints, create_take_vars
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
+from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
+from tests.test_helpers import (
+    assert_solution_quality,
+    convert_take_vars_format,
+    run_optimizer_test,
+    setup_optimizer_with_objectives,
+)
 
 
 @pytest.mark.e2e
@@ -477,6 +483,185 @@ class TestFullOptimizerE2E:
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
             f"Course 6-3 + Economics minor + GIRs should be feasible, got status {status}"
+
+    def test_course_18c_girs_feasible(self, optimizer_config):
+        """Test Course 18C (Math with Computer Science) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major18c', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_18am_girs_feasible(self, optimizer_config):
+        """Test Course 18AM (Math with Applied Math) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major18am', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_3_girs_feasible(self, optimizer_config):
+        """Test Course 3 (Materials Science) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major3', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_4_girs_feasible(self, optimizer_config):
+        """Test Course 4 (Architecture) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major4', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_3c_girs_feasible(self, optimizer_config):
+        """Test Course 3C (Archaeology and Materials) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major3c', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_3a_girs_feasible(self, optimizer_config):
+        """Test Course 3A (Materials Science Flexible) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major3a', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_6_4_girs_feasible(self, optimizer_config):
+        """Test Course 6-4 (AI and Decision Making) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major6-4', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    @pytest.mark.skip(reason="major6-5 does not exist in Fireroad API (400 error)")
+    def test_course_6_5_girs_feasible(self, optimizer_config):
+        """Test Course 6-5 (Computer Science and Molecular Biology) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major6-5', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_6_7_girs_feasible(self, optimizer_config):
+        """Test Course 6-7 (Computer Science and Molecular Biology) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major6-7', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_6_9_girs_feasible(self, optimizer_config):
+        """Test Course 6-9 (Computation and Cognition) + GIRs."""
+        courses_data = get_courses_data()
+        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+        requirements_data = get_requirements(('major6-9', 'girs'))
+        prereq_trees = get_parsed_prerequisites(courses_df)
+
+        model = cp_model.CpModel()
+        take_vars = create_take_vars(model, courses_df, optimizer_config.start_year, max_semesters=optimizer_config.max_semesters, markers=None)
+        add_basic_constraints(model, take_vars, courses_df, max_semesters=optimizer_config.max_semesters)
+        add_prerequisite_constraints(model, take_vars, courses_df, optimizer_config.start_year, prereq_trees, set())
+
+        for req_key in ['major6-9', 'girs']:
+            if req_key in requirements_data:
+                req_data = requirements_data[req_key]
+                if isinstance(req_data, dict):
+                    req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                    if validation.pruned_tree is not None:
+                        add_requirement_constraints(model, take_vars, validation.pruned_tree, courses_df, optimizer_config.start_year, enforce=True)
+
+        # Add objective function (mimic actual backend)
+        setup_optimizer_with_objectives(model, take_vars, courses_df, optimizer_config.start_year)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        status = solver.Solve(model)
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], f"Course 6-9 + GIRs should be feasible, got status {status}"
+
+        # Use test helpers for comprehensive validation
+        degree_config = optimizer_config.get_config_for_degree('major6-9')
+        take_vars_nested = convert_take_vars_format(take_vars)
+        assert_solution_quality(
+            solver,
+            take_vars_nested,
+            courses_df,
+            prereq_trees,
+            min_courses=degree_config['min_expected_courses'],
+            max_courses=degree_config['max_expected_courses'],
+            max_courses_per_semester=optimizer_config.max_courses_per_semester,
+            max_semesters=optimizer_config.max_semesters
+        )
+
+    def test_course_6_14_girs_feasible(self, optimizer_config):
+        """Test Course 6-14 (Computer Science, Economics, and Data Science) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major6-14', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_8_girs_feasible(self, optimizer_config):
+        """Test Course 8 (Physics) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major8', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_9_girs_feasible(self, optimizer_config):
+        """Test Course 9 (Brain and Cognitive Sciences) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major9', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_11_girs_feasible(self, optimizer_config):
+        """Test Course 11 (Urban Studies and Planning) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major11', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_16_girs_feasible(self, optimizer_config):
+        """Test Course 16 (Aerospace Engineering) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major16', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
+
+    def test_course_20_girs_feasible(self, optimizer_config):
+        """Test Course 20 (Biological Engineering) + GIRs."""
+        run_optimizer_test(
+            requirement_keys=('major20', 'girs'),
+            max_semesters=optimizer_config.max_semesters,
+            start_year=optimizer_config.start_year,
+            solver_timeout=optimizer_config.solver_timeout_seconds
+        )
 
 
 if __name__ == '__main__':

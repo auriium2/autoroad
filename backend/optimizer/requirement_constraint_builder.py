@@ -597,27 +597,57 @@ class RequirementConstraintBuilder:
                 "not yet implemented, falling back to subject counting"
             )
 
-        # For 'subjects' criterion, we need to count ALL course variables in the subtree,
-        # not just direct children (to match validator.py logic)
+        # Fireroad's actual behavior (from source code analysis in SUMMARY.md):
+        # From progress.py:809-816:
+        #   if req_progress.statement.connection_type == CONNECTION_TYPE_ALL and req_progress.children:
+        #       num_courses_satisfied += req_progress.is_fulfilled and len(req_progress.satisfied_courses) > 0
+        #   else:
+        #       num_courses_satisfied += len(req_satisfied_courses)
+        #
+        # Translation for constraint builder:
+        # - Direct course children: contribute 1 when taken (no children, goes to else)
+        # - Group with connection_type='all' and children: contributes 1 when satisfied
+        # - Group with other connection_type (including 'any' from thresholds): contributes count of satisfied courses
         if threshold.criterion == "subjects":
-            # Collect all leaf course variables from the subtree
-            all_course_vars = self._collect_all_course_vars_from_results(child_nodes, child_results)
+            # Build contribution variables for each child
+            contribution_vars = []
 
-            if len(all_course_vars) < cutoff:
-                errors.append(
-                    f"Group '{group_name}' requires {cutoff} subjects "
-                    f"but only {len(all_course_vars)} valid courses are available in the subtree"
-                )
-                # Make the group unsatisfiable
-                self.ctx.model.Add(group_var == 0)
-            elif not all_course_vars:
+            for idx, (child_node, child_result) in enumerate(zip(child_nodes, child_results)):
+                # Skip children with no satisfied_var (e.g., courses not found in database)
+                if child_result.satisfied_var is None:
+                    continue
+
+                if isinstance(child_node, RequirementCourse):
+                    # Course: contributes 1 when taken
+                    contribution_var = self.ctx.model.NewIntVar(0, 1, f"{group_name}_child{idx}_contribution")
+                    self.ctx.model.Add(contribution_var == 1).OnlyEnforceIf(child_result.satisfied_var)
+                    self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
+                    contribution_vars.append(contribution_var)
+                elif isinstance(child_node, RequirementGroup):
+                    # Check Fireroad's condition: connection_type='all' AND has children
+                    if child_node.connection_type == "all" and len(child_node.items) > 0:
+                        # ALL group with children: contributes 1 when satisfied
+                        contribution_var = self.ctx.model.NewIntVar(0, 1, f"{group_name}_child{idx}_contribution")
+                        self.ctx.model.Add(contribution_var == 1).OnlyEnforceIf(child_result.satisfied_var)
+                        self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
+                        contribution_vars.append(contribution_var)
+                    else:
+                        # Other groups (including those with thresholds): contribute count of satisfied courses
+                        # Per Fireroad semantics: groups with thresholds contribute the ACTUAL number of
+                        # courses taken from that group, not the threshold cutoff
+                        child_course_vars = self._collect_all_course_vars_from_results([child_node], [child_result])
+                        if child_course_vars:
+                            # Sum of courses taken from this child group
+                            contribution_vars.extend(child_course_vars)
+                        # If no courses available in child, it contributes 0 (handled by empty list)
+
+            if not contribution_vars:
                 self.ctx.model.Add(group_var == 0)
             else:
-                # Count how many courses are satisfied
-                # For 'subjects', we want: sum of courses taken >= cutoff
-                sum_satisfied = sum(all_course_vars)
-                self.ctx.model.Add(sum_satisfied >= cutoff).OnlyEnforceIf(group_var)
-                self.ctx.model.Add(sum_satisfied < cutoff).OnlyEnforceIf(group_var.Not())
+                # Sum all contributions
+                total_contribution = sum(contribution_vars)
+                self.ctx.model.Add(total_contribution >= cutoff).OnlyEnforceIf(group_var)
+                self.ctx.model.Add(total_contribution < cutoff).OnlyEnforceIf(group_var.Not())
         else:
             # For other criteria (like 'units'), count direct children
             total_children = len(node.items)

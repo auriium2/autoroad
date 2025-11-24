@@ -1,158 +1,21 @@
 """
-Unit tests for prerequisite parser.
+Regression tests for prerequisite parser.
+
+Focus: Tests that catch real bugs found in production.
+Trivial tests removed - covered by property-based tests in test_prerequisites_parser_property.py.
 """
 
 import pytest
 
 from courses.prerequisites.parser import (
     extract_course_ids,
-    filter_junk_tokens,
-    is_valid_course_id,
     parse_fireroad,
-    prereq_to_string,
-    tokenize,
 )
 from courses.prerequisites.types import PrereqCourse, PrereqGroup
 
 
-class TestCourseIDValidation:
-    """Tests for course ID validation."""
-    def test_valid_course_ids(self):
-        """Test that valid course IDs are recognized."""
-        assert is_valid_course_id("18.01")
-        assert is_valid_course_id("6.100A")
-        assert is_valid_course_id("14.01")
-        assert is_valid_course_id("IDS.012")
-        assert is_valid_course_id("18.C06")
-    def test_gir_requirements(self):
-        """Test that GIR requirements are recognized."""
-        assert is_valid_course_id("GIR:BIOL")
-        assert is_valid_course_id("GIR:CAL2")
-        assert is_valid_course_id("GIR:PHY1")
-
-    def test_invalid_course_ids(self):
-        """Test that invalid strings are rejected."""
-        assert not is_valid_course_id("permission of instructor")
-        assert not is_valid_course_id("''quoted text''")
-        assert not is_valid_course_id("")
-        assert not is_valid_course_id("just text")
-
-
-class TestTokenizer:
-    """Tests for prerequisite string tokenization."""
-
-    def test_simple_tokenize(self):
-        """Test tokenization of simple prerequisites."""
-        tokens = tokenize("18.01, 18.02")
-        assert "18.01" in tokens
-        assert "," in tokens
-        assert "18.02" in tokens
-
-    def test_tokenize_with_or(self):
-        """Test tokenization with OR operator."""
-        tokens = tokenize("18.01/18.02")
-        assert "18.01" in tokens
-        assert "/" in tokens
-        assert "18.02" in tokens
-
-    def test_tokenize_with_parens(self):
-        """Test tokenization with parentheses."""
-        tokens = tokenize("(18.01/18.02), 18.03")
-        assert "(" in tokens
-        assert "18.01" in tokens
-        assert "/" in tokens
-        assert "18.02" in tokens
-        assert ")" in tokens
-        assert "," in tokens
-        assert "18.03" in tokens
-
-    def test_tokenize_quoted_strings(self):
-        """Test that quoted strings are tokenized."""
-        tokens = tokenize("18.01/''permission of instructor''")
-        assert "18.01" in tokens
-        assert "/" in tokens
-        assert "''permission of instructor''" in tokens
-
-    def test_tokenize_gir(self):
-        """Test tokenization of GIR requirements."""
-        tokens = tokenize("GIR:BIOL, GIR:CAL2")
-        assert "GIR:BIOL" in tokens
-        assert "GIR:CAL2" in tokens
-
-
-class TestFilterJunkTokens:
-    """Tests for junk token filtering."""
-
-    def test_filter_quoted_strings(self):
-        """Test that quoted strings are filtered out."""
-        tokens = ["18.01", "/", "''permission of instructor''"]
-        filtered = filter_junk_tokens(tokens)
-        assert "18.01" in filtered
-        assert "''permission of instructor''" not in filtered
-
-    def test_filter_invalid_course_ids(self):
-        """Test that invalid course IDs are filtered out."""
-        tokens = ["18.01", ",", "invalid", "18.02"]
-        filtered = filter_junk_tokens(tokens)
-        assert "18.01" in filtered
-        assert "18.02" in filtered
-        assert "invalid" not in filtered
-
-    def test_filter_trailing_operators(self):
-        """Test that trailing operators are removed."""
-        tokens = ["18.01", "/"]
-        filtered = filter_junk_tokens(tokens)
-        assert "18.01" in filtered
-        assert "/" not in filtered
-
-    def test_filter_leading_operators(self):
-        """Test that leading operators are removed."""
-        tokens = ["/", "18.01"]
-        filtered = filter_junk_tokens(tokens)
-        assert "18.01" in filtered
-        assert len(filtered) == 1
-
-
 class TestFireroadParser:
-    """Tests for Fireroad to PrereqNode conversion."""
-
-    def test_simple_course(self):
-        """Test parsing a single course."""
-        result = parse_fireroad("18.01")
-        assert result == PrereqCourse("18.01")
-
-    def test_and_prerequisites(self):
-        """Test parsing AND prerequisites."""
-        result = parse_fireroad("18.01, 18.02")
-        expected = PrereqGroup(
-            threshold=2,
-            items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-        )
-        assert result == expected
-
-    def test_or_prerequisites(self):
-        """Test parsing OR prerequisites."""
-        result = parse_fireroad("18.01/18.02")
-        expected = PrereqGroup(
-            threshold=1,
-            items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-        )
-        assert result == expected
-
-    def test_nested_prerequisites(self):
-        """Test parsing nested prerequisites."""
-        result = parse_fireroad("(18.01/18.02), 18.03")
-        expected = PrereqGroup(
-            threshold=2,
-            items=(
-                PrereqGroup(
-                    threshold=1,
-                    items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-                ),
-                PrereqCourse("18.03")
-            )
-        )
-        assert result == expected
+    """Tests for Fireroad to PrereqNode conversion - real-world edge cases only."""
 
     def test_complex_nested(self):
         """Test parsing complex nested prerequisites."""
@@ -184,85 +47,9 @@ class TestFireroadParser:
         assert result == expected
 
     def test_filter_permission_text(self):
-        """Test that permission text is filtered out."""
+        """Test that permission text is filtered out - real edge case from production."""
         result = parse_fireroad("18.01/''permission of instructor''")
         assert result == PrereqCourse("18.01")
-
-    def test_gir_requirements(self):
-        """Test parsing GIR requirements."""
-        result = parse_fireroad("GIR:BIOL, GIR:CAL2")
-        expected = PrereqGroup(
-            threshold=2,
-            items=(PrereqCourse("GIR:BIOL"), PrereqCourse("GIR:CAL2"))
-        )
-        assert result == expected
-
-    def test_empty_string(self):
-        """Test parsing empty string."""
-        result = parse_fireroad("")
-        assert result is None
-
-    def test_only_junk(self):
-        """Test parsing string with only junk text."""
-        result = parse_fireroad("''permission of instructor''")
-        assert result is None
-
-
-class TestPrereqToString:
-    """Tests for converting prerequisite nodes to human-readable strings."""
-
-    def test_simple_course(self):
-        """Test converting simple course."""
-        node = PrereqCourse("18.01")
-        result = prereq_to_string(node)
-        assert result == "18.01"
-
-    def test_and_prerequisites(self):
-        """Test converting AND prerequisites."""
-        node = PrereqGroup(
-            threshold=2,
-            items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-        )
-        result = prereq_to_string(node)
-        assert result == "18.01 AND 18.02"
-
-    def test_or_prerequisites(self):
-        """Test converting OR prerequisites."""
-        node = PrereqGroup(
-            threshold=1,
-            items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-        )
-        result = prereq_to_string(node)
-        assert result == "18.01 OR 18.02"
-
-    def test_nested_prerequisites(self):
-        """Test converting nested prerequisites."""
-        node = PrereqGroup(
-            threshold=2,
-            items=(
-                PrereqGroup(
-                    threshold=1,
-                    items=(PrereqCourse("18.01"), PrereqCourse("18.02"))
-                ),
-                PrereqCourse("18.03")
-            )
-        )
-        result = prereq_to_string(node)
-        assert result == "(18.01 OR 18.02) AND 18.03"
-
-    def test_threshold_prerequisites(self):
-        """Test converting threshold prerequisites."""
-        node = PrereqGroup(
-            threshold=2,
-            items=(
-                PrereqCourse("18.01"),
-                PrereqCourse("18.02"),
-                PrereqCourse("18.03"),
-                PrereqCourse("18.04")
-            )
-        )
-        result = prereq_to_string(node)
-        assert result == "2 of: [18.01, 18.02, 18.03, 18.04]"
 
 
 class TestRealWorldExamples:
