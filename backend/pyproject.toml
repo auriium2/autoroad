@@ -31,6 +31,7 @@ packages = ["prerequisites", "requirements", "scripts", "utils"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [".", "tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
