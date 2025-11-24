@@ -21,7 +21,7 @@ from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
 
-from .test_helpers import assert_solution_quality
+from test_helpers import assert_solution_quality
 
 
 class TestOptimizerE2EComprehensive:
