@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useQueries } from "@tanstack/react-query";
 import { fireroadApi } from "@/services/fireroad";
+import { queryKeys } from "@/lib/queryKeys";
 import type { Marker, OptimizerNode } from "@/stores/roadStore";
 
 interface GraphStatsProps {
@@ -27,9 +28,9 @@ export function GraphStats({
   // Fetch course details for marker-only courses to get real units
   const markerCourseQueries = useQueries({
     queries: markerOnlyCourses.map(marker => ({
-      queryKey: ['courseDetails', marker.courseId],
+      queryKey: queryKeys.courses.details(marker.courseId),
       queryFn: () => fireroadApi.getCourseDetails(marker.courseId),
-      staleTime: 60 * 60 * 1000, // 1 hour
+      staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
     }))
   });
 
@@ -44,7 +45,7 @@ export function GraphStats({
     // Add units from marker-only courses using fetched data
     markerCourseQueries.forEach(query => {
       if (query.data) {
-        total += query.data.units || 12; // Fallback to 12 if units missing
+        total += query.data.total_units || 12; // Fallback to 12 if units missing
       } else {
         total += 12; // Default while loading
       }

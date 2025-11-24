@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
+import { queryKeys } from '@/lib/queryKeys';
 
 export interface CourseFilters {
   gir?: string;
@@ -15,7 +16,7 @@ export interface CourseFilters {
  */
 export function useSearchCourses(query: string, department?: string, filters?: CourseFilters) {
   return useQuery({
-    queryKey: ['courses', 'search', query, department, filters],
+    queryKey: queryKeys.courses.search(query, department, filters),
     queryFn: async () => {
       // Search by query - use 'starts' for better department matching
       if (query.trim() && query !== '*') {
@@ -66,7 +67,7 @@ export function useSearchCourses(query: string, department?: string, filters?: C
       }
     },
     enabled: true,
-    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    staleTime: 24 * 60 * 60 * 1000, // Course catalog is static - cache for 24 hours
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
@@ -78,14 +79,14 @@ export function useSearchCourses(query: string, department?: string, filters?: C
  */
 export function useCourseDetails(courseId: string | null) {
   return useQuery({
-    queryKey: ['courses', 'details', courseId],
+    queryKey: courseId ? queryKeys.courses.details(courseId) : ['courses', 'details', null],
     queryFn: async () => {
       if (!courseId) return null;
 
       return await fireroadApi.getCourseDetails(courseId);
     },
     enabled: !!courseId, // Only fetch when courseId is provided
-    staleTime: 10 * 60 * 1000, // Course details change rarely, cache for 10 minutes
+    staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

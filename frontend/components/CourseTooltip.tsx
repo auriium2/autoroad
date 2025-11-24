@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCourseDetails } from "@/hooks/useCourseData";
+import { getTermsOffered } from "@/lib/fireroad-utils";
 import { Loader2, Users, TicketPercent } from "lucide-react";
 
 export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {
@@ -58,17 +59,17 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
             <div className="space-y-2">
               {/* Header */}
               <div className="space-y-0.5">
-                <div className="font-semibold text-sm">{courseDetails.id}</div>
-                <div className="text-xs font-medium text-muted-foreground">{courseDetails.name}</div>
+                <div className="font-semibold text-sm">{courseDetails.subject_id}</div>
+                <div className="text-xs font-medium text-muted-foreground">{courseDetails.title}</div>
               </div>
 
               {/* Quick info */}
               <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                <span>{courseDetails.units} units</span>
-                {courseDetails.terms_offered.length > 0 && (
+                <span>{courseDetails.total_units} units</span>
+                {getTermsOffered(courseDetails).length > 0 && (
                   <>
                     <span>•</span>
-                    <span>{courseDetails.terms_offered.join(", ")}</span>
+                    <span>{getTermsOffered(courseDetails).join(", ")}</span>
                   </>
                 )}
               </div>

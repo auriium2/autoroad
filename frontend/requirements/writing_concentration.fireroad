@@ -1,0 +1,18 @@
+21W-WRITING-CONC#,#Writing#,#HASS Concentration in Writing#,#Concentration in Writing
+
+A concentration in Writing requires four subjects chosen in consultation with the Concentration Advisor. All classes must carry a HASS designation.
+
+first_year_writing, "First-Year Writing Subjects" := 21W.011, 21W.012, 21W.013, 21W.014, 21W.015, 21W.016, 21W.021, 21W.022, 21W.031, 21W.034, 21W.035, 21W.036, 21W.041, 21W.042, 21W.051
+
+essay_nonfiction, "Essay and Nonfiction Writing" := 21W.735, 21W.738, 21W.740, 21W.741, 21W.742, 21W.743, 21W.745, 21W.747, 21W.748, 21W.775, 21W.781
+
+creative_writing, "Creative Writing" := 21W.744, 21W.752, 21W.754, 21W.755, 21W.756, 21W.757, 21W.758, 21W.759, 21W.762, 21W.763, 21W.764, 21W.765, 21W.766, 21W.768, 21W.770, 21W.771, 21W.773, 21W.774, 21W.776, 21W.780
+
+science_writing, "Science and Technical Writing" := 21W.777, 21W.778, 21W.792
+
+media_writing, "Media and Documentary" := 21W.786, 21W.787, 21W.788, 21W.790, 21W.791
+
+all_writing, "All Writing Courses (HASS-designated)" := first_year_writing / essay_nonfiction / creative_writing / science_writing / media_writing
+
+total, "Four Writing Subjects" := (all_writing){>=4}
+

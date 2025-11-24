@@ -1,0 +1,21 @@
+14-DEV-CONC#,#Development Economics#,#HASS Concentration in Development Economics#,#Concentration in Development Economics
+
+A concentration in Development Economics requires three subjects addressing world poverty and economic development. Not available to Economics (14-1) or Mathematical Economics (14-2) primary majors.
+
+intro_econ, "Introductory Economics (required)" := 14.01, 14.03
+%% 14.01 = Principles of Microeconomics (or 14.03 with AP credit)
+
+development_core, "Development Economics Core" := 14.73, 14.74, 14.75, 14.76
+%% 14.73 = The Challenge of World Poverty
+%% 14.74 = Foundations of Development Economics
+%% 14.75 = Political Economy and Economic Development
+%% 14.76 = Firms, Markets, Trade and Growth
+
+intro_req, "One Introductory Course" := (intro_econ){>=1, <=1}
+
+dev_econ_requirement, "Two Development Economics Courses" := (development_core){>=2}
+%% Typically 14.73 plus one of {14.74, 14.75, 14.76}
+%% Or any two of {14.74, 14.75, 14.76}
+
+total, "Total Requirements" := intro_req, dev_econ_requirement
+

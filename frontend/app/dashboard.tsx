@@ -20,6 +20,7 @@ import { optimizerApi } from "@/services/optimizer";
 import { useGraphStore } from "@/stores/roadStore";
 import { Toaster } from "@/components/ui/toaster";
 import { toast as showToast } from "@/hooks/useToast";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   Select,
   SelectContent,
@@ -49,7 +50,7 @@ export default function Dashboard() {
 
   // Check health of services - use useQuery hooks directly instead of getQueryState
   const { isError: backendError } = useQuery({
-    queryKey: ['backend-health'],
+    queryKey: queryKeys.health.backend(),
     queryFn: async () => {
       const response = await fetch('/api/health/backend', {
         signal: AbortSignal.timeout(5000),
@@ -62,7 +63,7 @@ export default function Dashboard() {
   });
 
   const { isError: fireroadError } = useQuery({
-    queryKey: ['fireroad-health'],
+    queryKey: queryKeys.health.fireroad(),
     queryFn: async () => {
       const response = await fetch('/api/health/fireroad', {
         signal: AbortSignal.timeout(5000),
@@ -75,7 +76,7 @@ export default function Dashboard() {
   });
 
   const { isError: nextjsError } = useQuery({
-    queryKey: ['nextjs-health'],
+    queryKey: queryKeys.health.nextjs(),
     queryFn: async () => {
       const response = await fetch('/api/health', {
         signal: AbortSignal.timeout(3000),
@@ -188,8 +189,8 @@ export default function Dashboard() {
         async (courseId) => {
           const details = await fireroadApi.getCourseDetails(courseId);
           return {
-            name: details.name,
-            units: details.units,
+            title: details.title,
+            total_units: details.total_units,
           };
         }
       );

@@ -2,45 +2,9 @@
  * Shared Fireroad utilities and types
  */
 
-export interface FireroadCourse {
-  subject_id: string;
-  title: string;
-  total_units: number;
-  description?: string;
-  prerequisites?: string;
-  corequisites?: string;
-  is_variable_units?: boolean;
-  is_historical?: boolean;
-  offered_fall?: boolean;
-  offered_spring?: boolean;
-  offered_IAP?: boolean;
-  offered_summer?: boolean;
-  public?: boolean;
-  level?: string;
-  lecture_units?: number;
-  lab_units?: number;
-  preparation_units?: number;
-  design_units?: number;
-  in_class_hours?: number;
-  out_of_class_hours?: number;
-  joint_subjects?: string[];
-  equivalent_subjects?: string[];
-  meets_with_subjects?: string[];
-  children?: string[];
-  instructors?: string[];
-  rating?: number;
-  enrollment_number?: number;
-  imdb_rating?: number | null;
-  gir_attribute?: string;
-  hass_attribute?: string;
-  communication_requirement?: string;
-  schedule?: string;
-  has_final?: boolean;
-  pdf_option?: boolean;
-  is_half_class?: boolean;
-  url?: string;
-  source_semester?: string;
-}
+import type { FireroadCourse } from '@/types/fireroad';
+
+export type { FireroadCourse };
 
 /**
  * Calculate IMDB type weighted rating
@@ -73,13 +37,13 @@ export function calculateIMDBRating(
 }
 
 /**
- * Enrich a course with computed fields (like IMDB rating)
+ * Get terms offered as an array of strings
  */
-export function enrichCourse(course: FireroadCourse): FireroadCourse {
-  const imdbRating = calculateIMDBRating(course.rating, course.enrollment_number);
-
-  return {
-    ...course,
-    imdb_rating: imdbRating,
-  };
+export function getTermsOffered(course: FireroadCourse): string[] {
+  const terms: string[] = [];
+  if (course.offered_fall) terms.push('Fall');
+  if (course.offered_spring) terms.push('Spring');
+  if (course.offered_IAP) terms.push('IAP');
+  if (course.offered_summer) terms.push('Summer');
+  return terms;
 }

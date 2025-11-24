@@ -5,7 +5,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { enrichCourse, type FireroadCourse } from '@/lib/fireroad-utils';
+import { calculateIMDBRating } from '@/lib/fireroad-utils';
+import type { FireroadCourse, PaginatedCoursesResponse } from '@/types/fireroad';
 
 const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 
@@ -127,19 +128,24 @@ export async function GET(
     }
     
     // Enrich courses with computed fields (IMDB rating)
-    const enrichedCourses = filteredCourses.map(enrichCourse);
+    const enrichedCourses = filteredCourses.map(course => ({
+      ...course,
+      imdb_rating: course.imdb_rating ?? calculateIMDBRating(course.rating, course.enrollment_number),
+    }));
     
     // Apply pagination
     const total = enrichedCourses.length;
     const paginatedCourses = enrichedCourses.slice(offset, offset + limit);
     
-    return NextResponse.json({
+    const responseData: PaginatedCoursesResponse = {
       courses: paginatedCourses,
       total,
       offset,
       limit,
       has_more: offset + limit < total,
-    }, {
+    };
+    
+    return NextResponse.json(responseData, {
       headers: {
         'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600', // Cache for 30 min, serve stale for 1 hour
       },

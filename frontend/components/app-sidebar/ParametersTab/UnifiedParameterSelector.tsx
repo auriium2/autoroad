@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { optimizerApi, type ObjectiveMetadata, type ObjectiveConfig, type HardConstraintMetadata } from "@/services/optimizer";
+import { optimizerApi, type ObjectiveMetadata, type HardConstraintMetadata } from "@/services/optimizer";
+import { fireroadApi, type RequirementMetadata } from "@/services/fireroad";
+import { queryKeys } from "@/lib/queryKeys";
 import { X, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
@@ -15,13 +17,6 @@ import { Input } from "@/components/ui/input";
 import { EquivalencyManagerInline } from "./EquivalencyManagerInline";
 
 type ItemType = 'degree' | 'objective' | 'constraint';
-
-interface RequirementMetadata {
-  title_no_degree?: string;
-  title?: string;
-  short?: string;
-  medium?: string;
-}
 
 interface SearchableItem {
   type: ItemType;
@@ -76,22 +71,22 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
   };
 
   const { data: requirementsList, isLoading: requirementsLoading, error: requirementsError } = useQuery({
-    queryKey: ['requirements-list'],
-    queryFn: () => optimizerApi.getRequirementsList(),
-    staleTime: 60 * 60 * 1000,
+    queryKey: queryKeys.requirements.list(),
+    queryFn: () => fireroadApi.getRequirementsList(),
+    staleTime: 24 * 60 * 60 * 1000, // Requirements list is static - cache for 24 hours
   });
 
   const { data: objectivesData, isLoading: objectivesLoading, error: objectivesError } = useQuery({
-    queryKey: ['objectives'],
+    queryKey: queryKeys.objectives.list(),
     queryFn: () => optimizerApi.getObjectives(),
-    staleTime: process.env.NODE_ENV === 'development' ? 0 : 60 * 60 * 1000,
+    staleTime: process.env.NODE_ENV === 'development' ? 0 : 24 * 60 * 60 * 1000, // Objectives are static - cache for 24 hours
     gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
   });
 
   const { data: constraintsData, isLoading: constraintsLoading, error: constraintsError } = useQuery({
-    queryKey: ['hard-constraints'],
+    queryKey: queryKeys.constraints.hard(),
     queryFn: () => optimizerApi.getHardConstraints(),
-    staleTime: process.env.NODE_ENV === 'development' ? 0 : 60 * 60 * 1000,
+    staleTime: process.env.NODE_ENV === 'development' ? 0 : 24 * 60 * 60 * 1000, // Constraints are static - cache for 24 hours
     gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
   });
 
@@ -223,7 +218,7 @@ export function UnifiedParameterSelector({ viewMode }: UnifiedParameterSelectorP
 
   // Add requirements (degrees)
   if (requirementsList) {
-    Object.entries(requirementsList).forEach(([key, metadata]) => {
+    Object.entries(requirementsList).forEach(([key, metadata]: [string, RequirementMetadata]) => {
       if (!selectedRequirements.includes(key)) {
         const displayName = metadata.short || metadata.medium || key;
         const searchableText = [

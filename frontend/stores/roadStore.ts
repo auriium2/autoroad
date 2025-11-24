@@ -227,7 +227,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
       // Convert graduation year to planning year if selected
       let planningYear: string | undefined;
       if (selectedYear) {
-        const { graduationYearToPlanningYear } = await import('@/lib/yearUtils');
+        const { graduationYearToPlanningYear } = await import('@/lib/semesterUtils');
         planningYear = graduationYearToPlanningYear(selectedYear);
       }
 

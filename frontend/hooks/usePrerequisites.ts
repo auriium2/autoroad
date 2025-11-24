@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
 import { extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
 import { getCachedPrereqTree } from '@/lib/prerequisiteCache';
+import { queryKeys } from '@/lib/queryKeys';
 import type { CourseNode } from '@/types';
 
 interface CourseDetailsWithPrereqs {
@@ -41,11 +42,11 @@ async function fetchPrerequisitesForCourse(courseId: string): Promise<string[]> 
  */
 export function usePrerequisiteCourseIds(courseId: string) {
   return useQuery({
-    queryKey: ['prerequisites', 'courseIds', courseId],
+    queryKey: queryKeys.prerequisites.courseIds(courseId),
     queryFn: async () => {
       return await fetchPrerequisitesForCourse(courseId);
     },
-    staleTime: 60 * 60 * 1000, // Prerequisites don't change often - cache for 1 hour
+    staleTime: 24 * 60 * 60 * 1000, // Prerequisites are static - cache for 24 hours
     retry: 2,
   });
 }
@@ -59,7 +60,7 @@ export function useCheckCoursePlacement(
   allNodes: CourseNode[]
 ) {
   return useQuery({
-    queryKey: ['prerequisites', 'check', courseId, section, allNodes.map(n => n.courseId).sort()],
+    queryKey: queryKeys.prerequisites.check(courseId, section, allNodes.map(n => n.courseId)),
     queryFn: async () => {
       try {
         const courseDetails = await fireroadApi.getCourseDetails(courseId);
@@ -87,7 +88,7 @@ export function useCheckCoursePlacement(
       }
     },
     enabled: !!courseId,
-    staleTime: 60 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000, // Prerequisites are static - cache for 24 hours
   });
 }
 
@@ -96,7 +97,7 @@ export function useCheckCoursePlacement(
  */
 export function usePrerequisiteString(courseId: string | null) {
   return useQuery({
-    queryKey: ['prerequisites', 'string', courseId],
+    queryKey: courseId ? queryKeys.prerequisites.string(courseId) : ['prerequisites', 'string', null],
     queryFn: async () => {
       if (!courseId) return '';
 
@@ -131,9 +132,9 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
       const prereqPromises = nodes.map(async (node) => {
         try {
           const courseDetails = await queryClient.fetchQuery({
-            queryKey: ['courseDetails', node.courseId],
+            queryKey: queryKeys.courses.details(node.courseId),
             queryFn: () => fireroadApi.getCourseDetails(node.courseId),
-            staleTime: 60 * 60 * 1000,
+            staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
           });
           const prereqString = courseDetails.prerequisites || '';
           
@@ -164,7 +165,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
 
       return await Promise.all(prereqPromises);
     },
-    staleTime: 60 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000, // Course data is static - cache for 24 hours
     enabled: nodes.length > 0,
   });
 }
@@ -181,7 +182,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
   );
 
   return useQuery({
-    queryKey: ['prerequisites', 'edges', courseKey],
+    queryKey: queryKeys.prerequisites.edges(courseKey),
     queryFn: async () => {
       if (!courseDetailsQuery.data) {
         return { edges: [], tag2courses: new Map() };
@@ -255,7 +256,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       return { edges, tag2courses };
     },
     enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,
-    staleTime: 60 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000, // Prerequisite edges are static - cache for 24 hours
   });
 }
 
@@ -272,7 +273,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
   );
 
   return useQuery({
-    queryKey: ['prerequisites', 'missing', courseKey],
+    queryKey: queryKeys.prerequisites.missing(courseKey),
     queryFn: async () => {
       if (!courseDetailsQuery.data) {
         return new Map<string, string[]>();
@@ -352,6 +353,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       return uuid2missingPrereqs;
     },
     enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,
-    staleTime: 60 * 60 * 1000,
+    staleTime: 24 * 60 * 60 * 1000, // Missing prerequisites are static - cache for 24 hours
   });
 }

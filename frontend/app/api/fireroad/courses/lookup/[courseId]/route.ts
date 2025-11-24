@@ -4,7 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { enrichCourse, type FireroadCourse } from '@/lib/fireroad-utils';
+import { calculateIMDBRating } from '@/lib/fireroad-utils';
+import type { FireroadCourse } from '@/types/fireroad';
 
 const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 
@@ -39,10 +40,10 @@ export async function GET(
 
     const course: FireroadCourse = await response.json();
     
-    // Enrich with IMDB rating
-    const enrichedCourse = enrichCourse(course);
+    // Add IMDB rating if not already present
+    const imdb_rating = course.imdb_rating ?? calculateIMDBRating(course.rating, course.enrollment_number);
     
-    return NextResponse.json(enrichedCourse, {
+    return NextResponse.json({ ...course, imdb_rating }, {
       headers: {
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200', // Cache for 1 hour
       },

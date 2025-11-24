@@ -36,7 +36,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
 
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
-  const units = courseDetails?.units || 12; // Default to 12 if not available
+  const units = courseDetails?.total_units || 12; // Default to 12 if not available
 
   // Check if course is placed in wrong semester
   // Special semesters (-2 for Must Take, -1 for ASE) are always valid
@@ -205,16 +205,16 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       </div>
 
       {/* Course name in friendly mode - absolute positioned to not affect node width */}
-      {viewMode === "default" && courseDetails?.name && (
+      {viewMode === "default" && courseDetails?.title && (
         <div className="absolute text-[10px] text-muted-foreground w-[120px] h-[28px] flex items-center justify-center left-1/2 -translate-x-1/2" style={{ top: '64px' }}>
-          {courseDetails.name.length > 20 ? (
+          {courseDetails.title.length > 20 ? (
             <div className="overflow-hidden w-full">
               <div className="inline-block whitespace-nowrap animate-marquee">
-                {courseDetails.name}&nbsp;&nbsp;&nbsp;{courseDetails.name}
+                {courseDetails.title}&nbsp;&nbsp;&nbsp;{courseDetails.title}
               </div>
             </div>
           ) : (
-            <div className="text-center w-full truncate">{courseDetails.name}</div>
+            <div className="text-center w-full truncate">{courseDetails.title}</div>
           )}
         </div>
       )}

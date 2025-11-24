@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
-import { fireroadApi } from "@/services/fireroad";
-import type { RequirementTree, RequirementNode } from "@/services/optimizer";
+import { fireroadApi, type RequirementTree, type RequirementNode } from "@/services/fireroad";
+import { queryKeys } from "@/lib/queryKeys";
 
 function isActualCourse(courseId: string): boolean {
   // Filter out generic requirement placeholders
@@ -22,9 +22,9 @@ export async function prefetchCourses(
   await Promise.all(
     uniqueCourseIds.map(courseId =>
       queryClient.prefetchQuery({
-        queryKey: ['courseDetails', courseId],
+        queryKey: queryKeys.courses.details(courseId),
         queryFn: () => fireroadApi.getCourseDetails(courseId),
-        staleTime: 60 * 60 * 1000, // 1 hour
+        staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
       }).catch(() => {
         // Silently ignore prefetch failures
       })
@@ -36,8 +36,7 @@ export async function extractCoursesFromRequirement(
   requirementKey: string
 ): Promise<string[]> {
   try {
-    const { optimizerApi } = await import('@/services/optimizer');
-    const requirement = await optimizerApi.getRequirementProgress(requirementKey, []);
+    const requirement = await fireroadApi.getRequirementProgress(requirementKey, []);
     
     const courseIds: string[] = [];
     

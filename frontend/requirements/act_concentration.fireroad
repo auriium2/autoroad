@@ -1,0 +1,14 @@
+4-ACT-CONC#,#ACT#,#HASS Concentration in Art, Culture, and Technology#,#Concentration in ACT
+
+A concentration in ACT requires four subjects: three from Group A (introductory or intermediate/advanced) and one from Group B (History of Art).
+
+group_a, "Group A - ACT Subjects (Intro or Advanced)" := 4.301, 4.302, 4.307, 4.314, 4.320, 4.322, 4.341, 4.344, 4.352, 4.354, 4.356, 4.361, 4.368, 4.373
+
+group_b, "Group B - History of Art" := 4.601, 4.602, 4.635, 4.636, 4.641, 4.651, 4.657
+
+group_a_req, "Three from Group A" := (group_a){>=3}
+
+group_b_req, "One from Group B" := (group_b){>=1}
+
+total, "Total Requirements" := group_a_req, group_b_req
+

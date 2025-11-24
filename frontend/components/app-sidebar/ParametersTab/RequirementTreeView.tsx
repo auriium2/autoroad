@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { optimizerApi, type RequirementNode } from "@/services/optimizer";
+import { fireroadApi, type RequirementNode } from "@/services/fireroad";
+import { queryKeys } from "@/lib/queryKeys";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Progress } from "@/components/ui/progress";
@@ -34,14 +35,14 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
   const courseIdsKey = allCourseIds.sort().join(',');
 
   const { data: requirement, isLoading, error } = useQuery({
-    queryKey: ['requirement-progress', requirementKey, courseIdsKey],
+    queryKey: queryKeys.requirements.progress(requirementKey, courseIdsKey),
     queryFn: async () => {
       console.log(`[RequirementProgress] Fetching progress for ${requirementKey} with ${allCourseIds.length} courses:`, allCourseIds);
-      const result = await optimizerApi.getRequirementProgress(requirementKey, allCourseIds);
+      const result = await fireroadApi.getRequirementProgress(requirementKey, allCourseIds);
       console.log('Progress API result for', requirementKey, ':', result);
       return result;
     },
-    staleTime: 5000,
+    staleTime: 10 * 60 * 1000, // Requirement progress can change - cache for 10 minutes
     enabled: !isOptimizing,
   });
 

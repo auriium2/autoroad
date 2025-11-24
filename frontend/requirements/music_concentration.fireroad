@@ -1,0 +1,20 @@
+21M-MUSIC-CONC#,#Music#,#HASS Concentration in Music#,#Concentration in Music
+
+A concentration in Music requires four subjects from the Music curriculum.
+
+intro_music, "Introductory Music Subjects" := 21M.011, 21M.013, 21M.030, 21M.051, 21M.053, 21M.065, 21M.080
+
+samplings, "Music Samplings" := 21M.120, 21M.128, 21M.129, 21M.138, 21M.139, 21M.150, 21M.151, 21M.158, 21M.159
+
+history_culture, "History and Culture" := 21M.215, 21M.220, 21M.222, 21M.223, 21M.226, 21M.235, 21M.240, 21M.250, 21M.260, 21M.269, 21M.271, 21M.273, 21M.283, 21M.284, 21M.285, 21M.289, 21M.291, 21M.292, 21M.293, 21M.294, 21M.295, 21M.296, 21M.297, 21M.298, 21M.299
+
+composition_theory, "Composition and Theory" := 21M.301, 21M.302, 21M.303, 21M.304, 21M.310, 21M.340, 21M.341, 21M.342, 21M.351, 21M.355, 21M.359
+
+music_tech, "Music Technology" := 21M.361, 21M.362, 21M.365, 21M.369, 21M.370, 21M.383, 21M.385, 21M.386, 21M.387, 21M.389
+
+performance, "Music Performance" := 21M.401, 21M.405, 21M.410, 21M.421, 21M.423, 21M.426, 21M.442, 21M.443, 21M.445, 21M.450, 21M.451, 21M.460, 21M.470, 21M.475, 21M.480, 21M.490
+
+all_music, "All Music Courses" := intro_music / samplings / history_culture / composition_theory / music_tech / performance
+
+total, "Four Music Subjects" := (all_music){>=4}
+

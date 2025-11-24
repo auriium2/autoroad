@@ -37,7 +37,7 @@ function semesterToSection(semester: number): number {
 export async function exportToRoadFormat(
   markers: Marker[],
   selectedRequirements: string[],
-  getCourseDetails: (courseId: string) => Promise<{ name: string; units: number }>
+  getCourseDetails: (courseId: string) => Promise<{ title: string; total_units: number }>
 ): Promise<RoadFormat> {
   const selectedSubjects: RoadFormatSubject[] = [];
 
@@ -50,9 +50,9 @@ export async function exportToRoadFormat(
       selectedSubjects.push({
         overrideWarnings: marker.status === 'override',
         semester: sectionToSemester(marker.section),
-        title: details.name,
+        title: details.title,
         subject_id: marker.courseId,
-        units: details.units,
+        units: details.total_units,
       });
     } catch (error) {
       console.warn(`Failed to get details for ${marker.courseId}:`, error);

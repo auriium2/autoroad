@@ -1,0 +1,14 @@
+4-HAAD-CONC#,#History of Arch/Art/Design#,#HASS Concentration in History of Architecture, Art, and Design#,#Concentration in History of Architecture, Art, and Design
+
+A concentration requires four subjects: three from Group A (History of Architecture, Art and Design) and one from Group B (Art, Culture & Technology).
+
+group_a, "Group A - History of Architecture, Art, and Design" := 4.601, 4.602, 4.635, 4.636, 4.641, 4.651, 4.657
+
+group_b, "Group B - ACT Group A" := 4.301, 4.302, 4.320, 4.322, 4.341, 4.354
+
+group_a_req, "Three from Group A" := (group_a){>=3}
+
+group_b_req, "One from Group B" := (group_b){>=1}
+
+total, "Total Requirements" := group_a_req, group_b_req
+

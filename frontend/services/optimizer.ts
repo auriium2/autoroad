@@ -7,6 +7,28 @@ import type { Marker, OptimizerNode } from '@/types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
+async function optimizerFetch<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Accept': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.error || `HTTP ${response.status}: ${response.statusText}`
+    );
+  }
+
+  return await response.json();
+}
+
 
 
 export interface OptimizationProgress {
@@ -54,61 +76,17 @@ export interface HardConstraintsResponse {
   constraints: HardConstraintMetadata[];
 }
 
-export interface RequirementMetadata {
-  title_no_degree?: string;
-  title?: string;
-  short?: string;
-  medium?: string;
-}
 
-export type RequirementsListResponse = Record<string, RequirementMetadata>;
-
-export interface RequirementNode {
-  title?: string;
-  'connection-type'?: 'all' | 'any';
-  'threshold-desc'?: string;
-  threshold?: {
-    cutoff: number;
-    criterion: string;
-    type: string;
-  };
-  desc?: string;
-  reqs?: RequirementNode[];
-  req?: string;
-  fulfilled?: boolean;
-  progress?: number;
-  max?: number;
-  percent_fulfilled?: number;
-  sat_courses?: string[];
-  is_bypassed?: boolean;
-}
-
-export interface RequirementTree {
-  'list-id': string;
-  title: string;
-  'medium-title'?: string;
-  'short-title'?: string;
-  'title-no-degree'?: string;
-  desc?: string;
-  reqs: RequirementNode[];
-}
 
 export const optimizerApi = {
   async checkHealth(): Promise<{ status: string; service: string }> {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/optimize/health`, {
-        signal: AbortSignal.timeout(3000), // 3 second timeout
+    return optimizerFetch<{ status: string; service: string }>(
+      `${BACKEND_URL}/api/optimize/health`,
+      {
+        signal: AbortSignal.timeout(3000),
         mode: 'cors',
-      });
-      if (!response.ok) {
-        throw new Error('Health check failed');
       }
-      return response.json();
-    } catch (error) {
-      // This will catch network errors, CORS errors, and timeouts
-      console.error('Backend health check failed:', error);
-      throw new Error('Optimizer service unavailable');
-    }
+    );
   },
 
   async getCourseCategories(
@@ -128,71 +106,24 @@ export const optimizerApi = {
       planningYear: planningYear || undefined,
     };
 
-    const response = await fetch(`${BACKEND_URL}/api/optimize/course-categories`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch course categories: ${response.statusText}`);
-    }
-    
-    return response.json();
+    return optimizerFetch<Record<string, string[]>>(
+      `${BACKEND_URL}/api/optimize/course-categories`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
   },
 
   async getObjectives(): Promise<ObjectivesResponse> {
-    const response = await fetch(`${BACKEND_URL}/api/optimize/objectives`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch objectives: ${response.statusText}`);
-    }
-    return response.json();
+    return optimizerFetch<ObjectivesResponse>(`${BACKEND_URL}/api/optimize/objectives`);
   },
 
   async getHardConstraints(): Promise<HardConstraintsResponse> {
-    const response = await fetch(`${BACKEND_URL}/api/optimize/constraints`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch constraints: ${response.statusText}`);
-    }
-    return response.json();
-  },
-
-  async getRequirementsList(): Promise<RequirementsListResponse> {
-    const response = await fetch(`${BACKEND_URL}/api/optimize/requirements`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch requirements: ${response.statusText}`);
-    }
-    return response.json();
-  },
-
-  async getRequirementProgress(key: string, courseIds: string[]): Promise<RequirementTree> {
-    const roadData = {
-      coursesOfStudy: [key],
-      selectedSubjects: courseIds.map((courseId, index) => ({
-        subject_id: courseId,
-        title: courseId,
-        units: 12,
-        semester: index % 8,
-      })),
-      progressAssertions: {},
-    };
-
-    const response = await fetch(
-      `https://fireroad.mit.edu/requirements/progress/${key}/`,
-      {
-        headers: {
-          'Accept': 'application/json',
-        },
-        method: 'POST',
-        body: JSON.stringify(roadData),
-      }
-    );
-    if (!response.ok) {
-      throw new Error(`Failed to fetch requirement progress for ${key}: ${response.statusText}`);
-    }
-    return response.json();
+    return optimizerFetch<HardConstraintsResponse>(`${BACKEND_URL}/api/optimize/constraints`);
   },
 
   async *optimize(
@@ -289,7 +220,7 @@ export const optimizerApi = {
                 } else if (message.warnings && message.warnings.length > 0) {
                   console.warn('[Optimizer] Warnings:', message.warnings);
                 }
-                
+
                 // Yield final completion message with status
                 yield {
                   nodes: [],
@@ -297,7 +228,7 @@ export const optimizerApi = {
                   status: message.status,
                   isComplete: true,
                 };
-                
+
                 return;
               } else if (message.type === 'error') {
                 throw new Error(message.error || 'Optimization failed');

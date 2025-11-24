@@ -1,0 +1,24 @@
+21T-THEATER-CONC#,#Theater Arts#,#HASS Concentration in Theater Arts#,#Concentration in Theater Arts
+
+A concentration in Theater Arts requires 36 credits (typically three 12-credit courses). Up to nine units of theater practicum may count toward the concentration.
+
+intro_theater, "Introductory Theater Courses" := 21T.100, 21T.101, 21T.102, 21T.103, 21T.104, 21T.110, 21T.111, 21T.120, 21T.121, 21T.122, 21T.130, 21T.131, 21T.141, 21T.150
+
+performance, "Performance Courses" := 21T.201, 21T.202, 21T.203, 21T.204, 21T.210, 21T.231, 21T.240, 21T.301, 21T.331, 21T.340
+
+design, "Design Courses" := 21T.220, 21T.221, 21T.222, 21T.223, 21T.224, 21T.230, 21T.320, 21T.321
+
+drama_studies, "Drama and Playwriting" := 21T.241, 21T.242, 21T.243, 21T.244, 21T.245, 21T.246, 21T.247, 21T.248, 21T.250, 21T.251, 21T.345, 21T.350, 21T.355
+
+advanced_topics, "Advanced Theater Topics" := 21T.420, 21T.421, 21T.422, 21T.423, 21T.424, 21T.425
+
+all_theater, "All Theater Arts Courses" := intro_theater / performance / design / drama_studies / advanced_topics
+
+practicum, "Theater Practicum" := 21T.400, 21T.403, 21T.406, 21T.409
+%% Up to 9 units of practicum may be included
+
+theater_requirement, "Three Theater Arts Subjects (36 credits)" := (all_theater){>=3}
+%% Typically three 12-unit courses
+
+total, "Total Requirements" := theater_requirement
+

@@ -131,3 +131,12 @@ export function getPastSemesters(graduationYear: number): string[] {
   
   return semesters;
 }
+
+/**
+ * Converts a graduation year to a planning year string (e.g., "2024" -> "2020-2021")
+ */
+export function graduationYearToPlanningYear(graduationYear: string): string {
+  const gradYear = parseInt(graduationYear, 10);
+  const freshmanFallYear = gradYear - 4;
+  return `${freshmanFallYear}-${freshmanFallYear + 1}`;
+}

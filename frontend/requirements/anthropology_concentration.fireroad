@@ -1,0 +1,18 @@
+21A-CONC#,#Anthropology#,#HASS Concentration in Anthropology#,#Concentration in Anthropology
+
+A concentration in Anthropology requires three subjects including one introductory course and two other subjects.
+
+intro_req, "Introductory Anthropology" := 21A.00 / 21A.01 / 21A.157
+
+culture_politics, "Culture, Politics, and Identities" := 21A.103, 21A.104, 21A.111, 21A.120, 21A.127, 21A.129, 21A.130, 21A.131, 21A.132, 21A.133, 21A.135, 21A.136, 21A.137, 21A.138, 21A.141, 21A.143, 21A.144, 21A.150, 21A.155, 21A.461
+
+health_environment, "Bodies, Health, and Environment" := 21A.301, 21A.302, 21A.303, 21A.305, 21A.311, 21A.312, 21A.319, 21A.400, 21A.402, 21A.404, 21A.407, 21A.408, 21A.409, 21A.410, 21A.411, 21A.419, 21A.429
+
+sci_tech_media, "Science, Technology, and Media" := 21A.151, 21A.500, 21A.501, 21A.502, 21A.503, 21A.504, 21A.505, 21A.506, 21A.507, 21A.508, 21A.509, 21A.511, 21A.513, 21A.519, 21A.520, 21A.525, 21A.529, 21A.539, 21A.550, 21A.559
+
+additional_anthro, "Additional Anthropology Courses" := culture_politics / health_environment / sci_tech_media
+
+two_additional, "Two Additional Anthropology Subjects" := (additional_anthro){>=2}
+
+total, "Total Requirements" := intro_req, two_additional
+

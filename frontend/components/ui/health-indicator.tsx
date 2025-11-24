@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryKeys';
 import { BrainCircuit, Globe, Server } from 'lucide-react';
 import {
   Tooltip,
@@ -14,7 +15,7 @@ interface HealthIndicatorProps {
 export function HealthIndicator({ className }: HealthIndicatorProps) {
   // Check backend (optimizer) health via Next.js proxy
   const { data: backendHealth, isError: backendError } = useQuery({
-    queryKey: ['backend-health'],
+    queryKey: queryKeys.health.backend(),
     queryFn: async () => {
       const response = await fetch('/api/health/backend', {
         signal: AbortSignal.timeout(5000),
@@ -28,7 +29,7 @@ export function HealthIndicator({ className }: HealthIndicatorProps) {
 
   // Check Fireroad health via Next.js proxy
   const { data: fireroadHealth, isError: fireroadError } = useQuery({
-    queryKey: ['fireroad-health'],
+    queryKey: queryKeys.health.fireroad(),
     queryFn: async () => {
       const response = await fetch('/api/health/fireroad', {
         signal: AbortSignal.timeout(5000),
@@ -42,7 +43,7 @@ export function HealthIndicator({ className }: HealthIndicatorProps) {
 
   // Check Next.js health
   const { data: nextjsHealth, isError: nextjsError } = useQuery({
-    queryKey: ['nextjs-health'],
+    queryKey: queryKeys.health.nextjs(),
     queryFn: async () => {
       const response = await fetch('/api/health', {
         signal: AbortSignal.timeout(3000),

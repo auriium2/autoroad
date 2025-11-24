@@ -1,0 +1,12 @@
+21G-CHINESE-CONC#,#Chinese#,#HASS Concentration in Chinese#,#Concentration in Chinese
+
+A concentration in Chinese requires three to four subjects at semester III or above.
+
+chinese_lang, "Chinese Language Subjects (Semester III+)" := 21G.103, 21G.104, 21G.105, 21G.106, 21G.109, 21G.110, 21G.112, 21G.113, 21G.118, 21G.120, 21G.121
+
+chinese_culture, "Chinese Culture and Literature" := 21G.038, 21G.044, 21G.045, 21G.046, 21G.075, 21G.111, 21G.133, 21G.190, 21G.192, 21G.193, 21G.194, 21G.195, 21G.196
+
+all_chinese, "All Chinese Concentration Courses" := chinese_lang / chinese_culture
+
+total, "Three to Four Chinese Subjects" := (all_chinese){>=3}
+

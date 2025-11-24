@@ -21,9 +21,9 @@ describe('roadFormat', () => {
       ];
 
       const mockGetCourseDetails = async (courseId: string) => {
-        const mockData: Record<string, { name: string; units: number }> = {
-          '18.02': { name: 'Calculus', units: 12 },
-          '6.100A': { name: 'Introduction to CS', units: 6 },
+        const mockData: Record<string, { title: string; total_units: number }> = {
+          '18.02': { title: 'Calculus', total_units: 12 },
+          '6.100A': { title: 'Introduction to CS', total_units: 6 },
         };
         return mockData[courseId];
       };
@@ -65,7 +65,7 @@ describe('roadFormat', () => {
       ];
 
       const mockGetCourseDetails = async (courseId: string) => {
-        return { name: 'Test Course', units: 12 };
+        return { title: 'Test Course', total_units: 12 };
       };
 
       const result = await exportToRoadFormat(markers, [], mockGetCourseDetails);
@@ -76,7 +76,7 @@ describe('roadFormat', () => {
 
     it('should use girs as default coursesOfStudy', async () => {
       const markers: Marker[] = [];
-      const mockGetCourseDetails = async () => ({ name: '', units: 0 });
+      const mockGetCourseDetails = async () => ({ title: '', total_units: 0 });
 
       const result = await exportToRoadFormat(markers, [], mockGetCourseDetails);
 
