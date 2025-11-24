@@ -179,6 +179,31 @@ def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: di
             raise RequirementParseError(f"Threshold missing required field: {e}") from e
         except (ValueError, TypeError) as e:
             raise RequirementParseError(f"Invalid threshold value: {e}") from e
+    else:
+        # Infer threshold from connection-type when not explicitly provided
+        num_items = len(parsed_items)
+        if connection_type == 'all':
+            # 'all' means every item must be satisfied
+            threshold = RequirementThreshold(
+                cutoff=num_items,
+                criterion='subjects',
+                type='EQ'
+            )
+        elif connection_type == 'any':
+            # 'any' means at least one item must be satisfied
+            threshold = RequirementThreshold(
+                cutoff=1,
+                criterion='subjects',
+                type='GTE'
+            )
+        elif connection_type is None and num_items > 0:
+            # No connection-type specified - default to 'all' (must satisfy every item)
+            # This handles wrapper groups created by parse_requirement({'reqs': [...]})
+            threshold = RequirementThreshold(
+                cutoff=num_items,
+                criterion='subjects',
+                type='EQ'
+            )
 
     # Validate connection type
     if connection_type is not None and connection_type not in ['all', 'any']:

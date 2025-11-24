@@ -1,6 +1,7 @@
 import concurrent.futures
 import threading
 
+import polars as pl
 import requests
 from cachetools import TTLCache, cached
 
@@ -9,6 +10,9 @@ _courses_lock = threading.RLock()
 
 _requirements_cache: TTLCache[str, dict[str, object]] = TTLCache(maxsize=128, ttl=3600)
 _requirements_lock = threading.RLock()
+
+_prerequisites_cache: TTLCache[str, dict[int, object]] = TTLCache(maxsize=1, ttl=3600)
+_prerequisites_lock = threading.RLock()
 
 
 @cached(cache=_courses_cache, lock=_courses_lock)
@@ -65,9 +69,55 @@ def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
     return {k: get_requirement(k) for k in requirement_keys}
 
 
+def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
+    """
+    Get parsed prerequisite trees for all courses, with caching.
+    
+    Cache key is based on the number of courses (assumes course data is stable).
+    This avoids re-parsing ~2800 prerequisite strings on every optimization.
+    
+    Args:
+        courses_df: Polars DataFrame with course data
+        
+    Returns:
+        Dictionary mapping course_idx to parsed PrereqNode
+    """
+    from courses.prerequisites.parser import parse_fireroad
+
+    cache_key = f"prereqs_{len(courses_df)}"
+
+    # Check cache first
+    with _prerequisites_lock:
+        if cache_key in _prerequisites_cache:
+            print(f"[CACHE] Prerequisite cache HIT for {len(courses_df)} courses")
+            return _prerequisites_cache[cache_key]
+
+    # Cache miss - parse all prerequisites
+    print(f"[CACHE] Prerequisite cache MISS for {len(courses_df)} courses - parsing...")
+    prereq_trees = {}
+    for course_idx in range(len(courses_df)):
+        prereq_str = courses_df[course_idx, 'prerequisites']
+
+        if prereq_str is not None and prereq_str:
+            try:
+                prereq_tree = parse_fireroad(prereq_str)
+                prereq_trees[course_idx] = prereq_tree
+            except Exception:
+                pass
+
+    # Cache the result
+    with _prerequisites_lock:
+        _prerequisites_cache[cache_key] = prereq_trees
+        print(f"[CACHE] Cached {len(prereq_trees)} prerequisite trees")
+
+    return prereq_trees
+
+
 def clear_cache():
     """Clear all caches (useful for testing or forcing refresh)"""
     with _courses_lock:
         _courses_cache.clear()
     with _requirements_lock:
         _requirements_cache.clear()
+    with _prerequisites_lock:
+        _prerequisites_cache.clear()

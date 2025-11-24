@@ -1,8 +1,13 @@
 import asyncio
 import json
+import os
 import queue
 import threading
+import time
 from collections.abc import Sequence
+from ctypes import c_double, c_int
+from multiprocessing import Value
+from threading import RLock
 
 import polars as pl
 from fastapi import APIRouter
@@ -10,8 +15,7 @@ from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
 from api.models.requests import Marker, OptimizationRequest
-from api.services.cache import get_courses_data, get_requirements
-from courses.prerequisites.parser import parse_fireroad
+from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.prerequisites.types import PrereqNode
 from courses.requirements.parser import parse_requirement
 from courses.requirements.validator import validate_and_prune
@@ -37,12 +41,15 @@ from utils.utils import (
 
 router = APIRouter()
 
+# BENCHMARK: Set to False to disable multi-threading for performance comparison
+ENABLE_MULTITHREADING = True
+
 
 @router.get("/optimize/health")
 async def health_check():
     """
     Health check endpoint for the optimizer service.
-    
+
     Returns:
         Status of the optimizer service
     """
@@ -54,7 +61,9 @@ async def health_check():
 
 class StreamingCallback(cp_model.CpSolverSolutionCallback):
     """
-    CP-SAT callback that puts solutions into a queue for real-time streaming.
+    Thread-safe CP-SAT callback for multi-threaded solving.
+    Multiple solver threads can invoke this callback concurrently.
+    Uses atomic operations and minimal locking for best performance.
     """
 
     def __init__(
@@ -72,10 +81,15 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         super().__init__()
         self.take_vars: dict[tuple[int, int], cp_model.IntVar] = take_vars
         self.courses_df: pl.DataFrame = courses_df
-        self.solution_count: int = 0
         self.solution_queue: queue.Queue[object] = solution_queue
-        self.best_solution_nodes: list[dict[str, object]] = []  # Track best solution for .road export
-        self.best_objective_value: float | None = None
+
+        # Atomic counter for solution numbering (thread-safe increment)
+        self._solution_count = Value(c_int, 0)
+
+        # Best solution tracking (only lock when updating best)
+        self._best_lock = RLock()
+        self._best_objective_value = Value(c_double, float('inf'))
+        self._best_solution_nodes: list[dict[str, object]] = []
 
         # For cost breakdown calculation
         self.builder = builder
@@ -85,21 +99,33 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         self.requirement_tiers = requirement_tiers
         self.marked_course_ids = marked_course_ids
 
-    def on_solution_callback(self) -> None:
-        self.solution_count += 1
-        nodes = []
+    @property
+    def solution_count(self) -> int:
+        return self._solution_count.value
 
+    @property
+    def best_solution_nodes(self) -> list[dict[str, object]]:
+        with self._best_lock:
+            return self._best_solution_nodes.copy()
+
+    @property
+    def best_objective_value(self) -> float | None:
+        val = self._best_objective_value.value
+        return None if val == float('inf') else val
+
+    def on_solution_callback(self) -> None:
+        # Extract solution data (thread-local, no sync needed)
+        nodes = []
         for (course_idx, semester), var in self.take_vars.items():
             if self.Value(var) != 0:
                 course_id = self.courses_df[course_idx, 'subject_id']
                 title = self.courses_df[course_idx, 'title'] if 'title' in self.courses_df.columns else None
 
                 # Convert semester to section for frontend
-                # Special semesters (-2, -1) stay as-is, regular semesters (1-12) become 0-based (0-11)
                 if semester < 0:
-                    section = semester  # Keep special semesters as-is
+                    section = semester
                 else:
-                    section = semester - 1  # Convert regular semesters to 0-based
+                    section = semester - 1
 
                 units = self.courses_df[course_idx, 'total_units'] if 'total_units' in self.courses_df.columns else 12
 
@@ -117,39 +143,35 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         if self.builder:
             try:
                 cost_breakdown = self.builder.calculate_cost_breakdown(self)
-                # Debug: Print detailed breakdown
-                print(f"\n[DEBUG] Solution #{self.solution_count} - Objective: {current_objective}")
-                print("[DEBUG] Cost Breakdown:")
-                for name, cost in cost_breakdown.items():
-                    print(f"  - {name}: {cost}")
-                breakdown_total = sum(cost_breakdown.values())
-                print(f"[DEBUG] Total from breakdown: {breakdown_total}")
-                if abs(breakdown_total - current_objective) > 1:
-                    print(f"[WARNING] Breakdown sum ({breakdown_total}) != objective ({current_objective})")
             except Exception as e:
                 print(f"[WARNING] Failed to calculate cost breakdown: {e}")
 
-        # Track best solution for .road export (lower objective = better)
-        if self.best_objective_value is None or current_objective < self.best_objective_value:
-            self.best_objective_value = current_objective
-            self.best_solution_nodes = nodes
-            print(f"[SSE] Callback: New best solution #{self.solution_count} with objective={current_objective}")
+        # Atomic increment for solution number
+        with self._solution_count.get_lock():
+            self._solution_count.value += 1
+            solution_num = self._solution_count.value
+
+        # Update best solution only if this is better (minimize contention)
+        if current_objective < self._best_objective_value.value:
+            with self._best_lock:
+                # Double-check after acquiring lock
+                if current_objective < self._best_objective_value.value:
+                    self._best_objective_value.value = current_objective
+                    self._best_solution_nodes = nodes
+                    print(f"[SSE] Callback: New best solution #{solution_num} with objective={current_objective}")
 
         solution = {
             "type": "solution",
-            "step": self.solution_count,
-            "solutionNumber": self.solution_count,  # Explicit sequence number for ordering
+            "step": solution_num,
+            "solutionNumber": solution_num,
             "nodes": nodes,
             "objectiveValue": current_objective,
             "costBreakdown": cost_breakdown
         }
 
-        # Put solution in queue immediately (thread-safe)
+        # Queue.put is thread-safe by default
         self.solution_queue.put(solution)
-        print(f"[SSE] Callback: Solution {self.solution_count} queued with objective={current_objective}, {len(nodes)} courses")
-        # Debug: print first 5 courses with their sections
-        for node in nodes[:5]:
-            print(f"  - {node['courseId']} @ section {node['section']}")
+        print(f"[SSE] Callback: Solution {solution_num} queued with objective={current_objective}, {len(nodes)} courses")
 
 
 def create_take_vars(model: cp_model.CpModel, courses_df: pl.DataFrame, planning_year_start: int, max_semesters: int, markers: Sequence[Marker] | None = None) -> dict[tuple[int, int], cp_model.IntVar]:
@@ -237,7 +259,7 @@ def add_past_semester_constraints(
 ) -> None:
     """
     Prevent optimizer from placing courses in semesters that have already passed.
-    
+
     Pinned courses in past semesters are allowed (user explicitly placed them there).
     """
     current_semester = get_current_semester_index(planning_year_start)
@@ -255,7 +277,7 @@ def add_past_semester_constraints(
             course_id_to_idx[subject_id] = idx
 
         for marker in markers:
-            if marker.status == "pin" and marker.section >= 0:
+            if (marker.status == "pin" or marker.status == "override") and marker.section >= 0:
                 course_idx = course_id_to_idx.get(marker.courseId)
                 if course_idx is not None:
                     # Convert section (0-based) to semester (1-based)
@@ -277,21 +299,13 @@ def add_past_semester_constraints(
 
 
 def parse_prerequisites_for_all_courses(courses_df: pl.DataFrame) -> dict[int, PrereqNode]:
-    """Parse prerequisites for all courses."""
-    prereq_trees: dict[int, PrereqNode] = {}
+    """
+    Parse prerequisites for all courses (with caching).
 
-    for course_idx in range(len(courses_df)):
-        prereq_str = courses_df[course_idx, 'prerequisites']
-
-        if prereq_str is not None and prereq_str:
-            try:
-                prereq_tree = parse_fireroad(prereq_str)
-                prereq_trees[course_idx] = prereq_tree
-
-            except Exception:
-                pass
-
-    return prereq_trees
+    DEPRECATED: Use get_parsed_prerequisites() from cache module directly.
+    This wrapper exists for backwards compatibility.
+    """
+    return get_parsed_prerequisites(courses_df)
 
 
 @router.post("/optimize")
@@ -309,19 +323,25 @@ async def optimize(request: OptimizationRequest):
 
     async def event_stream():
         try:
+            # Performance tracking
+            perf_timings = {}
+            perf_start_total = time.time()
+
             # Send initial progress
             msg = {'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10}
             print(f"[SSE] Sending: {msg}")
             yield f"data: {json.dumps(msg)}\n\n"
 
             # Get data (run in thread pool to not block)
+            perf_start = time.time()
             loop = asyncio.get_event_loop()
             print("[SSE] Fetching courses and requirements...")
             courses_data = await loop.run_in_executor(None, get_courses_data)
             requirements_data = await loop.run_in_executor(None, get_requirements, tuple(request.requirements))
             # Use infer_schema_length=None to ensure all columns are detected
             courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-            print(f"[SSE] Loaded {len(courses_df)} courses")
+            perf_timings['data_fetch'] = time.time() - perf_start
+            print(f"[SSE] Loaded {len(courses_df)} courses in {perf_timings['data_fetch']:.3f}s")
 
             # Get planning year
             planning_year = request.planningYear
@@ -335,6 +355,7 @@ async def optimize(request: OptimizationRequest):
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
 
             # Create model (run in thread pool)
+            perf_start = time.time()
             def create_model():
                 model = cp_model.CpModel()
                 take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
@@ -344,13 +365,20 @@ async def optimize(request: OptimizationRequest):
                 if request.lockPastSemesters:
                     add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
 
+                # Log decision variable stats
+                unique_courses = len(set(course_idx for course_idx, _ in take_vars.keys()))
+                print(f"[STATS] Created {len(take_vars)} decision variables for {unique_courses} courses out of {len(courses_df)} total")
+
                 return model, take_vars
 
             model, take_vars = await loop.run_in_executor(None, create_model)
+            perf_timings['model_creation'] = time.time() - perf_start
+            print(f"[PERF] Model creation: {perf_timings['model_creation']:.3f}s")
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
 
             # Add requirement constraints (run in thread pool)
+            perf_start = time.time()
             course_to_requirements = {}
             def add_requirements():
                 nonlocal course_to_requirements
@@ -377,30 +405,55 @@ async def optimize(request: OptimizationRequest):
                         course_to_requirements[course_idx].update(req_paths)
 
             await loop.run_in_executor(None, add_requirements)
+            perf_timings['requirements'] = time.time() - perf_start
+            print(f"[PERF] Requirements: {perf_timings['requirements']:.3f}s")
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
 
             # Add prerequisite constraints (run in thread pool)
+            perf_start = time.time()
             def add_prereqs():
-                prereq_trees = parse_prerequisites_for_all_courses(courses_df)
+                # Use cached prerequisite parsing (major performance win)
+                prereq_parse_start = time.time()
+                prereq_trees = get_parsed_prerequisites(courses_df)
+                prereq_parse_time = time.time() - prereq_parse_start
+
                 # Get override marker course IDs to skip prerequisite enforcement
                 override_course_ids = set()
                 for m in request.markers:
                     if m.status == 'override':
                         override_course_ids.add(m.courseId)
+
+                # Log prereq stats
+                courses_with_vars = set(course_idx for course_idx, _ in take_vars.keys())
+                relevant_prereq_courses = len([idx for idx in prereq_trees.keys() if idx in courses_with_vars])
+                print(f"[STATS] {len(prereq_trees)} courses have prereqs, {relevant_prereq_courses} have decision variables")
+
+                # Add constraints to model
+                constraint_start = time.time()
                 add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+                constraint_time = time.time() - constraint_start
+
+                print(f"[PERF]   - Prereq parsing/cache:     {prereq_parse_time:.3f}s")
+                print(f"[PERF]   - Prereq constraint build:  {constraint_time:.3f}s")
 
             await loop.run_in_executor(None, add_prereqs)
+            perf_timings['prerequisites'] = time.time() - perf_start
+            print(f"[PERF] Prerequisites TOTAL: {perf_timings['prerequisites']:.3f}s")
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10})}\n\n"
 
             # Add marker constraints (run in thread pool)
+            perf_start = time.time()
             def add_markers():
                 return add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
 
             marker_result = await loop.run_in_executor(None, add_markers)
+            perf_timings['markers'] = time.time() - perf_start
+            print(f"[PERF] Markers: {perf_timings['markers']:.3f}s")
 
             # Add hard constraints (run in thread pool)
+            perf_start = time.time()
             def add_hard_constraints():
                 if request.hardConstraints:
                     constraint_context = ConstraintContext(
@@ -420,10 +473,13 @@ async def optimize(request: OptimizationRequest):
                             print(f"[WARNING] Invalid constraint {constraint_key}: {e}")
 
             await loop.run_in_executor(None, add_hard_constraints)
+            perf_timings['hard_constraints'] = time.time() - perf_start
+            print(f"[PERF] Hard constraints: {perf_timings['hard_constraints']:.3f}s")
 
             yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
 
             # Build objective (run in thread pool)
+            perf_start = time.time()
             def build_objective():
                 builder = ObjectiveBuilder()
 
@@ -478,6 +534,8 @@ async def optimize(request: OptimizationRequest):
                 return builder
 
             builder = await loop.run_in_executor(None, build_objective)
+            perf_timings['objective_building'] = time.time() - perf_start
+            print(f"[PERF] Objective building: {perf_timings['objective_building']:.3f}s")
 
             msg = {'type': 'progress', 'message': 'Solving...', 'step': 7, 'totalSteps': 10}
             print(f"[SSE] Sending: {msg}")
@@ -504,24 +562,50 @@ async def optimize(request: OptimizationRequest):
 
             # Configure solver
             solver = cp_model.CpSolver()
-            solver.parameters.enumerate_all_solutions = True
             solver.parameters.max_time_in_seconds = 30
+
+            # Multi-threading configuration
+            # NOTE: enumerate_all_solutions is incompatible with multi-threading
+            # Multi-threading finds one good solution fast, enumeration finds all solutions slowly
+            if ENABLE_MULTITHREADING:
+                # Multi-threaded mode: find best solution quickly using parallel workers
+                solver.parameters.enumerate_all_solutions = False
+                num_workers = int(os.getenv("CPSAT_NUM_WORKERS", "0"))
+                if num_workers > 0:
+                    solver.parameters.num_search_workers = num_workers
+                    print(f"[SSE] Multi-threading ENABLED: {num_workers} workers, enumerate=False")
+                else:
+                    # Auto-detect (typically # of CPU cores)
+                    print("[SSE] Multi-threading ENABLED: auto-detect workers, enumerate=False")
+            else:
+                # Single-threaded enumeration mode (finds multiple diverse solutions)
+                solver.parameters.enumerate_all_solutions = False
+                solver.parameters.num_search_workers = 1
+                print("[SSE] Multi-threading DISABLED: single worker, enumerate=True")
 
             # Run solver in thread pool (non-blocking)
             print("[SSE] Starting solver...")
             solver_done = threading.Event()
             result = cp_model.MODEL_INVALID  # Initialize with default value
+            solve_start_time = time.time()
 
             def run_solver():
                 nonlocal result
                 result = solver.Solve(model, callback)
-                solution_queue.put({'__done__': True, 'result': result, 'count': callback.solution_count})
+                solve_time = time.time() - solve_start_time
+                solution_queue.put({
+                    '__done__': True,
+                    'result': result,
+                    'count': callback.solution_count,
+                    'solve_time': solve_time
+                })
                 solver_done.set()
 
             solver_thread = threading.Thread(target=run_solver)
             solver_thread.start()
 
             # Stream solutions as they arrive in the queue
+            solve_time_seconds = None
             while not solver_done.is_set() or not solution_queue.empty():
                 try:
                     solution = solution_queue.get(timeout=0.1)
@@ -529,7 +613,8 @@ async def optimize(request: OptimizationRequest):
                     # Check for completion signal
                     if '__done__' in solution:
                         result = solution['result']
-                        print(f"[SSE] Solver finished with status: {result}, found {solution['count']} solutions")
+                        solve_time_seconds = solution['solve_time']
+                        print(f"[SSE] Solver finished with status: {result}, found {solution['count']} solutions in {solve_time_seconds:.2f}s")
                         break
 
                     # Stream the solution
@@ -542,6 +627,26 @@ async def optimize(request: OptimizationRequest):
 
             # Make sure solver thread completes
             solver_thread.join()
+
+            # Calculate total time
+            perf_timings['solving'] = solve_time_seconds
+            perf_timings['total'] = time.time() - perf_start_total
+
+            # Print performance summary
+            print("\n" + "="*60)
+            print("PERFORMANCE SUMMARY")
+            print("="*60)
+            print(f"Data fetch:          {perf_timings['data_fetch']:>8.3f}s  ({perf_timings['data_fetch']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Model creation:      {perf_timings['model_creation']:>8.3f}s  ({perf_timings['model_creation']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Requirements:        {perf_timings['requirements']:>8.3f}s  ({perf_timings['requirements']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Prerequisites:       {perf_timings['prerequisites']:>8.3f}s  ({perf_timings['prerequisites']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Markers:             {perf_timings['markers']:>8.3f}s  ({perf_timings['markers']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Hard constraints:    {perf_timings['hard_constraints']:>8.3f}s  ({perf_timings['hard_constraints']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Objective building:  {perf_timings['objective_building']:>8.3f}s  ({perf_timings['objective_building']/perf_timings['total']*100:>5.1f}%)")
+            print(f"Solving:             {perf_timings['solving']:>8.3f}s  ({perf_timings['solving']/perf_timings['total']*100:>5.1f}%)")
+            print("-"*60)
+            print(f"TOTAL:               {perf_timings['total']:>8.3f}s")
+            print("="*60 + "\n")
 
             # Export to .road file for debugging
             if result in [cp_model.OPTIMAL, cp_model.FEASIBLE] and callback.best_solution_nodes:
@@ -583,7 +688,16 @@ async def optimize(request: OptimizationRequest):
                 if marker_result.errors:
                     warnings.extend(marker_result.errors[:3])
 
-            yield f"data: {json.dumps({'type': 'complete', 'status': status_map.get(result, 'MODEL_INVALID'), 'solutionCount': callback.solution_count, 'warnings': warnings})}\n\n"
+            completion_msg = {
+                'type': 'complete',
+                'status': status_map.get(result, 'MODEL_INVALID'),
+                'solutionCount': callback.solution_count,
+                'warnings': warnings,
+                'solveTimeSeconds': solve_time_seconds,
+                'multithreaded': ENABLE_MULTITHREADING,
+                'performanceTimings': perf_timings
+            }
+            yield f"data: {json.dumps(completion_msg)}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
@@ -681,9 +795,9 @@ async def get_hard_constraints():
 async def get_course_categories(request: OptimizationRequest):
     """
     Get which requirement categories each course can satisfy.
-    
+
     This is used by the frontend to display category tier stars on courses.
-    
+
     Returns:
         Dictionary mapping course IDs to lists of requirement paths they satisfy
     """

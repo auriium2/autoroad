@@ -187,12 +187,11 @@ class PrerequisiteConstraintBuilder:
         prereq_idx = self.ctx.schedule.get_course_index(prereq_course_id)
 
         if prereq_idx is None:
-            # Course not found - could be a special string or typo
-            # Assume satisfied to avoid blocking the optimization
+            # course is not found. Since we dont have bugs with strings getting passed down here any more it's likely an out of date course
             self.warnings.append(
                 f"Prerequisite course '{prereq_course_id}' not found for {course_id}"
             )
-            return self.ctx.model.NewConstant(1)
+            return self.ctx.model.NewConstant(0)
 
         # Create variable for whether this prerequisite is satisfied
         var_name = self.ctx.fresh_name(f"prereq_{prereq_course_id.replace('.', '_')}_for_{course_id.replace('.', '_')}_s{semester}")

@@ -173,6 +173,12 @@ class RequirementConstraintBuilder:
             result = self._build_plain_string(node, parent_path)
         elif isinstance(node, RequirementGroup):
             result = self._build_group(node, parent_path)
+        else:
+            # Unknown node type - create error result
+            result = ConstraintResult(
+                satisfied_var=None,
+                errors=[f"Unknown requirement node type: {type(node).__name__} at {parent_path}"]
+            )
 
         self.results.append(result)
         return result

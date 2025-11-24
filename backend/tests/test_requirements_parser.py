@@ -385,3 +385,133 @@ class TestRealWorldStructures:
 
         assert result.threshold.criterion == "units"
         assert result.threshold.cutoff == 27
+
+
+class TestThresholdInference:
+    """
+    Regression tests for automatic threshold inference from connection-type.
+    
+    These tests prevent the bug where groups without explicit thresholds
+    would have threshold=None, causing infeasibility in the optimizer.
+    """
+
+    def test_connection_type_all_infers_threshold(self):
+        """Test that connection-type='all' infers threshold to require all items."""
+        req_data = {
+            "connection-type": "all",
+            "threshold-desc": "select all",
+            "reqs": [
+                {"req": "1.000"},
+                {"req": "1.010A"},
+                {"req": "18.03"}
+            ],
+            "title": "Core Requirements"
+        }
+        result = parse_requirement(req_data)
+
+        assert isinstance(result, RequirementGroup)
+        assert result.threshold is not None, "Threshold should be inferred from connection-type='all'"
+        assert result.threshold.cutoff == 3, "Should require all 3 items"
+        assert result.threshold.criterion == "subjects"
+        assert result.threshold.type == "EQ"
+
+    def test_connection_type_any_infers_threshold(self):
+        """Test that connection-type='any' infers threshold to require at least one."""
+        req_data = {
+            "connection-type": "any",
+            "threshold-desc": "select any",
+            "reqs": [
+                {"req": "1.073"},
+                {"req": "1.074"}
+            ],
+            "title": "Choose One"
+        }
+        result = parse_requirement(req_data)
+
+        assert isinstance(result, RequirementGroup)
+        assert result.threshold is not None, "Threshold should be inferred from connection-type='any'"
+        assert result.threshold.cutoff == 1, "Should require at least 1 item"
+        assert result.threshold.criterion == "subjects"
+        assert result.threshold.type == "GTE"
+
+    def test_no_connection_type_infers_all_threshold(self):
+        """Test that no connection-type defaults to requiring all items (like 'all')."""
+        req_data = {
+            "reqs": [
+                {"req": "6.100A"},
+                {"req": "6.1200"},
+                {"req": "6.3900"}
+            ],
+            "title": "Required Courses"
+        }
+        result = parse_requirement(req_data)
+
+        assert isinstance(result, RequirementGroup)
+        assert result.threshold is not None, "Threshold should default when no connection-type"
+        assert result.threshold.cutoff == 3, "Should require all 3 items by default"
+        assert result.threshold.criterion == "subjects"
+        assert result.threshold.type == "EQ"
+
+    def test_explicit_threshold_overrides_inference(self):
+        """Test that explicit threshold takes precedence over connection-type inference."""
+        req_data = {
+            "connection-type": "any",
+            "threshold": {"cutoff": 2, "criterion": "subjects", "type": "GTE"},
+            "reqs": [
+                {"req": "6.4100"},
+                {"req": "6.4200"},
+                {"req": "6.4300"}
+            ],
+            "title": "Pick Two"
+        }
+        result = parse_requirement(req_data)
+
+        assert isinstance(result, RequirementGroup)
+        assert result.threshold.cutoff == 2, "Explicit threshold should override inference"
+        assert result.threshold.criterion == "subjects"
+
+    def test_nested_groups_all_have_thresholds(self):
+        """
+        Test that nested groups without explicit thresholds get inferred thresholds.
+        
+        This was the root cause of the Course 1 and Course 7 infeasibility bug.
+        """
+        req_data = {
+            "reqs": [
+                {
+                    "connection-type": "all",
+                    "threshold-desc": "select all",
+                    "reqs": [
+                        {"req": "1.000"},
+                        {"req": "1.010A"}
+                    ],
+                    "title": "Core"
+                },
+                {
+                    "connection-type": "any",
+                    "reqs": [
+                        {"req": "1.018"},
+                        {"req": "1.035"}
+                    ],
+                    "title": "Elective"
+                }
+            ],
+            "title": "Major Requirements"
+        }
+        result = parse_requirement(req_data)
+
+        assert isinstance(result, RequirementGroup)
+        # Root group should have threshold (no connection-type -> default to 'all')
+        assert result.threshold is not None, "Root group should have inferred threshold"
+        assert result.threshold.cutoff == 2, "Root should require both children"
+
+        # Check nested groups
+        core_group = result.items[0]
+        assert isinstance(core_group, RequirementGroup)
+        assert core_group.threshold is not None, "'all' group should have threshold"
+        assert core_group.threshold.cutoff == 2, "Core should require both courses"
+
+        elective_group = result.items[1]
+        assert isinstance(elective_group, RequirementGroup)
+        assert elective_group.threshold is not None, "'any' group should have threshold"
+        assert elective_group.threshold.cutoff == 1, "Elective should require one course"

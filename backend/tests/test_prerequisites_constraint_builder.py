@@ -455,3 +455,404 @@ class TestASEAndMustTake:
         # No constraints should be added since 8.02 is override
         assert result.constraints_added == 0
         assert not result.has_issues
+
+
+class TestComplexPrerequisites:
+    """Tests for complex prerequisite scenarios that have caused bugs."""
+
+    def test_missing_course_returns_unsatisfied(self):
+        """
+        Unit test: Missing courses should return NewConstant(0) (unsatisfied).
+        
+        This is the core fix for the 2.013 bug.
+        """
+        df = pl.DataFrame({
+            'subject_id': ['6.100A'],
+            'gir_attribute': [None],
+            'hass_attribute': [None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        for semester in range(1, 4):
+            take_vars[(0, semester)] = model.NewBoolVar(f"take_6.100A_s{semester}")
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # Course 0 requires a course that doesn't exist
+        prereq_tree = PrereqCourse("MISSING.COURSE")
+        prereq_trees = {0: prereq_tree}
+
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+
+        # Should add constraints and generate warnings
+        assert result.constraints_added == 3
+        assert len(result.warnings) == 3  # One per semester
+        assert "MISSING.COURSE" in result.warnings[0]
+
+        # Try to take the course - should be INFEASIBLE
+        model.Add(take_vars[(0, 1)] == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        # Must be infeasible - cannot take course with missing prerequisite
+        assert status == cp_model.INFEASIBLE, \
+            "Course with missing prerequisite should be untakeable"
+
+    def test_missing_course_in_or_group_forces_alternative(self):
+        """
+        Regression test: Missing course in OR group should force the alternative.
+        
+        This is the 2.013 bug scenario: (2.005 OR 2.051) where 2.051 is missing.
+        Should force taking 2.005.
+        """
+        df = pl.DataFrame({
+            'subject_id': ['ADVANCED', 'PREREQ_A'],  # PREREQ_B doesn't exist at all
+            'gir_attribute': [None, None],
+            'hass_attribute': [None, None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        # Create take variables
+        for course_idx in range(2):
+            for semester in range(1, 5):
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
+                )
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # ADVANCED requires (PREREQ_A OR PREREQ_B_MISSING)
+        # PREREQ_B_MISSING doesn't exist in the dataset
+        prereq_tree = PrereqGroup(
+            threshold=1,
+            items=(PrereqCourse("PREREQ_A"), PrereqCourse("PREREQ_B_MISSING"))
+        )
+        prereq_trees = {0: prereq_tree}
+
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+        assert result.constraints_added == 4
+        assert len(result.warnings) > 0  # Warning about PREREQ_B_MISSING
+        assert "PREREQ_B_MISSING" in result.warnings[0]
+
+        # Test 1: Try to take ADVANCED in semester 3 without PREREQ_A
+        # Should be INFEASIBLE (missing course doesn't count, must take PREREQ_A)
+        model.Add(take_vars[(0, 3)] == 1)
+        model.Add(take_vars[(1, 1)] == 0)
+        model.Add(take_vars[(1, 2)] == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status == cp_model.INFEASIBLE, \
+            "Should be infeasible without taking the valid alternative (PREREQ_A)"
+
+    def test_all_missing_in_or_group_makes_untakeable(self):
+        """
+        Regression test: If ALL courses in OR group are missing, course is untakeable.
+        
+        Example: (5.60 OR 5.61) where both are missing.
+        """
+        df = pl.DataFrame({
+            'subject_id': ['ADVANCED'],
+            'gir_attribute': [None],
+            'hass_attribute': [None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        for semester in range(1, 4):
+            take_vars[(0, semester)] = model.NewBoolVar(f"take_ADVANCED_s{semester}")
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # ADVANCED requires (MISSING_A OR MISSING_B)
+        prereq_tree = PrereqGroup(
+            threshold=1,
+            items=(PrereqCourse("MISSING_A"), PrereqCourse("MISSING_B"))
+        )
+        prereq_trees = {0: prereq_tree}
+
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+        assert result.constraints_added == 3
+        assert len(result.warnings) > 0
+
+        # Try to take the course - should be INFEASIBLE
+        model.Add(take_vars[(0, 1)] == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        assert status == cp_model.INFEASIBLE, \
+            "Course should be untakeable when all prerequisites in OR group are missing"
+
+    def test_missing_in_and_group_makes_untakeable(self):
+        """
+        Regression test: Missing course in AND group makes entire course untakeable.
+        
+        Example: (5.60 AND 10.213) where 5.60 is missing.
+        """
+        df = pl.DataFrame({
+            'subject_id': ['ADVANCED', 'PREREQ_A'],
+            'gir_attribute': [None, None],
+            'hass_attribute': [None, None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        for course_idx in range(2):
+            for semester in range(1, 4):
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
+                )
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # ADVANCED requires (PREREQ_A AND MISSING_B)
+        prereq_tree = PrereqGroup(
+            threshold=2,  # Both required
+            items=(PrereqCourse("PREREQ_A"), PrereqCourse("MISSING_B"))
+        )
+        prereq_trees = {0: prereq_tree}
+
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+        assert result.constraints_added == 3
+        assert len(result.warnings) > 0
+
+        # Try to take ADVANCED with PREREQ_A satisfied but MISSING_B not available
+        model.Add(take_vars[(1, 1)] == 1)  # Take PREREQ_A
+        model.Add(take_vars[(0, 2)] == 1)  # Try to take ADVANCED
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        assert status == cp_model.INFEASIBLE, \
+            "Course should be untakeable when any prerequisite in AND group is missing"
+
+    def test_2013_bug_full_integration(self):
+        """
+        Full integration test reproducing the 2.013 bug with real course data.
+        
+        This test fetches real courses and requirements from fireroad API
+        and runs the full optimizer to see if 2.013 can be incorrectly placed
+        without prerequisites.
+        """
+        import requests
+
+        from courses.prerequisites.parser import parse_fireroad
+
+        # Fetch real course data
+        response = requests.get('https://fireroad.mit.edu/courses/all?full=true')
+        response.raise_for_status()
+        courses_data = response.json()
+
+        # Filter to non-historical courses
+        courses = [c for c in courses_data if not c.get('is_historical')]
+
+        # Convert to DataFrame
+        df = pl.DataFrame(courses)
+
+        # Find 2.013 and its prerequisites
+        subject_ids = df['subject_id'].to_list()
+        try:
+            course_2013_idx = subject_ids.index('2.013')
+        except ValueError:
+            # Course doesn't exist in dataset, skip test
+            return
+
+        # Get prerequisite string for 2.013
+        prereq_str = df[course_2013_idx, 'prerequisites']
+        if not prereq_str:
+            # No prerequisites defined, skip test
+            return
+
+        print(f"\n2.013 Prerequisites: {prereq_str}")
+
+        # Parse prerequisite
+        prereq_tree = parse_fireroad(prereq_str)
+        print(f"Parsed tree: {prereq_tree}")
+
+        # Create model and take_vars
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        # Create take variables for all courses in semesters 1-8
+        for course_idx in range(len(df)):
+            for semester in range(1, 9):
+                course_id = df[course_idx, 'subject_id']
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{course_id.replace('.', '_')}_s{semester}"
+                )
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # Add prerequisite constraints for 2.013
+        prereq_trees = {course_2013_idx: prereq_tree}
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+
+        print(f"Constraints added: {result.constraints_added}")
+        print(f"Warnings: {result.warnings}")
+        print(f"Errors: {result.errors}")
+
+        # Force 2.013 in semester 7
+        model.Add(take_vars[(course_2013_idx, 7)] == 1)
+
+        # Force all prerequisite courses to NOT be taken
+        prereq_course_ids = ['2.001', '2.003', '2.005', '2.051', '2.00B', '2.670', '2.678']
+        for prereq_id in prereq_course_ids:
+            try:
+                prereq_idx = subject_ids.index(prereq_id)
+                for semester in range(1, 9):
+                    if (prereq_idx, semester) in take_vars:
+                        model.Add(take_vars[(prereq_idx, semester)] == 0)
+            except ValueError:
+                pass  # Course not in dataset
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        print(f"Solver status: {status}")
+
+        # This MUST be infeasible
+        assert status == cp_model.INFEASIBLE, \
+            f"Bug reproduced! Solver allowed 2.013 in semester 7 without prerequisites (status={status})"
+
+    def test_2013_complex_and_group_prerequisites(self):
+        """
+        Test that course 2.013 cannot be placed without satisfying its prerequisites.
+        
+        Reproduces bug where solver places 2.013 in Senior Fall without any prerequisites.
+        
+        2.013 requires: (2.001, 2.003, (2.005/2.051), (2.00B/2.670/2.678))
+        This means ALL of:
+        - 2.001 (Mechanics and Materials I)
+        - 2.003 (Dynamics and Control I)
+        - 2.005 OR 2.051 (one required)
+        - 2.00B OR 2.670 OR 2.678 (one required)
+        """
+        df = pl.DataFrame({
+            'subject_id': ['2.013', '2.001', '2.003', '2.005', '2.051', '2.00B', '2.670', '2.678'],
+            'gir_attribute': [None, None, None, None, None, None, None, None],
+            'hass_attribute': [None, None, None, None, None, None, None, None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        # Create take variables for all courses across 8 semesters
+        for course_idx in range(len(df)):
+            for semester in range(1, 9):
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
+                )
+
+        # Build the prerequisite tree for 2.013 (course_idx 0)
+        # Requires ALL of: 2.001, 2.003, (2.005 OR 2.051), (2.00B OR 2.670 OR 2.678)
+        prereq_tree = PrereqGroup(
+            threshold=4,  # All 4 items required
+            items=(
+                PrereqCourse("2.001"),
+                PrereqCourse("2.003"),
+                PrereqGroup(
+                    threshold=1,  # One of these
+                    items=(PrereqCourse("2.005"), PrereqCourse("2.051"))
+                ),
+                PrereqGroup(
+                    threshold=1,  # One of these
+                    items=(PrereqCourse("2.00B"), PrereqCourse("2.670"), PrereqCourse("2.678"))
+                )
+            )
+        )
+
+        prereq_trees = {0: prereq_tree}
+
+        result = add_prerequisite_constraints(
+            model, take_vars, df, 2024, prereq_trees
+        )
+
+        # Should add constraints for 2.013 in semesters 1-8
+        assert result.constraints_added == 8
+        assert not result.has_issues
+
+        # Test 1: Try to take 2.013 in semester 7 with NO prerequisites
+        # This should be INFEASIBLE
+        model.Add(take_vars[(0, 7)] == 1)  # Force 2.013 in semester 7
+
+        # Ensure NO prerequisites are taken
+        for course_idx in range(1, 8):  # All prereq courses
+            for semester in range(1, 9):
+                model.Add(take_vars[(course_idx, semester)] == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        # This MUST be infeasible - cannot take 2.013 without prerequisites
+        assert status == cp_model.INFEASIBLE, \
+            "Bug reproduced! Solver allowed 2.013 without prerequisites"
+
+    def test_2013_with_satisfied_prerequisites(self):
+        """
+        Test that 2.013 CAN be placed when prerequisites are satisfied.
+        """
+        df = pl.DataFrame({
+            'subject_id': ['2.013', '2.001', '2.003', '2.005', '2.051', '2.00B', '2.670', '2.678'],
+            'gir_attribute': [None, None, None, None, None, None, None, None],
+            'hass_attribute': [None, None, None, None, None, None, None, None],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        for course_idx in range(len(df)):
+            for semester in range(1, 9):
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
+                )
+
+        prereq_tree = PrereqGroup(
+            threshold=4,
+            items=(
+                PrereqCourse("2.001"),
+                PrereqCourse("2.003"),
+                PrereqGroup(threshold=1, items=(PrereqCourse("2.005"), PrereqCourse("2.051"))),
+                PrereqGroup(threshold=1, items=(PrereqCourse("2.00B"), PrereqCourse("2.670"), PrereqCourse("2.678")))
+            )
+        )
+
+        prereq_trees = {0: prereq_tree}
+        result = add_prerequisite_constraints(model, take_vars, df, 2024, prereq_trees)
+
+        assert result.constraints_added == 8
+        assert not result.has_issues
+
+        # Take all prerequisites in earlier semesters
+        model.Add(take_vars[(1, 1)] == 1)  # 2.001 in semester 1
+        model.Add(take_vars[(2, 2)] == 1)  # 2.003 in semester 2
+        model.Add(take_vars[(3, 3)] == 1)  # 2.005 in semester 3 (satisfies OR group)
+        model.Add(take_vars[(5, 4)] == 1)  # 2.00B in semester 4 (satisfies OR group)
+
+        # Now try to take 2.013 in semester 7
+        model.Add(take_vars[(0, 7)] == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+
+        # This SHOULD be feasible - all prerequisites are satisfied
+        assert status == cp_model.OPTIMAL or status == cp_model.FEASIBLE, \
+            "Solver should allow 2.013 when prerequisites are satisfied"
