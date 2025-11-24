@@ -213,10 +213,12 @@ def run_optimizer_quality_test(
         take_vars_nested,
         courses_df,
         prereq_trees,
-        min_courses=degree_config['min_expected_courses'],
-        max_courses=degree_config['max_expected_courses'],
+        min_courses=int(degree_config['min_expected_courses']),
+        max_courses=int(degree_config['max_expected_courses']),
         max_courses_per_semester=optimizer_config.max_courses_per_semester,
-        max_semesters=max_semesters
+        max_semesters=max_semesters,
+        min_objective_value=int(degree_config['min_objective_value']),
+        max_objective_value=int(degree_config['max_objective_value'])
     )
 
     return solver, take_vars, courses_df, prereq_trees
@@ -487,7 +489,9 @@ def assert_solution_quality(
     min_courses: int,
     max_courses: int,
     max_courses_per_semester: int,
-    max_semesters: int
+    max_semesters: int,
+    min_objective_value: int | None = None,
+    max_objective_value: int | None = None
 ):
     """
     Comprehensive assertion of solution quality.
@@ -525,3 +529,13 @@ def assert_solution_quality(
     non_empty_semesters = [s for s, c in distribution.items() if c > 0]
     assert len(non_empty_semesters) >= 3, \
         f"Courses should be spread across at least 3 semesters, got {len(non_empty_semesters)}"
+
+    # 5. Check objective value is in reasonable range
+    if min_objective_value is not None or max_objective_value is not None:
+        objective_value = solver.ObjectiveValue()
+        if min_objective_value is not None:
+            assert objective_value >= min_objective_value, \
+                f"Objective value {objective_value} is below minimum {min_objective_value}"
+        if max_objective_value is not None:
+            assert objective_value <= max_objective_value, \
+                f"Objective value {objective_value} is above maximum {max_objective_value}"

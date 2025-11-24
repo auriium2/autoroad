@@ -23,6 +23,7 @@ To add a new regression test:
 
 import json
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 import pytest
@@ -36,13 +37,14 @@ from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from optimizer.requirement_constraint_builder import add_requirement_constraints
+from tests.conftest import OptimizerTestConfig
 from tests.test_helpers import setup_optimizer_with_objectives
 
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "road_files"
 
 
-def load_road_file(filename: str) -> dict:
+def load_road_file(filename: str) -> dict[str, Any]:
     """Load a .road file from the fixtures directory."""
     path = FIXTURES_DIR / filename
     if not path.exists():
@@ -51,7 +53,7 @@ def load_road_file(filename: str) -> dict:
         return json.load(f)
 
 
-def road_to_markers(road_data: dict) -> list[Marker]:
+def road_to_markers(road_data: dict[str, Any]) -> list[Marker]:
     """
     Convert a .road file's selectedSubjects to Marker objects.
 
@@ -74,7 +76,7 @@ def road_to_markers(road_data: dict) -> list[Marker]:
     return markers
 
 
-def get_requirements_from_road(road_data: dict) -> tuple[str, ...]:
+def get_requirements_from_road(road_data: dict[str, Any]) -> tuple[str, ...]:
     """Extract requirement keys from a .road file."""
     courses_of_study = road_data.get("coursesOfStudy", [])
     if not courses_of_study:
@@ -90,9 +92,11 @@ class TestRoadFileRegressions:
     def _test_road_file(
         self,
         filename: str,
-        optimizer_config,
+        optimizer_config: OptimizerTestConfig,
         min_courses: int = 20,
         max_courses: int = 50,
+        min_objective_value: int | None = None,
+        max_objective_value: int | None = None,
         expected_feasible: bool = True,
         description: str = ""
     ):
@@ -104,9 +108,16 @@ class TestRoadFileRegressions:
             optimizer_config: Test configuration fixture
             min_courses: Minimum expected courses in solution
             max_courses: Maximum expected courses in solution
+            min_objective_value: Minimum acceptable objective value (default from config)
+            max_objective_value: Maximum acceptable objective value (default from config)
             expected_feasible: Whether we expect a feasible solution
             description: Human-readable description of the test case
         """
+        # Use config defaults if not specified
+        if min_objective_value is None:
+            min_objective_value = optimizer_config.min_objective_value
+        if max_objective_value is None:
+            max_objective_value = optimizer_config.max_objective_value
         print(f"\n[TEST] Testing .road file: {filename}")
         if description:
             print(f"[TEST] Description: {description}")
@@ -190,6 +201,15 @@ class TestRoadFileRegressions:
             assert min_courses <= courses_taken <= max_courses, \
                 f"Expected {min_courses}-{max_courses} courses, got {courses_taken}"
 
+            # Check objective value is in reasonable range
+            objective_value = solver.ObjectiveValue()
+            print(f"[TEST] Objective value: {objective_value}")
+
+            assert objective_value >= min_objective_value, \
+                f"Objective value {objective_value} is below minimum {min_objective_value}"
+            assert objective_value <= max_objective_value, \
+                f"Objective value {objective_value} is above maximum {max_objective_value}"
+
             print(f"[TEST] ✅ {filename} passed")
         else:
             assert status == cp_model.INFEASIBLE, \
@@ -201,7 +221,7 @@ class TestRoadFileRegressions:
     # caused issues and verifies the optimizer handles it correctly.
     # =========================================================================
 
-    def test_example_placeholder(self, optimizer_config):
+    def test_example_placeholder(self, optimizer_config: OptimizerTestConfig):
         """
         Placeholder test - remove this when adding real regression tests.
 

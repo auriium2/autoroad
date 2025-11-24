@@ -24,6 +24,8 @@ class OptimizerTestConfig:
     min_expected_courses: int = 10
     max_expected_courses: int = 30
     solver_timeout_seconds: float = 20.0
+    min_objective_value: int = -1000
+    max_objective_value: int = 1000
 
     degree_configs: dict[str, dict[str, int | str]] = field(default_factory=lambda: {
         'major6-3new': {
@@ -147,10 +149,12 @@ class OptimizerTestConfig:
 
     def get_config_for_degree(self, degree_id: str) -> dict[str, int | str]:
         """Get configuration overrides for a specific degree."""
-        base_config = {
+        base_config: dict[str, int | str] = {
             'min_expected_courses': self.min_expected_courses,
             'max_expected_courses': self.max_expected_courses,
             'max_semesters': self.max_semesters,
+            'min_objective_value': self.min_objective_value,
+            'max_objective_value': self.max_objective_value,
             'description': degree_id,
         }
 
