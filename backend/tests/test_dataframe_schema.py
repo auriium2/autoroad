@@ -10,7 +10,7 @@ import polars as pl
 def test_sparse_columns_are_detected():
     """
     Regression test: Sparse columns should be detected when creating DataFrame.
-    
+
     When creating a DataFrame from a list of dicts where some keys are missing
     from most dictionaries AND appear after the default inference window,
     polars needs infer_schema_length=None to detect all columns.

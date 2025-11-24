@@ -70,7 +70,7 @@ class MinimizeFridayClasses:
 class AvoidIAP:
     """
     Tier-based soft constraint to avoid placing classes during IAP (January term).
-    
+
     IAP is semester index % 3 == 2 (Freshman IAP = 2, Sophomore IAP = 5, Junior IAP = 8, Senior IAP = 11)
     """
 
@@ -122,14 +122,14 @@ class AvoidIAP:
 class MinimumClassesPerSemester:
     """
     Tier-based soft constraint to penalize semesters with too few classes.
-    
+
     This prevents the optimizer from creating unrealistic schedules with single-class semesters.
     """
 
     def __init__(self, min_classes: int = 2):
         """
         Initialize MinimumClassesPerSemester.
-        
+
         Args:
             min_classes: Minimum number of classes per semester (default 2)
         """

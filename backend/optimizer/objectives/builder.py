@@ -168,7 +168,7 @@ class ObjectiveBuilder:
     ) -> dict[str, int]:
         """
         Calculate the cost breakdown for the current solution.
-        
+
         Uses the expressions stored during build() to evaluate costs.
 
         Args:

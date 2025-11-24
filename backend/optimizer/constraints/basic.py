@@ -27,19 +27,19 @@ def create_take_vars(
 ) -> dict[tuple[int, int], cp_model.IntVar]:
     """
     Create decision variables for taking courses.
-    
+
     Variables are created for:
     - Regular semesters (1 to max_semesters) if course is offered and valid
     - ASE semester (-1) only if there's an ASE marker for that course
     - Must Take semester (-2) only if there's a Must Take marker for that course
-    
+
     Args:
         model: OR-Tools CP-SAT model
         courses_df: DataFrame of courses with offering information
         planning_year_start: Starting year for planning (e.g., 2024)
         max_semesters: Maximum number of regular semesters to plan
         markers: Optional list of markers (pin, override, banish) for courses
-    
+
     Returns:
         Dictionary mapping (course_idx, semester) to boolean decision variables
         Semester can be:
@@ -92,16 +92,16 @@ def add_at_most_once_constraint(
 ) -> int:
     """
     Add constraint: each course can be taken at most once across all semesters.
-    
+
     This includes special semesters (ASE, Must Take) to prevent duplicates when
     a course is pinned to ASE but optimizer tries to schedule it again.
-    
+
     Args:
         model: OR-Tools CP-SAT model
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
         courses_df: DataFrame of courses
         max_semesters: Maximum number of regular semesters
-    
+
     Returns:
         Number of constraints added
     """
@@ -127,14 +127,14 @@ def add_freshman_fall_limit(
 ) -> int:
     """
     Add constraint: hard limit of 48 units for first semester (Freshman Fall).
-    
+
     This is an MIT policy constraint.
-    
+
     Args:
         model: OR-Tools CP-SAT model
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
         courses_df: DataFrame of courses with total_units column
-    
+
     Returns:
         Number of constraints added (0 or 1)
     """
@@ -159,18 +159,18 @@ def add_iap_limits(
 ) -> int:
     """
     Add constraints: hard limit of 12 units for IAP semesters.
-    
+
     IAP (Independent Activities Period) is MIT's January term with restricted unit load.
     IAP semesters are: 2, 5, 8, 11 (every 3rd semester starting from 2).
-    
+
     This is an MIT policy constraint.
-    
+
     Args:
         model: OR-Tools CP-SAT model
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
         courses_df: DataFrame of courses with total_units column
         max_semesters: Maximum number of regular semesters
-    
+
     Returns:
         Number of constraints added
     """
@@ -200,18 +200,18 @@ def add_basic_constraints(
 ) -> int:
     """
     Add all basic constraints to the model.
-    
+
     This is a convenience function that adds:
     - At most once constraint
     - Freshman Fall unit limit
     - IAP unit limits
-    
+
     Args:
         model: OR-Tools CP-SAT model
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
         courses_df: DataFrame of courses
         max_semesters: Maximum number of regular semesters
-    
+
     Returns:
         Total number of constraints added
     """
@@ -233,16 +233,16 @@ def add_past_semester_constraints(
 ) -> int:
     """
     Prevent optimizer from placing courses in semesters that have already passed.
-    
+
     Pinned courses in past semesters are allowed (user explicitly placed them there).
-    
+
     Args:
         model: OR-Tools CP-SAT model
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
         courses_df: DataFrame of courses
         planning_year_start: Starting year for planning (e.g., 2024)
         markers: Optional list of markers (pin, override, banish) for courses
-    
+
     Returns:
         Number of constraints added
     """

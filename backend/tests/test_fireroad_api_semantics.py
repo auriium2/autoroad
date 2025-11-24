@@ -14,11 +14,11 @@ import requests
 def query_fireroad_progress(major_key: str, courses: list[str]) -> dict[str, Any]:
     """
     Query Fireroad API for requirement progress.
-    
+
     Args:
         major_key: The major/requirement key (e.g., 'major6-3new', 'major1', 'major7')
         courses: List of course IDs to check
-        
+
     Returns:
         The API response as a dict
     """
@@ -121,7 +121,7 @@ def save_full_response(major_key: str, courses: list[str], filename: str) -> Non
 def test_major6_3new_aus_bug():
     """
     Test the actual AUS bug scenario from major6-3new.
-    
+
     Question: Does taking 6.C01 + 18.404 (without 6.C011) satisfy AUS?
     - AUS has threshold: 2 subjects, connection: any
     - Contains a nested group with connection: all containing 6.C01 and 6.C011
@@ -189,7 +189,7 @@ def test_major6_3new_aus_bug():
 def test_major1_girs():
     """
     Test Course 1 (Civil Engineering) requirements.
-    
+
     Look for examples of threshold + connection-type combinations.
     """
     print("\n" + "="*80)
@@ -215,7 +215,7 @@ def test_major1_girs():
 def test_major7_bio():
     """
     Test Course 7 (Biology) requirements.
-    
+
     Biology has complex nested requirements with various thresholds.
     """
     print("\n" + "="*80)
@@ -241,7 +241,7 @@ def test_major7_bio():
 def test_major2_meche():
     """
     Test Course 2 (Mechanical Engineering) requirements.
-    
+
     Look for threshold examples with units criterion.
     """
     print("\n" + "="*80)
@@ -318,10 +318,10 @@ def test_comprehensive_aus_variations():
 def test_units_criterion_semantics():
     """
     Test threshold with criterion='units' to understand counting semantics.
-    
+
     Major 1 has "Elective Subjects with Engineering Content" with:
     - threshold: 48 units, criterion='units'
-    
+
     We'll test various combinations to see if it counts:
     A) Units from all leaf courses
     B) Units from satisfied direct children only
@@ -386,7 +386,7 @@ def test_units_criterion_semantics():
 def test_major2_units_with_groups():
     """
     Test if nested groups affect unit counting.
-    
+
     Look for Major 2 requirements that might have nested groups with units criterion.
     """
     print("\n" + "="*80)

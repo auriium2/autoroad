@@ -17,7 +17,7 @@ class LimitClassesPerSemester:
     Tier-based soft constraint to limit the number of classes per semester.
 
     Penalizes semesters that exceed max_classes threshold using tier-based penalties.
-    
+
     Tier meanings:
         Tier 1 (3 units/violation): "Ideal preferences"
         Tier 2 (9 units/violation): "Important preferences"

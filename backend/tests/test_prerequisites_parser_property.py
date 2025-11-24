@@ -41,7 +41,7 @@ class TestParserInvariants:
     def test_parser_never_crashes_on_realistic_input(self, prereq_str):
         """
         Property: Parser should never crash on realistic input.
-        
+
         Note: Parser may raise ValueError on malformed input (like unmatched parens).
         This is acceptable - we just want to ensure it doesn't crash unexpectedly.
         """
@@ -60,7 +60,7 @@ class TestParserInvariants:
     def test_parser_never_returns_empty_groups(self, prereq_str):
         """
         Property: Parser should NEVER return an empty PrereqGroup.
-        
+
         This is a critical invariant - empty groups were the source of the bug.
         """
         try:
@@ -139,7 +139,7 @@ class TestParserInvariants:
     def test_parsed_result_is_well_formed(self, prereq_str):
         """
         Property: If parser returns a result (not None), it must be well-formed.
-        
+
         Well-formed means:
         - PrereqCourse has a non-empty course_id
         - PrereqGroup has threshold > 0 and len(items) > 0
@@ -186,7 +186,7 @@ class TestParserInvariants:
     def test_mixed_valid_and_junk_filters_junk(self, items):
         """
         Property: When mixing valid courses and junk text, junk should be filtered.
-        
+
         For example: "6.100A,''permission of instructor'',6.1200" should parse
         as just "6.100A,6.1200".
         """
@@ -230,7 +230,7 @@ class TestParserEdgeCases:
     def test_course_with_trailing_operators_handles_gracefully(self, course_id, num_commas):
         """
         Property: Trailing operators should be handled gracefully.
-        
+
         For example: "6.100A,,," should parse as just "6.100A".
         """
         prereq_str = course_id + "," * num_commas
@@ -247,7 +247,7 @@ class TestParserEdgeCases:
     def test_excessive_parentheses_dont_break_parser(self, courses, num_parens):
         """
         Property: Excessive parentheses should not break parsing.
-        
+
         For example: "(((6.100A)))" should still parse correctly.
         """
         prereq_str = "(" * num_parens + ",".join(courses) + ")" * num_parens

@@ -25,13 +25,13 @@ def setup_optimizer_with_objectives(
 ) -> None:
     """
     Add objective function to model using default objectives (mimics actual backend).
-    
+
     This function replicates what the backend does in optimize.py:
     1. Creates ObjectiveBuilder
     2. Adds MinimizeUnits as base objective
     3. Adds all default objectives
     4. Builds and minimizes
-    
+
     Args:
         model: CP-SAT model to add objectives to
         take_vars: Decision variables mapping (course_idx, semester) to bool vars
@@ -71,19 +71,19 @@ def run_optimizer_test(
 ) -> cp_model.CpSolver:
     """
     Run a basic optimizer feasibility test.
-    
+
     Sets up the optimizer with the given requirements and verifies it finds
     a feasible solution. This is a lightweight test for regression checking.
-    
+
     Args:
         requirement_keys: Tuple of requirement keys (e.g., ('major6-9', 'girs'))
         max_semesters: Maximum number of semesters
         start_year: Start year for planning
         solver_timeout: Solver timeout in seconds
-        
+
     Returns:
         Solved CpSolver instance
-        
+
     Raises:
         AssertionError: If no feasible solution found
     """
@@ -140,12 +140,12 @@ def run_optimizer_quality_test(
 ) -> tuple[cp_model.CpSolver, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame, dict]:
     """
     Run a comprehensive optimizer quality test.
-    
+
     Sets up the optimizer, finds a solution, and validates solution quality including:
     - Reasonable course count
     - Prerequisites satisfied
     - Distribution across semesters
-    
+
     Args:
         requirement_keys: Tuple of requirement keys (e.g., ('major6-9', 'girs'))
         degree_id: Degree ID for looking up expected course counts
@@ -153,10 +153,10 @@ def run_optimizer_quality_test(
         max_semesters: Override max semesters (defaults to optimizer_config)
         start_year: Override start year (defaults to optimizer_config)
         solver_timeout: Override solver timeout (defaults to optimizer_config)
-        
+
     Returns:
         Tuple of (solver, take_vars, courses_df, prereq_trees)
-        
+
     Raises:
         AssertionError: If solution quality checks fail
     """
@@ -227,13 +227,13 @@ def convert_take_vars_format(
 ) -> dict[int, dict[int, cp_model.IntVar]]:
     """
     Convert take_vars from new flat format to nested format for test helpers.
-    
+
     New format: dict[(course_idx, semester)] -> IntVar
     Old format: dict[course_idx][semester] -> IntVar
-    
+
     Args:
         take_vars: Take variables in new flat format
-        
+
     Returns:
         Take variables in nested format
     """
@@ -252,12 +252,12 @@ def count_courses_in_solution(
 ) -> int:
     """
     Count total number of courses taken in the solution.
-    
+
     Args:
         solver: Solved CP-SAT solver
         take_vars: Take variables indexed by [course_idx][semester]
         courses_df: DataFrame with course information
-        
+
     Returns:
         Total number of courses scheduled
     """
@@ -278,13 +278,13 @@ def get_semester_distribution(
 ) -> dict[int, int]:
     """
     Get distribution of courses across semesters.
-    
+
     Args:
         solver: Solved CP-SAT solver
         take_vars: Take variables indexed by [course_idx][semester]
         courses_df: DataFrame with course information
         max_semesters: Maximum number of semesters
-        
+
     Returns:
         Dictionary mapping semester -> course count
     """
@@ -309,17 +309,17 @@ def verify_prerequisites_satisfied(
 ) -> tuple[bool, list[str]]:
     """
     Verify all prerequisites are satisfied in the schedule.
-    
+
     For each course taken, check that:
     1. All prerequisite courses are taken in earlier semesters
     2. Prerequisite groups satisfy their thresholds
-    
+
     Args:
         solver: Solved CP-SAT solver
         take_vars: Take variables
         courses_df: DataFrame with course information
         prereq_trees: Parsed prerequisite trees
-        
+
     Returns:
         Tuple of (all_satisfied, list of violation messages)
     """
@@ -447,16 +447,16 @@ def verify_degree_requirements_met(
 ) -> tuple[bool, list[str]]:
     """
     Verify degree requirements are satisfied.
-    
+
     This is a basic check - just verifies some courses from the requirement
     are actually scheduled. Full validation happens in constraint builder.
-    
+
     Args:
         solver: Solved CP-SAT solver
         take_vars: Take variables
-        courses_df: DataFrame with course information  
+        courses_df: DataFrame with course information
         requirement_data: Requirement specification
-        
+
     Returns:
         Tuple of (requirements_met, list of issues)
     """
@@ -491,10 +491,10 @@ def assert_solution_quality(
 ):
     """
     Comprehensive assertion of solution quality.
-    
+
     This is the main validation function that should be called in E2E tests.
     It checks multiple aspects of solution quality.
-    
+
     Raises:
         AssertionError: If any quality check fails
     """

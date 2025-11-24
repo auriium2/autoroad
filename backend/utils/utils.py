@@ -204,7 +204,7 @@ def get_current_semester_index(planning_year_start: int) -> int:
     """
     Calculate which semester index (1-12) is the current semester.
     Returns 0 if we're before the planning year starts.
-    
+
     Semester mapping:
     1 = Freshman Fall, 2 = Freshman IAP, 3 = Freshman Spring
     4 = Sophomore Fall, 5 = Sophomore IAP, 6 = Sophomore Spring

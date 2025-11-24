@@ -196,7 +196,7 @@ def all_fireroad_requirements():
 class TestRequirementParserFuzzer:
     """
     Integration tests for the requirement parser using all Fireroad requirements.
-    
+
     This fuzzer ensures that all real requirement data can be parsed without
     errors and that all groups have valid thresholds (preventing infeasibility bugs).
     """
@@ -227,7 +227,7 @@ class TestRequirementParserFuzzer:
     def test_all_groups_have_thresholds(self, all_fireroad_requirements):
         """
         Verify that all parsed requirement groups have valid thresholds.
-        
+
         This is a regression test for the bug where groups without explicit
         thresholds would have threshold=None, causing optimizer infeasibility.
         """

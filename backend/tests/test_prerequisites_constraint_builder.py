@@ -463,7 +463,7 @@ class TestComplexPrerequisites:
     def test_missing_course_returns_unsatisfied(self):
         """
         Unit test: Missing courses should return NewConstant(0) (unsatisfied).
-        
+
         This is the core fix for the 2.013 bug.
         """
         df = pl.DataFrame({
@@ -506,7 +506,7 @@ class TestComplexPrerequisites:
     def test_missing_course_in_or_group_forces_alternative(self):
         """
         Regression test: Missing course in OR group should force the alternative.
-        
+
         This is the 2.013 bug scenario: (2.005 OR 2.051) where 2.051 is missing.
         Should force taking 2.005.
         """
@@ -557,7 +557,7 @@ class TestComplexPrerequisites:
     def test_all_missing_in_or_group_makes_untakeable(self):
         """
         Regression test: If ALL courses in OR group are missing, course is untakeable.
-        
+
         Example: (5.60 OR 5.61) where both are missing.
         """
         df = pl.DataFrame({
@@ -599,7 +599,7 @@ class TestComplexPrerequisites:
     def test_missing_in_and_group_makes_untakeable(self):
         """
         Regression test: Missing course in AND group makes entire course untakeable.
-        
+
         Example: (5.60 AND 10.213) where 5.60 is missing.
         """
         df = pl.DataFrame({
@@ -645,7 +645,7 @@ class TestComplexPrerequisites:
     def test_2013_bug_full_integration(self):
         """
         Full integration test reproducing the 2.013 bug with real course data.
-        
+
         This test fetches real courses and requirements from fireroad API
         and runs the full optimizer to see if 2.013 can be incorrectly placed
         without prerequisites.
@@ -736,9 +736,9 @@ class TestComplexPrerequisites:
     def test_2013_complex_and_group_prerequisites(self):
         """
         Test that course 2.013 cannot be placed without satisfying its prerequisites.
-        
+
         Reproduces bug where solver places 2.013 in Senior Fall without any prerequisites.
-        
+
         2.013 requires: (2.001, 2.003, (2.005/2.051), (2.00B/2.670/2.678))
         This means ALL of:
         - 2.001 (Mechanics and Materials I)
@@ -851,5 +851,5 @@ class TestComplexPrerequisites:
         model.Add(take_vars[(0, 7)] == 1)
 
         solver = cp_model.CpSolver()
-        status = solver.Solve(model)
+        solver.Solve(model)
 

@@ -34,7 +34,7 @@ class TestFullOptimizerE2E:
     def test_course_6_3_new_girs_feasible(self):
         """
         Test that Course 6-3 (new) + GIRs remains feasible.
-        
+
         This is a critical test - Course 6-3 is one of the most popular majors.
         """
         # Fetch real data
@@ -125,7 +125,7 @@ class TestFullOptimizerE2E:
     def test_course_12_with_untakeable_courses(self):
         """
         Test Course 12 (Earth Science) which references untakeable courses.
-        
+
         Course 12 references 12.306 and 12.348 which have missing prerequisites (5.60).
         Should still be feasible due to flexible requirements.
         """
@@ -173,11 +173,11 @@ class TestFullOptimizerE2E:
     def test_course_2_with_2_013_prerequisites(self):
         """
         Test Course 2 (Mechanical Engineering) with 2.013.
-        
+
         This tests that 2.013 prerequisite constraints work correctly after the fix.
         2.013 requires (2.001, 2.003, (2.005/2.051), (2.00B/2.670/2.678))
         where 2.051 is missing from the dataset.
-        
+
         CRITICAL: This test verifies the actual bug fix - that 2.005 is taken before 2.013,
         and 2.051 (missing course) doesn't bypass the prerequisite.
         """
@@ -349,7 +349,7 @@ class TestFullOptimizerE2E:
 
     def test_course_7_biology(self):
         """Test Course 7 (Biology) remains feasible.
-        
+
         Note: Course 7 requires 10 semesters due to the prerequisite chain for 7.19
         (Biology Capstone Subject), which requires 7.06, which requires 7.03 and 7.05.
         """

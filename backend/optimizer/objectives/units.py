@@ -90,7 +90,7 @@ class AvoidSmallClasses:
         Add tier-based penalty for taking small unit classes.
 
         Formula: penalty = violations × TIER_BASE^tier × 1
-        
+
         Note: Courses with user markers are excluded from this penalty,
         allowing users to explicitly choose small classes they want.
         """

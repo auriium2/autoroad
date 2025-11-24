@@ -77,12 +77,12 @@ def print_requirement_status(req: dict, indent: int = 0):
 def test_aus_with_partial_group():
     """
     Test: AUS with only 6.C01 (not 6.C011) + 18.404
-    
+
     AUS structure:
     - threshold: 2 subjects, criterion='subjects', connection='any'
     - 52 individual courses (including 18.404)
     - 1 group at index 48: connection='all' with [6.C01, 6.C011]
-    
+
     Question: If we take 6.C01 + 18.404, does AUS count:
       A) 2 leaf courses (6.C01 + 18.404) → fulfilled
       B) 1 child + partial group → not fulfilled
@@ -137,7 +137,7 @@ def test_aus_with_partial_group():
 def test_aus_with_full_group():
     """
     Test: AUS with both 6.C01 AND 6.C011 (no other courses)
-    
+
     Question: Does the group count as:
       A) 2 subjects toward threshold
       B) 1 satisfied child
@@ -170,7 +170,7 @@ def test_aus_with_full_group():
 def test_aus_with_group_plus_one():
     """
     Test: AUS with 6.C01 + 6.C011 + 18.404
-    
+
     Question: How many subjects does this count as?
       A) 3 (all leaf courses)
       B) 2 (group + one course)
@@ -200,7 +200,7 @@ def test_aus_with_group_plus_one():
 def test_aus_with_only_outside_course():
     """
     Test: AUS with only 18.404 (no group courses)
-    
+
     Question: Is progress = 1?
     """
     print("\n" + "="*80)
@@ -221,7 +221,7 @@ def test_aus_with_only_outside_course():
 def test_aus_with_two_outside_courses():
     """
     Test: AUS with 18.404 + 6.1040 (two courses, not from the group)
-    
+
     This should definitely be fulfilled since we have 2 subjects.
     """
     print("\n" + "="*80)
@@ -245,14 +245,14 @@ def test_aus_with_two_outside_courses():
 def test_connection_type_any_semantics():
     """
     Test what connection-type='any' means when combined with threshold.
-    
+
     We'll test with just 6.C01 (only from the group, no other courses).
-    
+
     If connection='any' means "at least one child must be satisfied":
       - The group is not satisfied (needs both 6.C01 and 6.C011)
       - No direct children are satisfied
       - Should NOT be fulfilled
-    
+
     If connection='any' means something else:
       - We'll learn what!
     """

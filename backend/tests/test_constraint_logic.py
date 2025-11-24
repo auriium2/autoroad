@@ -14,12 +14,12 @@ class TestSemesterDetection:
     def test_iap_detection_modulo_arithmetic(self):
         """
         Regression test for IAP detection bug.
-        
+
         In 1-indexed semester system:
         - Semester 1, 4, 7, 10 = Fall (semester % 3 == 1)
         - Semester 2, 5, 8, 11 = IAP (semester % 3 == 2)
         - Semester 3, 6, 9, 12 = Spring (semester % 3 == 0)
-        
+
         The bug was using % 3 == 1 to detect IAP, which actually detects Fall.
         """
         fall_semesters = [1, 4, 7, 10]
@@ -56,10 +56,10 @@ class TestSemesterDetection:
     def test_section_to_semester_conversion(self):
         """
         Test conversion from 0-indexed section to 1-indexed semester.
-        
+
         Section (0-indexed): 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
         Semester (1-indexed): 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
-        
+
         IAP sections: 1, 4, 7, 10 -> semesters: 2, 5, 8, 11
         """
         iap_sections = [1, 4, 7, 10]
@@ -74,7 +74,7 @@ class TestSemesterDetection:
     def test_marker_iap_detection(self):
         """
         Test the logic used in banIAP constraint for marker detection.
-        
+
         When checking if a marker is in IAP:
         if marker.section >= 0 and (marker.section + 1) % 3 == 2
         """
@@ -103,10 +103,10 @@ class TestSemesterDetection:
     def test_ase_semester_exclusion(self):
         """
         Test that ASE (semester -1) is properly excluded from constraints.
-        
+
         CRITICAL: In Python, -1 % 3 == 2, which means ASE would be detected as IAP
         if we only used modulo arithmetic! This is a subtle but serious bug.
-        
+
         ASE should be excluded from:
         - AvoidIAP (using semester >= 1 and semester % 3 == 2)
         - MinimumClassesPerSemester (using semester >= 1 and semester % 3 == 2, or semester < 1)
@@ -124,8 +124,8 @@ class TestSemesterDetection:
         is_iap_naive = ase_semester % 3 == 2  # WRONG - includes ASE
         is_iap_correct = ase_semester >= 1 and ase_semester % 3 == 2  # CORRECT
 
-        assert is_iap_naive == True, "Naive check incorrectly identifies ASE as IAP"
-        assert is_iap_correct == False, "Correct check properly excludes ASE"
+        assert is_iap_naive, "Naive check incorrectly identifies ASE as IAP"
+        assert not is_iap_correct, "Correct check properly excludes ASE"
 
         # Verify IAP detection works correctly for real semesters
         iap_semesters = [2, 5, 8, 11]
@@ -142,7 +142,7 @@ class TestSemesterDetection:
     def test_minimum_classes_per_semester_skip_iap(self):
         """
         Test that MinimumClassesPerSemester correctly skips IAP semesters.
-        
+
         The constraint should skip semesters where semester % 3 == 2.
         """
         iap_semesters = [2, 5, 8, 11]
@@ -163,7 +163,7 @@ class TestConstraintBehavior:
     def test_avoid_iap_penalty_targets_correct_semesters(self):
         """
         Test that AvoidIAP penalty is only applied to IAP semesters.
-        
+
         This is a regression test for the bug where Fall semesters
         were being penalized instead of IAP semesters.
         """
@@ -180,7 +180,7 @@ class TestConstraintBehavior:
     def test_ban_iap_hard_constraint_logic(self):
         """
         Test the logic for banIAP hard constraint.
-        
+
         The constraint should:
         1. Identify IAP semesters using semester % 3 == 2
         2. Allow user markers in IAP (marked_iap_course_ids exception)
@@ -210,12 +210,12 @@ class TestConstraintBehavior:
     def test_tier_penalties_reasonable(self):
         """
         Test that tier penalties with TIER_BASE=5 are reasonable.
-        
+
         Tier 1: 5
         Tier 2: 25
         Tier 3: 125
         Tier 4: 625
-        
+
         This ensures the penalty system doesn't create extreme values
         that cause the solver to make bizarre choices.
         """

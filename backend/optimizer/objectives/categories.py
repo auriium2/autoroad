@@ -19,7 +19,7 @@ from .base import ObjectiveContext
 class CategoryRewards:
     """
     Tier-based reward for taking courses in priority requirement categories.
-    
+
     Uses geometric series with diminishing returns:
         reward(k) = base × (1 - decay^k) / (1 - decay)
     """
@@ -64,7 +64,7 @@ class CategoryRewards:
     ) -> cp_model.LinearExpr:
         """
         Add category reward terms to the objective.
-        
+
         For each requirement path with tier > 0, we reward taking courses that
         satisfy that requirement using a geometric series with diminishing returns.
         """
@@ -181,9 +181,9 @@ class CategoryRewards:
     def _precompute_reward_tables(self) -> dict[int, list[int]]:
         """
         Precompute reward values for each tier.
-        
+
         Returns a dict mapping tier -> list of reward values for k=0,1,2,...,max_courses
-        
+
         Formula: reward(k) = base × (1 - decay^k) / (1 - decay)
         """
         tables = {}

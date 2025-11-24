@@ -405,7 +405,7 @@ class RequirementConstraintBuilder:
 
         Plain-string requirements are descriptive text that cannot be automatically
         validated (e.g., "2 math subjects (first decimal ≥ 1)", "72 units of electives").
-        
+
         We create a placeholder variable that's always satisfied, but provide detailed
         warnings about what constraints are being ignored.
         """
@@ -426,7 +426,7 @@ class RequirementConstraintBuilder:
             criterion = node.threshold.criterion
             cutoff = node.threshold.cutoff
             thresh_type = node.threshold.type
-            
+
             if criterion == "units":
                 warnings.append(
                     f"⚠️  Plain-string unit requirement IGNORED: '{node.description}' "

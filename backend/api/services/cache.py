@@ -68,10 +68,10 @@ def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
 def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
     """
     Parse prerequisite trees for all courses.
-    
+
     Args:
         courses_df: Polars DataFrame with course data
-        
+
     Returns:
         Dictionary mapping course_idx to parsed PrereqNode
     """

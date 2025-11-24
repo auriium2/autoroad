@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class BanIAP:
     """
     Hard constraint: Prevent optimizer from placing any classes in IAP.
-    
+
     User markers are still allowed - this only prevents the optimizer
     from automatically scheduling classes during IAP semesters.
     """

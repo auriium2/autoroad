@@ -390,7 +390,7 @@ class TestRealWorldStructures:
 class TestThresholdInference:
     """
     Regression tests for automatic threshold inference from connection-type.
-    
+
     These tests prevent the bug where groups without explicit thresholds
     would have threshold=None, causing infeasibility in the optimizer.
     """
@@ -473,7 +473,7 @@ class TestThresholdInference:
     def test_nested_groups_all_have_thresholds(self):
         """
         Test that nested groups without explicit thresholds get inferred thresholds.
-        
+
         This was the root cause of the Course 1 and Course 7 infeasibility bug.
         """
         req_data = {
