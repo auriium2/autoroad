@@ -7,7 +7,7 @@ if (typeof window !== 'undefined') {
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ObjectiveConfig } from '@/services/optimizer';
+import type { ObjectiveConfig } from '@/types/models/optimizer';
 import { useGraphStore } from './roadStore';
 
 interface OptimizationState {
@@ -22,6 +22,7 @@ interface OptimizationState {
   objectiveTiers: Record<string, number>;
   customEquivalencies: Record<string, string[]>;
   courseCategories: Record<string, string[]>; // Maps course ID to requirement paths it satisfies
+  requirementSources: Record<string, 'canonical' | 'beta'>; // Maps requirement key to its source
   
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
@@ -38,6 +39,8 @@ interface OptimizationState {
   
   setRequirementTier: (requirement: string, tier: number) => void;
   setObjectiveTier: (objectiveKey: string, tier: number) => void;
+  
+  setRequirementSource: (requirement: string, source: 'canonical' | 'beta') => void;
   
   addCustomEquivalency: (courseA: string, courseB: string) => void;
   removeCustomEquivalency: (courseA: string, courseB: string) => void;
@@ -77,6 +80,7 @@ export const useOptimizationStore = create<OptimizationState>()(
   objectiveTiers: {},
   customEquivalencies: {},
   courseCategories: {},
+  requirementSources: {},
   
   setObjectives: (objectives) => {
     markOptimizationAsStale();
@@ -177,6 +181,16 @@ export const useOptimizationStore = create<OptimizationState>()(
       objectiveTiers: {
         ...state.objectiveTiers,
         [objectiveKey]: tier,
+      },
+    }));
+  },
+  
+  setRequirementSource: (requirement, source) => {
+    markOptimizationAsStale();
+    set((state) => ({
+      requirementSources: {
+        ...state.requirementSources,
+        [requirement]: source,
       },
     }));
   },

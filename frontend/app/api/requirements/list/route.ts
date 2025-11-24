@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { loadCustomRequirements } from '@/lib/requirementFileParser';
-import type { RequirementsListResponse } from '@/types/fireroad';
+import type { RequirementsListResponse, RequirementMetadata } from '@/types/models/fireroad';
 
 export async function GET() {
   try {
@@ -23,17 +23,39 @@ export async function GET() {
       throw new Error(`Fireroad API error: ${response.statusText}`);
     }
 
-    const fireroadRequirements = await response.json();
+    const fireroadRequirements = await response.json() as RequirementsListResponse;
 
     // Load custom requirements from filesystem
-    const customRequirements = loadCustomRequirements();
+    let customRequirements: RequirementsListResponse = {};
+    try {
+      customRequirements = loadCustomRequirements();
+    } catch (error) {
+      console.error('Failed to load custom requirements:', error);
+      // Continue without custom requirements
+    }
 
-    // Merge Fireroad requirements with custom requirements from files
-    // Custom requirements override Fireroad if there are conflicts
-    const allRequirements: RequirementsListResponse = {
-      ...fireroadRequirements,
-      ...customRequirements,
-    };
+    // Build the merged list with source metadata
+    const allRequirements: RequirementsListResponse = {};
+
+    // Add all Fireroad requirements, marking which have beta versions
+    for (const [key, metadata] of Object.entries(fireroadRequirements)) {
+      allRequirements[key] = {
+        ...metadata,
+        source: 'canonical' as const,
+        hasBothVersions: key in customRequirements,
+      };
+    }
+
+    // Add custom-only requirements (those not in Fireroad)
+    for (const [key, metadata] of Object.entries(customRequirements)) {
+      if (!(key in fireroadRequirements)) {
+        allRequirements[key] = {
+          ...metadata,
+          source: 'beta' as const,
+          hasBothVersions: false,
+        };
+      }
+    }
 
     return NextResponse.json(allRequirements, {
       headers: {

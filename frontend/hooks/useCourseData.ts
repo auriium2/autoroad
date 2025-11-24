@@ -11,63 +11,52 @@ export interface CourseFilters {
   term?: string;
 }
 
-/**
- * Hook to search for courses with server-side filtering
- */
 export function useSearchCourses(query: string, department?: string, filters?: CourseFilters) {
   return useQuery({
     queryKey: queryKeys.courses.search(query, department, filters),
     queryFn: async () => {
-      // Search by query - use 'starts' for better department matching
-      if (query.trim() && query !== '*') {
-        const searchType = query.includes('.') ? 'starts' : 'contains';
-        const response = await fireroadApi.searchCourses(query, {
-          type: searchType,
-          department: department,
-          offset: 0,
-          limit: 1000, // Get a large batch since we'll cache it
-          ...filters, // Pass filters to API
-        });
+      const trimmedQuery = query.trim();
+      
+      if (!trimmedQuery) {
+        return [];
+      }
 
-        // Sort results to prioritize exact department matches
-        const sorted = response.courses.sort((a, b) => {
+      // Determine search type based on query
+      // Use 'starts' for course IDs (e.g., "6.100"), 'contains' for text search
+      const searchType = trimmedQuery.includes('.') ? 'starts' : 'contains';
+      
+      // Normalize department filter - treat 'all' as undefined
+      const deptFilter = department === 'all' ? undefined : department;
+
+      const response = await fireroadApi.searchCourses(trimmedQuery, {
+        type: searchType,
+        department: deptFilter,
+        offset: 0,
+        limit: 2000,
+        ...filters,
+      });
+
+      // Sort to prioritize exact department matches when searching with course numbers
+      if (trimmedQuery.includes('.')) {
+        const queryDept = trimmedQuery.split('.')[0];
+        return response.courses.sort((a, b) => {
           const aDept = a.subject_id.split('.')[0];
           const bDept = b.subject_id.split('.')[0];
-          const queryDept = query.split('.')[0];
 
-          // Exact department match comes first
           const aExact = aDept === queryDept;
           const bExact = bDept === queryDept;
 
           if (aExact && !bExact) return -1;
           if (!aExact && bExact) return 1;
 
-          // Then sort alphabetically by subject_id
           return a.subject_id.localeCompare(b.subject_id);
         });
-
-        return sorted;
-      } else if (query === '*' && department && department !== 'all') {
-        // Wildcard with specific department - list by department
-        const response = await fireroadApi.getCoursesByDepartment(department, 0, 1000);
-        return response.courses;
-      } else if (query === '*' && department === 'all') {
-        // Wildcard with all departments - search for a common number pattern
-        const response = await fireroadApi.searchCourses('.', {
-          type: 'contains',
-          department: undefined,
-          offset: 0,
-          limit: 2000,
-          ...filters, // Pass filters to API
-        });
-        return response.courses;
-      } else {
-        // Return empty for no query and no wildcard
-        return [];
       }
+
+      return response.courses;
     },
     enabled: true,
-    staleTime: 24 * 60 * 60 * 1000, // Course catalog is static - cache for 24 hours
+    staleTime: 24 * 60 * 60 * 1000,
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

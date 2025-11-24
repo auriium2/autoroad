@@ -60,6 +60,7 @@ export interface FireroadSearchParams {
   level?: 'undergrad' | 'grad' | string;
   units?: string;
   term?: string;
+  sort?: string;
   full?: boolean;
   offset?: number;
   limit?: number;
@@ -71,6 +72,8 @@ export interface RequirementMetadata {
   title?: string;
   short?: string;
   medium?: string;
+  source?: 'canonical' | 'beta';  // Indicates if this is from Fireroad (canonical) or custom/AI-augmented (beta)
+  hasBothVersions?: boolean;  // True if both canonical and beta versions exist
 }
 
 export type RequirementsListResponse = Record<string, RequirementMetadata>;

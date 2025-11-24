@@ -140,3 +140,25 @@ export function graduationYearToPlanningYear(graduationYear: string): string {
   const freshmanFallYear = gradYear - 4;
   return `${freshmanFallYear}-${freshmanFallYear + 1}`;
 }
+
+export function getCurrentAcademicYearStart(): number {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth(); // 0-11
+  
+  // If September (month 8) or later, we're in currentYear-currentYear+1 academic year
+  // Otherwise, we're in currentYear-1 to currentYear academic year
+  return currentMonth >= 8 ? currentYear : currentYear - 1;
+}
+
+export function getGraduationYearOptions(): Array<{ value: string; label: string }> {
+  const academicYearStart = getCurrentAcademicYearStart();
+  const freshmanGradYear = academicYearStart + 4;
+  
+  return [
+    { value: String(freshmanGradYear), label: `Class of ${freshmanGradYear}` },
+    { value: String(freshmanGradYear - 1), label: `Class of ${freshmanGradYear - 1}` },
+    { value: String(freshmanGradYear - 2), label: `Class of ${freshmanGradYear - 2}` },
+    { value: String(freshmanGradYear - 3), label: `Class of ${freshmanGradYear - 3}` },
+  ];
+}

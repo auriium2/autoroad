@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOptimizationStore } from "@/stores/optimizationStore";
-import { extractCoursesFromRequirement, prefetchCourses } from "@/lib/coursePrefetch";
+import { extractCoursesFromRequirement, prefetchCourses } from "@/lib/cache";
 
 export function RequirementPrefetcher() {
   const queryClient = useQueryClient();

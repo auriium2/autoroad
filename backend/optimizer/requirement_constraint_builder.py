@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TypedDict
+import re
 
 import polars as pl
 from ortools.sat.python import cp_model
@@ -402,9 +403,11 @@ class RequirementConstraintBuilder:
         """
         Build constraints for plain-string requirements.
 
-        Plain-string requirements are descriptive text that can't be automatically
-        validated. We create a placeholder variable that's always true so the
-        requirement structure is preserved, but actual validation must be manual.
+        Plain-string requirements are descriptive text that cannot be automatically
+        validated (e.g., "2 math subjects (first decimal ≥ 1)", "72 units of electives").
+        
+        We create a placeholder variable that's always satisfied, but provide detailed
+        warnings about what constraints are being ignored.
         """
         var_name = self.ctx.fresh_name("req")
         placeholder = self.ctx.model.NewBoolVar(var_name)
@@ -413,13 +416,43 @@ class RequirementConstraintBuilder:
         debug_name = node.req_id if node.req_id else f"[Plain: {node.description[:50]}]"
         self.ctx.register_var(placeholder, debug_name)
 
-        # Always consider plain-string requirements as satisfied
-        # since we can't automatically validate them
+        # Always mark as satisfied - we can't automatically validate these
         self.ctx.model.Add(placeholder == 1)
+
+        warnings = []
+
+        # Provide detailed warnings based on threshold type
+        if node.threshold:
+            criterion = node.threshold.criterion
+            cutoff = node.threshold.cutoff
+            thresh_type = node.threshold.type
+            
+            if criterion == "units":
+                warnings.append(
+                    f"⚠️  Plain-string unit requirement IGNORED: '{node.description}' "
+                    f"requires {thresh_type} {cutoff} units. This cannot be automatically validated and "
+                    f"must be manually verified in the final schedule."
+                )
+            elif criterion == "subjects":
+                warnings.append(
+                    f"⚠️  Plain-string subject requirement IGNORED: '{node.description}' "
+                    f"requires {thresh_type} {cutoff} subjects. This cannot be automatically validated and "
+                    f"must be manually verified in the final schedule."
+                )
+            else:
+                warnings.append(
+                    f"⚠️  Plain-string requirement IGNORED: '{node.description}' "
+                    f"has threshold {thresh_type} {cutoff} ({criterion}). This cannot be automatically validated."
+                )
+        else:
+            # Plain string without threshold (shouldn't happen based on our analysis, but handle it)
+            warnings.append(
+                f"⚠️  Plain-string requirement cannot be validated: '{node.description}'"
+            )
 
         return ConstraintResult(
             satisfied_var=placeholder,
-            warnings=[f"Plain-string requirement can't be validated: '{node.description}'"]
+            warnings=warnings
         )
 
     def _build_group(self, node: RequirementGroup, parent_path: str) -> ConstraintResult:

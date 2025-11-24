@@ -1,14 +1,7 @@
-/**
- * Fireroad API Proxy - Department Courses
- * Proxies department course listing requests with pagination support
- * Adds enrichment. I need a baddie
- */
-
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateIMDBRating } from '@/lib/fireroad-utils';
-import type { FireroadCourse, PaginatedCoursesResponse } from '@/types/fireroad';
-
-const FIREROAD_API_URL = 'https://fireroad.mit.edu';
+import { calculateIMDBRating } from '@/lib/fireroadUtils';
+import { getFullCourseCatalog } from '@/lib/cache';
+import type { PaginatedCoursesResponse } from '@/types/models/fireroad';
 
 export async function GET(
   req: NextRequest,
@@ -24,30 +17,19 @@ export async function GET(
       );
     }
 
-    // Get pagination params
     const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0', 10);
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '20', 10);
 
-    // Always request full data from Fireroad
-    const url = `${FIREROAD_API_URL}/courses/dept/${dept}?full=true`;
+    // Get all courses from cache
+    const allCourses = await getFullCourseCatalog();
 
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
+    // Filter by department
+    const deptCourses = allCourses.filter((course) =>
+      course.subject_id?.startsWith(`${dept}.`)
+    );
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Fireroad API error: ${response.statusText}` },
-        { status: response.status }
-      );
-    }
-
-    const allCourses: FireroadCourse[] = await response.json();
-
-    const filteredCourses = allCourses.filter((course) => !course.is_historical);
-    const enrichedCourses = filteredCourses.map(course => ({
+    // Enrich with IMDB rating
+    const enrichedCourses = deptCourses.map(course => ({
       ...course,
       imdb_rating: course.imdb_rating ?? calculateIMDBRating(course.rating, course.enrollment_number),
     }));
@@ -66,7 +48,7 @@ export async function GET(
 
     return NextResponse.json(responseData, {
       headers: {
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200', // Cache for 1 hour, serve stale for 2 hours
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
       },
     });
   } catch (error) {

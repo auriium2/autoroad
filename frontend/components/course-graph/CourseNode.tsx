@@ -3,9 +3,8 @@
 import * as React from "react";
 import type { CourseNode } from "@/stores/roadStore";
 import { CourseTooltip } from "@/components/CourseTooltip";
-import { getNodeStyle } from "@/lib/nodeStyles";
+import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
 import { useCourseDetails } from "@/hooks/useCourseData";
-import { getTermBorderHighlight } from "@/lib/termBorderHighlight";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
 

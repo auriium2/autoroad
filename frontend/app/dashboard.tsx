@@ -36,7 +36,7 @@ import {
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadFile } from "@/lib/roadFormat";
 import { fireroadApi } from "@/services/fireroad";
-import { prefetchCourses } from "@/lib/coursePrefetch";
+import { prefetchCourses } from "@/lib/cache";
 
 export default function Dashboard() {
   const [isExporting, setIsExporting] = React.useState(false);

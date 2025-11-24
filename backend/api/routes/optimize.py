@@ -413,7 +413,7 @@ async def optimize(request: OptimizationRequest):
             # Add prerequisite constraints (run in thread pool)
             perf_start = time.time()
             def add_prereqs():
-                # Use cached prerequisite parsing (major performance win)
+                # Parse prerequisites
                 prereq_parse_start = time.time()
                 prereq_trees = get_parsed_prerequisites(courses_df)
                 prereq_parse_time = time.time() - prereq_parse_start
@@ -434,7 +434,7 @@ async def optimize(request: OptimizationRequest):
                 add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
                 constraint_time = time.time() - constraint_start
 
-                print(f"[PERF]   - Prereq parsing/cache:     {prereq_parse_time:.3f}s")
+                print(f"[PERF]   - Prereq parsing:           {prereq_parse_time:.3f}s")
                 print(f"[PERF]   - Prereq constraint build:  {constraint_time:.3f}s")
 
             await loop.run_in_executor(None, add_prereqs)

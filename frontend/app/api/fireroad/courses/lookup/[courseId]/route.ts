@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateIMDBRating } from '@/lib/fireroad-utils';
-import type { FireroadCourse } from '@/types/fireroad';
+import { calculateIMDBRating } from '@/lib/fireroadUtils';
+import type { FireroadCourse } from '@/types/models/fireroad';
 
 const FIREROAD_API_URL = 'https://fireroad.mit.edu';
 

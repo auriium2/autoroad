@@ -4,6 +4,7 @@
  */
 
 import type { Marker, OptimizerNode } from '@/types';
+import type { ObjectivesResponse, HardConstraintsResponse, ObjectiveConfig } from '@/types/models/optimizer';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
@@ -42,41 +43,6 @@ export interface OptimizationProgress {
   status?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID';
   isComplete?: boolean;
 }
-
-export interface ObjectiveMetadata {
-  key: string;
-  name: string;
-  description: string;
-  category: string;
-  hasParameters: boolean;
-  defaultParameters: Record<string, number>;
-  parameterTypes: Record<string, string>;
-  defaultTier: number;
-  unremovable?: boolean;
-}
-
-export interface ObjectiveConfig {
-  key: string;
-  parameters: Record<string, number | Record<string, string[]> | null>;
-}
-
-export interface ObjectivesResponse {
-  objectives: ObjectiveMetadata[];
-  defaultConfiguration: ObjectiveConfig[];
-}
-
-export interface HardConstraintMetadata {
-  key: string;
-  name: string;
-  description: string;
-  category: string;
-}
-
-export interface HardConstraintsResponse {
-  constraints: HardConstraintMetadata[];
-}
-
-
 
 export const optimizerApi = {
   async checkHealth(): Promise<{ status: string; service: string }> {
@@ -119,11 +85,11 @@ export const optimizerApi = {
   },
 
   async getObjectives(): Promise<ObjectivesResponse> {
-    return optimizerFetch<ObjectivesResponse>(`${BACKEND_URL}/api/optimize/objectives`);
+    return optimizerFetch<ObjectivesResponse>('/api/objectives');
   },
 
   async getHardConstraints(): Promise<HardConstraintsResponse> {
-    return optimizerFetch<HardConstraintsResponse>(`${BACKEND_URL}/api/optimize/constraints`);
+    return optimizerFetch<HardConstraintsResponse>('/api/constraints');
   },
 
   async *optimize(

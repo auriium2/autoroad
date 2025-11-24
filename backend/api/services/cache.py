@@ -11,10 +11,6 @@ _courses_lock = threading.RLock()
 _requirements_cache: TTLCache[str, dict[str, object]] = TTLCache(maxsize=128, ttl=3600)
 _requirements_lock = threading.RLock()
 
-_prerequisites_cache: TTLCache[str, dict[int, object]] = TTLCache(maxsize=1, ttl=3600)
-_prerequisites_lock = threading.RLock()
-
-
 @cached(cache=_courses_cache, lock=_courses_lock)
 def get_courses_data() -> list[dict[str, object]]:
     response = requests.get('https://fireroad.mit.edu/courses/all?full=true')
@@ -71,10 +67,7 @@ def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
 
 def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
     """
-    Get parsed prerequisite trees for all courses, with caching.
-    
-    Cache key is based on the number of courses (assumes course data is stable).
-    This avoids re-parsing ~2800 prerequisite strings on every optimization.
+    Parse prerequisite trees for all courses.
     
     Args:
         courses_df: Polars DataFrame with course data
@@ -84,16 +77,6 @@ def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
     """
     from courses.prerequisites.parser import parse_fireroad
 
-    cache_key = f"prereqs_{len(courses_df)}"
-
-    # Check cache first
-    with _prerequisites_lock:
-        if cache_key in _prerequisites_cache:
-            print(f"[CACHE] Prerequisite cache HIT for {len(courses_df)} courses")
-            return _prerequisites_cache[cache_key]
-
-    # Cache miss - parse all prerequisites
-    print(f"[CACHE] Prerequisite cache MISS for {len(courses_df)} courses - parsing...")
     prereq_trees = {}
     for course_idx in range(len(courses_df)):
         prereq_str = courses_df[course_idx, 'prerequisites']
@@ -105,11 +88,6 @@ def get_parsed_prerequisites(courses_df: pl.DataFrame) -> dict[int, object]:
             except Exception:
                 pass
 
-    # Cache the result
-    with _prerequisites_lock:
-        _prerequisites_cache[cache_key] = prereq_trees
-        print(f"[CACHE] Cached {len(prereq_trees)} prerequisite trees")
-
     return prereq_trees
 
 
@@ -119,5 +97,3 @@ def clear_cache():
         _courses_cache.clear()
     with _requirements_lock:
         _requirements_cache.clear()
-    with _prerequisites_lock:
-        _prerequisites_cache.clear()

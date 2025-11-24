@@ -11,7 +11,7 @@ import type {
   RequirementsListResponse,
   RequirementNode,
   RequirementTree,
-} from '@/types/fireroad';
+} from '@/types/models/fireroad';
 
 const FIREROAD_PROXY_URL = '/api/fireroad';
 
@@ -74,7 +74,11 @@ export const fireroadApi = {
     return apiFetch<RequirementsListResponse>('/api/requirements/list');
   },
 
-  async getRequirementProgress(key: string, courseIds: string[]): Promise<RequirementTree> {
+  async getRequirementProgress(
+    key: string, 
+    courseIds: string[], 
+    source: 'canonical' | 'beta' = 'canonical'
+  ): Promise<RequirementTree> {
     const roadData = {
       coursesOfStudy: [key],
       selectedSubjects: courseIds.map((courseId, index) => ({
@@ -86,8 +90,10 @@ export const fireroadApi = {
       progressAssertions: {},
     };
 
+    const url = `/api/requirements/progress/${encodeURIComponent(key)}?source=${source}`;
+
     return apiFetch<RequirementTree>(
-      `/api/requirements/progress/${encodeURIComponent(key)}`,
+      url,
       {
         method: 'POST',
         headers: {
@@ -111,6 +117,7 @@ export const fireroadApi = {
     if (params?.level) searchParams.append('level', params.level);
     if (params?.units) searchParams.append('units', params.units);
     if (params?.term) searchParams.append('term', params.term);
+    if (params?.sort) searchParams.append('sort', params.sort);
     if (params?.offset !== undefined) searchParams.append('offset', params.offset.toString());
     if (params?.limit !== undefined) searchParams.append('limit', params.limit.toString());
     if (params?.department) searchParams.append('department', params.department);

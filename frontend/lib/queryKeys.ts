@@ -28,8 +28,8 @@ export const queryKeys = {
   requirements: {
     all: ['requirements'] as const,
     list: () => ['requirements', 'list'] as const,
-    progress: (requirementKey: string, courseIdsKey: string) => 
-      ['requirements', 'progress', requirementKey, courseIdsKey] as const,
+    progress: (requirementKey: string, courseIdsKey: string, source: 'canonical' | 'beta' = 'canonical') => 
+      ['requirements', 'progress', requirementKey, courseIdsKey, source] as const,
   },
 
   objectives: {

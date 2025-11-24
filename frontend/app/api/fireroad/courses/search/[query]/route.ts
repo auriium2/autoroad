@@ -1,14 +1,13 @@
 /**
  * Fireroad API Proxy - Course Search
- * Proxies search requests to Fireroad API with pagination support
+ * Uses in-memory cached course catalog for filtering
  * Adds computed fields like IMDB-weighted rating
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateIMDBRating } from '@/lib/fireroad-utils';
-import type { FireroadCourse, PaginatedCoursesResponse } from '@/types/fireroad';
-
-const FIREROAD_API_URL = 'https://fireroad.mit.edu';
+import { calculateIMDBRating } from '@/lib/fireroadUtils';
+import { getFullCourseCatalog } from '@/lib/cache';
+import type { FireroadCourse, PaginatedCoursesResponse } from '@/types/models/fireroad';
 
 export async function GET(
   req: NextRequest,
@@ -24,50 +23,42 @@ export async function GET(
       );
     }
 
-    // Get pagination params
     const offset = parseInt(req.nextUrl.searchParams.get('offset') || '0', 10);
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '20', 10);
     const department = req.nextUrl.searchParams.get('department');
+    const searchType = req.nextUrl.searchParams.get('type') || 'contains';
+    const sortParam = req.nextUrl.searchParams.get('sort');
     
-    // Get filter params (these are handled server-side, not forwarded to Fireroad)
     const girFilter = req.nextUrl.searchParams.get('gir');
     const hassFilter = req.nextUrl.searchParams.get('hass');
     const ciFilter = req.nextUrl.searchParams.get('ci');
     const levelFilter = req.nextUrl.searchParams.get('level');
     const unitsFilter = req.nextUrl.searchParams.get('units');
     const termFilter = req.nextUrl.searchParams.get('term');
-    
-    // Forward other query parameters to Fireroad (always request full data)
-    const fireroadParams = new URLSearchParams();
-    const filterParams = new Set(['offset', 'limit', 'department', 'gir', 'hass', 'ci', 'level', 'units', 'term']);
-    req.nextUrl.searchParams.forEach((value, key) => {
-      if (!filterParams.has(key)) {
-        fireroadParams.append(key, value);
+
+    // Get all courses from cache
+    const allCourses = await getFullCourseCatalog();
+
+    // Filter by search query
+    let filteredCourses = allCourses;
+
+    // Skip query filtering if query is '*' (wildcard - return all courses)
+    if (query !== '*') {
+      const searchLower = query.toLowerCase();
+      if (searchType === 'starts') {
+        filteredCourses = filteredCourses.filter((course) =>
+          course.subject_id?.toLowerCase().startsWith(searchLower) ||
+          course.title?.toLowerCase().startsWith(searchLower)
+        );
+      } else if (searchType === 'contains') {
+        filteredCourses = filteredCourses.filter((course) =>
+          course.subject_id?.toLowerCase().includes(searchLower) ||
+          course.title?.toLowerCase().includes(searchLower)
+        );
       }
-    });
-    fireroadParams.set('full', 'true'); // Always get full course data
-
-    const url = `${FIREROAD_API_URL}/courses/search/${encodeURIComponent(query)}?${fireroadParams}`;
-    
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Fireroad API error: ${response.statusText}` },
-        { status: response.status }
-      );
     }
-
-    const allCourses: FireroadCourse[] = await response.json();
     
-    // Filter out historical courses
-    let filteredCourses = allCourses.filter((course) => !course.is_historical);
-    
-    // Apply server-side filters
+    // Apply filters
     if (department && department !== 'all') {
       filteredCourses = filteredCourses.filter((course) => 
         course.subject_id?.startsWith(`${department}.`)
@@ -133,9 +124,32 @@ export async function GET(
       imdb_rating: course.imdb_rating ?? calculateIMDBRating(course.rating, course.enrollment_number),
     }));
     
+    // Apply sorting
+    let sortedCourses = enrichedCourses;
+    if (sortParam) {
+      sortedCourses = [...enrichedCourses].sort((a, b) => {
+        switch (sortParam) {
+          case 'imdb-rating-asc':
+            return (a.imdb_rating ?? 0) - (b.imdb_rating ?? 0);
+          case 'imdb-rating-desc':
+            return (b.imdb_rating ?? 0) - (a.imdb_rating ?? 0);
+          case 'units-asc':
+            return (a.total_units ?? 0) - (b.total_units ?? 0);
+          case 'units-desc':
+            return (b.total_units ?? 0) - (a.total_units ?? 0);
+          case 'enrollment-asc':
+            return (a.enrollment_number ?? 0) - (b.enrollment_number ?? 0);
+          case 'enrollment-desc':
+            return (b.enrollment_number ?? 0) - (a.enrollment_number ?? 0);
+          default:
+            return 0;
+        }
+      });
+    }
+    
     // Apply pagination
-    const total = enrichedCourses.length;
-    const paginatedCourses = enrichedCourses.slice(offset, offset + limit);
+    const total = sortedCourses.length;
+    const paginatedCourses = sortedCourses.slice(offset, offset + limit);
     
     const responseData: PaginatedCoursesResponse = {
       courses: paginatedCourses,
@@ -147,7 +161,7 @@ export async function GET(
     
     return NextResponse.json(responseData, {
       headers: {
-        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600', // Cache for 30 min, serve stale for 1 hour
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
       },
     });
   } catch (error) {

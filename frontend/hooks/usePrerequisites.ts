@@ -6,7 +6,7 @@ import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
 import { extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
-import { getCachedPrereqTree } from '@/lib/prerequisiteCache';
+import { getCachedPrereqTree } from '@/lib/cache';
 import { queryKeys } from '@/lib/queryKeys';
 import type { CourseNode } from '@/types';
 

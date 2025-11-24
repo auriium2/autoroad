@@ -3,28 +3,10 @@ import { Label } from "@/components/ui/label";
 import { SimpleSelect } from "@/components/ui/simple-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { UnifiedParameterSelector } from "./UnifiedParameterSelector";
+import { OptimizationParametersPanel } from "./OptimizationParametersPanel";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
-
-function getGraduationYearOptions() {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth(); // 0-11
-
-  // Determine the current academic year
-  // If September (month 8) or later, we're in currentYear-currentYear+1 academic year
-  // Otherwise, we're in currentYear-1 to currentYear academic year
-  const academicYearStart = currentMonth >= 8 ? currentYear : currentYear - 1;
-
-  const freshmanGradYear = academicYearStart + 4;
-  return [
-    { value: String(freshmanGradYear), label: `Class of ${freshmanGradYear}` },
-    { value: String(freshmanGradYear - 1), label: `Class of ${freshmanGradYear - 1}` },
-    { value: String(freshmanGradYear - 2), label: `Class of ${freshmanGradYear - 2}` },
-    { value: String(freshmanGradYear - 3), label: `Class of ${freshmanGradYear - 3}` },
-  ];
-}
+import { getGraduationYearOptions } from "@/lib/semesterUtils";
 
 const YEAR_OPTIONS = getGraduationYearOptions();
 
@@ -95,7 +77,7 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
             Optimizing schedule, please wait...
           </div>
         ) : (
-          <UnifiedParameterSelector viewMode={viewMode} />
+          <OptimizationParametersPanel viewMode={viewMode} />
         )}
       </div>
     </div>

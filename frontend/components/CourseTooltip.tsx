@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCourseDetails } from "@/hooks/useCourseData";
-import { getTermsOffered } from "@/lib/fireroad-utils";
+import { getTermsOffered } from "@/lib/fireroadUtils";
 import { Loader2, Users, TicketPercent } from "lucide-react";
 
 export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {

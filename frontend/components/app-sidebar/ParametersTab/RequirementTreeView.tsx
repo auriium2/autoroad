@@ -25,6 +25,7 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
   const expandedNodesRecord = useOptimizationStore((state) => state.expandedRequirementNodes);
   const expandedNodes = expandedNodesRecord[requirementKey] || new Set();
   const toggleNodeExpanded = useOptimizationStore((state) => state.toggleRequirementNodeExpanded);
+  const requirementSources = useOptimizationStore((state) => state.requirementSources);
 
   const ids = new Set([
     ...markers.map(m => m.courseId),
@@ -33,12 +34,13 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
   const allCourseIds = Array.from(ids);
 
   const courseIdsKey = allCourseIds.sort().join(',');
+  const source = requirementSources[requirementKey] || 'canonical';
 
   const { data: requirement, isLoading, error } = useQuery({
-    queryKey: queryKeys.requirements.progress(requirementKey, courseIdsKey),
+    queryKey: queryKeys.requirements.progress(requirementKey, courseIdsKey, source),
     queryFn: async () => {
-      console.log(`[RequirementProgress] Fetching progress for ${requirementKey} with ${allCourseIds.length} courses:`, allCourseIds);
-      const result = await fireroadApi.getRequirementProgress(requirementKey, allCourseIds);
+      console.log(`[RequirementProgress] Fetching progress for ${requirementKey} (${source}) with ${allCourseIds.length} courses:`, allCourseIds);
+      const result = await fireroadApi.getRequirementProgress(requirementKey, allCourseIds, source);
       console.log('Progress API result for', requirementKey, ':', result);
       return result;
     },

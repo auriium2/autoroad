@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { useSearchCourses } from "@/hooks/useCourseData";
 
-interface EquivalencyManagerInlineProps {
+interface EquivalencyManagerProps {
   customEquivalencies: Record<string, string[]>;
   onChange: (newEquiv: Record<string, string[]>) => void;
 }
 
-export function EquivalencyManagerInline({ customEquivalencies, onChange }: EquivalencyManagerInlineProps) {
-  console.log('[DEBUG EquivalencyManagerInline] customEquivalencies:', customEquivalencies);
+export function EquivalencyManager({ customEquivalencies, onChange }: EquivalencyManagerProps) {
+  console.log('[DEBUG EquivalencyManager] customEquivalencies:', customEquivalencies);
   const [courseA, setCourseA] = React.useState("");
   const [courseB, setCourseB] = React.useState("");
   const [showDropdownA, setShowDropdownA] = React.useState(false);

@@ -2,7 +2,7 @@
  * Shared Fireroad utilities and types
  */
 
-import type { FireroadCourse } from '@/types/fireroad';
+import type { FireroadCourse } from '@/types/models/fireroad';
 
 export type { FireroadCourse };
 
