@@ -56,7 +56,7 @@ venv/
 .Python
 *.egg-info/
 package-lock.json
-backend/uv.lock
+
 
 .zed
 .ropeproject
