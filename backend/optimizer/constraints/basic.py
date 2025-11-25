@@ -15,6 +15,7 @@ import polars as pl
 from ortools.sat.python import cp_model
 
 from api.models.requests import Marker
+from optimizer.semesters import ALL_SEMESTERS
 from utils.utils import get_current_semester_index, is_valid_class_semester
 
 
@@ -110,7 +111,7 @@ def add_at_most_once_constraint(
     for course_idx in range(len(courses_df)):
         all_semester_takes = [
             take_vars[(course_idx, s)]
-            for s in range(-2, max_semesters + 1)  # Include Must Take (-2), ASE (-1), regular (1-max)
+            for s in ALL_SEMESTERS  # Must Take (-2), ASE (-1), regular (1-12)
             if (course_idx, s) in take_vars
         ]
         if all_semester_takes:

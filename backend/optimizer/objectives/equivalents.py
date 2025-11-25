@@ -9,6 +9,8 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
+from optimizer.semesters import VALID_SEMESTERS
+
 from .base import ObjectiveContext, get_tier_penalty
 
 
@@ -136,7 +138,7 @@ class DiscourageEquivalentCourses:
             for course_idx in equiv_indices:
                 # Collect all take variables for this specific course across semesters
                 course_takes = []
-                for semester in range(-1, 13):  # ASE (-1) through semester 12
+                for semester in VALID_SEMESTERS:
                     if (course_idx, semester) in take_vars:
                         course_takes.append(take_vars[(course_idx, semester)])
 

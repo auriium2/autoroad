@@ -13,6 +13,8 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
+from optimizer.semesters import REGULAR_SEMESTERS
+
 from .base import ObjectiveContext
 
 
@@ -108,15 +110,11 @@ class CategoryRewards:
             courses_with_vars = []
             for course_idx in courses_for_req:
                 has_var = False
-                # Check if this course is taken in any semester
-                for semester in range(1, 13):
+                # Check if this course is taken in any regular semester TODO: we should figure out if category rewards apply to ASEs or not
+                for semester in REGULAR_SEMESTERS:
                     if (course_idx, semester) in take_vars:
                         course_take_vars.append(take_vars[(course_idx, semester)])
                         has_var = True
-                # Also check special semesters (ASE = -1)
-                if (course_idx, -1) in take_vars:
-                    course_take_vars.append(take_vars[(course_idx, -1)])
-                    has_var = True
                 if has_var:
                     courses_with_vars.append(course_idx)
 

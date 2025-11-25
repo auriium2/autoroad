@@ -26,6 +26,7 @@ from courses.requirements.types import (
     RequirementNode,
     RequirementPlainString,
 )
+from optimizer.semesters import VALID_SEMESTERS
 
 
 class ConstraintSummary(TypedDict):
@@ -232,10 +233,10 @@ class RequirementConstraintBuilder:
         debug_name = node.req_id if node.req_id else course_id
         self.ctx.register_var(satisfied_var, debug_name)
 
-        # Course is satisfied if it's taken in any valid semester
+
         valid_takes = [
             self.ctx.take_vars[course_idx, s]
-            for s in range(1, 13)
+            for s in VALID_SEMESTERS
             if (course_idx, s) in self.ctx.take_vars
         ]
 
@@ -282,7 +283,7 @@ class RequirementConstraintBuilder:
         valid_takes = [
             self.ctx.take_vars[c, s]
             for c in course_indices
-            for s in range(1, 13)
+            for s in VALID_SEMESTERS
             if (c, s) in self.ctx.take_vars
         ]
 
@@ -326,7 +327,7 @@ class RequirementConstraintBuilder:
         valid_takes = [
             self.ctx.take_vars[c, s]
             for c in course_indices
-            for s in range(1, 13)
+            for s in VALID_SEMESTERS
             if (c, s) in self.ctx.take_vars
         ]
 

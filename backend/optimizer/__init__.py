@@ -15,8 +15,13 @@ from .prerequisite_constraint_builder import (
 from .requirement_constraint_builder import (
     add_requirement_constraints,
 )
+from .semesters import ALL_SEMESTERS, REGULAR_SEMESTERS, VALID_SEMESTERS
 
 __all__ = [
+    # Semester constants
+    "REGULAR_SEMESTERS",
+    "VALID_SEMESTERS",
+    "ALL_SEMESTERS",
     # Marker constraints
     "add_marker_constraints",
     "MarkerConstraintResult",
