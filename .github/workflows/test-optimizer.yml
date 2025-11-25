@@ -48,38 +48,39 @@ jobs:
         run: uv run pytest tests/unit/ -v
 
   test-feasibility:
-    name: Feasibility - ${{ matrix.test }}
+    name: Feasibility - Group ${{ matrix.group }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test_course_1_civil_engineering
-          - test_course_2_mechanical_engineering
-          - test_course_3_materials_science
-          - test_course_3a_materials_science_flexible
-          - test_course_3c_archaeology_materials
-          - test_course_4_architecture
-          - test_course_6_2_eecs
-          - test_course_6_3_computer_science
-          - test_course_6_4_ai_decision_making
-          - test_course_6_7_cs_molecular_biology
-          - test_course_6_9_computation_cognition
-          - test_course_6_14_cs_economics_data_science
-          - test_course_7_biology
-          - test_course_8_physics
-          - test_course_9_brain_cognitive_sciences
-          - test_course_11_urban_studies
-          - test_course_12_earth_science
-          - test_course_15_management
-          - test_course_16_aerospace
-          - test_course_18am_applied_mathematics
-          - test_course_18c_mathematics_cs
-          - test_course_18pm_mathematics
-          - test_course_20_biological_engineering
-          - test_double_major_6_3_and_15
-          - test_major_with_minor
+        include:
+          - group: 1
+            tests: "test_course_1_civil_engineering or test_course_2_mechanical_engineering"
+          - group: 2
+            tests: "test_course_3_materials_science or test_course_3a_materials_science_flexible"
+          - group: 3
+            tests: "test_course_3c_archaeology_materials or test_course_4_architecture"
+          - group: 4
+            tests: "test_course_6_2_eecs or test_course_6_3_computer_science"
+          - group: 5
+            tests: "test_course_6_4_ai_decision_making or test_course_6_7_cs_molecular_biology"
+          - group: 6
+            tests: "test_course_6_9_computation_cognition or test_course_6_14_cs_economics_data_science"
+          - group: 7
+            tests: "test_course_7_biology or test_course_8_physics"
+          - group: 8
+            tests: "test_course_9_brain_cognitive_sciences or test_course_11_urban_studies"
+          - group: 9
+            tests: "test_course_12_earth_science or test_course_15_management"
+          - group: 10
+            tests: "test_course_16_aerospace or test_course_18am_applied_mathematics"
+          - group: 11
+            tests: "test_course_18c_mathematics_cs or test_course_18pm_mathematics"
+          - group: 12
+            tests: "test_course_20_biological_engineering or test_double_major_6_3_and_15"
+          - group: 13
+            tests: "test_major_with_minor"
 
     steps:
       - uses: actions/checkout@v4
@@ -103,23 +104,24 @@ jobs:
         working-directory: ./backend
         run: uv sync --frozen --extra dev
 
-      - name: Run feasibility test
+      - name: Run feasibility tests
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestOptimizerFeasibility::${{ matrix.test }} -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestOptimizerFeasibility -k "${{ matrix.tests }}" -v -s
 
   test-feasibility-regression:
-    name: Feasibility Regression - ${{ matrix.test }}
+    name: Feasibility Regression - Group ${{ matrix.group }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test_regression_course_1_091_permission_of_instructor
-          - test_regression_course_7_requires_10_semesters
-          - test_regression_empty_prereq_groups_never_created
-          - test_regression_threshold_zero_optional_groups
-          - test_regression_ase_courses_satisfy_requirements
+        include:
+          - group: 1
+            tests: "test_regression_course_1_091_permission_of_instructor or test_regression_course_7_requires_10_semesters"
+          - group: 2
+            tests: "test_regression_empty_prereq_groups_never_created or test_regression_threshold_zero_optional_groups"
+          - group: 3
+            tests: "test_regression_ase_courses_satisfy_requirements"
 
     steps:
       - uses: actions/checkout@v4
@@ -143,9 +145,9 @@ jobs:
         working-directory: ./backend
         run: uv sync --frozen --extra dev
 
-      - name: Run regression test
+      - name: Run regression tests
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs::${{ matrix.test }} -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs -k "${{ matrix.tests }}" -v -s
 
   test-quality:
     name: Quality - ${{ matrix.test }}
