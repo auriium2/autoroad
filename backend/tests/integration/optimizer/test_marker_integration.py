@@ -270,11 +270,13 @@ class TestScatteredMarkersMath:
         """
         Math major with heavy course load pinned to freshman year.
         
-        Note: 18.06 requires CAL2 (18.02), so we put 18.02 in fall and 18.06 in spring.
+        Note: 18.02 requires 18.01 as prereq, so we put 18.01 in ASE.
+        18.06 requires CAL2 (18.02), so we put 18.02 in fall and 18.06 in spring.
         """
         markers = [
+            # ASE - 18.01 as prior credit so 18.02 can be in fall
+            Marker(courseId='18.01', section=-1, status='pin'),
             # Heavy freshman fall (section 0)
-            Marker(courseId='18.01', section=0, status='pin'),
             Marker(courseId='18.02', section=0, status='pin'),     # CAL2 - needed for 18.06
             Marker(courseId='8.01', section=0, status='pin'),
             # Freshman spring (section 2) - courses that need fall prereqs
