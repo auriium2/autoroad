@@ -14,12 +14,16 @@ from typing import Any
 
 import requests
 
-from courses.requirements.parser import RequirementParseError, parse_requirement
+from courses.requirements.parser import ParseError, parse
 from courses.requirements.types import (
-    RequirementCourse,
-    RequirementGroup,
-    RequirementNode,
-    RequirementPlainString,
+    AllGroup,
+    AnyGroup,
+    Course,
+    Group,
+    Node,
+    PlainString,
+    SubjectThresholdGroup,
+    UnitThresholdGroup,
 )
 
 
@@ -104,9 +108,9 @@ def categorize_requirement(req_item: dict[str, Any]) -> str:
     return ','.join(categories) if categories else 'UNKNOWN'
 
 
-def analyze_requirement_structure(req: RequirementNode) -> dict[str, int]:
+def analyze_requirement_structure(req: Node) -> dict[str, int]:
     """Analyze the structure of a parsed requirement tree"""
-    stats = {
+    stats: dict[str, int] = {
         'total_nodes': 0,
         'course_nodes': 0,
         'plain_string_nodes': 0,
@@ -114,17 +118,18 @@ def analyze_requirement_structure(req: RequirementNode) -> dict[str, int]:
         'max_depth': 0,
     }
 
-    def traverse(node: RequirementNode, depth: int = 0) -> None:
+    def traverse(node: Node, depth: int = 0) -> None:
         stats['total_nodes'] += 1
         stats['max_depth'] = max(stats['max_depth'], depth)
 
-        if isinstance(node, RequirementCourse):
+        if isinstance(node, Course):
             stats['course_nodes'] += 1
-        elif isinstance(node, RequirementPlainString):
+        elif isinstance(node, PlainString):
             stats['plain_string_nodes'] += 1
-        elif isinstance(node, RequirementGroup):
+        elif isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
             stats['group_nodes'] += 1
-            for item in node.items:
+            group_node: Group = node
+            for item in group_node.children:
                 traverse(item, depth + 1)
 
     traverse(req)
@@ -149,7 +154,7 @@ def test_parser(requirement_items: list[tuple[str, dict[str, Any]]]) -> tuple[di
         category_stats[category]["total"] += 1
 
         try:
-            parsed = parse_requirement(req_item)
+            parsed = parse(req_item)
 
             # Analyze structure
             stats = analyze_requirement_structure(parsed)
@@ -163,7 +168,7 @@ def test_parser(requirement_items: list[tuple[str, dict[str, Any]]]) -> tuple[di
             })
             category_stats[category]["success"] += 1
 
-        except RequirementParseError as e:
+        except ParseError as e:
             results["failure"].append({
                 "path": path,
                 "category": category,
@@ -195,8 +200,8 @@ def print_report(results: dict[str, list[Any]], category_stats: dict[str, Counte
 
     # --- SUMMARY ---
     print(f"\nTotal requirement items tested: {total_items}")
-    print(f"  - ✅ Successfully parsed: {success_count} ({success_count/total_items*100:.1f}%)")
-    print(f"  - ❌ Failed to parse: {failure_count} ({failure_count/total_items*100:.1f}%)")
+    print(f"  - Successfully parsed: {success_count} ({success_count/total_items*100:.1f}%)")
+    print(f"  - Failed to parse: {failure_count} ({failure_count/total_items*100:.1f}%)")
 
     # --- STRUCTURE STATS ---
     if structure_stats:

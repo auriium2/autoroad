@@ -316,17 +316,14 @@ class TestRegressionBugs:
         Each optional child was incorrectly forcing 1 course, adding ~11 extra courses.
 
         Fix: Only add the connection_type='any' constraint when cutoff > 0.
-        See requirement_constraint_builder.py line 687.
         """
+        import polars as pl
         from ortools.sat.python import cp_model
 
-        from courses.requirements.parser import parse_requirement
-        from courses.requirements.types import RequirementGroup
-        from optimizer.requirement_constraint_builder import (
-            ConstraintContext,
-            CourseSchedule,
-            RequirementConstraintBuilder,
-        )
+        from api.services.cache import get_courses_data
+        from courses.requirements.parser import parse
+        from courses.requirements.types import SubjectThresholdGroup
+        from optimizer.requirements.builder import build_constraints
 
         # Create a minimal test case that replicates the bug structure:
         # Parent with threshold ≥2, containing 3 optional children (threshold ≥0)
@@ -356,14 +353,10 @@ class TestRegressionBugs:
             ]
         }
 
-        req_tree = parse_requirement(test_req)
-        assert isinstance(req_tree, RequirementGroup)
+        req_tree = parse(test_req)
+        assert isinstance(req_tree, SubjectThresholdGroup)
 
         # Load real course data
-        import polars as pl
-
-        from api.services.cache import get_courses_data
-
         courses_data = get_courses_data()
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
@@ -381,11 +374,14 @@ class TestRegressionBugs:
                 for sem in range(1, 9):
                     take_vars[(idx, sem)] = model.NewBoolVar(f"take_{course_id}_s{sem}")
 
-        # Build constraints
-        schedule = CourseSchedule(courses_df, 2025)
-        ctx = ConstraintContext(model, take_vars, schedule)
-        builder = RequirementConstraintBuilder(ctx)
-        builder.enforce_requirement(req_tree)
+        # Build constraints using new builder
+        build_constraints(
+            model=model,
+            take_vars=take_vars,
+            requirement=req_tree,
+            courses_df=courses_df,
+            enforce=True,
+        )
 
         # Add objective to minimize total courses taken
         all_take_vars = list(take_vars.values())
@@ -423,21 +419,17 @@ class TestRegressionBugs:
         incurring a 50,000+ penalty.
 
         Fix: Changed range(1, 13) to VALID_SEMESTERS ([-1] + list(range(1, 13)))
-        in _build_course, _build_hass_any, and _build_attribute_requirement.
+        in constraint building for courses, HASS, and attribute requirements.
         """
         import polars as pl
         from ortools.sat.python import cp_model
 
         from api.models.requests import Marker
         from api.services.cache import get_courses_data
-        from courses.requirements.parser import parse_requirement
-        from courses.requirements.types import RequirementGroup
+        from courses.requirements.parser import parse
+        from courses.requirements.types import AllGroup
         from optimizer.constraints.basic import create_take_vars
-        from optimizer.requirement_constraint_builder import (
-            ConstraintContext,
-            CourseSchedule,
-            RequirementConstraintBuilder,
-        )
+        from optimizer.requirements.builder import build_constraints
 
         # Create a simple GIR requirement for CAL1
         test_req = {
@@ -445,8 +437,8 @@ class TestRegressionBugs:
             'reqs': [{'req': 'GIR:CAL1'}]
         }
 
-        req_tree = parse_requirement(test_req)
-        assert isinstance(req_tree, RequirementGroup)
+        req_tree = parse(test_req)
+        assert isinstance(req_tree, AllGroup)
 
         # Load real course data
         courses_data = get_courses_data()
@@ -471,16 +463,19 @@ class TestRegressionBugs:
         # Force 18.01 to be taken in ASE (simulating the marker constraint)
         model.Add(take_vars[(course_18_01_idx, -1)] == 1)
 
-        # Build requirement constraints
-        schedule = CourseSchedule(courses_df, 2025)
-        ctx = ConstraintContext(model, take_vars, schedule)
-        builder = RequirementConstraintBuilder(ctx)
-        result = builder.build(req_tree)
+        # Build requirement constraints (enforce=False so we can check sat_var)
+        result, ctx = build_constraints(
+            model=model,
+            take_vars=take_vars,
+            requirement=req_tree,
+            courses_df=courses_df,
+            enforce=False,
+        )
 
-        assert result.satisfied_var is not None, "Should build CAL1 requirement"
+        assert result.sat_var is not None, "Should build CAL1 requirement"
 
         # The requirement should be satisfiable with just 18.01 in ASE
-        model.Add(result.satisfied_var == 1)
+        model.Add(result.sat_var == 1)
 
         # Solve
         solver = cp_model.CpSolver()

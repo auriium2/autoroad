@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ortools.sat.python import cp_model
 
-from courses.requirements.req_2.types import (
+from courses.requirements.types import (
     CI,
     GIR,
     HASS,

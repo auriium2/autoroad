@@ -10,9 +10,6 @@ Key functions:
 - validate_solution_against_fireroad(): Validate solution against Fireroad API
 - run_optimizer_quality_test(): Full quality test with validation
 - assert_solution_quality(): Comprehensive solution validation
-
-Environment variables:
-- USE_REQ_2=1: Use the new req_2 constraint builder instead of the old one
 """
 
 from dataclasses import dataclass
@@ -25,17 +22,13 @@ from ortools.sat.python import cp_model
 from api.models.requests import Marker
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
-from courses.requirements.parser import parse_requirement
-from courses.requirements.req_2.converter import convert as convert_to_req_2
+from courses.requirements.parser import parse_fireroad_response
 from courses.requirements.validator import validate_and_prune
 from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.objectives import MinimizeUnits, ObjectiveBuilder
 from optimizer.objectives.registry import get_default_objectives, instantiate_objective
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
-from optimizer.requirements.builder import (
-    add_requirement_constraints as add_requirement_constraints_v2,
-)
+from optimizer.requirements.builder import add_requirement_constraints
 
 
 @dataclass
@@ -65,7 +58,6 @@ def build_optimizer_model(
     with_objectives: bool = True,
     freeze_past_semesters: bool = False,
     cached_data: Any = None,
-    use_req_2: bool = False,
 ) -> OptimizerModelResult:
     """
     Build a complete optimizer model - unified helper for all integration tests.
@@ -81,15 +73,10 @@ def build_optimizer_model(
         with_objectives: Whether to add objective functions (default True)
         freeze_past_semesters: Whether to add past semester constraints
         cached_data: Optional CachedCourseData from conftest fixture
-        use_req_2: Whether to use the new req_2 constraint builder (default False)
 
     Returns:
         OptimizerModelResult with model, variables, and data
     """
-    # Check environment variable for req_2 override
-    #if os.environ.get('USE_REQ_2', '').lower() in ('1', 'true', 'yes'):
-    use_req_2 = True
-
     # Load data (use cache if provided)
     if cached_data is not None:
         courses_df = cached_data.courses_df
@@ -122,28 +109,21 @@ def build_optimizer_model(
         override_course_ids = {m.courseId for m in markers if m.status == 'override'}
     add_prerequisite_constraints(model, take_vars, courses_df, start_year, prereq_trees, override_course_ids)
 
-    # Add requirement constraints
+    # Add requirement constraints using req_2 parser and builder
     course_to_requirements: dict[int, set[str]] = {}
     for req_key in requirement_keys:
         if req_key in requirements_data:
             req_data = requirements_data[req_key]
             if isinstance(req_data, dict):
-                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                # Parse directly to req_2 types
+                req_tree = parse_fireroad_response(req_data)
+                # Validate and prune
                 validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
                 if validation.pruned_tree is not None:
-                    if use_req_2:
-                        # Convert to req_2 nodes and use new builder
-                        req_2_tree = convert_to_req_2(validation.pruned_tree)
-                        _aux_vars, _debug_names, mapping = add_requirement_constraints_v2(
-                            model, take_vars, req_2_tree,
-                            courses_df, enforce=True
-                        )
-                    else:
-                        # Use old builder
-                        _aux_vars, _debug_names, mapping = add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, start_year, enforce=True
-                        )
+                    _aux_vars, _debug_names, mapping = add_requirement_constraints(
+                        model, take_vars, validation.pruned_tree,
+                        courses_df, enforce=True
+                    )
                     # Merge course->requirements mappings
                     for course_idx, req_paths in mapping.items():
                         if course_idx not in course_to_requirements:
@@ -185,7 +165,7 @@ def solve_model(
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = timeout_seconds
     solver.parameters.random_seed = random_seed
-    status = solver.Solve(model)
+    status = int(solver.Solve(model))
     return solver, status
 
 

@@ -7,21 +7,20 @@ into req_2 typed nodes.
 
 import pytest
 
-from courses.requirements.req_2.parser import (
+from courses.requirements.parser import (
     ParseError,
-    parse,
-    parse_requirement_list,
-    parse_fireroad_response,
     node_to_string,
+    parse,
+    parse_fireroad_response,
+    parse_requirement_list,
 )
-from courses.requirements.req_2.types import (
-    AllGroup,
-    AnyGroup,
+from courses.requirements.types import (
     CI,
-    Course,
-    DistinctThreshold,
     GIR,
     HASS,
+    AllGroup,
+    AnyGroup,
+    Course,
     PlainString,
     SubjectThresholdGroup,
     UnitThresholdGroup,

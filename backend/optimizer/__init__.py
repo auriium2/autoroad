@@ -12,7 +12,7 @@ from .prerequisite_constraint_builder import (
 from .prerequisite_constraint_builder import (
     add_prerequisite_constraints,
 )
-from .requirement_constraint_builder import (
+from .requirements.builder import (
     add_requirement_constraints,
 )
 from .semesters import ALL_SEMESTERS, REGULAR_SEMESTERS, VALID_SEMESTERS

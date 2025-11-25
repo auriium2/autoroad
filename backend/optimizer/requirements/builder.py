@@ -12,7 +12,7 @@ from typing import TypedDict
 import polars as pl
 from ortools.sat.python import cp_model
 
-from courses.requirements.req_2 import types
+from courses.requirements import types
 from optimizer.requirements import dispatch
 
 # Import handlers to register them with the dispatch system

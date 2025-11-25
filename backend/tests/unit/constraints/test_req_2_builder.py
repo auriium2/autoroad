@@ -8,7 +8,7 @@ produces equivalent constraints to the old RequirementConstraintBuilder.
 import polars as pl
 from ortools.sat.python import cp_model
 
-from courses.requirements.req_2 import nodes
+from courses.requirements import nodes
 from optimizer.requirements.builder import add_requirement_constraints, build_constraints
 
 

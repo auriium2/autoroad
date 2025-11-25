@@ -1,426 +1,315 @@
 """
-Requirements validator for pruning invalid/unavailable courses.
+Validator for req_2 requirement nodes.
 
-This module provides functionality to:
-- Validate course IDs against the Fireroad course catalog
-- Mark invalid courses in requirement trees (mark_invalid_requirements)
-- Remove invalid courses from requirement trees (remove_invalid_requirements)
-- Report which requirements become infeasible after pruning
+Validates courses against the catalog and marks/removes invalid courses.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
-from .types import (
-    RequirementCourse,
-    RequirementGroup,
-    RequirementNode,
-    RequirementPlainString,
+from courses.requirements.types import (
+    AllGroup,
+    AnyGroup,
+    CI,
+    Course,
+    GIR,
+    Group,
+    HASS,
+    Node,
+    PlainString,
+    SubjectThresholdGroup,
+    UnitThresholdGroup,
 )
 
 
 @dataclass
 class ValidationResult:
-    """Result of validating and marking/pruning a requirement tree."""
-    pruned_tree: RequirementNode | None
+    """Result of validating and pruning a requirement tree."""
+    pruned_tree: Node | None
     removed_courses: list[str]
     warnings: list[str]
     is_feasible: bool
 
 
-def validate_course_exists(course_id: str, courses_df: Any) -> bool:
+def validate_course_exists(node: Node, courses_df: Any) -> bool:
     """
-    Check if a course exists in the course catalog.
+    Check if a course/requirement node is satisfiable.
 
-    Args:
-        course_id: The course ID to check (e.g., "6.100A", "GIR:CAL1")
-        courses_df: DataFrame containing course data with 'subject_id' column
-
-    Returns:
-        True if the course exists or is a special requirement, False otherwise
+    Special requirements (GIR, HASS, CI) always return True.
+    Regular courses are checked against the catalog.
     """
-    # Special requirements always "exist"
-    if course_id in ["HASS"]:
+    if isinstance(node, GIR):
         return True
-    if course_id.startswith("GIR:"):
+    if isinstance(node, HASS):
         return True
-    if course_id.startswith("HASS-"):
+    if isinstance(node, CI):
         return True
-    if course_id.startswith("CI-"):
-        return True
+    if isinstance(node, PlainString):
+        return True  # Plain strings don't need validation
+    if isinstance(node, Course):
+        if courses_df is not None and 'subject_id' in courses_df.columns:
+            return node.subject_id in courses_df['subject_id'].to_list()
+        return False
+    # Groups are validated by their children
+    return True
 
-    # Check if course exists in catalog
-    if courses_df is not None and 'subject_id' in courses_df.columns:
-        return course_id in courses_df['subject_id'].to_list()
 
-    return False
-
-
-def mark_invalid_requirements(
-    req: RequirementNode,
+def _mark_node(
+    node: Node,
     courses_df: Any,
-    removed_courses: list[str] | None = None,
-    warnings: list[str] | None = None
-) -> RequirementNode:
-    """
-    Mark unavailable courses in a requirement tree without removing them.
+    removed_courses: list[str],
+    warnings: list[str],
+) -> Node:
+    """Mark invalid courses in a node without removing them."""
 
-    Sets was_pruned=True on invalid courses and propagates the flag up to parent groups.
-    The tree structure remains intact - all courses are kept for debugging purposes.
+    # Leaf nodes
+    if isinstance(node, Course):
+        if validate_course_exists(node, courses_df):
+            return node
+        removed_courses.append(node.subject_id)
+        warnings.append(f"Marked unavailable course: {node.subject_id} (ID: {node.req_id})")
+        return replace(node, was_pruned=True)
 
-    Args:
-        req: The requirement node to validate
-        courses_df: DataFrame containing valid course data
-        removed_courses: List to accumulate invalid course IDs
-        warnings: List to accumulate warning messages
+    if isinstance(node, (GIR, HASS, CI, PlainString)):
+        # These are always valid
+        return node
 
-    Returns:
-        RequirementNode with was_pruned flags set (never returns None)
-    """
-    if removed_courses is None:
-        removed_courses = []
-    if warnings is None:
-        warnings = []
-
-    # Handle leaf nodes (courses)
-    if isinstance(req, RequirementCourse):
-        if validate_course_exists(req.course_id, courses_df):
-            return req
-        else:
-            removed_courses.append(req.course_id)
-            warnings.append(f"Marked unavailable course: {req.course_id} (ID: {req.req_id})")
-            return RequirementCourse(
-                course_id=req.course_id,
-                title=req.title,
-                req_id=req.req_id,
-                was_pruned=True
-            )
-
-    # Plain strings always remain (they're descriptive, not course-specific)
-    if isinstance(req, RequirementPlainString):
-        return req
-
-    # Handle group nodes
-    if isinstance(req, RequirementGroup):
-        # Recursively mark sub-requirements
-        marked_items: list[RequirementNode] = []
-        valid_children_count = 0
-
-        for item in req.items:
-            marked = mark_invalid_requirements(item, courses_df, removed_courses, warnings)
-            marked_items.append(marked)
-            # Count children that are NOT pruned (i.e., valid/feasible)
-            if not (hasattr(marked, 'was_pruned') and marked.was_pruned):
-                valid_children_count += 1
-
-        # Determine if this group is infeasible based on connection-type and threshold
-        # A group is infeasible if it cannot satisfy its requirements with the valid children
-        # NOTE: Both threshold AND connection_type can be present - BOTH must be satisfied
-        is_group_infeasible = False
-        total_children = len(marked_items)
-
-        # Check threshold requirement (if present)
-        if req.threshold:
-            # Threshold-based requirement (e.g., "select 3 subjects")
-            # For thresholds with criterion='subjects', count total COURSES, not direct children
-            required_count = req.threshold.cutoff
-
-            if req.threshold.criterion == 'subjects':
-                # Count total valid courses in the subtree
-                def count_valid_courses(node):
-                    if isinstance(node, RequirementCourse):
-                        return 0 if node.was_pruned else 1
-                    elif isinstance(node, RequirementGroup):
-                        return sum(count_valid_courses(item) for item in node.items)
-                    return 0
-
-                available_subjects = count_valid_courses(RequirementGroup(
-                    items=tuple(marked_items),
-                    connection_type=req.connection_type,
-                    threshold=req.threshold,
-                    distinct_threshold=req.distinct_threshold,
-                    title=req.title,
-                    threshold_desc=req.threshold_desc,
-                    req_id=req.req_id,
-                    was_pruned=False
-                ))
-
-                if available_subjects < required_count:
-                    is_group_infeasible = True
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is infeasible: "
-                        f"threshold requires {required_count} subjects but only {available_subjects} valid courses available"
-                    )
-            elif req.threshold.criterion == 'units':
-                # Count total available units from valid courses in the subtree
-                def count_available_units(node) -> int:
-                    if isinstance(node, RequirementCourse):
-                        if node.was_pruned:
-                            return 0
-                        # Look up units from courses_df
-                        if courses_df is not None and 'subject_id' in courses_df.columns:
-                            matches = courses_df.filter(courses_df['subject_id'] == node.course_id)
-                            if len(matches) > 0 and 'total_units' in courses_df.columns:
-                                units = matches[0, 'total_units']
-                                return int(units) if units is not None else 12
-                        return 12  # Default if not found
-                    elif isinstance(node, RequirementGroup):
-                        return sum(count_available_units(item) for item in node.items)
-                    return 0
-
-                available_units = count_available_units(RequirementGroup(
-                    items=tuple(marked_items),
-                    connection_type=req.connection_type,
-                    threshold=req.threshold,
-                    distinct_threshold=req.distinct_threshold,
-                    title=req.title,
-                    threshold_desc=req.threshold_desc,
-                    req_id=req.req_id,
-                    was_pruned=False
-                ))
-
-                if available_units < required_count:
-                    # Not enough units available from listed courses.
-                    # This is likely an open-ended elective group where students pick unlisted courses.
-                    # We do NOT mark as infeasible - the constraint builder will handle this
-                    # by assuming it's satisfiable with unlisted electives.
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is open-ended: "
-                        f"requires {required_count} units but only {available_units} units available from listed courses"
-                    )
-            else:
-                # For other criteria, count direct children as a basic check
-                if valid_children_count < required_count:
-                    is_group_infeasible = True
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is infeasible: "
-                        f"threshold requires {required_count} valid items but only {valid_children_count}/{total_children} are valid"
-                    )
-
-        # Check connection_type requirement (if present and not already infeasible)
-        # Note: We check this separately so both threshold AND connection_type are enforced
-        if not is_group_infeasible and req.connection_type == "all":
-            # "all" means ALL direct children must be satisfied
-            if valid_children_count < total_children:
-                is_group_infeasible = True
-                warnings.append(
-                    f"Group '{req.title or req.req_id}' is infeasible: "
-                    f"'all' requires all {total_children} children to be valid but only {valid_children_count} are valid"
-                )
-        elif not is_group_infeasible and req.connection_type == "any":
-            # "any" means at least ONE direct child must be satisfied
-            if valid_children_count == 0:
-                is_group_infeasible = True
-                warnings.append(
-                    f"Group '{req.title or req.req_id}' is infeasible: "
-                    f"'any' requires at least 1 valid child but all {total_children} are invalid"
-                )
-        # If connection_type is None, it's likely a container group - not infeasible unless all children are
-        elif not is_group_infeasible and req.connection_type is None and not req.threshold:
-            if valid_children_count == 0:
-                is_group_infeasible = True
-
-        # Return group with correct was_pruned flag
-        return RequirementGroup(
-            items=tuple(marked_items),
-            connection_type=req.connection_type,
-            threshold=req.threshold,
-            distinct_threshold=req.distinct_threshold,
-            title=req.title,
-            threshold_desc=req.threshold_desc,
-            req_id=req.req_id,
-            was_pruned=is_group_infeasible
+    # Group nodes
+    if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+        marked_children = tuple(
+            _mark_node(child, courses_df, removed_courses, warnings)
+            for child in node.children
         )
 
-    # Unknown node type
-    return req
+        valid_count = sum(1 for c in marked_children if not c.was_pruned)
+        total_count = len(marked_children)
+
+        is_infeasible = _check_group_feasibility(
+            node, marked_children, valid_count, total_count, courses_df, warnings
+        )
+
+        if isinstance(node, AllGroup):
+            return AllGroup(
+                children=marked_children,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=is_infeasible,
+            )
+        elif isinstance(node, AnyGroup):
+            return AnyGroup(
+                children=marked_children,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=is_infeasible,
+            )
+        elif isinstance(node, SubjectThresholdGroup):
+            return SubjectThresholdGroup(
+                children=marked_children,
+                cutoff=node.cutoff,
+                threshold_type=node.threshold_type,
+                connection_type=node.connection_type,
+                distinct_threshold=node.distinct_threshold,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=is_infeasible,
+            )
+        elif isinstance(node, UnitThresholdGroup):
+            return UnitThresholdGroup(
+                children=marked_children,
+                cutoff=node.cutoff,
+                threshold_type=node.threshold_type,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=is_infeasible,
+            )
+
+    return node
 
 
-def remove_invalid_requirements(
-    req: RequirementNode,
+def _remove_node(
+    node: Node,
     courses_df: Any,
-    removed_courses: list[str] | None = None,
-    warnings: list[str] | None = None
-) -> RequirementNode | None:
-    """
-    Remove unavailable courses from a requirement tree.
+    removed_courses: list[str],
+    warnings: list[str],
+) -> Node | None:
+    """Remove invalid courses from a node."""
 
-    This actually removes invalid items, potentially making the tree infeasible.
-    Use mark_invalid_requirements() if you want to keep the structure intact.
+    # Leaf nodes
+    if isinstance(node, Course):
+        if validate_course_exists(node, courses_df):
+            return node
+        removed_courses.append(node.subject_id)
+        warnings.append(f"Removed unavailable course: {node.subject_id} (ID: {node.req_id})")
+        return None
 
-    Args:
-        req: The requirement node to prune
-        courses_df: DataFrame containing valid course data
-        removed_courses: List to accumulate removed course IDs
-        warnings: List to accumulate warning messages
+    if isinstance(node, (GIR, HASS, CI, PlainString)):
+        return node
 
-    Returns:
-        Pruned requirement node, or None if the entire requirement is infeasible
-    """
-    if removed_courses is None:
-        removed_courses = []
-    if warnings is None:
-        warnings = []
-
-    # Handle leaf nodes (courses)
-    if isinstance(req, RequirementCourse):
-        if validate_course_exists(req.course_id, courses_df):
-            return req
-        else:
-            removed_courses.append(req.course_id)
-            warnings.append(f"Removed unavailable course: {req.course_id} (ID: {req.req_id})")
-            return None
-
-    # Plain strings always remain
-    if isinstance(req, RequirementPlainString):
-        return req
-
-    # Handle group nodes
-    if isinstance(req, RequirementGroup):
-        # Recursively prune sub-requirements
-        pruned_items: list[RequirementNode] = []
-        valid_children_count = 0
-
-        for item in req.items:
-            pruned = remove_invalid_requirements(item, courses_df, removed_courses, warnings)
+    # Group nodes
+    if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+        pruned_children: list[Node] = []
+        for child in node.children:
+            pruned = _remove_node(child, courses_df, removed_courses, warnings)
             if pruned is not None:
-                pruned_items.append(pruned)
-                # Count valid (non-pruned) children
-                if not (hasattr(pruned, 'was_pruned') and pruned.was_pruned):
-                    valid_children_count += 1
+                pruned_children.append(pruned)
 
-        # Check if group is still feasible based on connection-type and threshold
-        # NOTE: Both threshold AND connection_type can be present - BOTH must be satisfied
-        original_count = len(req.items)
-        remaining_count = len(pruned_items)
+        valid_count = sum(1 for c in pruned_children if not c.was_pruned)
+        total_count = len(pruned_children)
 
-        # Determine if group is infeasible
-        is_infeasible = False
-
-        # Check threshold requirement (if present)
-        if req.threshold:
-            # Threshold-based requirement (e.g., "select 3 subjects")
-            # For thresholds with criterion='subjects', count total COURSES, not direct children
-            cutoff = req.threshold.cutoff
-
-            if req.threshold.criterion == 'subjects':
-                # Count total valid courses in the subtree
-                def count_valid_courses(node):
-                    if isinstance(node, RequirementCourse):
-                        return 0 if node.was_pruned else 1
-                    elif isinstance(node, RequirementGroup):
-                        return sum(count_valid_courses(item) for item in node.items)
-                    return 0
-
-                available_subjects = sum(count_valid_courses(item) for item in pruned_items)
-
-                if available_subjects < cutoff:
-                    is_infeasible = True
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is infeasible: "
-                        f"threshold requires {cutoff} subjects but only {available_subjects} valid courses available"
-                    )
-            elif req.threshold.criterion == 'units':
-                # Count total available units from valid courses in the subtree
-                def count_available_units(node) -> int:
-                    if isinstance(node, RequirementCourse):
-                        if node.was_pruned:
-                            return 0
-                        # Look up units from courses_df
-                        if courses_df is not None and 'subject_id' in courses_df.columns:
-                            matches = courses_df.filter(courses_df['subject_id'] == node.course_id)
-                            if len(matches) > 0 and 'total_units' in courses_df.columns:
-                                units = matches[0, 'total_units']
-                                return int(units) if units is not None else 12
-                        return 12  # Default if not found
-                    elif isinstance(node, RequirementGroup):
-                        return sum(count_available_units(item) for item in node.items)
-                    return 0
-
-                available_units = sum(count_available_units(item) for item in pruned_items)
-
-                if available_units < cutoff:
-                    # Not enough units available from listed courses.
-                    # This is likely an open-ended elective group where students pick unlisted courses.
-                    # We do NOT mark as infeasible - the constraint builder will handle this.
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is open-ended: "
-                        f"requires {cutoff} units but only {available_units} units available from listed courses"
-                    )
-            else:
-                # For other criteria, count direct children as a basic check
-                if valid_children_count < cutoff:
-                    is_infeasible = True
-                    warnings.append(
-                        f"Group '{req.title or req.req_id}' is infeasible: "
-                        f"threshold requires {cutoff} valid items but only {valid_children_count}/{remaining_count} are valid"
-                    )
-
-        # Check connection_type requirement (if present and not already infeasible)
-        # Note: We check this separately so both threshold AND connection_type are enforced
-        if not is_infeasible and req.connection_type == "all":
-            # "all" means ALL direct children must be satisfied
-            if valid_children_count < remaining_count:
-                is_infeasible = True
-                warnings.append(
-                    f"Group '{req.title or req.req_id}' is infeasible: "
-                    f"'all' requires all {remaining_count} children to be valid but only {valid_children_count} are valid"
-                )
-        elif not is_infeasible and req.connection_type == "any":
-            # "any" means at least ONE direct child must be satisfied
-            if valid_children_count == 0:
-                is_infeasible = True
-                warnings.append(
-                    f"Group '{req.title or req.req_id}' is infeasible: "
-                    f"'any' requires at least 1 valid child but all {remaining_count} are invalid"
-                )
-        elif not is_infeasible and req.connection_type is None and not req.threshold:
-            # No connection type or threshold - infeasible if no children remain
-            if remaining_count == 0:
-                is_infeasible = True
-                warnings.append(
-                    f"Group '{req.title or req.req_id}' is infeasible: all {original_count} items were removed"
-                )
+        is_infeasible = _check_group_feasibility(
+            node, tuple(pruned_children), valid_count, total_count, courses_df, warnings
+        )
 
         if is_infeasible:
             return None
 
-        # Simplify single-item groups
-        if remaining_count == 1 and req.threshold is None:
-            single_item = pruned_items[0]
-            return single_item
+        # Simplify single-item groups (only for non-threshold groups)
+        if len(pruned_children) == 1 and isinstance(node, (AllGroup, AnyGroup)):
+            return pruned_children[0]
 
-        # Return pruned group with was_pruned flag indicating some children were removed/pruned
-        some_children_affected = (remaining_count < original_count) or any(
-            hasattr(item, 'was_pruned') and item.was_pruned for item in pruned_items
-        )
+        children_tuple = tuple(pruned_children)
 
-        return RequirementGroup(
-            items=tuple(pruned_items),
-            connection_type=req.connection_type,
-            threshold=req.threshold,
-            distinct_threshold=req.distinct_threshold,
-            title=req.title,
-            threshold_desc=req.threshold_desc,
-            req_id=req.req_id,
-            was_pruned=some_children_affected
-        )
+        if isinstance(node, AllGroup):
+            return AllGroup(
+                children=children_tuple,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=False,
+            )
+        elif isinstance(node, AnyGroup):
+            return AnyGroup(
+                children=children_tuple,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=False,
+            )
+        elif isinstance(node, SubjectThresholdGroup):
+            return SubjectThresholdGroup(
+                children=children_tuple,
+                cutoff=node.cutoff,
+                threshold_type=node.threshold_type,
+                connection_type=node.connection_type,
+                distinct_threshold=node.distinct_threshold,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=False,
+            )
+        elif isinstance(node, UnitThresholdGroup):
+            return UnitThresholdGroup(
+                children=children_tuple,
+                cutoff=node.cutoff,
+                threshold_type=node.threshold_type,
+                title=node.title,
+                req_id=node.req_id,
+                was_pruned=False,
+            )
 
-    return req
+    return node
+
+
+def _check_group_feasibility(
+    node: Group,
+    children: tuple[Node, ...],
+    valid_count: int,
+    total_count: int,
+    courses_df: Any,
+    warnings: list[str],
+) -> bool:
+    """Check if a group is feasible. Returns True if infeasible."""
+
+    if isinstance(node, AllGroup):
+        # All children must be valid
+        if valid_count < total_count:
+            warnings.append(
+                f"Group '{node.title or node.req_id}' is infeasible: "
+                f"'all' requires all {total_count} children but only {valid_count} are valid"
+            )
+            return True
+        return False
+
+    elif isinstance(node, AnyGroup):
+        # At least one child must be valid
+        if valid_count == 0:
+            warnings.append(
+                f"Group '{node.title or node.req_id}' is infeasible: "
+                f"'any' requires at least 1 valid child but all are invalid"
+            )
+            return True
+        return False
+
+    elif isinstance(node, SubjectThresholdGroup):
+        # Count total valid courses in subtree
+        available = _count_valid_courses(children)
+        if available < node.cutoff:
+            warnings.append(
+                f"Group '{node.title or node.req_id}' is infeasible: "
+                f"requires {node.cutoff} subjects but only {available} valid courses available"
+            )
+            return True
+        return False
+
+    elif isinstance(node, UnitThresholdGroup):
+        # Count total available units
+        available_units = _count_available_units(children, courses_df)
+        if available_units < node.cutoff:
+            # Not enough units - but this might be an open-ended elective group
+            # Don't mark as infeasible, just warn
+            warnings.append(
+                f"Group '{node.title or node.req_id}' is open-ended: "
+                f"requires {node.cutoff} units but only {available_units} units available from listed courses"
+            )
+        return False
+
+    return False
+
+
+def _count_valid_courses(children: tuple[Node, ...]) -> int:
+    """Count valid (non-pruned) courses in a subtree."""
+    count = 0
+    for child in children:
+        if isinstance(child, (Course, GIR, HASS, CI)):
+            if not child.was_pruned:
+                count += 1
+        elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+            count += _count_valid_courses(child.children)
+    return count
+
+
+def _count_available_units(children: tuple[Node, ...], courses_df: Any) -> int:
+    """Count available units from valid courses in a subtree."""
+    total = 0
+    for child in children:
+        if isinstance(child, Course):
+            if not child.was_pruned:
+                if courses_df is not None and 'subject_id' in courses_df.columns:
+                    matches = courses_df.filter(courses_df['subject_id'] == child.subject_id)
+                    if len(matches) > 0 and 'total_units' in courses_df.columns:
+                        units = matches[0, 'total_units']
+                        total += int(units) if units is not None else 12
+                    else:
+                        total += 12
+                else:
+                    total += 12
+        elif isinstance(child, (GIR, HASS, CI)):
+            if not child.was_pruned:
+                total += 12  # Default units for special requirements
+        elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+            total += _count_available_units(child.children, courses_df)
+    return total
 
 
 def validate_and_prune(
-    req: RequirementNode,
+    node: Node,
     courses_df: Any,
-    remove_invalid: bool = False
+    remove_invalid: bool = False,
 ) -> ValidationResult:
     """
     Validate a requirement tree and either mark or remove invalid courses.
 
     Args:
-        req: The requirement node to validate
+        node: The requirement node to validate
         courses_df: DataFrame containing valid course data
         remove_invalid: If True, remove invalid courses. If False, just mark them.
 
@@ -431,13 +320,13 @@ def validate_and_prune(
     warnings: list[str] = []
 
     if remove_invalid:
-        pruned_tree = remove_invalid_requirements(req, courses_df, removed_courses, warnings)
+        pruned_tree = _remove_node(node, courses_df, removed_courses, warnings)
     else:
-        pruned_tree = mark_invalid_requirements(req, courses_df, removed_courses, warnings)
+        pruned_tree = _mark_node(node, courses_df, removed_courses, warnings)
 
     return ValidationResult(
         pruned_tree=pruned_tree,
         removed_courses=removed_courses,
         warnings=warnings,
-        is_feasible=(pruned_tree is not None)
+        is_feasible=(pruned_tree is not None),
     )

@@ -4,7 +4,7 @@ Re-export all node types from types.py.
 Import side effect: registers all dispatch handlers via the handlers module.
 """
 
-from courses.requirements.req_2.types import (
+from courses.requirements.types import (
     CI,
     GIR,
     HASS,

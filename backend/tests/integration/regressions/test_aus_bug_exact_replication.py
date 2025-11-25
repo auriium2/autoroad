@@ -7,12 +7,20 @@ from ortools.sat.python import cp_model
 
 from api.models.requests import Marker
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_requirement
+from courses.requirements.parser import parse_fireroad_response
+from courses.requirements.types import (
+    AllGroup,
+    AnyGroup,
+    Course,
+    Node,
+    SubjectThresholdGroup,
+    UnitThresholdGroup,
+)
 from courses.requirements.validator import validate_and_prune
 from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.marker_constraint_builder import add_marker_constraints
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
+from optimizer.requirements.builder import add_requirement_constraints
 
 
 def test_aus_bug_with_exact_solution():
@@ -111,7 +119,7 @@ def test_aus_bug_with_exact_solution():
     # Add requirement constraints
     req_data = requirements_data['major6-3new']
     assert isinstance(req_data, dict)
-    req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': 'major6-3new'})
+    req_tree = parse_fireroad_response(req_data)
 
     print("\n=== VALIDATION DEBUG ===")
     validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
@@ -123,34 +131,31 @@ def test_aus_bug_with_exact_solution():
         print(f"  {warning}")
 
     # Check if AUS is in the pruned tree
-    def find_requirement(node, title_or_id):
+    def find_requirement(node: Node, title_or_id: str) -> Node | None:
         """Recursively find a requirement by title or req_id"""
-        from courses.requirements.types import RequirementGroup
-
         if hasattr(node, 'title') and node.title == title_or_id:
             return node
         if hasattr(node, 'req_id') and node.req_id == title_or_id:
             return node
 
-        if isinstance(node, RequirementGroup):
-            for item in node.items:
+        if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+            for item in node.children:
                 found = find_requirement(item, title_or_id)
                 if found:
                     return found
         return None
 
-    def find_all_requirements(node, title_or_id, path="root"):
+    def find_all_requirements(node: Node, title_or_id: str, path: str = "root") -> list[tuple[str, Node]]:
         """Recursively find ALL occurrences of a requirement by title or req_id"""
-        from courses.requirements.types import RequirementGroup
-        results = []
+        results: list[tuple[str, Node]] = []
 
         if hasattr(node, 'title') and node.title == title_or_id:
             results.append((path, node))
         if hasattr(node, 'req_id') and node.req_id == title_or_id:
             results.append((path, node))
 
-        if isinstance(node, RequirementGroup):
-            for idx, item in enumerate(node.items):
+        if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+            for idx, item in enumerate(node.children):
                 child_path = f"{path}.{idx}"
                 results.extend(find_all_requirements(item, title_or_id, child_path))
         return results
@@ -167,58 +172,49 @@ def test_aus_bug_with_exact_solution():
             print(f"\nFound AUS node: was_pruned={aus_node.was_pruned}")
 
             # Deep dive into AUS structure
-            from courses.requirements.types import RequirementGroup
-            if isinstance(aus_node, RequirementGroup):
+            if isinstance(aus_node, SubjectThresholdGroup):
                 print(f"  AUS connection_type: {aus_node.connection_type}")
-                print(f"  AUS threshold: {aus_node.threshold}")
-                print(f"  AUS has {len(aus_node.items)} direct children")
+                print(f"  AUS cutoff: {aus_node.cutoff}")
+                print(f"  AUS has {len(aus_node.children)} direct children")
 
                 # Count valid children
                 valid_children = 0
-                for i, child in enumerate(aus_node.items):
+                for i, child in enumerate(aus_node.children):
                     child_pruned = hasattr(child, 'was_pruned') and child.was_pruned
                     if not child_pruned:
                         valid_children += 1
                     title = getattr(child, 'title', 'no title')
                     print(f"    Child {i}: {title}, was_pruned={child_pruned}")
 
-                print(f"  Valid children: {valid_children}/{len(aus_node.items)}")
+                print(f"  Valid children: {valid_children}/{len(aus_node.children)}")
 
                 # Check child 40 specifically (the one being skipped)
-                if len(aus_node.items) > 40:
-                    from courses.requirements.types import RequirementCourse
-                    child_40 = aus_node.items[40]
+                if len(aus_node.children) > 40:
+                    child_40 = aus_node.children[40]
                     c40_pruned = hasattr(child_40, 'was_pruned') and child_40.was_pruned
                     c40_type = type(child_40).__name__
-                    if isinstance(child_40, RequirementCourse):
-                        c40_title = child_40.course_id
+                    if isinstance(child_40, Course):
+                        c40_title = child_40.subject_id
                     else:
                         c40_title = getattr(child_40, 'title', 'no title')
                     print(f"\n  ⚠️  Child 40 (the one being skipped): type={c40_type}, course_id={c40_title}, was_pruned={c40_pruned}")
                     print("     This is the unavailable course that was correctly marked as pruned.")
 
                 # Check threshold requirements
-                if aus_node.threshold:
-                    print(f"  Threshold criterion: {aus_node.threshold.criterion}")
-                    print(f"  Threshold cutoff: {aus_node.threshold.cutoff}")
+                def count_valid_courses(n: Node) -> int:
+                    if isinstance(n, Course):
+                        return 0 if n.was_pruned else 1
+                    elif isinstance(n, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                        return sum(count_valid_courses(item) for item in n.children)
+                    return 0
 
-                    if aus_node.threshold.criterion == 'subjects':
-                        def count_valid_courses(node):
-                            from courses.requirements.types import RequirementCourse
-                            if isinstance(node, RequirementCourse):
-                                is_pruned = hasattr(node, 'was_pruned') and node.was_pruned
-                                return 0 if is_pruned else 1
-                            elif isinstance(node, RequirementGroup):
-                                return sum(count_valid_courses(item) for item in node.items)
-                            return 0
+                available = count_valid_courses(aus_node)
+                print(f"  Available subjects: {available}")
+                print(f"  Required subjects: {aus_node.cutoff}")
+                print(f"  AUS should be feasible: {available >= aus_node.cutoff}")
 
-                        available = count_valid_courses(aus_node)
-                        print(f"  Available subjects: {available}")
-                        print(f"  Required subjects: {aus_node.threshold.cutoff}")
-                        print(f"  AUS should be feasible: {available >= aus_node.threshold.cutoff}")
-
-                        if available < aus_node.threshold.cutoff:
-                            print("  ⚠️  INFEASIBLE: not enough subjects!")
+                if available < aus_node.cutoff:
+                    print("  ⚠️  INFEASIBLE: not enough subjects!")
         else:
             print("\n⚠️  AUS node NOT FOUND in pruned tree!")
 
@@ -233,42 +229,40 @@ def test_aus_bug_with_exact_solution():
         aus_node_before = find_requirement(validation.pruned_tree, 'AUS')
         if aus_node_before:
             print(f"\n🔍 Before constraint building: AUS.was_pruned={aus_node_before.was_pruned}")
-            from courses.requirements.types import RequirementCourse, RequirementGroup
-            if isinstance(aus_node_before, RequirementGroup):
+            if isinstance(aus_node_before, SubjectThresholdGroup):
                 print("  AUS structure:")
                 print(f"    connection_type: {aus_node_before.connection_type}")
-                print(f"    threshold: {aus_node_before.threshold}")
-                print(f"    Total children: {len(aus_node_before.items)}")
+                print(f"    cutoff: {aus_node_before.cutoff}")
+                print(f"    Total children: {len(aus_node_before.children)}")
 
                 # Check for groups among children
-                groups_count = sum(1 for item in aus_node_before.items if isinstance(item, RequirementGroup))
-                courses_count = sum(1 for item in aus_node_before.items if isinstance(item, RequirementCourse))
+                groups_count = sum(1 for item in aus_node_before.children if isinstance(item, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)))
+                courses_count = sum(1 for item in aus_node_before.children if isinstance(item, Course))
                 print(f"    Groups: {groups_count}, Courses: {courses_count}")
 
                 # Find any groups (like 'all1')
                 print("\n  AUS child groups:")
-                for i, child in enumerate(aus_node_before.items):
-                    if isinstance(child, RequirementGroup):
+                for i, child in enumerate(aus_node_before.children):
+                    if isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
                         child_pruned = hasattr(child, 'was_pruned') and child.was_pruned
                         child_title = getattr(child, 'title', 'no title')
                         child_reqid = getattr(child, 'req_id', 'no req_id')
                         print(f"    Group at index {i}:")
                         print(f"      title: {child_title}, req_id: {child_reqid}")
-                        print(f"      connection_type: {child.connection_type}")
-                        print(f"      threshold: {child.threshold}")
+                        print(f"      type: {type(child).__name__}")
                         print(f"      was_pruned: {child_pruned}")
-                        print(f"      children: {len(child.items)}")
+                        print(f"      children: {len(child.children)}")
 
                         # Show first few courses in this group
-                        for j in range(min(3, len(child.items))):
-                            gc = child.items[j]
-                            if isinstance(gc, RequirementCourse):
+                        for j in range(min(3, len(child.children))):
+                            gc = child.children[j]
+                            if isinstance(gc, Course):
                                 gc_pruned = hasattr(gc, 'was_pruned') and gc.was_pruned
-                                print(f"        Course {j}: {gc.course_id}, was_pruned={gc_pruned}")
+                                print(f"        Course {j}: {gc.subject_id}, was_pruned={gc_pruned}")
 
         aux_vars_result, debug_names, mapping = add_requirement_constraints(
             model, take_vars, validation.pruned_tree,
-            courses_df, planning_year_start, enforce=True
+            courses_df, enforce=True
         )
         aux_vars.update(aux_vars_result)
         print(f"\nCreated {len(aux_vars)} auxiliary variables")

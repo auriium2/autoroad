@@ -210,112 +210,13 @@ class TestRequirementParserFuzzer:
     """
     Integration tests for the requirement parser using all Fireroad requirements.
 
-    This fuzzer ensures that all real requirement data can be parsed without
-    errors and that all groups have valid thresholds (preventing infeasibility bugs).
+    This fuzzer ensures that all real requirement data can be parsed into
+    typed nodes without errors.
     """
 
     def test_parser_handles_all_requirements(self, all_fireroad_requirements):
         """Test that the parser can handle all Fireroad requirements without exceptions."""
-        from courses.requirements.parser import parse_requirement
-
-        failures = []
-
-        for req_id, req_data in all_fireroad_requirements.items():
-            if not isinstance(req_data, dict) or 'reqs' not in req_data:
-                continue
-
-            try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
-                assert result is not None
-            except Exception as e:
-                failures.append((req_id, str(e)))
-
-        if failures:
-            failure_msg = "\n".join([f"  {req_id}: {error}" for req_id, error in failures[:10]])
-            pytest.fail(
-                f"Parser failed on {len(failures)} requirements:\n{failure_msg}\n"
-                f"{'... and more' if len(failures) > 10 else ''}"
-            )
-
-    def test_groups_with_thresholds_have_valid_cutoffs(self, all_fireroad_requirements):
-        """
-        Verify that requirement groups with thresholds have valid cutoff values.
-
-        This is a regression test to ensure threshold cutoffs are properly parsed
-        and don't have invalid values (like negative numbers or None).
-        """
-        from courses.requirements.parser import parse_requirement
-        from courses.requirements.types import RequirementGroup
-
-        invalid_thresholds = []
-
-        def check_thresholds(node, path="root"):
-            """Recursively check that all thresholds have valid cutoffs."""
-            if isinstance(node, RequirementGroup):
-                if node.threshold is not None:
-                    # Check for invalid cutoff values
-                    if node.threshold.cutoff < 0:
-                        invalid_thresholds.append((path, f"negative cutoff: {node.threshold.cutoff}"))
-                    if node.threshold.criterion not in ('subjects', 'units'):
-                        invalid_thresholds.append((path, f"invalid criterion: {node.threshold.criterion}"))
-
-                for i, child in enumerate(node.items):
-                    check_thresholds(child, f"{path}.{i}")
-
-        for req_id, req_data in all_fireroad_requirements.items():
-            if not isinstance(req_data, dict) or 'reqs' not in req_data:
-                continue
-
-            try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
-                check_thresholds(result, f"{req_id}")
-            except Exception:
-                pass
-
-        if invalid_thresholds:
-            sample = invalid_thresholds[:20]
-            pytest.fail(
-                f"Found {len(invalid_thresholds)} requirement groups with invalid thresholds:\n"
-                f"{sample}\n"
-                f"{'... and more' if len(invalid_thresholds) > 20 else ''}"
-            )
-
-    def test_requirement_parsing_success_rate(self, all_fireroad_requirements):
-        """Test that we can parse at least 95% of Fireroad requirements."""
-        from courses.requirements.parser import parse_requirement
-
-        total = 0
-        successes = 0
-
-        for req_id, req_data in all_fireroad_requirements.items():
-            if not isinstance(req_data, dict) or 'reqs' not in req_data:
-                continue
-
-            total += 1
-            try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
-                if result is not None:
-                    successes += 1
-            except Exception:
-                pass
-
-        success_rate = (successes / total * 100) if total > 0 else 0
-
-        assert success_rate >= 95.0, \
-            f"Requirement parser success rate ({success_rate:.1f}%) is below 95% threshold"
-
-
-class TestReq2ParserFuzzer:
-    """
-    Integration tests for the req_2 parser using all Fireroad requirements.
-
-    This fuzzer ensures that all real requirement data can be parsed into
-    the new typed req_2 nodes without errors.
-    """
-
-    def test_parser_handles_all_requirements(self, all_fireroad_requirements):
-        """Test that the req_2 parser can handle all Fireroad requirements without exceptions."""
-        from courses.requirements.req_2.parser import parse_fireroad_response
+        from courses.requirements.parser import parse_fireroad_response
 
         failures = []
 
@@ -332,23 +233,32 @@ class TestReq2ParserFuzzer:
         if failures:
             failure_msg = "\n".join([f"  {req_id}: {error}" for req_id, error in failures[:10]])
             pytest.fail(
-                f"req_2 parser failed on {len(failures)} requirements:\n{failure_msg}\n"
+                f"Parser failed on {len(failures)} requirements:\n{failure_msg}\n"
                 f"{'... and more' if len(failures) > 10 else ''}"
             )
 
     def test_all_nodes_are_correct_types(self, all_fireroad_requirements):
         """
-        Verify that the req_2 parser produces only valid node types.
+        Verify that the parser produces only valid node types.
         """
-        from courses.requirements.req_2.parser import parse_fireroad_response
-        from courses.requirements.req_2.types import (
-            AllGroup, AnyGroup, Course, CI, GIR, HASS, PlainString,
-            SubjectThresholdGroup, UnitThresholdGroup, Node
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            CI,
+            GIR,
+            HASS,
+            AllGroup,
+            AnyGroup,
+            Course,
+            Group,
+            Node,
+            PlainString,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
         )
 
-        invalid_types = []
+        invalid_types: list[tuple[str, str]] = []
 
-        def check_types(node, path="root"):
+        def check_types(node: Node, path: str = "root") -> None:
             """Recursively check that all nodes are valid types."""
             valid_types = (AllGroup, AnyGroup, Course, CI, GIR, HASS, PlainString,
                           SubjectThresholdGroup, UnitThresholdGroup)
@@ -358,8 +268,9 @@ class TestReq2ParserFuzzer:
                 return
 
             # Check children for group types
-            if hasattr(node, 'children'):
-                for i, child in enumerate(node.children):
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                for i, child in enumerate(group.children):
                     check_types(child, f"{path}.{i}")
 
         for req_id, req_data in all_fireroad_requirements.items():
@@ -379,12 +290,19 @@ class TestReq2ParserFuzzer:
         """
         Verify that threshold groups have valid cutoff values (non-negative).
         """
-        from courses.requirements.req_2.parser import parse_fireroad_response
-        from courses.requirements.req_2.types import SubjectThresholdGroup, UnitThresholdGroup
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            AllGroup,
+            AnyGroup,
+            Group,
+            Node,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
+        )
 
-        invalid_thresholds = []
+        invalid_thresholds: list[tuple[str, str]] = []
 
-        def check_thresholds(node, path="root"):
+        def check_thresholds(node: Node, path: str = "root") -> None:
             """Recursively check that all threshold groups have valid cutoffs."""
             if isinstance(node, (SubjectThresholdGroup, UnitThresholdGroup)):
                 if node.cutoff < 0:
@@ -392,8 +310,9 @@ class TestReq2ParserFuzzer:
                 if node.threshold_type not in ('GTE', 'LTE'):
                     invalid_thresholds.append((path, f"invalid threshold_type: {node.threshold_type}"))
 
-            if hasattr(node, 'children'):
-                for i, child in enumerate(node.children):
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                for i, child in enumerate(group.children):
                     check_thresholds(child, f"{path}.{i}")
 
         for req_id, req_data in all_fireroad_requirements.items():
@@ -417,22 +336,26 @@ class TestReq2ParserFuzzer:
         Verify that all group nodes have at least one child.
         Empty groups are invalid and would cause constraint issues.
         """
-        from courses.requirements.req_2.parser import parse_fireroad_response
-        from courses.requirements.req_2.types import (
-            AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            AllGroup,
+            AnyGroup,
+            Group,
+            Node,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
         )
 
-        empty_groups = []
+        empty_groups: list[str] = []
 
-        def check_children(node, path="root"):
+        def check_children(node: Node, path: str = "root") -> None:
             """Recursively check that all groups have children."""
-            group_types = (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)
-
-            if isinstance(node, group_types):
-                if len(node.children) == 0:
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                if len(group.children) == 0:
                     empty_groups.append(path)
 
-                for i, child in enumerate(node.children):
+                for i, child in enumerate(group.children):
                     check_children(child, f"{path}.{i}")
 
         for req_id, req_data in all_fireroad_requirements.items():
@@ -450,7 +373,7 @@ class TestReq2ParserFuzzer:
 
     def test_parsing_success_rate(self, all_fireroad_requirements):
         """Test that we can parse at least 95% of Fireroad requirements."""
-        from courses.requirements.req_2.parser import parse_fireroad_response
+        from courses.requirements.parser import parse_fireroad_response
 
         total = 0
         successes = 0
@@ -470,63 +393,7 @@ class TestReq2ParserFuzzer:
         success_rate = (successes / total * 100) if total > 0 else 0
 
         assert success_rate >= 95.0, \
-            f"req_2 parser success rate ({success_rate:.1f}%) is below 95% threshold"
-
-    def test_old_and_new_parsers_produce_equivalent_structures(self, all_fireroad_requirements):
-        """
-        Test that the old and new parsers produce structurally equivalent results.
-
-        This compares:
-        - Number of leaf nodes
-        - Tree depth
-        - Group types (threshold vs non-threshold)
-        """
-        from courses.requirements.parser import parse_requirement
-        from courses.requirements.req_2.parser import parse_fireroad_response
-        from courses.requirements.types import RequirementCourse, RequirementGroup, RequirementPlainString
-        from courses.requirements.req_2.types import (
-            AllGroup, AnyGroup, Course, CI, GIR, HASS, PlainString,
-            SubjectThresholdGroup, UnitThresholdGroup
-        )
-
-        def count_old_leaves(node):
-            if isinstance(node, (RequirementCourse, RequirementPlainString)):
-                return 1
-            if isinstance(node, RequirementGroup):
-                return sum(count_old_leaves(c) for c in node.items)
-            return 0
-
-        def count_new_leaves(node):
-            if isinstance(node, (Course, GIR, HASS, CI, PlainString)):
-                return 1
-            if hasattr(node, 'children'):
-                return sum(count_new_leaves(c) for c in node.children)
-            return 0
-
-        mismatches = []
-
-        for req_id, req_data in all_fireroad_requirements.items():
-            if not isinstance(req_data, dict) or 'reqs' not in req_data:
-                continue
-
-            try:
-                old_result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
-                new_result = parse_fireroad_response(req_data)
-
-                old_leaves = count_old_leaves(old_result)
-                new_leaves = count_new_leaves(new_result)
-
-                if old_leaves != new_leaves:
-                    mismatches.append((req_id, old_leaves, new_leaves))
-            except Exception:
-                pass
-
-        if mismatches:
-            sample = mismatches[:10]
-            pytest.fail(
-                f"Found {len(mismatches)} mismatches in leaf count:\n"
-                f"{sample}"
-            )
+            f"Parser success rate ({success_rate:.1f}%) is below 95% threshold"
 
 
 if __name__ == "__main__":
