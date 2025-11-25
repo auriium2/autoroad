@@ -9,45 +9,36 @@ from ortools.sat.python import cp_model
 from courses.requirements.types import UnitThresholdGroup
 from optimizer.requirements import dispatch
 from optimizer.requirements.context import Ctx
-from optimizer.requirements.nodes.common import propagate_courses_to_parent
+from optimizer.requirements.nodes.common import propagate_children_to_parent
 from optimizer.requirements.result import (
     ContributionResult,
     CourseIndicesResult,
-    SatisfactionResult,
     UnitsResult,
 )
 
 
-@dispatch.satisfaction.register
-def _unitthreshold_satisfaction(node: UnitThresholdGroup, ctx: Ctx, path: str) -> SatisfactionResult:
-    contrib_result = dispatch.contribution(node, ctx, path)
-    return SatisfactionResult(
-        sat_var=contrib_result.sat_var,
-        warnings=contrib_result.warnings,
-        errors=contrib_result.errors
-    )
+@dispatch.propagate.register
+def _unitthreshold_propagate(node: UnitThresholdGroup, ctx: Ctx, path: str) -> None:
+    child_paths = [f"{path}.{i}" for i, child in enumerate(node.children) if not child.was_pruned]
+    propagate_children_to_parent(ctx, child_paths, path)
 
 
-@dispatch.contribution.register
-def _unitthreshold_contribution(node: UnitThresholdGroup, ctx: Ctx, path: str) -> ContributionResult:
+@dispatch.build.register
+def _unitthreshold_build(node: UnitThresholdGroup, ctx: Ctx, path: str, need_contribution_vars: bool) -> ContributionResult:
     child_paths = [f"{path}.{i}" for i in range(len(node.children))]
     
+    # UnitThresholdGroup doesn't use contribution_vars for its own logic (uses units instead),
+    # but still recurses on children to build their constraints
     child_results = [
-        dispatch.contribution(child, ctx, child_paths[i])
+        dispatch.build(child, ctx, child_paths[i], need_contribution_vars=False)
         for i, child in enumerate(node.children)
         if not child.was_pruned
     ]
     warnings: list[str] = [w for r in child_results for w in r.warnings]
     errors: list[str] = [e for r in child_results for e in r.errors]
 
-    propagate_courses_to_parent(ctx, child_paths, path)
-
     if node.threshold_type == "LTE":
         warnings.append(f"Group '{node.title}' uses LTE threshold which may need manual review")
-
-    contribution_vars: list[cp_model.IntVar] = []
-    for r in child_results:
-        contribution_vars.extend(r.contribution_vars)
 
     # Collect course indices using units query
     units_result = dispatch.units(node, ctx, path)
@@ -70,6 +61,7 @@ def _unitthreshold_contribution(node: UnitThresholdGroup, ctx: Ctx, path: str) -
             f"Unit requirement '{node.title}' requires {node.cutoff} units but only "
             f"{total_available} available. Assuming satisfiable with unlisted courses."
         )
+        contribution_vars = [sat] if need_contribution_vars else []
         return ContributionResult(
             sat_var=sat,
             contribution_vars=contribution_vars,
@@ -105,6 +97,7 @@ def _unitthreshold_contribution(node: UnitThresholdGroup, ctx: Ctx, path: str) -
             ctx.model.Add(total <= node.cutoff).OnlyEnforceIf(sat)
             ctx.model.Add(total > node.cutoff).OnlyEnforceIf(sat.Not())
 
+    contribution_vars = [sat] if need_contribution_vars else []
     return ContributionResult(
         sat_var=sat,
         contribution_vars=contribution_vars,

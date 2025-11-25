@@ -12,13 +12,6 @@ from ortools.sat.python import cp_model
 
 
 @dataclass
-class SatisfactionResult:
-    sat_var: cp_model.IntVar | None
-    warnings: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-
-
-@dataclass
 class ContributionResult:
     sat_var: cp_model.IntVar | None
     contribution_vars: list[cp_model.IntVar] = field(default_factory=list)

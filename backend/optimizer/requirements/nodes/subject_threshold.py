@@ -9,46 +9,42 @@ from ortools.sat.python import cp_model
 from courses.requirements.types import SubjectThresholdGroup
 from optimizer.requirements import dispatch
 from optimizer.requirements.context import Ctx
-from optimizer.requirements.nodes.common import propagate_courses_to_parent
+from optimizer.requirements.nodes.common import propagate_children_to_parent
 from optimizer.requirements.result import (
     ContributionResult,
     CourseIndicesResult,
-    SatisfactionResult,
     UnitsResult,
 )
 
 
-@dispatch.satisfaction.register
-def _subjectthreshold_satisfaction(node: SubjectThresholdGroup, ctx: Ctx, path: str) -> SatisfactionResult:
-    contrib_result = dispatch.contribution(node, ctx, path)
-    return SatisfactionResult(
-        sat_var=contrib_result.sat_var,
-        warnings=contrib_result.warnings,
-        errors=contrib_result.errors
-    )
+@dispatch.propagate.register
+def _subjectthreshold_propagate(node: SubjectThresholdGroup, ctx: Ctx, path: str) -> None:
+    child_paths = [f"{path}.{i}" for i, child in enumerate(node.children) if not child.was_pruned]
+    propagate_children_to_parent(ctx, child_paths, path)
 
 
-@dispatch.contribution.register
-def _subjectthreshold_contribution(node: SubjectThresholdGroup, ctx: Ctx, path: str) -> ContributionResult:
+@dispatch.build.register
+def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, need_contribution_vars: bool) -> ContributionResult:
     child_paths = [f"{path}.{i}" for i in range(len(node.children))]
     
+    # SubjectThresholdGroup needs contribution_vars from children to count toward threshold
     child_results = [
-        dispatch.contribution(child, ctx, child_paths[i])
+        dispatch.build(child, ctx, child_paths[i], need_contribution_vars=True)
         for i, child in enumerate(node.children)
         if not child.was_pruned
     ]
     warnings: list[str] = [w for r in child_results for w in r.warnings]
     errors: list[str] = [e for r in child_results for e in r.errors]
 
-    propagate_courses_to_parent(ctx, child_paths, path)
-
     if node.threshold_type == "LTE":
         warnings.append(f"Group '{node.title}' uses LTE threshold which may need manual review")
 
     child_sats: list[cp_model.IntVar] = [r.sat_var for r in child_results if r.sat_var is not None]
-    contribution_vars: list[cp_model.IntVar] = []
+    
+    # Collect contribution_vars from children for threshold calculation
+    child_contribution_vars: list[cp_model.IntVar] = []
     for r in child_results:
-        contribution_vars.extend(r.contribution_vars)
+        child_contribution_vars.extend(r.contribution_vars)
 
     sat = ctx.model.NewBoolVar(ctx.fresh("subj_thresh"))
 
@@ -59,6 +55,7 @@ def _subjectthreshold_contribution(node: SubjectThresholdGroup, ctx: Ctx, path: 
     if not child_results:
         ctx.model.Add(sat == 0)
         errors.append("SubjectThresholdGroup has no valid children")
+        contribution_vars = child_contribution_vars if need_contribution_vars else []
         return ContributionResult(
             sat_var=sat,
             contribution_vars=contribution_vars,
@@ -68,8 +65,8 @@ def _subjectthreshold_contribution(node: SubjectThresholdGroup, ctx: Ctx, path: 
         )
 
     # Threshold constraint: sum contributions >= cutoff
-    if contribution_vars:
-        total = sum(contribution_vars)
+    if child_contribution_vars:
+        total = sum(child_contribution_vars)
         if node.threshold_type == "GTE":
             ctx.model.Add(total >= node.cutoff).OnlyEnforceIf(sat)
             ctx.model.Add(total < node.cutoff).OnlyEnforceIf(sat.Not())
@@ -112,6 +109,7 @@ def _subjectthreshold_contribution(node: SubjectThresholdGroup, ctx: Ctx, path: 
                 else:
                     ctx.model.Add(sum(contrib_indicators) <= node.distinct_threshold.cutoff).OnlyEnforceIf(sat)
 
+    contribution_vars = child_contribution_vars if need_contribution_vars else []
     return ContributionResult(
         sat_var=sat,
         contribution_vars=contribution_vars,

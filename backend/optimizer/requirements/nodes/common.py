@@ -7,10 +7,10 @@ from __future__ import annotations
 from ortools.sat.python import cp_model
 
 from optimizer.requirements.context import Ctx
-from optimizer.requirements.result import SatisfactionResult
+from optimizer.requirements.result import ContributionResult
 
 
-def propagate_courses_to_parent(ctx: Ctx, child_paths: list[str], parent_path: str) -> None:
+def propagate_children_to_parent(ctx: Ctx, child_paths: list[str], parent_path: str) -> None:
     """
     Propagate course-to-requirement mappings from children up to parent.
     
@@ -30,10 +30,10 @@ def propagate_courses_to_parent(ctx: Ctx, child_paths: list[str], parent_path: s
         ctx.record_course_requirement(course_idx, parent_path)
 
 
-def attr_satisfaction(ctx: Ctx, indices: list[int], name: str, path: str) -> SatisfactionResult:
-    """Build satisfaction constraint for attribute-based requirements (GIR, HASS, CI)."""
+def attr_build(ctx: Ctx, indices: list[int], name: str, path: str, need_contribution_vars: bool) -> ContributionResult:
+    """Build constraints for attribute-based requirements (GIR, HASS, CI)."""
     if not indices:
-        return SatisfactionResult(sat_var=None, errors=[f"No courses for {name}"])
+        return ContributionResult(sat_var=None, errors=[f"No courses for {name}"])
 
     for idx in indices:
         ctx.record_course_requirement(idx, path)
@@ -45,8 +45,11 @@ def attr_satisfaction(ctx: Ctx, indices: list[int], name: str, path: str) -> Sat
     sat = ctx.model.NewBoolVar(ctx.fresh("a"))
     if not takes:
         ctx.model.Add(sat == 0)
-        return SatisfactionResult(sat_var=sat, warnings=[f"No semesters for {name}"])
+        contribution_vars = [sat] if need_contribution_vars else []
+        return ContributionResult(sat_var=sat, contribution_vars=contribution_vars, warnings=[f"No semesters for {name}"])
 
     ctx.model.Add(sum(takes) >= 1).OnlyEnforceIf(sat)
     ctx.model.Add(sum(takes) == 0).OnlyEnforceIf(sat.Not())
-    return SatisfactionResult(sat_var=sat)
+    
+    contribution_vars = [sat] if need_contribution_vars else []
+    return ContributionResult(sat_var=sat, contribution_vars=contribution_vars)

@@ -6,30 +6,26 @@ catching edge cases that manual tests miss.
 """
 
 import pytest
-from hypothesis import given, settings, assume
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from courses.requirements.parser import (
-    parse,
-    parse_requirement_list,
-    parse_fireroad_response,
     ParseError,
+    parse,
+    parse_fireroad_response,
 )
 from courses.requirements.types import (
-    AllGroup,
-    AnyGroup,
     CI,
-    Course,
     GIR,
     HASS,
+    AllGroup,
+    AnyGroup,
+    Course,
     Node,
     PlainString,
     SubjectThresholdGroup,
     UnitThresholdGroup,
-    Group,
-    Leaf,
 )
-
 
 # ============================================================================
 # Strategies for generating valid Fireroad-like requirement structures

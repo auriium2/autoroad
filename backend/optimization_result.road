@@ -3,50 +3,43 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "1.034",
-      "semester": 9,
-      "title": "Materials in Human Experience",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "10.07",
-      "semester": 9,
-      "title": "Debating About Society and Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "11.139",
+      "subject_id": "11.123",
       "semester": 3,
-      "title": "The City in Film",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "16.C20",
-      "semester": 3,
-      "title": "Introduction to Computational Science and Engineering",
+      "title": "Big Plans and Mega-Urban Landscapes",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "18.01",
-      "semester": 4,
+      "semester": 1,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.016",
-      "semester": 4,
-      "title": "Writing and Rhetoric: Making Change",
+      "subject_id": "18.02A",
+      "semester": 7,
+      "title": "Calculus",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "18.05",
+      "semester": 9,
+      "title": "Introduction to Probability and Statistics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "21H.218",
+      "semester": 1,
+      "title": "History of the Built Environment in the US",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "21W.733",
-      "semester": 9,
+      "semester": 3,
       "title": "Debating About Society and Engineering",
       "units": 12,
       "overrideWarnings": false
@@ -59,8 +52,15 @@
       "overrideWarnings": false
     },
     {
+      "subject_id": "3.096",
+      "semester": 7,
+      "title": "Architectural Ironwork",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
       "subject_id": "5.111",
-      "semester": 12,
+      "semester": 6,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
@@ -69,6 +69,13 @@
       "subject_id": "6.100A",
       "semester": 1,
       "title": "Introduction to Computer Science Programming in Python",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.100B",
+      "semester": 9,
+      "title": "Introduction to Computational Thinking and Data Science",
       "units": 12,
       "overrideWarnings": false
     },
@@ -87,79 +94,58 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1120",
-      "semester": 7,
-      "title": "Dynamic Computer Language Engineering",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "6.1200",
-      "semester": 6,
+      "semester": 3,
       "title": "Mathematics for Computer Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1210",
-      "semester": 7,
+      "semester": 9,
       "title": "Introduction to Algorithms",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1400",
-      "semester": 9,
-      "title": "Computability and Complexity Theory",
+      "subject_id": "6.1220",
+      "semester": 12,
+      "title": "Design and Analysis of Algorithms",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1800",
-      "semester": 6,
+      "semester": 12,
       "title": "Computer Systems Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1903",
-      "semester": 12,
+      "subject_id": "6.1904",
+      "semester": 9,
       "title": "Introduction to Low-level Programming in C and Assembly",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1910",
-      "semester": 4,
+      "semester": 6,
       "title": "Computation Structures",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.3700",
+      "subject_id": "6.2050",
+      "semester": 7,
+      "title": "Digital Systems Laboratory",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.5951",
       "semester": 12,
-      "title": "Introduction to Probability",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.4590",
-      "semester": 3,
-      "title": "Foundations of Information Policy",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.S057",
-      "semester": 6,
-      "title": "Special Subject in Electrical Engineering and Computer Science",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "6.S058",
-      "semester": 6,
-      "title": "Special Subject in Electrical Engineering and Computer Science",
+      "title": "Secure Hardware Design",
       "units": 12,
       "overrideWarnings": false
     },
@@ -171,23 +157,30 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "CC.8012",
+      "subject_id": "CC.115",
       "semester": 7,
+      "title": "Writing About Big Questions: Defending Poetry",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "CC.801",
+      "semester": 4,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.1802",
-      "semester": 7,
-      "title": "Calculus",
+      "subject_id": "CC.802",
+      "semester": 6,
+      "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.8022",
-      "semester": 10,
-      "title": "Physics II",
+      "subject_id": "STS.043",
+      "semester": 6,
+      "title": "Technology and Self: Science, Technology, and Memoir",
       "units": 12,
       "overrideWarnings": false
     },

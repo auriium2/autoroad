@@ -13,12 +13,25 @@ import polars as pl
 from ortools.sat.python import cp_model
 
 from courses.requirements import types
+from courses.requirements.types import Group
 from optimizer.requirements import dispatch
 
 # Import handlers to register them with the dispatch system
 from optimizer.requirements import handlers as _handlers  # noqa: F401
 from optimizer.requirements.context import Ctx
 from optimizer.requirements.result import ContributionResult
+
+
+def _propagate_tree(node: types.Node, ctx: Ctx, path: str) -> None:
+    """Recursively propagate course-to-requirement mappings up the tree."""
+    # First propagate children (bottom-up)
+    if isinstance(node, Group):
+        for i, child in enumerate(node.children):
+            if not child.was_pruned:
+                _propagate_tree(child, ctx, f"{path}.{i}")
+    
+    # Then propagate this node
+    dispatch.propagate(node, ctx, path)
 
 
 class ConstraintSummary(TypedDict):
@@ -51,8 +64,11 @@ def build_constraints(
     """
     ctx = Ctx(model=model, take_vars=take_vars, courses_df=courses_df)
 
-    # Build the root requirement
-    result = dispatch.contribution(requirement, ctx, "root")
+    # Build the root requirement (no contribution_vars needed at root level)
+    result = dispatch.build(requirement, ctx, "root", need_contribution_vars=False)
+
+    # Propagate course-to-requirement mappings up the tree for category rewards
+    _propagate_tree(requirement, ctx, "root")
 
     # Enforce if requested
     if enforce and result.sat_var is not None:
