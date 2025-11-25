@@ -60,8 +60,9 @@ def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
             futures = {executor.submit(fetch_requirement, key): key for key in missing_keys}
             for future in concurrent.futures.as_completed(futures):
                 key, data = future.result()
-                # Populate cache
-                get_requirement(key)
+                # Populate cache directly instead of re-fetching
+                with _requirements_lock:
+                    _requirements_cache[key] = data
 
     # Return all requested requirements from cache
     return {k: get_requirement(k) for k in requirement_keys}

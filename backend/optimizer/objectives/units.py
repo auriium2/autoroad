@@ -28,7 +28,7 @@ class MinimizeUnits:
         return "Minimize the total number of units taken across all semesters"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {}
+        return {'_units_list': courses_df['total_units'].to_list()}
 
     def add_to_model(
         self,
@@ -43,10 +43,11 @@ class MinimizeUnits:
 
         This is the BASE optimization objective in the tier-based system.
         """
+        units_list = context.extra.get('_units_list') or context.courses_df['total_units'].to_list()
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            units = context.courses_df[course_idx, 'total_units']
+            units = units_list[course_idx]
             if units is not None:
                 # Direct unit cost (no scaling in tier-based system)
                 terms.append(var * int(units))
@@ -78,7 +79,10 @@ class AvoidSmallClasses:
         return f"Penalize classes with fewer than {self.min_units} units (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {}
+        return {
+            '_units_list': courses_df['total_units'].to_list(),
+            '_subject_ids': courses_df['subject_id'].to_list()
+        }
 
     def add_to_model(
         self,
@@ -104,11 +108,15 @@ class AvoidSmallClasses:
         # Get marked course IDs (courses user explicitly placed)
         marked_course_ids = context.marked_course_ids or set()
 
+        # Pre-fetch lists for O(1) access
+        units_list = context.extra.get('_units_list') or context.courses_df['total_units'].to_list()
+        subject_ids = context.extra.get('_subject_ids') or context.courses_df['subject_id'].to_list()
+
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
-            course_id = context.courses_df[course_idx, 'subject_id'] if 'subject_id' in context.courses_df.columns else None
-            units = context.courses_df[course_idx, 'total_units'] if 'total_units' in context.courses_df.columns else 12
+            course_id = subject_ids[course_idx]
+            units = units_list[course_idx]
 
             # Skip courses with user markers - they explicitly want these
             if course_id and course_id in marked_course_ids:

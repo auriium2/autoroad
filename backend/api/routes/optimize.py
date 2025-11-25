@@ -307,11 +307,26 @@ async def optimize(request: OptimizationRequest):
 
                 # Add constraints to model
                 constraint_start = time.time()
-                add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+                result, builder = add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
                 constraint_time = time.time() - constraint_start
+
+                # Log detailed cache and variable stats
+                prereq_cache_size = len(builder._prereq_taken_before_cache)
+                gir_cache_size = len(builder._gir_taken_before_cache)
+                hass_cache_size = len(builder._hass_taken_before_cache)
+                total_vars_created = builder.ctx._counter
 
                 print(f"[PERF]   - Prereq parsing:           {prereq_parse_time:.3f}s")
                 print(f"[PERF]   - Prereq constraint build:  {constraint_time:.3f}s")
+                print(f"[STATS]  - Constraints added:        {result.constraints_added}")
+                print(f"[STATS]  - Variables created:        {total_vars_created}")
+                print(f"[STATS]  - Prereq cache size:        {prereq_cache_size}")
+                print(f"[STATS]  - GIR cache size:           {gir_cache_size}")
+                print(f"[STATS]  - HASS cache size:          {hass_cache_size}")
+                print(f"[STATS]  - Warnings:                 {len(result.warnings)}")
+                if result.warnings[:5]:
+                    for w in result.warnings[:5]:
+                        print(f"[WARN]     {w}")
 
             await loop.run_in_executor(None, add_prereqs)
             perf_timings['prerequisites'] = time.time() - perf_start
@@ -438,7 +453,11 @@ async def optimize(request: OptimizationRequest):
 
             # Configure solver
             solver = cp_model.CpSolver()
-            solver.parameters.max_time_in_seconds = 30
+            solver.parameters.max_time_in_seconds = 20
+            #solver.parameters.relative_gap_limit = 0.05  # this is a hack, but it makes things a lil faster
+
+
+
 
             # Multi-threading configuration
             # NOTE: enumerate_all_solutions is incompatible with multi-threading
@@ -446,13 +465,9 @@ async def optimize(request: OptimizationRequest):
             if ENABLE_MULTITHREADING:
                 # Multi-threaded mode: find best solution quickly using parallel workers
                 solver.parameters.enumerate_all_solutions = False
-                num_workers = int(os.getenv("CPSAT_NUM_WORKERS", "0"))
-                if num_workers > 0:
-                    solver.parameters.num_search_workers = num_workers
-                    print(f"[SSE] Multi-threading ENABLED: {num_workers} workers, enumerate=False")
-                else:
-                    # Auto-detect (typically # of CPU cores)
-                    print("[SSE] Multi-threading ENABLED: auto-detect workers, enumerate=False")
+                num_workers = int(os.getenv("CPSAT_NUM_WORKERS", "0"))  # 0 = auto-detect (uses all cores)
+                solver.parameters.num_search_workers = num_workers
+                print(f"[SSE] Multi-threading ENABLED: {num_workers} workers, enumerate=False")
             else:
                 # Single-threaded enumeration mode (finds multiple diverse solutions)
                 solver.parameters.enumerate_all_solutions = False

@@ -156,30 +156,51 @@ def parse_prerequisites(prereq_str):
 
 # Semester validation
 
+class CourseOfferingCache:
+    """Pre-computed course offering data for fast validity checks."""
+    _instance: 'CourseOfferingCache | None' = None
+    _df_id: int | None = None
+
+    def __init__(self, df: pl.DataFrame):
+        self.offered_fall: list[bool] = df['offered_fall'].to_list()
+        self.offered_IAP: list[bool] = df['offered_IAP'].to_list()
+        self.offered_spring: list[bool] = df['offered_spring'].to_list()
+        self.not_offered_year: list[str | None] = df['not_offered_year'].to_list()
+        self.subject_ids: list[str] = df['subject_id'].to_list()
+
+    @classmethod
+    def get(cls, df: pl.DataFrame) -> 'CourseOfferingCache':
+        df_id = id(df)
+        if cls._instance is None or cls._df_id != df_id:
+            cls._instance = cls(df)
+            cls._df_id = df_id
+        return cls._instance
+
+
 def is_valid_class_semester(class_idx: int, semester: int, df: pl.DataFrame, planning_year_start: int, musician: bool = False) -> bool:
+    cache = CourseOfferingCache.get(df)
+
     # Determine the semester year and academic year string
-    semester_ok = True
     if semester % 3 == 1:  # Fall semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year}-{semester_year + 1}"
-        semester_ok = df[class_idx, 'offered_fall']
+        semester_ok = cache.offered_fall[class_idx]
     elif semester % 3 == 2:  # IAP semester
         semester_year = planning_year_start + (semester // 3)
         academic_year = f"{semester_year}-{semester_year + 1}"
-        semester_ok = df[class_idx, 'offered_IAP']
+        semester_ok = cache.offered_IAP[class_idx]
     else:  # Spring semester
         semester_year = planning_year_start + (semester // 3) - 1
         academic_year = f"{semester_year}-{semester_year + 1}"
-        semester_ok = df[class_idx, 'offered_spring']
+        semester_ok = cache.offered_spring[class_idx]
 
-
-    not_offered_year = df[class_idx, 'not_offered_year']
+    not_offered_year = cache.not_offered_year[class_idx]
     if not_offered_year is None:
         year_ok = True
     else:
         year_ok = str(academic_year) != str(not_offered_year)
 
-    if not musician and df[class_idx, 'subject_id'].lower().startswith('21m'): #stupid cheating
+    if not musician and cache.subject_ids[class_idx].lower().startswith('21m'):
         return False
     return semester_ok and year_ok
 

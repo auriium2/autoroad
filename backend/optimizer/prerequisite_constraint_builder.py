@@ -8,32 +8,53 @@ from ortools.sat.python import cp_model
 from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
 
 
-@dataclass
 class CourseSchedule:
     """
     Represents the available courses and their scheduling information.
+    Pre-computes indexes for O(1) lookups.
     """
     courses_df: pl.DataFrame
     planning_year_start: int
+    _course_id_to_index: dict[str, int]
+    _gir_to_courses: dict[str, list[int]]
+    _hass_to_courses: dict[str, list[int]]
+
+    def __init__(self, courses_df: pl.DataFrame, planning_year_start: int):
+        self.courses_df = courses_df
+        self.planning_year_start = planning_year_start
+
+        # Pre-compute course_id -> index mapping
+        subject_ids = courses_df['subject_id'].to_list()
+        self._course_id_to_index = {cid: i for i, cid in enumerate(subject_ids)}
+
+        # Pre-compute GIR -> course indices mapping
+        self._gir_to_courses = {}
+        if "gir_attribute" in courses_df.columns:
+            gir_attrs = courses_df["gir_attribute"].to_list()
+            for i, gir in enumerate(gir_attrs):
+                if gir is not None:
+                    if gir not in self._gir_to_courses:
+                        self._gir_to_courses[gir] = []
+                    self._gir_to_courses[gir].append(i)
+
+        # Pre-compute HASS -> course indices mapping
+        self._hass_to_courses = {}
+        if "hass_attribute" in courses_df.columns:
+            hass_attrs = courses_df["hass_attribute"].to_list()
+            for i, hass in enumerate(hass_attrs):
+                if hass is not None:
+                    if hass not in self._hass_to_courses:
+                        self._hass_to_courses[hass] = []
+                    self._hass_to_courses[hass].append(i)
 
     def get_course_index(self, course_id: str) -> int | None:
-        subject_ids = self.courses_df['subject_id'].to_list()
-        try:
-            return subject_ids.index(course_id)
-        except ValueError:
-            return None
+        return self._course_id_to_index.get(course_id)
 
     def get_courses_by_gir(self, gir_code: str) -> list[int]:
-        if "gir_attribute" not in self.courses_df.columns:
-            return []
-        gir_attrs = self.courses_df["gir_attribute"].to_list()
-        return [i for i, v in enumerate(gir_attrs) if v == gir_code]
+        return self._gir_to_courses.get(gir_code, [])
 
     def get_courses_by_hass(self, hass_code: str) -> list[int]:
-        if "hass_attribute" not in self.courses_df.columns:
-            return []
-        hass_attrs = self.courses_df["hass_attribute"].to_list()
-        return [i for i, v in enumerate(hass_attrs) if v == hass_code]
+        return self._hass_to_courses.get(hass_code, [])
 
 
 @dataclass
@@ -377,7 +398,7 @@ def add_prerequisite_constraints(
     planning_year_start: int,
     prereq_trees: dict[int, PrereqNode],
     override_course_ids: set[str] | None = None
-) -> ConstraintResult:
+) -> tuple[ConstraintResult, PrerequisiteConstraintBuilder]:
     """
     Add prerequisite constraints to a CP-SAT model.
 
@@ -390,7 +411,7 @@ def add_prerequisite_constraints(
         override_course_ids: Set of course IDs marked as override (skip prerequisite checks)
 
     Returns:
-        ConstraintResult with summary of constraints added and any issues
+        Tuple of (ConstraintResult, PrerequisiteConstraintBuilder) - result has summary, builder has cache stats
     """
     if override_course_ids is None:
         override_course_ids = set()
@@ -406,4 +427,5 @@ def add_prerequisite_constraints(
     ctx = ConstraintContext(model, take_vars, schedule)
     builder = PrerequisiteConstraintBuilder(ctx)
 
-    return builder.add_all_prerequisite_constraints(filtered_prereq_trees)
+    result = builder.add_all_prerequisite_constraints(filtered_prereq_trees)
+    return result, builder
