@@ -97,6 +97,9 @@ def _unitthreshold_build(node: UnitThresholdGroup, ctx: Ctx, path: str, need_con
             ctx.model.Add(total <= node.cutoff).OnlyEnforceIf(sat)
             ctx.model.Add(total > node.cutoff).OnlyEnforceIf(sat.Not())
 
+    # Propagate course-to-requirement mappings from children up to this node
+    dispatch.propagate(node, ctx, path)
+
     contribution_vars = [sat] if need_contribution_vars else []
     return ContributionResult(
         sat_var=sat,

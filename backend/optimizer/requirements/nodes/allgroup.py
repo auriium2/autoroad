@@ -49,6 +49,10 @@ def _allgroup_build(node: AllGroup, ctx: Ctx, path: str, need_contribution_vars:
         return ContributionResult(sat_var=sat, contribution_vars=contribution_vars, warnings=warnings, errors=errors)
 
     ctx.model.AddMinEquality(sat, child_sats)
+    
+    # Propagate course-to-requirement mappings from children up to this node
+    dispatch.propagate(node, ctx, path)
+    
     contribution_vars = [sat] if need_contribution_vars else []
     return ContributionResult(sat_var=sat, contribution_vars=contribution_vars, warnings=warnings, errors=errors)
 

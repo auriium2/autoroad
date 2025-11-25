@@ -55,6 +55,9 @@ def _anygroup_build(node: AnyGroup, ctx: Ctx, path: str, need_contribution_vars:
     else:
         ctx.model.AddMaxEquality(sat, child_sats)
 
+    # Propagate course-to-requirement mappings from children up to this node
+    dispatch.propagate(node, ctx, path)
+
     return ContributionResult(sat_var=sat, contribution_vars=contribution_vars, warnings=warnings, errors=errors)
 
 

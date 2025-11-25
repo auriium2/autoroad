@@ -109,6 +109,9 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
                 else:
                     ctx.model.Add(sum(contrib_indicators) <= node.distinct_threshold.cutoff).OnlyEnforceIf(sat)
 
+    # Propagate course-to-requirement mappings from children up to this node
+    dispatch.propagate(node, ctx, path)
+
     contribution_vars = child_contribution_vars if need_contribution_vars else []
     return ContributionResult(
         sat_var=sat,
