@@ -60,3 +60,8 @@ reportUnusedCallResult = false
 reportUnusedVariable = false
 reportUnusedParameter = false
 reportUnknownArgumentType = false
+
+[dependency-groups]
+dev = [
+    "pytest-xdist>=3.8.0",
+]
