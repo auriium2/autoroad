@@ -140,6 +140,7 @@ def mark_invalid_requirements(
                     items=tuple(marked_items),
                     connection_type=req.connection_type,
                     threshold=req.threshold,
+                    distinct_threshold=req.distinct_threshold,
                     title=req.title,
                     threshold_desc=req.threshold_desc,
                     req_id=req.req_id,
@@ -152,8 +153,45 @@ def mark_invalid_requirements(
                         f"Group '{req.title or req.req_id}' is infeasible: "
                         f"threshold requires {required_count} subjects but only {available_subjects} valid courses available"
                     )
+            elif req.threshold.criterion == 'units':
+                # Count total available units from valid courses in the subtree
+                def count_available_units(node) -> int:
+                    if isinstance(node, RequirementCourse):
+                        if node.was_pruned:
+                            return 0
+                        # Look up units from courses_df
+                        if courses_df is not None and 'subject_id' in courses_df.columns:
+                            matches = courses_df.filter(courses_df['subject_id'] == node.course_id)
+                            if len(matches) > 0 and 'total_units' in courses_df.columns:
+                                units = matches[0, 'total_units']
+                                return int(units) if units is not None else 12
+                        return 12  # Default if not found
+                    elif isinstance(node, RequirementGroup):
+                        return sum(count_available_units(item) for item in node.items)
+                    return 0
+
+                available_units = count_available_units(RequirementGroup(
+                    items=tuple(marked_items),
+                    connection_type=req.connection_type,
+                    threshold=req.threshold,
+                    distinct_threshold=req.distinct_threshold,
+                    title=req.title,
+                    threshold_desc=req.threshold_desc,
+                    req_id=req.req_id,
+                    was_pruned=False
+                ))
+
+                if available_units < required_count:
+                    # Not enough units available from listed courses.
+                    # This is likely an open-ended elective group where students pick unlisted courses.
+                    # We do NOT mark as infeasible - the constraint builder will handle this
+                    # by assuming it's satisfiable with unlisted electives.
+                    warnings.append(
+                        f"Group '{req.title or req.req_id}' is open-ended: "
+                        f"requires {required_count} units but only {available_units} units available from listed courses"
+                    )
             else:
-                # For other criteria (e.g., 'units'), count direct children
+                # For other criteria, count direct children as a basic check
                 if valid_children_count < required_count:
                     is_group_infeasible = True
                     warnings.append(
@@ -189,6 +227,7 @@ def mark_invalid_requirements(
             items=tuple(marked_items),
             connection_type=req.connection_type,
             threshold=req.threshold,
+            distinct_threshold=req.distinct_threshold,
             title=req.title,
             threshold_desc=req.threshold_desc,
             req_id=req.req_id,
@@ -283,8 +322,35 @@ def remove_invalid_requirements(
                         f"Group '{req.title or req.req_id}' is infeasible: "
                         f"threshold requires {cutoff} subjects but only {available_subjects} valid courses available"
                     )
+            elif req.threshold.criterion == 'units':
+                # Count total available units from valid courses in the subtree
+                def count_available_units(node) -> int:
+                    if isinstance(node, RequirementCourse):
+                        if node.was_pruned:
+                            return 0
+                        # Look up units from courses_df
+                        if courses_df is not None and 'subject_id' in courses_df.columns:
+                            matches = courses_df.filter(courses_df['subject_id'] == node.course_id)
+                            if len(matches) > 0 and 'total_units' in courses_df.columns:
+                                units = matches[0, 'total_units']
+                                return int(units) if units is not None else 12
+                        return 12  # Default if not found
+                    elif isinstance(node, RequirementGroup):
+                        return sum(count_available_units(item) for item in node.items)
+                    return 0
+
+                available_units = sum(count_available_units(item) for item in pruned_items)
+
+                if available_units < cutoff:
+                    # Not enough units available from listed courses.
+                    # This is likely an open-ended elective group where students pick unlisted courses.
+                    # We do NOT mark as infeasible - the constraint builder will handle this.
+                    warnings.append(
+                        f"Group '{req.title or req.req_id}' is open-ended: "
+                        f"requires {cutoff} units but only {available_units} units available from listed courses"
+                    )
             else:
-                # For other criteria (e.g., 'units'), count direct children
+                # For other criteria, count direct children as a basic check
                 if valid_children_count < cutoff:
                     is_infeasible = True
                     warnings.append(
@@ -335,6 +401,7 @@ def remove_invalid_requirements(
             items=tuple(pruned_items),
             connection_type=req.connection_type,
             threshold=req.threshold,
+            distinct_threshold=req.distinct_threshold,
             title=req.title,
             threshold_desc=req.threshold_desc,
             req_id=req.req_id,

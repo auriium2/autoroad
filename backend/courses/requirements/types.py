@@ -88,6 +88,7 @@ class RequirementGroup:
     - items: List of sub-requirements (can be courses or groups)
     - connection_type: 'all' (AND) or 'any' (OR)
     - threshold: Optional threshold specification
+    - distinct_threshold: Optional threshold for distinct categories (e.g., "from at least 3 categories")
     - title: Optional descriptive title
     - threshold_desc: Optional human-readable threshold description
     - req_id: Unique identifier for constraint naming
@@ -106,10 +107,19 @@ class RequirementGroup:
           connection_type="any",
           threshold=RequirementThreshold(cutoff=2, criterion="subjects", type="GTE")
       )
+
+    - At least 4 subjects from at least 3 categories:
+      RequirementGroup(
+          items=[...],
+          connection_type="any",
+          threshold=RequirementThreshold(cutoff=4, criterion="subjects", type="GTE"),
+          distinct_threshold=RequirementThreshold(cutoff=3, criterion="subjects", type="GTE")
+      )
     """
     items: tuple[RequirementNode, ...]
     connection_type: Literal["all", "any"] | None = None
     threshold: RequirementThreshold | None = None
+    distinct_threshold: RequirementThreshold | None = None
     title: str | None = None
     threshold_desc: str | None = None
     req_id: str | None = None  # Unique identifier for constraint naming

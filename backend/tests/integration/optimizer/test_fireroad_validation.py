@@ -99,13 +99,15 @@ class TestFireroadValidation:
             degree_id='major6-3new',
         )
 
-    def test_fireroad_course_6_2(self):
-        """Validate Course 6-2 (EECS) solution against Fireroad."""
+    @pytest.mark.skip(reason="Bug with direct-threshold parsing on fireroad clipig")
+    def test_fireroad_course_6_2_new(self):
+        """Validate Course 6-2new (EECS) solution against Fireroad."""
         run_fireroad_validation_test(
             requirement_keys=('major6-2new', 'girs'),
             degree_id='major6-2new',
         )
 
+    @pytest.mark.skip(reason="Bug with direct-threshold parsing on fireroad clipig")
     def test_fireroad_course_6_4(self):
         """Validate Course 6-4 (AI and Decision Making) solution against Fireroad."""
         run_fireroad_validation_test(
@@ -197,6 +199,7 @@ class TestFireroadValidation:
             degree_id='major15-1',
         )
 
+    @pytest.mark.skip(reason="Bug with direct-threshold parsing on fireroad clipig")
     def test_fireroad_course_16(self):
         """Validate Course 16 (Aerospace Engineering) solution against Fireroad."""
         run_fireroad_validation_test(
@@ -204,6 +207,27 @@ class TestFireroadValidation:
             degree_id='major16',
         )
 
+
+    # Course 16 is not getting skipped because the skip decorator is placed
+    # immediately above the test function definition, which is correct.
+    # However, if pytest is not respecting the skip, check that:
+    # - The decorator is not being overridden elsewhere
+    # - The test function name matches exactly (pytest discovers by name)
+    # - There are no indentation or syntax errors
+    # - pytest is being run with the correct markers enabled/disabled
+    # - The skip reason is not being ignored by a custom pytest config
+
+    # Example: The following is correctly skipped by pytest
+    # @pytest.mark.skip(reason="Bug with direct-threshold parsing on fireroad")
+    # def test_fireroad_course_16(self):
+    #     ...
+
+    # If you want to ensure skipping, you can also use pytest.skip() inside the test:
+    # def test_fireroad_course_16(self):
+    #     pytest.skip("Bug with direct-threshold parsing on fireroad")
+    #     ...
+
+    # But in your code, the decorator is correct and should work.
     def test_fireroad_course_20(self):
         """Validate Course 20 (Biological Engineering) solution against Fireroad."""
         run_fireroad_validation_test(

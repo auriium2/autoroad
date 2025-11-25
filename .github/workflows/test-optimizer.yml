@@ -150,26 +150,27 @@ jobs:
         run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs -k "${{ matrix.tests }}" -v -s
 
   test-quality:
-    name: Quality - ${{ matrix.test }}
+    name: Quality - Group ${{ matrix.group }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - test_course_1_quality
-          - test_course_2_quality
-          - test_course_6_2_quality
-          - test_course_6_3_new_quality
-          - test_course_6_9_quality
-          - test_course_7_quality
-          - test_course_8_quality
-          - test_course_9_quality
-          - test_course_11_quality
-          - test_course_15_quality
-          - test_course_16_quality
-          - test_course_18pm_quality
-          - test_course_20_quality
+        include:
+          - group: 1
+            tests: "test_course_1_quality or test_course_2_quality"
+          - group: 2
+            tests: "test_course_6_2_quality or test_course_6_3_new_quality"
+          - group: 3
+            tests: "test_course_6_9_quality or test_course_7_quality"
+          - group: 4
+            tests: "test_course_8_quality or test_course_9_quality"
+          - group: 5
+            tests: "test_course_11_quality or test_course_15_quality"
+          - group: 6
+            tests: "test_course_16_quality or test_course_18pm_quality"
+          - group: 7
+            tests: "test_course_20_quality"
 
     steps:
       - uses: actions/checkout@v4
@@ -193,9 +194,9 @@ jobs:
         working-directory: ./backend
         run: uv sync --frozen --extra dev
 
-      - name: Run quality test
+      - name: Run quality tests
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py::TestOptimizerQuality::${{ matrix.test }} -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py::TestOptimizerQuality -k "${{ matrix.tests }}" -v -s
 
   test-integration:
     name: Integration - ${{ matrix.name }}

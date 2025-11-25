@@ -699,20 +699,153 @@ class RequirementConstraintBuilder:
                 # "at least one child satisfied" would incorrectly force courses to be taken.
                 # The threshold constraint alone is sufficient for optional groups.
 
-        # Enforce distinct_threshold if present (e.g., "from at least 3 categories")
-        # This requires that courses come from at least N distinct child groups
+        # Enforce distinct_threshold if present (e.g., "from at least N categories")
+        # 
+        # The meaning depends on whether child categories have their own thresholds:
+        # 
+        # Case 1: Children have threshold > 0 (e.g., "2 Subjects from each of 2 EE Tracks")
+        #   - Each track requires 2 subjects to be "satisfied"
+        #   - distinct_threshold=2 means "at least 2 tracks must be fully satisfied"
+        #   - Use child_vars (which represent full satisfaction of each child)
+        #
+        # Case 2: Children have threshold = 0 (e.g., "4 subjects from at least 3 areas")
+        #   - Each area is "satisfied" with 0 courses (always true)
+        #   - distinct_threshold=3 means "courses must come from at least 3 different areas"
+        #   - Use contributed_vars (which track if any course is taken from each area)
         if node.distinct_threshold is not None:
             distinct_cutoff = node.distinct_threshold.cutoff
-            # Count how many distinct children (categories) have at least one course satisfied
-            # Each child_var represents whether that child/category is satisfied
-            if child_vars and distinct_cutoff > 0:
-                self.ctx.model.Add(sum(child_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
+            if distinct_cutoff > 0 and child_nodes:
+                # Check if children have non-trivial thresholds
+                children_have_thresholds = any(
+                    isinstance(child, RequirementGroup) and 
+                    child.threshold is not None and 
+                    child.threshold.cutoff > 0
+                    for child in child_nodes
+                )
+                
+                if children_have_thresholds:
+                    # Case 1: Use child_vars (must be fully satisfied)
+                    if child_vars:
+                        if node.distinct_threshold.type == "GTE":
+                            self.ctx.model.Add(sum(child_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
+                        else:  # LTE
+                            self.ctx.model.Add(sum(child_vars) <= distinct_cutoff).OnlyEnforceIf(group_var)
+                else:
+                    # Case 2: Use contributed_vars (any course counts as contribution)
+                    contributed_vars: list[cp_model.IntVar] = []
+                    
+                    for idx, (child_node, child_result) in enumerate(zip(child_nodes, child_results)):
+                        if child_result.satisfied_var is None:
+                            continue
+                        
+                        # Collect all course vars from this child
+                        child_course_vars = self._collect_all_course_vars_from_results([child_node], [child_result])
+                        
+                        if child_course_vars:
+                            # Category contributes if sum of its courses >= 1
+                            contrib_var = self.ctx.model.NewBoolVar(f"{group_name}_child{idx}_contributes")
+                            self.ctx.model.Add(sum(child_course_vars) >= 1).OnlyEnforceIf(contrib_var)
+                            self.ctx.model.Add(sum(child_course_vars) == 0).OnlyEnforceIf(contrib_var.Not())
+                            contributed_vars.append(contrib_var)
+                    
+                    if contributed_vars:
+                        if node.distinct_threshold.type == "GTE":
+                            self.ctx.model.Add(sum(contributed_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
+                        else:  # LTE
+                            self.ctx.model.Add(sum(contributed_vars) <= distinct_cutoff).OnlyEnforceIf(group_var)
 
         return ConstraintResult(
             satisfied_var=group_var,
             warnings=warnings,
             errors=errors
         )
+
+    def _build_units_threshold_group(
+        self,
+        node: RequirementGroup,
+        group_var: cp_model.IntVar,
+        child_vars: list[cp_model.IntVar],
+        child_results: list[ConstraintResult],
+        child_nodes: list[RequirementNode],
+        path: str,
+        warnings: list[str],
+        errors: list[str],
+        cutoff: int
+    ) -> ConstraintResult:
+        """Build constraints for a group with a units-based threshold."""
+        group_name = node.title or "unnamed"
+
+        # Collect all course indices and their unit contributions from children
+        # We need to recursively find all courses that can satisfy this requirement
+        course_unit_contributions: list[tuple[int, int, cp_model.IntVar]] = []  # (course_idx, units, take_var)
+
+        def collect_courses_from_node(n: RequirementNode) -> None:
+            if hasattr(n, 'was_pruned') and n.was_pruned:
+                return
+
+            if isinstance(n, RequirementCourse):
+                course_idx = self.ctx.schedule.get_course_index(n.course_id)
+                if course_idx is not None:
+                    units = self.ctx.schedule.get_course_units(course_idx)
+                    # Get all valid take vars for this course
+                    for s in VALID_SEMESTERS:
+                        if (course_idx, s) in self.ctx.take_vars:
+                            course_unit_contributions.append(
+                                (course_idx, units, self.ctx.take_vars[course_idx, s])
+                            )
+            elif isinstance(n, RequirementGroup):
+                for child in n.items:
+                    collect_courses_from_node(child)
+
+        # Collect from all child nodes
+        for child_node in child_nodes:
+            collect_courses_from_node(child_node)
+
+        # Group by course_idx to avoid double counting
+        course_idx2unit_vars: dict[int, list[cp_model.IntVar]] = {}
+        course_idx2units: dict[int, int] = {}
+        for course_idx, units, take_var in course_unit_contributions:
+            if course_idx not in course_idx2unit_vars:
+                course_idx2unit_vars[course_idx] = []
+                course_idx2units[course_idx] = units
+            course_idx2unit_vars[course_idx].append(take_var)
+
+        # Calculate total available units from listed courses
+        total_available_units = sum(course_idx2units.values())
+
+        # If there are no courses OR total available units is less than cutoff,
+        # this is likely an open-ended requirement (e.g., "take 78 units of electives")
+        # where students can choose from courses not explicitly listed.
+        # In this case, we issue a warning and assume the requirement is satisfiable.
+        if not course_unit_contributions or total_available_units < cutoff:
+            self.ctx.model.Add(group_var == 1)
+            warnings.append(
+                f"⚠️  Unit-based requirement '{group_name}' requires {cutoff} units but only "
+                f"{total_available_units} units are available from listed courses. "
+                f"Assuming requirement is satisfiable with unlisted electives."
+            )
+            return ConstraintResult(satisfied_var=group_var, warnings=warnings, errors=errors)
+
+        # For each unique course, create a "taken" variable (1 if taken in any semester)
+        unit_contributions: list[cp_model.IntVar] = []
+        for course_idx, take_vars_list in course_idx2unit_vars.items():
+            units = course_idx2units[course_idx]
+            # Create variable for "course taken in any semester"
+            course_taken = self.ctx.model.NewBoolVar(f"{group_name}_course{course_idx}_taken")
+            self.ctx.model.AddMaxEquality(course_taken, take_vars_list)
+            
+            # Create contribution variable: units if taken, 0 otherwise
+            contribution = self.ctx.model.NewIntVar(0, units, f"{group_name}_course{course_idx}_units")
+            self.ctx.model.Add(contribution == units).OnlyEnforceIf(course_taken)
+            self.ctx.model.Add(contribution == 0).OnlyEnforceIf(course_taken.Not())
+            unit_contributions.append(contribution)
+
+        # Sum all unit contributions
+        total_units = sum(unit_contributions)
+        self.ctx.model.Add(total_units >= cutoff).OnlyEnforceIf(group_var)
+        self.ctx.model.Add(total_units < cutoff).OnlyEnforceIf(group_var.Not())
+
+        return ConstraintResult(satisfied_var=group_var, warnings=warnings, errors=errors)
 
     def enforce_requirement(self, node: RequirementNode) -> None:
         """

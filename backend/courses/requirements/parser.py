@@ -189,6 +189,24 @@ def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: di
     #         type='EQ'
     #     )
 
+    # Parse distinct-threshold if present (for "from at least N categories" constraints)
+    distinct_threshold = None
+    if 'distinct-threshold' in req_item:
+        distinct_dict = req_item['distinct-threshold']
+        if not isinstance(distinct_dict, dict):
+            raise RequirementParseError(f"'distinct-threshold' must be a dict, got {type(distinct_dict)}")
+
+        try:
+            distinct_threshold = RequirementThreshold(
+                cutoff=int(distinct_dict['cutoff']),
+                criterion=distinct_dict['criterion'],
+                type=distinct_dict['type']
+            )
+        except KeyError as e:
+            raise RequirementParseError(f"Distinct-threshold missing required field: {e}") from e
+        except (ValueError, TypeError) as e:
+            raise RequirementParseError(f"Invalid distinct-threshold value: {e}") from e
+
     # Validate connection type
     if connection_type is not None and connection_type not in ['all', 'any']:
         raise RequirementParseError(
@@ -199,6 +217,7 @@ def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: di
         items=tuple(parsed_items),
         connection_type=connection_type,
         threshold=threshold,
+        distinct_threshold=distinct_threshold,
         title=req_item.get('title'),
         threshold_desc=req_item.get('threshold-desc'),
         req_id=group_id

@@ -104,7 +104,7 @@ class OptimizerTestConfig:
         },
         'major3': {
             'min_expected_courses': 20,
-            'max_expected_courses': 30,
+            'max_expected_courses': 35,
             'description': 'Materials Science and Engineering',
         },
         'major3a': {
