@@ -3,78 +3,78 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "11.026",
-      "semester": 6,
-      "title": "Downtown",
+      "subject_id": "1.034",
+      "semester": 9,
+      "title": "Materials in Human Experience",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "10.07",
+      "semester": 9,
+      "title": "Debating About Society and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "11.139",
+      "semester": 3,
+      "title": "The City in Film",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "16.C20",
-      "semester": 4,
+      "semester": 3,
       "title": "Introduction to Computational Science and Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.01L",
+      "subject_id": "18.01",
       "semester": 4,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.404",
-      "semester": 10,
-      "title": "Theory of Computation",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21H.218",
-      "semester": 10,
-      "title": "History of the Built Environment in the US",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "21T.409",
+      "subject_id": "21W.016",
       "semester": 4,
-      "title": "Performance and Design Intensive",
+      "title": "Writing and Rhetoric: Making Change",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.222",
+      "subject_id": "21W.733",
+      "semester": 9,
+      "title": "Debating About Society and Engineering",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.095",
       "semester": 3,
-      "title": "Expository Writing for Bilingual Students",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.993",
-      "semester": 6,
-      "title": "Archaeology of the Middle East",
+      "title": "Introduction to Metalsmithing",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "5.111",
-      "semester": 4,
+      "semester": 12,
       "title": "Principles of Chemical Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.100A",
-      "semester": 3,
+      "semester": 1,
       "title": "Introduction to Computer Science Programming in Python",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1010",
-      "semester": 9,
+      "semester": 10,
       "title": "Fundamentals of Programming",
       "units": 12,
       "overrideWarnings": false
@@ -83,6 +83,13 @@
       "subject_id": "6.1020",
       "semester": 12,
       "title": "Software Construction",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.1120",
+      "semester": 7,
+      "title": "Dynamic Computer Language Engineering",
       "units": 12,
       "overrideWarnings": false
     },
@@ -109,13 +116,13 @@
     },
     {
       "subject_id": "6.1800",
-      "semester": 12,
+      "semester": 6,
       "title": "Computer Systems Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.1904",
+      "subject_id": "6.1903",
       "semester": 12,
       "title": "Introduction to Low-level Programming in C and Assembly",
       "units": 12,
@@ -123,21 +130,14 @@
     },
     {
       "subject_id": "6.1910",
-      "semester": 6,
+      "semester": 4,
       "title": "Computation Structures",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.3260",
-      "semester": 10,
-      "title": "Networks",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
       "subject_id": "6.3700",
-      "semester": 9,
+      "semester": 12,
       "title": "Introduction to Probability",
       "units": 12,
       "overrideWarnings": false
@@ -150,37 +150,51 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "7.012",
-      "semester": 7,
+      "subject_id": "6.S057",
+      "semester": 6,
+      "title": "Special Subject in Electrical Engineering and Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "6.S058",
+      "semester": 6,
+      "title": "Special Subject in Electrical Engineering and Computer Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.015",
+      "semester": 10,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.01",
+      "subject_id": "CC.8012",
       "semester": 7,
       "title": "Physics I",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.02",
-      "semester": 9,
-      "title": "Physics II",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "ES.182A",
+      "subject_id": "ES.1802",
       "semester": 7,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.075",
+      "subject_id": "ES.8022",
       "semester": 10,
-      "title": "Technology and Culture",
+      "title": "Physics II",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "STS.051",
+      "semester": 4,
+      "title": "Documenting MIT Communities",
       "units": 12,
       "overrideWarnings": false
     }

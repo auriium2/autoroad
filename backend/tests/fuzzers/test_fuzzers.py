@@ -210,13 +210,13 @@ class TestRequirementParserFuzzer:
     """
     Integration tests for the requirement parser using all Fireroad requirements.
 
-    This fuzzer ensures that all real requirement data can be parsed without
-    errors and that all groups have valid thresholds (preventing infeasibility bugs).
+    This fuzzer ensures that all real requirement data can be parsed into
+    typed nodes without errors.
     """
 
     def test_parser_handles_all_requirements(self, all_fireroad_requirements):
         """Test that the parser can handle all Fireroad requirements without exceptions."""
-        from courses.requirements.parser import parse_requirement
+        from courses.requirements.parser import parse_fireroad_response
 
         failures = []
 
@@ -225,7 +225,7 @@ class TestRequirementParserFuzzer:
                 continue
 
             try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
+                result = parse_fireroad_response(req_data)
                 assert result is not None
             except Exception as e:
                 failures.append((req_id, str(e)))
@@ -237,29 +237,82 @@ class TestRequirementParserFuzzer:
                 f"{'... and more' if len(failures) > 10 else ''}"
             )
 
-    def test_groups_with_thresholds_have_valid_cutoffs(self, all_fireroad_requirements):
+    def test_all_nodes_are_correct_types(self, all_fireroad_requirements):
         """
-        Verify that requirement groups with thresholds have valid cutoff values.
-
-        This is a regression test to ensure threshold cutoffs are properly parsed
-        and don't have invalid values (like negative numbers or None).
+        Verify that the parser produces only valid node types.
         """
-        from courses.requirements.parser import parse_requirement
-        from courses.requirements.types import RequirementGroup
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            CI,
+            GIR,
+            HASS,
+            AllGroup,
+            AnyGroup,
+            Course,
+            Group,
+            Node,
+            PlainString,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
+        )
 
-        invalid_thresholds = []
+        invalid_types: list[tuple[str, str]] = []
 
-        def check_thresholds(node, path="root"):
-            """Recursively check that all thresholds have valid cutoffs."""
-            if isinstance(node, RequirementGroup):
-                if node.threshold is not None:
-                    # Check for invalid cutoff values
-                    if node.threshold.cutoff < 0:
-                        invalid_thresholds.append((path, f"negative cutoff: {node.threshold.cutoff}"))
-                    if node.threshold.criterion not in ('subjects', 'units'):
-                        invalid_thresholds.append((path, f"invalid criterion: {node.threshold.criterion}"))
+        def check_types(node: Node, path: str = "root") -> None:
+            """Recursively check that all nodes are valid types."""
+            valid_types = (AllGroup, AnyGroup, Course, CI, GIR, HASS, PlainString,
+                          SubjectThresholdGroup, UnitThresholdGroup)
 
-                for i, child in enumerate(node.items):
+            if not isinstance(node, valid_types):
+                invalid_types.append((path, type(node).__name__))
+                return
+
+            # Check children for group types
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                for i, child in enumerate(group.children):
+                    check_types(child, f"{path}.{i}")
+
+        for req_id, req_data in all_fireroad_requirements.items():
+            if not isinstance(req_data, dict) or 'reqs' not in req_data:
+                continue
+
+            try:
+                result = parse_fireroad_response(req_data)
+                check_types(result, req_id)
+            except Exception:
+                pass
+
+        if invalid_types:
+            pytest.fail(f"Found {len(invalid_types)} invalid node types: {invalid_types[:20]}")
+
+    def test_threshold_groups_have_valid_cutoffs(self, all_fireroad_requirements):
+        """
+        Verify that threshold groups have valid cutoff values (non-negative).
+        """
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            AllGroup,
+            AnyGroup,
+            Group,
+            Node,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
+        )
+
+        invalid_thresholds: list[tuple[str, str]] = []
+
+        def check_thresholds(node: Node, path: str = "root") -> None:
+            """Recursively check that all threshold groups have valid cutoffs."""
+            if isinstance(node, (SubjectThresholdGroup, UnitThresholdGroup)):
+                if node.cutoff < 0:
+                    invalid_thresholds.append((path, f"negative cutoff: {node.cutoff}"))
+                if node.threshold_type not in ('GTE', 'LTE'):
+                    invalid_thresholds.append((path, f"invalid threshold_type: {node.threshold_type}"))
+
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                for i, child in enumerate(group.children):
                     check_thresholds(child, f"{path}.{i}")
 
         for req_id, req_data in all_fireroad_requirements.items():
@@ -267,22 +320,60 @@ class TestRequirementParserFuzzer:
                 continue
 
             try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
-                check_thresholds(result, f"{req_id}")
+                result = parse_fireroad_response(req_data)
+                check_thresholds(result, req_id)
             except Exception:
                 pass
 
         if invalid_thresholds:
-            sample = invalid_thresholds[:20]
             pytest.fail(
-                f"Found {len(invalid_thresholds)} requirement groups with invalid thresholds:\n"
-                f"{sample}\n"
-                f"{'... and more' if len(invalid_thresholds) > 20 else ''}"
+                f"Found {len(invalid_thresholds)} invalid thresholds:\n"
+                f"{invalid_thresholds[:20]}"
             )
 
-    def test_requirement_parsing_success_rate(self, all_fireroad_requirements):
+    def test_groups_have_children(self, all_fireroad_requirements):
+        """
+        Verify that all group nodes have at least one child.
+        Empty groups are invalid and would cause constraint issues.
+        """
+        from courses.requirements.parser import parse_fireroad_response
+        from courses.requirements.types import (
+            AllGroup,
+            AnyGroup,
+            Group,
+            Node,
+            SubjectThresholdGroup,
+            UnitThresholdGroup,
+        )
+
+        empty_groups: list[str] = []
+
+        def check_children(node: Node, path: str = "root") -> None:
+            """Recursively check that all groups have children."""
+            if isinstance(node, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+                group: Group = node
+                if len(group.children) == 0:
+                    empty_groups.append(path)
+
+                for i, child in enumerate(group.children):
+                    check_children(child, f"{path}.{i}")
+
+        for req_id, req_data in all_fireroad_requirements.items():
+            if not isinstance(req_data, dict) or 'reqs' not in req_data:
+                continue
+
+            try:
+                result = parse_fireroad_response(req_data)
+                check_children(result, req_id)
+            except Exception:
+                pass
+
+        if empty_groups:
+            pytest.fail(f"Found {len(empty_groups)} empty groups: {empty_groups[:20]}")
+
+    def test_parsing_success_rate(self, all_fireroad_requirements):
         """Test that we can parse at least 95% of Fireroad requirements."""
-        from courses.requirements.parser import parse_requirement
+        from courses.requirements.parser import parse_fireroad_response
 
         total = 0
         successes = 0
@@ -293,7 +384,7 @@ class TestRequirementParserFuzzer:
 
             total += 1
             try:
-                result = parse_requirement({'reqs': req_data['reqs'], 'title': req_id})
+                result = parse_fireroad_response(req_data)
                 if result is not None:
                     successes += 1
             except Exception:
@@ -302,7 +393,7 @@ class TestRequirementParserFuzzer:
         success_rate = (successes / total * 100) if total > 0 else 0
 
         assert success_rate >= 95.0, \
-            f"Requirement parser success rate ({success_rate:.1f}%) is below 95% threshold"
+            f"Parser success rate ({success_rate:.1f}%) is below 95% threshold"
 
 
 if __name__ == "__main__":

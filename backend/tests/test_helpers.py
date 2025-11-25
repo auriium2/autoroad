@@ -22,13 +22,13 @@ from ortools.sat.python import cp_model
 from api.models.requests import Marker
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
-from courses.requirements.parser import parse_requirement
+from courses.requirements.parser import parse_fireroad_response
 from courses.requirements.validator import validate_and_prune
 from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.objectives import MinimizeUnits, ObjectiveBuilder
 from optimizer.objectives.registry import get_default_objectives, instantiate_objective
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
+from optimizer.requirements.builder import add_requirement_constraints
 
 
 @dataclass
@@ -61,10 +61,10 @@ def build_optimizer_model(
 ) -> OptimizerModelResult:
     """
     Build a complete optimizer model - unified helper for all integration tests.
-    
+
     This is the single source of truth for building optimizer models in tests.
     All integration tests should use this function to ensure consistent behavior.
-    
+
     Args:
         requirement_keys: Tuple of requirement keys (e.g., ('major6-3new', 'girs'))
         markers: Optional list of markers (pins, overrides, banishes)
@@ -73,7 +73,7 @@ def build_optimizer_model(
         with_objectives: Whether to add objective functions (default True)
         freeze_past_semesters: Whether to add past semester constraints
         cached_data: Optional CachedCourseData from conftest fixture
-    
+
     Returns:
         OptimizerModelResult with model, variables, and data
     """
@@ -109,18 +109,20 @@ def build_optimizer_model(
         override_course_ids = {m.courseId for m in markers if m.status == 'override'}
     add_prerequisite_constraints(model, take_vars, courses_df, start_year, prereq_trees, override_course_ids)
 
-    # Add requirement constraints
+    # Add requirement constraints using req_2 parser and builder
     course_to_requirements: dict[int, set[str]] = {}
     for req_key in requirement_keys:
         if req_key in requirements_data:
             req_data = requirements_data[req_key]
             if isinstance(req_data, dict):
-                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                # Parse directly to req_2 types
+                req_tree = parse_fireroad_response(req_data)
+                # Validate and prune
                 validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
                 if validation.pruned_tree is not None:
                     _aux_vars, _debug_names, mapping = add_requirement_constraints(
                         model, take_vars, validation.pruned_tree,
-                        courses_df, start_year, enforce=True
+                        courses_df, enforce=True
                     )
                     # Merge course->requirements mappings
                     for course_idx, req_paths in mapping.items():
@@ -151,19 +153,19 @@ def solve_model(
 ) -> tuple[cp_model.CpSolver, int]:
     """
     Solve a model with deterministic settings.
-    
+
     Args:
         model: CP-SAT model to solve
         timeout_seconds: Solver timeout
         random_seed: Random seed for deterministic behavior
-    
+
     Returns:
         Tuple of (solver, status)
     """
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = timeout_seconds
     solver.parameters.random_seed = random_seed
-    status = solver.Solve(model)
+    status = int(solver.Solve(model))
     return solver, status
 
 
@@ -174,12 +176,12 @@ def extract_solution_courses(
 ) -> list[dict[str, Any]]:
     """
     Extract solution courses from a solved model.
-    
+
     Args:
         solver: Solved CP-SAT solver
         take_vars: Decision variables
         courses_df: DataFrame of courses
-    
+
     Returns:
         List of course dicts with subject_id, title, units, semester
     """
@@ -215,20 +217,20 @@ def validate_solution_against_fireroad(
 ) -> FireroadValidationResult:
     """
     Validate a solution against the Fireroad API.
-    
+
     This is the "ground truth" validation - Fireroad is the source of truth
     for whether requirements are satisfied. Use this to verify our constraint
     builder matches actual Fireroad behavior.
-    
+
     Args:
         solution_courses: List of course dicts from extract_solution_courses()
         requirement_keys: Tuple of requirement keys to validate
         timeout: HTTP request timeout
         verbose: Print detailed progress info
-    
+
     Returns:
         FireroadValidationResult with satisfaction status for each requirement
-    
+
     Raises:
         requests.RequestException: If Fireroad API is unreachable
     """
@@ -290,12 +292,12 @@ def run_full_optimizer_test(
 ) -> tuple[cp_model.CpSolver, OptimizerModelResult]:
     """
     Run a complete optimizer test with optional Fireroad validation.
-    
+
     This is the highest-level test helper that:
     1. Builds the model
     2. Solves it
     3. Optionally validates against Fireroad
-    
+
     Args:
         requirement_keys: Tuple of requirement keys
         markers: Optional markers
@@ -303,10 +305,10 @@ def run_full_optimizer_test(
         validate_fireroad: Whether to validate against Fireroad API
         verbose: Print progress info
         cached_data: Optional CachedCourseData from conftest fixture
-    
+
     Returns:
         Tuple of (solver, model_result)
-    
+
     Raises:
         AssertionError: If solution is infeasible or Fireroad validation fails
     """

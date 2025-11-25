@@ -11,12 +11,12 @@ from ortools.sat.python import cp_model
 
 from api.models.requests import Marker
 from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_requirement
+from courses.requirements.parser import parse_fireroad_response
 from courses.requirements.validator import validate_and_prune
 from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.objectives.builder import ObjectiveBuilder
 from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
+from optimizer.requirements.builder import add_requirement_constraints
 
 
 @pytest.mark.e2e
@@ -105,12 +105,12 @@ def test_feasibility_bug_major_6_3_with_markers():
         if req_key in requirements_data:
             req_data = requirements_data[req_key]
             if isinstance(req_data, dict):
-                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                req_tree = parse_fireroad_response(req_data)
                 validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
                 if validation.pruned_tree is not None:
                     aux_vars, debug_names, mapping = add_requirement_constraints(
                         model, take_vars, validation.pruned_tree,
-                        courses_df, planning_year_start, enforce=True
+                        courses_df, enforce=True
                     )
                     # Merge mappings
                     for course_idx, req_paths in mapping.items():

@@ -37,7 +37,7 @@ def build_optimizer_with_markers(
         max_semesters=max_semesters,
         with_objectives=False,
     )
-    
+
     solver, _status = solve_model(
         result.model,
         timeout_seconds=30,

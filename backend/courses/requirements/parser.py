@@ -1,310 +1,368 @@
 """
-Requirements Parser for Fireroad Format
+Parser for Fireroad requirement JSON into req_2 types.
 
-This parser converts Fireroad requirements JSON structure to typed RequirementNode trees.
+This parser converts Fireroad requirements JSON directly into the typed req_2 node types,
+bypassing the old RequirementNode intermediate representation.
 
-Fireroad requirements structure:
-- Leaf: {'req': 'COURSE_ID', 'title': '...'} or {'plain-string': 'text', 'title': '...'}
-- Branch: {'reqs': [...], 'connection-type': 'all'|'any', 'threshold': {...}, 'title': '...'}
+Fireroad structure:
+- Leaf course: {"req": "6.100A", "title": "..."}
+- Plain-string: {"req": "description text", "plain-string": true, "title": "..."}
+- Group: {"reqs": [...], "connection-type": "all"|"any", "threshold": {...}, "title": "..."}
 
-Examples:
-- Single course: {"req": "6.100A"}
-- All required: {"connection-type": "all", "reqs": [{"req": "6.100A"}, {"req": "6.1200"}]}
-- Any required: {"connection-type": "any", "reqs": [{"req": "18.05"}, {"req": "18.06"}]}
-- Threshold: {"connection-type": "any", "threshold": {"cutoff": 2, "criterion": "subjects", "type": "GTE"}, "reqs": [...]}
+Special course IDs:
+- GIR codes: "GIR:CAL1", "GIR:PHY1", etc.
+- HASS: "HASS", "HASS-A", "HASS-H", "HASS-S", "HASS-E"
+- CI: "CI-H", "CI-HW"
 """
 
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 
-from .types import (
-    RequirementCourse,
-    RequirementGroup,
-    RequirementNode,
-    RequirementPlainString,
-    RequirementThreshold,
+from courses.requirements.types import (
+    CI,
+    GIR,
+    HASS,
+    AllGroup,
+    AnyGroup,
+    ConnectionType,
+    Course,
+    DistinctThreshold,
+    Node,
+    PlainString,
+    SubjectThresholdGroup,
+    ThresholdType,
+    UnitThresholdGroup,
 )
 
 
-class RequirementParseError(Exception):
-    """Raised when a requirement structure cannot be parsed."""
+class ParseError(Exception):
+    """Raised when requirement JSON cannot be parsed."""
     pass
 
 
-def _slugify(text: str) -> str:
-    """
-    Convert a title to a slug suitable for IDs.
+@dataclass
+class ParseResult:
+    """Result of parsing a requirement."""
+    node: Node
+    warnings: list[str]
 
-    Examples:
-        "Programming Skills" -> "programming_skills"
-        "6-3 Math" -> "6_3_math"
-        "Centers and (Application_CIM or AI+D_AUS)" -> "centers_and_application_cim_or_aid_aus"
-    """
-    # Convert to lowercase
+
+def _slugify(text: str) -> str:
+    """Convert a title to a slug suitable for IDs."""
     text = text.lower()
-    # Replace special characters and spaces with underscores
     text = re.sub(r'[^\w\s-]', '_', text)
-    # Replace multiple spaces/underscores with single underscore
     text = re.sub(r'[\s_]+', '_', text)
-    # Remove leading/trailing underscores
     text = text.strip('_')
     return text
 
 
-def parse_requirement(req_item: dict[str, Any], parent_id: str = "", counter: dict[str, int] | None = None) -> RequirementNode:
+def _make_id(
+    title: str | None,
+    fallback: str,
+    parent_id: str,
+    counter: dict[str, int],
+) -> str:
     """
-    Parse a Fireroad requirement item into a RequirementNode.
+    Generate a unique ID for a node.
+
+    Uses a counter to ensure uniqueness when multiple nodes have the same slug.
+    """
+    if title:
+        slug = _slugify(title)
+    else:
+        slug = _slugify(fallback) if len(fallback) < 50 else _slugify(fallback[:50])
+
+    # Handle empty slug (e.g., if text was only punctuation)
+    if not slug:
+        slug = "item"
+
+    base_id = f"{parent_id}/{slug}" if parent_id else slug
+
+    # Track occurrences to ensure uniqueness
+    counter_key = f"leaf:{base_id}"
+    count = counter.get(counter_key, 0)
+    counter[counter_key] = count + 1
+
+    if count == 0:
+        return base_id
+    return f"{base_id}_{count}"
+
+
+def _parse_leaf(course_id: str, title: str | None, req_id: str) -> Node:
+    """
+    Parse a leaf node (course, GIR, HASS, CI, etc.) from a course_id string.
+
+    Handles special course ID formats:
+    - "GIR:CAL1", "GIR:PHY1", etc. -> GIR node
+    - "HASS", "HASS-A", "HASS-H", "HASS-S", "HASS-E" -> HASS node
+    - "CI-H", "CI-HW" -> CI node
+    - Regular course IDs -> Course node
+    """
+    # GIR codes
+    if course_id.startswith("GIR:"):
+        gir_code = course_id.split(":", 1)[1]
+        valid_girs: set[str] = {"CAL1", "CAL2", "PHY1", "PHY2", "CHEM", "BIOL", "REST", "LAB", "LAB2"}
+        if gir_code not in valid_girs:
+            # Return as plain string if unknown GIR
+            return PlainString(description=course_id, title=title, req_id=req_id)
+        return GIR(gir_code=gir_code, title=title, req_id=req_id)  # type: ignore
+
+    # Generic HASS
+    if course_id == "HASS":
+        return HASS(category="HASS", title=title, req_id=req_id)
+
+    # Specific HASS categories
+    if course_id in ("HASS-A", "HASS-H", "HASS-S", "HASS-E"):
+        return HASS(category=course_id, title=title, req_id=req_id)  # type: ignore
+
+    # CI requirements
+    if course_id in ("CI-H", "CI-HW"):
+        return CI(ci_type=course_id, title=title, req_id=req_id)  # type: ignore
+
+    # Regular course
+    return Course(subject_id=course_id, title=title, req_id=req_id)
+
+
+def _parse_threshold(threshold_dict: dict[str, Any]) -> tuple[int, ThresholdType, str]:
+    """
+    Parse a threshold dictionary.
+
+    Returns: (cutoff, threshold_type, criterion)
+    """
+    try:
+        cutoff = int(threshold_dict['cutoff'])
+        criterion = threshold_dict['criterion']
+        threshold_type: ThresholdType = threshold_dict.get('type', 'GTE')
+        if threshold_type not in ('GTE', 'LTE'):
+            threshold_type = 'GTE'
+        return cutoff, threshold_type, criterion
+    except (KeyError, ValueError, TypeError) as e:
+        raise ParseError(f"Invalid threshold: {e}") from e
+
+
+def _parse_distinct_threshold(distinct_dict: dict[str, Any]) -> DistinctThreshold:
+    """Parse a distinct-threshold dictionary."""
+    try:
+        cutoff = int(distinct_dict['cutoff'])
+        comparison: ThresholdType = distinct_dict.get('type', 'GTE')
+        if comparison not in ('GTE', 'LTE'):
+            comparison = 'GTE'
+        return DistinctThreshold(cutoff=cutoff, comparison=comparison)
+    except (KeyError, ValueError, TypeError) as e:
+        raise ParseError(f"Invalid distinct-threshold: {e}") from e
+
+
+def parse(
+    req_item: dict[str, Any],
+    parent_id: str = "",
+    counter: dict[str, int] | None = None,
+) -> Node:
+    """
+    Parse a Fireroad requirement item into a req_2 Node.
 
     Args:
-        req_item: Dictionary from Fireroad API (either a leaf or branch node)
+        req_item: Dictionary from Fireroad API
         parent_id: ID path of parent requirement (for generating unique IDs)
-        counter: Counter dict for tracking unnamed groups (shared across recursive calls)
+        counter: Counter dict for tracking unnamed groups
 
     Returns:
-        RequirementNode: Parsed requirement tree
+        Parsed req_2 Node
 
     Raises:
-        RequirementParseError: If the requirement structure is invalid
-
-    Examples:
-        >>> parse_requirement({"req": "6.100A"})
-        RequirementCourse(course_id='6.100A', title=None)
-
-        >>> parse_requirement({"plain-string": "Permission required", "title": "Permission"})
-        RequirementPlainString(text='Permission required', title='Permission')
-
-        >>> parse_requirement({
-        ...     "connection-type": "any",
-        ...     "reqs": [{"req": "6.100A"}, {"req": "6.100L"}]
-        ... })
-        RequirementGroup(items=(...), connection_type='any', ...)
+        ParseError: If the requirement structure is invalid
     """
-    # Initialize counter if not provided
     if counter is None:
         counter = {}
 
-    # Check for course/special requirement leaf
-    # Note: plain-string is a boolean flag, not a separate field
+    title = req_item.get('title')
+
+    # Case 1: Leaf node with 'req' but no 'reqs'
     if 'req' in req_item and 'reqs' not in req_item:
-        # Check if this is a plain-string (human-readable description) or a course ID
+        course_id = req_item['req']
         is_plain_string = req_item.get('plain-string', False)
 
-        # Generate ID for this leaf
-        title = req_item.get('title')
-        if title:
-            leaf_id = f"{parent_id}/{_slugify(title)}" if parent_id else _slugify(title)
-        else:
-            # Use course ID or description as fallback
-            course_id = req_item['req']
-            leaf_slug = _slugify(course_id) if len(course_id) < 50 else _slugify(course_id[:50])
-            leaf_id = f"{parent_id}/{leaf_slug}" if parent_id else leaf_slug
+        req_id = _make_id(title, course_id, parent_id, counter)
 
         if is_plain_string:
-            # Parse threshold if present for plain-string requirements
-            threshold = None
-            if 'threshold' in req_item:
-                threshold_dict = req_item['threshold']
-                try:
-                    threshold = RequirementThreshold(
-                        cutoff=int(threshold_dict['cutoff']),
-                        criterion=threshold_dict['criterion'],
-                        type=threshold_dict['type']
-                    )
-                except (KeyError, ValueError, TypeError) as e:
-                    raise RequirementParseError(f"Invalid threshold in plain-string: {e}") from e
+            return PlainString(description=course_id, title=title, req_id=req_id)
 
-            return RequirementPlainString(
-                description=req_item['req'],
-                title=req_item.get('title'),
-                threshold=threshold,
-                req_id=leaf_id
-            )
+        return _parse_leaf(course_id, title, req_id)
 
-        # Regular course ID
-        return RequirementCourse(
-            course_id=req_item['req'],
-            title=req_item.get('title'),
-            req_id=leaf_id
-        )
-
-    # Must be a branch node with 'reqs'
+    # Case 2: Group node with 'reqs'
     if 'reqs' not in req_item:
-        raise RequirementParseError(
-            f"Requirement item must have 'req', 'plain-string', or 'reqs' field. Got: {req_item.keys()}"
-        )
+        raise ParseError(f"Requirement must have 'req' or 'reqs' field. Got: {list(req_item.keys())}")
 
-    # Generate ID for this group
-    title = req_item.get('title')
-    connection_type = req_item.get('connection-type')
-
-    if title:
-        # Use title as base for ID
-        group_slug = _slugify(title)
-        group_id = f"{parent_id}/{group_slug}" if parent_id else group_slug
-    else:
-        # No title, generate based on connection type and counter
-        conn_type = connection_type or 'group'
-        counter_key = f"{parent_id}/{conn_type}" if parent_id else conn_type
-        counter[counter_key] = counter.get(counter_key, 0) + 1
-        group_id = f"{parent_id}/{conn_type}{counter[counter_key]}" if parent_id else f"{conn_type}{counter[counter_key]}"
-
-    # Parse sub-requirements recursively
     sub_reqs = req_item['reqs']
     if not isinstance(sub_reqs, list):
-        raise RequirementParseError(f"'reqs' must be a list, got {type(sub_reqs)}")
+        raise ParseError(f"'reqs' must be a list, got {type(sub_reqs)}")
 
-    parsed_items: list[RequirementNode] = []
+    # Generate group ID
+    connection_type = req_item.get('connection-type')
+    if title:
+        group_id = _make_id(title, "", parent_id, counter)
+    else:
+        conn_type = connection_type or 'group'
+        counter_key = f"group:{parent_id}/{conn_type}" if parent_id else f"group:{conn_type}"
+        count = counter.get(counter_key, 0)
+        counter[counter_key] = count + 1
+        group_id = f"{parent_id}/{conn_type}{count + 1}" if parent_id else f"{conn_type}{count + 1}"
+
+    # Parse children recursively
+    children: list[Node] = []
     for i, sub_req in enumerate(sub_reqs):
         try:
-            parsed_items.append(parse_requirement(sub_req, parent_id=group_id, counter=counter))
-        except RequirementParseError as e:
-            raise RequirementParseError(f"Error parsing sub-requirement {i}: {e}") from e
+            children.append(parse(sub_req, parent_id=group_id, counter=counter))
+        except ParseError as e:
+            raise ParseError(f"Error parsing child {i}: {e}") from e
+
+    children_tuple = tuple(children)
 
     # Parse threshold if present
-    threshold = None
-    if 'threshold' in req_item:
-        threshold_dict = req_item['threshold']
-        if not isinstance(threshold_dict, dict):
-            raise RequirementParseError(f"'threshold' must be a dict, got {type(threshold_dict)}")
+    threshold = req_item.get('threshold')
+    distinct_threshold = req_item.get('distinct-threshold')
 
-        try:
-            threshold = RequirementThreshold(
-                cutoff=int(threshold_dict['cutoff']),
-                criterion=threshold_dict['criterion'],
-                type=threshold_dict['type']
+    # Determine group type based on threshold and connection_type
+    if threshold is not None:
+        cutoff, threshold_type, criterion = _parse_threshold(threshold)
+
+        if criterion == 'units':
+            return UnitThresholdGroup(
+                children=children_tuple,
+                cutoff=cutoff,
+                threshold_type=threshold_type,
+                title=title,
+                req_id=group_id,
             )
-        except KeyError as e:
-            raise RequirementParseError(f"Threshold missing required field: {e}") from e
-        except (ValueError, TypeError) as e:
-            raise RequirementParseError(f"Invalid threshold value: {e}") from e
-    # elif connection_type is None and len(parsed_items) > 0 and parent_id == "":
-    #     # Special case: Root wrapper group with no connection-type and no threshold
-    #     # This handles the case where parse_requirement({'reqs': [...]}) creates a wrapper
-    #     # Default to requiring all children (like connection-type='all')
-    #     threshold = RequirementThreshold(
-    #         cutoff=len(parsed_items),
-    #         criterion='subjects',
-    #         type='EQ'
-    #     )
+        else:  # criterion == 'subjects' (default)
+            distinct = None
+            if distinct_threshold is not None:
+                distinct = _parse_distinct_threshold(distinct_threshold)
 
-    # Parse distinct-threshold if present (for "from at least N categories" constraints)
-    distinct_threshold = None
-    if 'distinct-threshold' in req_item:
-        distinct_dict = req_item['distinct-threshold']
-        if not isinstance(distinct_dict, dict):
-            raise RequirementParseError(f"'distinct-threshold' must be a dict, got {type(distinct_dict)}")
+            conn: ConnectionType = 'any'
+            if connection_type == 'all':
+                conn = 'all'
 
-        try:
-            distinct_threshold = RequirementThreshold(
-                cutoff=int(distinct_dict['cutoff']),
-                criterion=distinct_dict['criterion'],
-                type=distinct_dict['type']
+            return SubjectThresholdGroup(
+                children=children_tuple,
+                cutoff=cutoff,
+                threshold_type=threshold_type,
+                connection_type=conn,
+                distinct_threshold=distinct,
+                title=title,
+                req_id=group_id,
             )
-        except KeyError as e:
-            raise RequirementParseError(f"Distinct-threshold missing required field: {e}") from e
-        except (ValueError, TypeError) as e:
-            raise RequirementParseError(f"Invalid distinct-threshold value: {e}") from e
 
-    # Validate connection type
-    if connection_type is not None and connection_type not in ['all', 'any']:
-        raise RequirementParseError(
-            f"connection-type must be 'all' or 'any', got '{connection_type}'"
-        )
-
-    return RequirementGroup(
-        items=tuple(parsed_items),
-        connection_type=connection_type,
-        threshold=threshold,
-        distinct_threshold=distinct_threshold,
-        title=req_item.get('title'),
-        threshold_desc=req_item.get('threshold-desc'),
-        req_id=group_id
-    )
+    # No threshold - use AllGroup or AnyGroup
+    if connection_type == 'any':
+        return AnyGroup(children=children_tuple, title=title, req_id=group_id)
+    else:  # 'all' or None (default to all)
+        return AllGroup(children=children_tuple, title=title, req_id=group_id)
 
 
-def parse_requirement_list(reqs: list[dict[str, Any]]) -> list[RequirementNode]:
+def parse_requirement_list(reqs: list[dict[str, Any]], root_title: str = "root") -> Node:
     """
     Parse a list of requirements (top-level 'reqs' field from Fireroad).
 
+    Wraps the list in an AllGroup since all top-level requirements must be satisfied.
+
     Args:
         reqs: List of requirement dictionaries
+        root_title: Title for the root group
 
     Returns:
-        List of parsed RequirementNode objects
-
-    Raises:
-        RequirementParseError: If any requirement cannot be parsed
+        AllGroup containing all parsed requirements
     """
     if not isinstance(reqs, list):
-        raise RequirementParseError(f"Requirements must be a list, got {type(reqs)}")
+        raise ParseError(f"Requirements must be a list, got {type(reqs)}")
 
-    result: list[RequirementNode] = []
+    # Ensure root_title is non-empty
+    root_id = root_title if root_title else "root"
+
+    counter: dict[str, int] = {}
+    children: list[Node] = []
+
     for i, req_item in enumerate(reqs):
         try:
-            result.append(parse_requirement(req_item))
-        except RequirementParseError as e:
-            raise RequirementParseError(f"Error parsing requirement {i}: {e}") from e
+            children.append(parse(req_item, parent_id=root_id, counter=counter))
+        except ParseError as e:
+            raise ParseError(f"Error parsing requirement {i}: {e}") from e
 
-    return result
+    return AllGroup(children=tuple(children), title=root_title, req_id=root_id)
 
 
-def requirement_to_string(req: RequirementNode, indent: int = 0, show_ids: bool = False) -> str:
+def parse_fireroad_response(data: dict[str, Any]) -> Node:
     """
-    Convert a RequirementNode to a human-readable string representation.
+    Parse a complete Fireroad requirement response.
 
     Args:
-        req: The requirement node to convert
-        indent: Indentation level for nested requirements
-        show_ids: Whether to show req_id in output
+        data: Full Fireroad API response with 'reqs', 'title', etc.
 
     Returns:
-        Human-readable string representation
+        Parsed requirement tree
     """
+    if 'reqs' not in data:
+        raise ParseError("Fireroad response missing 'reqs' field")
+
+    title = data.get('title', data.get('medium-title', 'requirement'))
+    slug = _slugify(title)
+    # Ensure we have a non-empty root title
+    root_title = slug if slug else "requirement"
+    return parse_requirement_list(data['reqs'], root_title=root_title)
+
+
+def node_to_string(node: Node, indent: int = 0, show_ids: bool = False) -> str:
+    """Convert a req_2 Node to a human-readable string representation."""
     prefix = "  " * indent
+    id_part = f" [ID: {node.req_id}]" if show_ids and node.req_id else ""
+    pruned_mark = " [PRUNED]" if node.was_pruned else ""
 
-    if isinstance(req, RequirementCourse):
-        title_part = f" ({req.title})" if req.title else ""
-        id_part = f" [ID: {req.req_id}]" if show_ids and req.req_id else ""
-        pruned_mark = " ⚠️ PRUNED" if req.was_pruned else ""
-        return f"{prefix}{req.course_id}{title_part}{id_part}{pruned_mark}"
+    if isinstance(node, Course):
+        title_part = f" ({node.title})" if node.title else ""
+        return f"{prefix}Course: {node.subject_id}{title_part}{id_part}{pruned_mark}"
 
-    if isinstance(req, RequirementPlainString):
-        title_part = f" ({req.title})" if req.title else ""
-        threshold_part = ""
-        if req.threshold:
-            threshold_part = f" [{req.threshold.type} {req.threshold.cutoff} {req.threshold.criterion}]"
-        id_part = f" [ID: {req.req_id}]" if show_ids and req.req_id else ""
-        pruned_mark = " ⚠️ PRUNED" if req.was_pruned else ""
-        return f"{prefix}[Plain String: {req.description}]{threshold_part}{title_part}{id_part}{pruned_mark}"
+    if isinstance(node, GIR):
+        title_part = f" ({node.title})" if node.title else ""
+        return f"{prefix}GIR: {node.gir_code}{title_part}{id_part}{pruned_mark}"
 
-    if isinstance(req, RequirementGroup):
-        lines = []
+    if isinstance(node, HASS):
+        cat = node.category or "any"
+        title_part = f" ({node.title})" if node.title else ""
+        return f"{prefix}HASS: {cat}{title_part}{id_part}{pruned_mark}"
 
-        # Build header
-        header_parts = []
-        if req.title:
-            header_parts.append(req.title)
+    if isinstance(node, CI):
+        title_part = f" ({node.title})" if node.title else ""
+        return f"{prefix}CI: {node.ci_type}{title_part}{id_part}{pruned_mark}"
 
-        if req.threshold:
-            threshold_str = f"{req.threshold.type} {req.threshold.cutoff} {req.threshold.criterion}"
-            header_parts.append(threshold_str)
-        elif req.connection_type:
-            header_parts.append(req.connection_type.upper())
+    if isinstance(node, PlainString):
+        desc = node.description[:40] + "..." if len(node.description) > 40 else node.description
+        title_part = f" ({node.title})" if node.title else ""
+        return f"{prefix}PlainString: '{desc}'{title_part}{id_part}{pruned_mark}"
 
-        if req.threshold_desc:
-            header_parts.append(f"({req.threshold_desc})")
+    # Group types
+    lines = []
 
-        id_part = f" [ID: {req.req_id}]" if show_ids and req.req_id else ""
-        pruned_mark = " ⚠️ PRUNED" if req.was_pruned else ""
-        header = f"{prefix}[{' - '.join(header_parts) if header_parts else 'Group'}]{id_part}{pruned_mark}"
-        lines.append(header)
+    if isinstance(node, AllGroup):
+        header = f"{prefix}AllGroup"
+    elif isinstance(node, AnyGroup):
+        header = f"{prefix}AnyGroup"
+    elif isinstance(node, SubjectThresholdGroup):
+        distinct_part = ""
+        if node.distinct_threshold:
+            distinct_part = f", distinct>={node.distinct_threshold.cutoff}"
+        header = f"{prefix}SubjectThreshold(>={node.cutoff}, conn={node.connection_type}{distinct_part})"
+    elif isinstance(node, UnitThresholdGroup):
+        header = f"{prefix}UnitThreshold(>={node.cutoff} units)"
+    else:
+        raise Exception("Unknown node type in node_to_string")
+        #header = f"{prefix}Unknown"
 
-        # Add sub-requirements
-        for item in req.items:
-            lines.append(requirement_to_string(item, indent + 1, show_ids=show_ids))
+    title_part = f": {node.title}" if node.title else ""
+    lines.append(f"{header}{title_part}{id_part}{pruned_mark}")
 
-        return '\n'.join(lines)
+    for child in node.children:
+        lines.append(node_to_string(child, indent + 1, show_ids=show_ids))
 
-    return f"{prefix}[Unknown requirement type: {type(req)}]"
+    return '\n'.join(lines)
