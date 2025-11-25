@@ -80,6 +80,10 @@ class PrerequisiteConstraintBuilder:
         self.warnings: list[str] = []
         self.errors: list[str] = []
         self.constraints_added: int = 0
+       
+        self._prereq_taken_before_cache: dict[tuple[int, int], cp_model.IntVar] = {}
+        self._gir_taken_before_cache: dict[tuple[str, int], cp_model.IntVar] = {}
+        self._hass_taken_before_cache: dict[tuple[str, int], cp_model.IntVar] = {}
 
     def add_all_prerequisite_constraints(
         self,
@@ -193,8 +197,11 @@ class PrerequisiteConstraintBuilder:
             )
             return self.ctx.model.NewConstant(0)
 
-        # Create variable for whether this prerequisite is satisfied
-        var_name = self.ctx.fresh_name(f"prereq_{prereq_course_id.replace('.', '_')}_for_{course_id.replace('.', '_')}_s{semester}")
+        cache_key = (prereq_idx, semester)
+        if cache_key in self._prereq_taken_before_cache:
+            return self._prereq_taken_before_cache[cache_key]
+
+        var_name = self.ctx.fresh_name(f"prereq_{prereq_course_id.replace('.', '_')}_before_s{semester}")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Prerequisite is satisfied if taken in any earlier semester
@@ -213,6 +220,7 @@ class PrerequisiteConstraintBuilder:
             # No valid semesters - cannot be satisfied
             self.ctx.model.Add(satisfied_var == 0)
 
+        self._prereq_taken_before_cache[cache_key] = satisfied_var
         return satisfied_var
 
     def _build_gir_prereq(
@@ -227,6 +235,10 @@ class PrerequisiteConstraintBuilder:
         Returns a boolean variable that is 1 if any course with this GIR attribute
         was taken in an earlier semester.
         """
+        cache_key = (gir_code, semester)
+        if cache_key in self._gir_taken_before_cache:
+            return self._gir_taken_before_cache[cache_key]
+
         gir_courses = self.ctx.schedule.get_courses_by_gir(gir_code)
 
         if not gir_courses:
@@ -235,7 +247,7 @@ class PrerequisiteConstraintBuilder:
             )
             return self.ctx.model.NewConstant(0)
 
-        var_name = self.ctx.fresh_name(f"prereq_GIR_{gir_code}_for_{course_id.replace('.', '_')}_s{semester}")
+        var_name = self.ctx.fresh_name(f"prereq_GIR_{gir_code}_before_s{semester}")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Satisfied if any course with this GIR was taken in an earlier semester
@@ -253,6 +265,7 @@ class PrerequisiteConstraintBuilder:
         else:
             self.ctx.model.Add(satisfied_var == 0)
 
+        self._gir_taken_before_cache[cache_key] = satisfied_var
         return satisfied_var
 
     def _build_hass_prereq(
@@ -267,6 +280,10 @@ class PrerequisiteConstraintBuilder:
         Returns a boolean variable that is 1 if any course with this HASS attribute
         was taken in an earlier semester.
         """
+        cache_key = (hass_code, semester)
+        if cache_key in self._hass_taken_before_cache:
+            return self._hass_taken_before_cache[cache_key]
+
         hass_courses = self.ctx.schedule.get_courses_by_hass(hass_code)
 
         if not hass_courses:
@@ -275,7 +292,7 @@ class PrerequisiteConstraintBuilder:
             )
             return self.ctx.model.NewConstant(0)
 
-        var_name = self.ctx.fresh_name(f"prereq_HASS_{hass_code}_for_{course_id.replace('.', '_')}_s{semester}")
+        var_name = self.ctx.fresh_name(f"prereq_HASS_{hass_code}_before_s{semester}")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
         # Satisfied if any course with this HASS was taken in an earlier semester
@@ -293,6 +310,7 @@ class PrerequisiteConstraintBuilder:
         else:
             self.ctx.model.Add(satisfied_var == 0)
 
+        self._hass_taken_before_cache[cache_key] = satisfied_var
         return satisfied_var
 
     def _build_group_prereq(
