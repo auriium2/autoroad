@@ -40,7 +40,6 @@ from optimizer.requirement_constraint_builder import add_requirement_constraints
 from tests.conftest import OptimizerTestConfig
 from tests.test_helpers import setup_optimizer_with_objectives
 
-
 FIXTURES_DIR = Path(__file__).parent / "fixtures" / "road_files"
 
 
@@ -90,10 +89,10 @@ def road_to_markers(road_data: dict[str, Any]) -> list[Marker]:
                 section = -1  # ASE
             else:
                 section = semester - 1  # Regular semesters: 1->0, 2->1, etc.
-            
+
             # overrideWarnings=True means skip prerequisite checking
             status = "override" if subject.get("overrideWarnings", False) else "pin"
-            
+
             markers.append(Marker(
                 courseId=subject_id,
                 section=section,

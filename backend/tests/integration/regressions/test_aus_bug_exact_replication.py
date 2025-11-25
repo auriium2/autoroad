@@ -310,9 +310,10 @@ def test_aus_bug_with_exact_solution():
 
     if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
         # Check which courses are taken
-        c01_taken = any(solver.Value(take_vars[(c01_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c01_idx, s) in take_vars)
-        c011_taken = any(solver.Value(take_vars[(c011_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c011_idx, s) in take_vars)
-        c404_taken = any(solver.Value(take_vars[(c404_idx, s)]) == 1 for s in range(-1, max_semesters + 1) if (c404_idx, s) in take_vars)
+        from optimizer.semesters import VALID_SEMESTERS
+        c01_taken = any(solver.Value(take_vars[(c01_idx, s)]) == 1 for s in VALID_SEMESTERS if (c01_idx, s) in take_vars)
+        c011_taken = any(solver.Value(take_vars[(c011_idx, s)]) == 1 for s in VALID_SEMESTERS if (c011_idx, s) in take_vars)
+        c404_taken = any(solver.Value(take_vars[(c404_idx, s)]) == 1 for s in VALID_SEMESTERS if (c404_idx, s) in take_vars)
 
         print(f"\n6.C01 taken: {c01_taken}")
         print(f"6.C011 taken: {c011_taken}")

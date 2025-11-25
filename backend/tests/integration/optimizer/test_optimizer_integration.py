@@ -397,11 +397,11 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Add "at most once" constraint (mimics add_basic_constraints)
-        max_semesters = 12
+        from optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_semester_takes = [
                 take_vars[(course_idx, s)]
-                for s in range(-1, max_semesters + 1)  # Include ASE (-1) and regular (1-12)
+                for s in ALL_SEMESTERS  # Must Take (-2), ASE (-1), regular (1-12)
                 if (course_idx, s) in take_vars
             ]
             if all_semester_takes:
@@ -464,11 +464,11 @@ class TestOptimizerIntegration:
         assert result.constraints_added == 1
 
         # Add "at most once" constraint (mimics add_basic_constraints)
-        max_semesters = 12
+        from optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_semester_takes = [
                 take_vars[(course_idx, s)]
-                for s in range(-1, max_semesters + 1)  # Include ASE (-1) and regular (1-12)
+                for s in ALL_SEMESTERS  # Must Take (-2), ASE (-1), regular (1-12)
                 if (course_idx, s) in take_vars
             ]
             if all_semester_takes:
@@ -479,9 +479,10 @@ class TestOptimizerIntegration:
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
 
         # Verify 18.01 is in exactly one regular semester (forced by Must Take)
+        from optimizer.semesters import REGULAR_SEMESTERS
         regular_placements = sum(
             solver.Value(take_vars[(course_18_01_idx, s)])
-            for s in range(1, 13)
+            for s in REGULAR_SEMESTERS
             if (course_18_01_idx, s) in take_vars
         )
         assert regular_placements == 1, \
@@ -662,10 +663,11 @@ class TestOptimizerIntegration:
                     model.Add(take_vars[(course_idx, semester)] == 0)
 
         # Add "at most once" constraint
+        from optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_takes = [
                 take_vars[(course_idx, s)]
-                for s in range(-2, 13)
+                for s in ALL_SEMESTERS  # Must Take (-2), ASE (-1), regular (1-12)
                 if (course_idx, s) in take_vars
             ]
             if all_takes:

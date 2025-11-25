@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-
+# markers carry the same zero indexing that the frontend does! do not try to place 1 indexed semesters here!
 class Marker(BaseModel):
     courseId: str = Field(..., description="Course subject ID (e.g., '6.1200', '18.01')")
     section: int = Field(..., ge=-2, le=11, description="Semester index (0-11 for regular, -1 for ASE, -2 for Must Take)")

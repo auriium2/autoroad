@@ -55,18 +55,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Group 1: 9 tests - courses 1, 2, 3, 3a, 3c, 4, 6-2, 6-3, 6-4
           - group: 1
-            tests: "test_course_1 or test_course_2 or test_course_3_materials or test_course_3a or test_course_3c"
+            tests: "test_course_1 or test_course_2 or test_course_3 or test_course_4 or test_course_6_2 or test_course_6_3 or test_course_6_4"
+          # Group 2: 9 tests - courses 6-7, 6-9, 6-14, 7, 8, 9, 11, 12, 15
           - group: 2
-            tests: "test_course_4 or test_course_6_2 or test_course_6_3 or test_course_6_4 or test_course_6_7"
+            tests: "test_course_6_7 or test_course_6_9 or test_course_6_14 or test_course_7 or test_course_8 or test_course_9 or test_course_11 or test_course_12 or test_course_15"
+          # Group 3: 8 tests - courses 16, 18am, 18c, 18pm, 20, double_major, major_with_minor, regression
           - group: 3
-            tests: "test_course_6_9 or test_course_6_14 or test_course_7 or test_course_8 or test_course_9"
-          - group: 4
-            tests: "test_course_11 or test_course_12 or test_course_15 or test_course_16 or test_course_18am"
-          - group: 5
-            tests: "test_course_18c or test_course_18pm or test_course_20 or test_double_major or test_major_with_minor"
-          - group: 6
-            tests: "test_regression"
+            tests: "test_course_16 or test_course_18 or test_course_20 or test_double_major or test_major_with_minor or test_regression"
 
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +89,7 @@ jobs:
 
       - name: Run feasibility tests (group ${{ matrix.group }})
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -k "${{ matrix.tests }}" -v -s -n auto
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -k "${{ matrix.tests }}" -v -s -n 4
 
   test-quality:
     name: Quality - Group ${{ matrix.group }}
@@ -102,16 +99,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Group 1: 11 tests - courses 1, 2, 3, 3a, 3c, 4, 6-2, 6-3, 6-4, 6-7, 6-9
           - group: 1
-            tests: "test_course_1 or test_course_2 or test_course_3_quality or test_course_3a or test_course_3c"
+            tests: "test_course_1 or test_course_2 or test_course_3 or test_course_4 or test_course_6"
+          # Group 2: 11 tests - courses 6-14, 7, 8, 9, 11, 15, 16, 18am, 18c, 18pm, 20
           - group: 2
-            tests: "test_course_4 or test_course_6_2 or test_course_6_3 or test_course_6_4 or test_course_6_7"
-          - group: 3
-            tests: "test_course_6_9 or test_course_6_14 or test_course_7 or test_course_8"
-          - group: 4
-            tests: "test_course_9 or test_course_11 or test_course_15 or test_course_16"
-          - group: 5
-            tests: "test_course_18am or test_course_18c or test_course_18pm or test_course_20"
+            tests: "test_course_7 or test_course_8 or test_course_9 or test_course_11 or test_course_15 or test_course_16 or test_course_18 or test_course_20"
 
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +130,54 @@ jobs:
 
       - name: Run quality tests (group ${{ matrix.group }})
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py -k "${{ matrix.tests }}" -v -s -n auto
+        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py -k "${{ matrix.tests }}" -v -s -n 4
+
+  test-integration:
+    name: Integration - ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Optimizer integration tests (17 tests)
+          - name: "Optimizer"
+            file: "tests/integration/optimizer/test_optimizer_integration.py"
+          # Marker integration tests (19 tests across 5 classes)
+          - name: "Marker Integration"
+            file: "tests/integration/optimizer/test_marker_integration.py"
+          # Marker behavior tests (26 tests across 6 classes)
+          - name: "Marker Behavior"
+            file: "tests/integration/optimizer/test_marker_behavior.py"
+          # Road file regression tests
+          - name: "Road File Regressions"
+            file: "tests/integration/regressions/test_road_file_regressions.py"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: uv sync --frozen --extra dev
+
+      - name: Run integration tests
+        working-directory: ./backend
+        run: uv run pytest ${{ matrix.file }} -v -s -n 4
 
   type-check:
     name: Type Checking
@@ -173,7 +213,7 @@ jobs:
   all-tests-passed:
     name: All Tests Passed
     runs-on: ubuntu-24.04
-    needs: [test-unit, test-feasibility, test-quality, type-check]
+    needs: [test-unit, test-feasibility, test-quality, test-integration, type-check]
     if: always()
 
     steps:
@@ -182,6 +222,7 @@ jobs:
           if [ "${{ needs.test-unit.result }}" != "success" ] || \
              [ "${{ needs.test-feasibility.result }}" != "success" ] || \
              [ "${{ needs.test-quality.result }}" != "success" ] || \
+             [ "${{ needs.test-integration.result }}" != "success" ] || \
              [ "${{ needs.type-check.result }}" != "success" ]; then
             echo "One or more test jobs failed"
             exit 1

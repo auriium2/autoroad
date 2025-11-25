@@ -497,3 +497,96 @@ class TestRegressionBugs:
             f"This indicates the threshold ≥0 bug has regressed."
 
         print(f"[TEST] ✅ Threshold ≥0 groups correctly optional: took {courses_taken} courses")
+
+    def test_regression_ase_courses_satisfy_requirements(self):
+        """
+        Regression test: Courses in ASE (Advanced Standing Exam) should satisfy requirements.
+
+        Bug: requirement_constraint_builder only checked semesters 1-12 (range(1, 13)),
+        not ASE semester (-1). This caused courses placed in ASE to NOT satisfy
+        degree requirements, forcing the optimizer to take equivalent courses.
+
+        Example: User places 18.01 in ASE. The optimizer didn't recognize this as
+        satisfying CAL1 GIR, so it scheduled CC.1801 (equivalent) to satisfy CAL1,
+        incurring a 50,000+ penalty.
+
+        Fix: Changed range(1, 13) to VALID_SEMESTERS ([-1] + list(range(1, 13)))
+        in _build_course, _build_hass_any, and _build_attribute_requirement.
+        """
+        import polars as pl
+        from ortools.sat.python import cp_model
+
+        from api.models.requests import Marker
+        from api.services.cache import get_courses_data
+        from courses.requirements.parser import parse_requirement
+        from courses.requirements.types import RequirementGroup
+        from optimizer.constraints.basic import create_take_vars
+        from optimizer.requirement_constraint_builder import (
+            ConstraintContext,
+            CourseSchedule,
+            RequirementConstraintBuilder,
+        )
+
+        # Create a simple GIR requirement for CAL1
+        test_req = {
+            'title': 'Test CAL1 Requirement',
+            'reqs': [{'req': 'GIR:CAL1'}]
+        }
+
+        req_tree = parse_requirement(test_req)
+        assert isinstance(req_tree, RequirementGroup)
+
+        # Load real course data
+        courses_data = get_courses_data()
+        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+
+        # Create a marker placing 18.01 in ASE (section=-1)
+        markers = [Marker(courseId='18.01', section=-1, status='pin')]
+
+        # Create model with ASE marker
+        model = cp_model.CpModel()
+        take_vars = create_take_vars(
+            model, courses_df, 2025,
+            max_semesters=12, markers=markers
+        )
+
+        # Verify ASE take_var was created for 18.01
+        subject_ids = courses_df['subject_id'].to_list()
+        course_18_01_idx = subject_ids.index('18.01')
+        assert (course_18_01_idx, -1) in take_vars, \
+            "ASE take_var should be created for 18.01 when marker exists"
+
+        # Force 18.01 to be taken in ASE (simulating the marker constraint)
+        model.Add(take_vars[(course_18_01_idx, -1)] == 1)
+
+        # Build requirement constraints
+        schedule = CourseSchedule(courses_df, 2025)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = RequirementConstraintBuilder(ctx)
+        result = builder.build(req_tree)
+
+        assert result.satisfied_var is not None, "Should build CAL1 requirement"
+
+        # The requirement should be satisfiable with just 18.01 in ASE
+        model.Add(result.satisfied_var == 1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        solver.parameters.max_time_in_seconds = 10.0
+        status = solver.Solve(model)
+
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
+            f"CAL1 requirement should be satisfiable with 18.01 in ASE, got status {status}"
+
+        # Verify 18.01 in ASE is the only course taken
+        courses_taken = []
+        for (c_idx, sem), var in take_vars.items():
+            if solver.Value(var) == 1:
+                courses_taken.append((courses_df[c_idx, 'subject_id'], sem))
+
+        assert len(courses_taken) == 1, \
+            f"Should only take 18.01 in ASE, but took: {courses_taken}"
+        assert courses_taken[0] == ('18.01', -1), \
+            f"Expected ('18.01', -1), got {courses_taken[0]}"
+
+        print("[TEST] ✅ ASE courses correctly satisfy requirements")
