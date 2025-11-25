@@ -17,7 +17,7 @@ env:
 
 jobs:
   test-unit:
-    name: Unit Tests (Fast)
+    name: Unit Tests
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
@@ -45,25 +45,41 @@ jobs:
 
       - name: Run all unit tests
         working-directory: ./backend
-        run: uv run pytest tests/unit/ -v -n auto
+        run: uv run pytest tests/unit/ -v
 
   test-feasibility:
-    name: Feasibility - Group ${{ matrix.group }}
+    name: Feasibility - ${{ matrix.test }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Group 1: 9 tests - courses 1, 2, 3, 3a, 3c, 4, 6-2, 6-3, 6-4
-          - group: 1
-            tests: "test_course_1 or test_course_2 or test_course_3 or test_course_4 or test_course_6_2 or test_course_6_3 or test_course_6_4"
-          # Group 2: 9 tests - courses 6-7, 6-9, 6-14, 7, 8, 9, 11, 12, 15
-          - group: 2
-            tests: "test_course_6_7 or test_course_6_9 or test_course_6_14 or test_course_7 or test_course_8 or test_course_9 or test_course_11 or test_course_12 or test_course_15"
-          # Group 3: 8 tests - courses 16, 18am, 18c, 18pm, 20, double_major, major_with_minor, regression
-          - group: 3
-            tests: "test_course_16 or test_course_18 or test_course_20 or test_double_major or test_major_with_minor or test_regression"
+        test:
+          - test_course_1_civil_engineering
+          - test_course_2_mechanical_engineering
+          - test_course_3_materials_science
+          - test_course_3a_materials_science_flexible
+          - test_course_3c_archaeology_materials
+          - test_course_4_architecture
+          - test_course_6_2_eecs
+          - test_course_6_3_computer_science
+          - test_course_6_4_ai_decision_making
+          - test_course_6_7_cs_molecular_biology
+          - test_course_6_9_computation_cognition
+          - test_course_6_14_cs_economics_data_science
+          - test_course_7_biology
+          - test_course_8_physics
+          - test_course_9_brain_cognitive_sciences
+          - test_course_11_urban_studies
+          - test_course_12_earth_science
+          - test_course_15_management
+          - test_course_16_aerospace
+          - test_course_18am_applied_mathematics
+          - test_course_18c_mathematics_cs
+          - test_course_18pm_mathematics
+          - test_course_20_biological_engineering
+          - test_double_major_6_3_and_15
+          - test_major_with_minor
 
     steps:
       - uses: actions/checkout@v4
@@ -87,24 +103,71 @@ jobs:
         working-directory: ./backend
         run: uv sync --frozen --extra dev
 
-      - name: Run feasibility tests (group ${{ matrix.group }})
+      - name: Run feasibility test
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py -k "${{ matrix.tests }}" -v -s -n 4
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestOptimizerFeasibility::${{ matrix.test }} -v -s
+
+  test-feasibility-regression:
+    name: Feasibility Regression - ${{ matrix.test }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - test_regression_course_1_091_permission_of_instructor
+          - test_regression_course_7_requires_10_semesters
+          - test_regression_empty_prereq_groups_never_created
+          - test_regression_threshold_zero_optional_groups
+          - test_regression_ase_courses_satisfy_requirements
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache venv
+        uses: actions/cache@v4
+        with:
+          path: ./backend/.venv
+          key: venv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('backend/uv.lock') }}
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: uv sync --frozen --extra dev
+
+      - name: Run regression test
+        working-directory: ./backend
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs::${{ matrix.test }} -v -s
 
   test-quality:
-    name: Quality - Group ${{ matrix.group }}
+    name: Quality - ${{ matrix.test }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Group 1: 11 tests - courses 1, 2, 3, 3a, 3c, 4, 6-2, 6-3, 6-4, 6-7, 6-9
-          - group: 1
-            tests: "test_course_1 or test_course_2 or test_course_3 or test_course_4 or test_course_6"
-          # Group 2: 11 tests - courses 6-14, 7, 8, 9, 11, 15, 16, 18am, 18c, 18pm, 20
-          - group: 2
-            tests: "test_course_7 or test_course_8 or test_course_9 or test_course_11 or test_course_15 or test_course_16 or test_course_18 or test_course_20"
+        test:
+          - test_course_1_quality
+          - test_course_2_quality
+          - test_course_6_2_quality
+          - test_course_6_3_new_quality
+          - test_course_6_9_quality
+          - test_course_7_quality
+          - test_course_8_quality
+          - test_course_9_quality
+          - test_course_11_quality
+          - test_course_15_quality
+          - test_course_16_quality
+          - test_course_18pm_quality
+          - test_course_20_quality
 
     steps:
       - uses: actions/checkout@v4
@@ -128,9 +191,9 @@ jobs:
         working-directory: ./backend
         run: uv sync --frozen --extra dev
 
-      - name: Run quality tests (group ${{ matrix.group }})
+      - name: Run quality test
         working-directory: ./backend
-        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py -k "${{ matrix.tests }}" -v -s -n 4
+        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py::TestOptimizerQuality::${{ matrix.test }} -v -s
 
   test-integration:
     name: Integration - ${{ matrix.name }}
@@ -140,16 +203,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Optimizer integration tests (17 tests)
           - name: "Optimizer"
             file: "tests/integration/optimizer/test_optimizer_integration.py"
-          # Marker integration tests (19 tests across 5 classes)
           - name: "Marker Integration"
             file: "tests/integration/optimizer/test_marker_integration.py"
-          # Marker behavior tests (26 tests across 6 classes)
           - name: "Marker Behavior"
             file: "tests/integration/optimizer/test_marker_behavior.py"
-          # Road file regression tests
           - name: "Road File Regressions"
             file: "tests/integration/regressions/test_road_file_regressions.py"
 
@@ -177,7 +236,7 @@ jobs:
 
       - name: Run integration tests
         working-directory: ./backend
-        run: uv run pytest ${{ matrix.file }} -v -s -n 4
+        run: uv run pytest ${{ matrix.file }} -v -s
 
   type-check:
     name: Type Checking
@@ -213,7 +272,7 @@ jobs:
   all-tests-passed:
     name: All Tests Passed
     runs-on: ubuntu-24.04
-    needs: [test-unit, test-feasibility, test-quality, test-integration, type-check]
+    needs: [test-unit, test-feasibility, test-feasibility-regression, test-quality, test-integration, type-check]
     if: always()
 
     steps:
@@ -221,6 +280,7 @@ jobs:
         run: |
           if [ "${{ needs.test-unit.result }}" != "success" ] || \
              [ "${{ needs.test-feasibility.result }}" != "success" ] || \
+             [ "${{ needs.test-feasibility-regression.result }}" != "success" ] || \
              [ "${{ needs.test-quality.result }}" != "success" ] || \
              [ "${{ needs.test-integration.result }}" != "success" ] || \
              [ "${{ needs.type-check.result }}" != "success" ]; then
