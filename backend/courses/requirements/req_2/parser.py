@@ -59,13 +59,36 @@ def _slugify(text: str) -> str:
     return text
 
 
-def _make_id(title: str | None, fallback: str, parent_id: str) -> str:
-    """Generate a unique ID for a node."""
+def _make_id(
+    title: str | None,
+    fallback: str,
+    parent_id: str,
+    counter: dict[str, int],
+) -> str:
+    """
+    Generate a unique ID for a node.
+
+    Uses a counter to ensure uniqueness when multiple nodes have the same slug.
+    """
     if title:
         slug = _slugify(title)
     else:
         slug = _slugify(fallback) if len(fallback) < 50 else _slugify(fallback[:50])
-    return f"{parent_id}/{slug}" if parent_id else slug
+
+    # Handle empty slug (e.g., if text was only punctuation)
+    if not slug:
+        slug = "item"
+
+    base_id = f"{parent_id}/{slug}" if parent_id else slug
+
+    # Track occurrences to ensure uniqueness
+    counter_key = f"leaf:{base_id}"
+    count = counter.get(counter_key, 0)
+    counter[counter_key] = count + 1
+
+    if count == 0:
+        return base_id
+    return f"{base_id}_{count}"
 
 
 def _parse_leaf(course_id: str, title: str | None, req_id: str) -> Node:
@@ -161,7 +184,7 @@ def parse(
         course_id = req_item['req']
         is_plain_string = req_item.get('plain-string', False)
 
-        req_id = _make_id(title, course_id, parent_id)
+        req_id = _make_id(title, course_id, parent_id, counter)
 
         if is_plain_string:
             return PlainString(description=course_id, title=title, req_id=req_id)
@@ -179,12 +202,13 @@ def parse(
     # Generate group ID
     connection_type = req_item.get('connection-type')
     if title:
-        group_id = _make_id(title, "", parent_id)
+        group_id = _make_id(title, "", parent_id, counter)
     else:
         conn_type = connection_type or 'group'
-        counter_key = f"{parent_id}/{conn_type}" if parent_id else conn_type
-        counter[counter_key] = counter.get(counter_key, 0) + 1
-        group_id = f"{parent_id}/{conn_type}{counter[counter_key]}" if parent_id else f"{conn_type}{counter[counter_key]}"
+        counter_key = f"group:{parent_id}/{conn_type}" if parent_id else f"group:{conn_type}"
+        count = counter.get(counter_key, 0)
+        counter[counter_key] = count + 1
+        group_id = f"{parent_id}/{conn_type}{count + 1}" if parent_id else f"{conn_type}{count + 1}"
 
     # Parse children recursively
     children: list[Node] = []
@@ -254,16 +278,19 @@ def parse_requirement_list(reqs: list[dict[str, Any]], root_title: str = "root")
     if not isinstance(reqs, list):
         raise ParseError(f"Requirements must be a list, got {type(reqs)}")
 
+    # Ensure root_title is non-empty
+    root_id = root_title if root_title else "root"
+
     counter: dict[str, int] = {}
     children: list[Node] = []
 
     for i, req_item in enumerate(reqs):
         try:
-            children.append(parse(req_item, parent_id=root_title, counter=counter))
+            children.append(parse(req_item, parent_id=root_id, counter=counter))
         except ParseError as e:
             raise ParseError(f"Error parsing requirement {i}: {e}") from e
 
-    return AllGroup(children=tuple(children), title=root_title, req_id=root_title)
+    return AllGroup(children=tuple(children), title=root_title, req_id=root_id)
 
 
 def parse_fireroad_response(data: dict[str, Any]) -> Node:
@@ -280,7 +307,10 @@ def parse_fireroad_response(data: dict[str, Any]) -> Node:
         raise ParseError("Fireroad response missing 'reqs' field")
 
     title = data.get('title', data.get('medium-title', 'requirement'))
-    return parse_requirement_list(data['reqs'], root_title=_slugify(title))
+    slug = _slugify(title)
+    # Ensure we have a non-empty root title
+    root_title = slug if slug else "requirement"
+    return parse_requirement_list(data['reqs'], root_title=root_title)
 
 
 def node_to_string(node: Node, indent: int = 0, show_ids: bool = False) -> str:
