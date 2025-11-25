@@ -51,7 +51,7 @@ class TestOptimizerFeasibility:
             max_semesters=max_semesters,
             with_objectives=False,  # Feasibility tests don't need objectives
         )
-        
+
         solver, status = solve_model(
             result.model,
             timeout_seconds=optimizer_config.solver_timeout_seconds,
@@ -132,7 +132,7 @@ class TestOptimizerFeasibility:
             max_semesters=12,
             with_objectives=False,
         )
-        
+
         solver, status = solve_model(
             result.model,
             timeout_seconds=optimizer_config.solver_timeout_seconds,
@@ -213,7 +213,7 @@ class TestOptimizerFeasibility:
             max_semesters=optimizer_config.max_semesters,
             with_objectives=False,
         )
-        
+
         solver, status = solve_model(
             result.model,
             timeout_seconds=optimizer_config.solver_timeout_seconds,

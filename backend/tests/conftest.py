@@ -193,9 +193,9 @@ class CachedCourseData:
     """Cached course data to avoid reloading for every test."""
     courses_df: pl.DataFrame
     prereq_trees: dict[int, PrereqNode]
-    
+
     _requirements_cache: dict[tuple[str, ...], dict[str, Any]] = field(default_factory=dict)
-    
+
     def get_requirements(self, requirement_keys: tuple[str, ...]) -> dict[str, Any]:
         """Get requirements, caching results for repeated calls."""
         if requirement_keys not in self._requirements_cache:
@@ -219,11 +219,11 @@ def cached_course_data() -> CachedCourseData:
             requirements = cached_course_data.get_requirements(('major6-3new', 'girs'))
     """
     from api.services.cache import get_courses_data, get_parsed_prerequisites
-    
+
     courses_data = get_courses_data()
     courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
     prereq_trees = get_parsed_prerequisites(courses_df)
-    
+
     return CachedCourseData(
         courses_df=courses_df,
         prereq_trees=prereq_trees,

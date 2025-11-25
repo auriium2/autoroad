@@ -193,6 +193,51 @@ def add_iap_limits(
     return constraints_added
 
 
+def add_hass_total_constraint(
+    model: cp_model.CpModel,
+    take_vars: dict[tuple[int, int], cp_model.IntVar],
+    courses_df: pl.DataFrame,
+    required_count: int = 8
+) -> int:
+    """
+    Add constraint: must take at least N HASS courses total.
+
+    MIT requires 8 HASS (Humanities, Arts, and Social Sciences) courses.
+
+    Args:
+        model: OR-Tools CP-SAT model
+        take_vars: Decision variables mapping (course_idx, semester) to bool vars
+        courses_df: DataFrame of courses with hass_attribute column
+        required_count: Number of HASS courses required (default 8)
+
+    Returns:
+        Number of constraints added (0 or 1)
+    """
+    if 'hass_attribute' not in courses_df.columns:
+        return 0
+
+    hass_takes: list[cp_model.IntVar] = []
+    for course_idx in range(len(courses_df)):
+        hass_attr = courses_df[course_idx, 'hass_attribute']
+        if hass_attr and str(hass_attr).startswith('HASS'):
+            course_takes = [
+                take_vars[(course_idx, s)]
+                for s in range(-2, 13)  # All possible semesters
+                if (course_idx, s) in take_vars
+            ]
+            if course_takes:
+                # Course is taken if any semester var is 1
+                taken = model.NewBoolVar(f"hass_taken_{course_idx}")
+                model.AddMaxEquality(taken, course_takes)
+                hass_takes.append(taken)
+
+    if hass_takes:
+        model.Add(sum(hass_takes) >= required_count)
+        return 1
+
+    return 0
+
+
 def add_basic_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
@@ -206,6 +251,7 @@ def add_basic_constraints(
     - At most once constraint
     - Freshman Fall unit limit
     - IAP unit limits
+    - 8 HASS total requirement
 
     Args:
         model: OR-Tools CP-SAT model
@@ -221,6 +267,7 @@ def add_basic_constraints(
     total_constraints += add_at_most_once_constraint(model, take_vars, courses_df, max_semesters)
     total_constraints += add_freshman_fall_limit(model, take_vars, courses_df)
     total_constraints += add_iap_limits(model, take_vars, courses_df, max_semesters)
+    total_constraints += add_hass_total_constraint(model, take_vars, courses_df)
 
     return total_constraints
 

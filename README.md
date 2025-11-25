@@ -65,6 +65,12 @@ The solver runs multi-threaded and streams solutions in real-time over SSE.
 ## AI Usage
 - Ah, you think vibe coding is your ally? You merely adopted the full stack. I was born in it, molded by it. I didn't touch the grass until I was already a man, by then it was nothing to me but frightening!
 
+## Testing
+- Autoroad has an extensive integration test suite that you can run using pytest -m slow, and a variety of more simple unit tests
+ - The integration test suite is battle tested (literally) and has already caught like 14 huge bugs with the old requirements constraint builder. If it fails your code is probably not working
+ - The fuzzer tests and unit tests are less reliable, since they are ai generated, but can still catch simple mistakes
+ - As the integration test suite runs the optimizer for every test case, it's recommended to use the github workflow as it parallelizes testing using testing matrix.
+
 ## Credits
 - auriium2
 - ricardo ochoa for telling me to add category weighting

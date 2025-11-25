@@ -3,9 +3,9 @@
   "progressAssertions": {},
   "selectedSubjects": [
     {
-      "subject_id": "11.026",
-      "semester": 6,
-      "title": "Downtown",
+      "subject_id": "11.123",
+      "semester": 12,
+      "title": "Big Plans and Mega-Urban Landscapes",
       "units": 12,
       "overrideWarnings": false
     },
@@ -17,8 +17,8 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "18.01L",
-      "semester": 4,
+      "subject_id": "18.02A",
+      "semester": 3,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
@@ -38,30 +38,30 @@
       "overrideWarnings": false
     },
     {
-      "subject_id": "21T.409",
-      "semester": 4,
-      "title": "Performance and Design Intensive",
+      "subject_id": "21W.022",
+      "semester": 1,
+      "title": "Writing and Experience: Reading and Writing Autobiography",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "21W.222",
-      "semester": 3,
-      "title": "Expository Writing for Bilingual Students",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "3.993",
+      "subject_id": "3.094",
       "semester": 6,
-      "title": "Archaeology of the Middle East",
+      "title": "Materials in Human Experience",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "5.111",
-      "semester": 4,
-      "title": "Principles of Chemical Science",
+      "subject_id": "3.095",
+      "semester": 12,
+      "title": "Introduction to Metalsmithing",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "3.982",
+      "semester": 1,
+      "title": "The Ancient Andean World",
       "units": 12,
       "overrideWarnings": false
     },
@@ -74,113 +74,127 @@
     },
     {
       "subject_id": "6.1010",
-      "semester": 9,
+      "semester": 7,
       "title": "Fundamentals of Programming",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1020",
-      "semester": 12,
+      "semester": 9,
       "title": "Software Construction",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1200",
-      "semester": 6,
+      "semester": 9,
       "title": "Mathematics for Computer Science",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1210",
-      "semester": 7,
+      "semester": 10,
       "title": "Introduction to Algorithms",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1400",
-      "semester": 9,
+      "semester": 12,
       "title": "Computability and Complexity Theory",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1800",
-      "semester": 12,
+      "semester": 6,
       "title": "Computer Systems Engineering",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1904",
-      "semester": 12,
+      "semester": 9,
       "title": "Introduction to Low-level Programming in C and Assembly",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.1910",
-      "semester": 6,
+      "semester": 4,
       "title": "Computation Structures",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.3260",
-      "semester": 10,
-      "title": "Networks",
+      "subject_id": "6.2300",
+      "semester": 6,
+      "title": "Electromagnetics Waves and Applications",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "6.3700",
-      "semester": 9,
-      "title": "Introduction to Probability",
+      "subject_id": "6.3800",
+      "semester": 7,
+      "title": "Introduction to Inference",
       "units": 12,
       "overrideWarnings": false
     },
     {
       "subject_id": "6.4590",
-      "semester": 3,
+      "semester": 9,
       "title": "Foundations of Information Policy",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "7.012",
+      "subject_id": "6.6331",
+      "semester": 7,
+      "title": "Fundamentals of Photonics",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "7.015",
       "semester": 7,
       "title": "Introductory Biology",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "8.01",
-      "semester": 7,
-      "title": "Physics I",
-      "units": 12,
-      "overrideWarnings": false
-    },
-    {
-      "subject_id": "8.02",
-      "semester": 9,
+      "subject_id": "8.022",
+      "semester": 3,
       "title": "Physics II",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "ES.182A",
-      "semester": 7,
+      "subject_id": "CC.8012",
+      "semester": 1,
+      "title": "Physics I",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "ES.1801",
+      "semester": 1,
       "title": "Calculus",
       "units": 12,
       "overrideWarnings": false
     },
     {
-      "subject_id": "STS.075",
+      "subject_id": "ES.5112",
       "semester": 10,
-      "title": "Technology and Culture",
+      "title": "Principles of Chemical Science",
+      "units": 12,
+      "overrideWarnings": false
+    },
+    {
+      "subject_id": "STS.043",
+      "semester": 12,
+      "title": "Technology and Self: Science, Technology, and Memoir",
       "units": 12,
       "overrideWarnings": false
     }

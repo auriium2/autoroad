@@ -17,7 +17,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TypedDict
 
-import polars as pl
+import pandas as pd
 from ortools.sat.python import cp_model
 
 from courses.requirements.types import (
@@ -26,7 +26,6 @@ from courses.requirements.types import (
     RequirementNode,
     RequirementPlainString,
 )
-from optimizer.semesters import VALID_SEMESTERS
 
 
 class ConstraintSummary(TypedDict):
@@ -46,40 +45,26 @@ class CourseSchedule:
     This encapsulates all the course data needed to build constraints,
     making the constraint builder independent of specific dataframe structures.
     """
-    courses_df: pl.DataFrame
+    courses_df: pd.DataFrame
     planning_year_start: int
 
     def get_course_index(self, course_id: str) -> int | None:
         """Get the internal index for a course ID, or None if not found."""
-        subject_ids = self.courses_df['subject_id'].to_list()
-        try:
-            return subject_ids.index(course_id)
-        except ValueError:
-            return None
+        matches = self.courses_df.index[self.courses_df['subject_id'] == course_id].tolist()
+        return matches[0] if matches else None
 
     def get_courses_by_attribute(self, attribute: str, value: str) -> list[int]:
         """Get all course indices that have a specific attribute value."""
         if attribute not in self.courses_df.columns:
             return []
-        attribute_values = self.courses_df[attribute].to_list()
-        return [i for i, v in enumerate(attribute_values) if v == value]
+        return self.courses_df.index[self.courses_df[attribute] == value].tolist()
 
     def get_courses_by_hass_any(self) -> list[int]:
         """Get all courses with any HASS attribute."""
         if "hass_attribute" not in self.courses_df.columns:
             return []
         hass_values = ["HASS-A", "HASS-E", "HASS-H", "HASS-S"]
-        hass_attrs = self.courses_df["hass_attribute"].to_list()
-        return [i for i, v in enumerate(hass_attrs) if v in hass_values]
-
-    def get_course_units(self, course_idx: int) -> int:
-        """Get the total units for a course, defaulting to 12 if not available."""
-        if "total_units" not in self.courses_df.columns:
-            return 12
-        units = self.courses_df[course_idx, "total_units"]
-        if units is None:
-            return 12
-        return int(units)
+        return self.courses_df.index[self.courses_df["hass_attribute"].isin(hass_values)].tolist()
 
 
 @dataclass
@@ -100,9 +85,6 @@ class ConstraintContext:
     # Map from variable name to human-readable requirement path for debugging
     var_name_map: dict[str, str] = field(default_factory=dict)
 
-    # Map from course index to set of requirement paths it can satisfy, for category rewards
-    course_to_requirements: dict[int, set[str]] = field(default_factory=dict)
-
     # Counter for generating unique variable names
     _counter: int = 0
 
@@ -110,12 +92,6 @@ class ConstraintContext:
         """Generate a unique variable name with the given prefix."""
         self._counter += 1
         return f"{prefix}_{self._counter}"
-
-    def record_course_requirement(self, course_idx: int, requirement_path: str) -> None:
-        """Record that a course can satisfy a given requirement path."""
-        if course_idx not in self.course_to_requirements:
-            self.course_to_requirements[course_idx] = set()
-        self.course_to_requirements[course_idx].add(requirement_path)
 
     def register_var(self, var: cp_model.IntVar, debug_name: str) -> None:
         """Register a variable with its human-readable debug name."""
@@ -154,7 +130,7 @@ class RequirementConstraintBuilder:
     """
 
     def __init__(self, ctx: ConstraintContext):
-        self.ctx: ConstraintContext = ctx
+        self.ctx = ctx
         self.results: list[ConstraintResult] = []
 
     def build(self, node: RequirementNode, parent_path: str = "root") -> ConstraintResult:
@@ -184,10 +160,10 @@ class RequirementConstraintBuilder:
         elif isinstance(node, RequirementGroup):
             result = self._build_group(node, parent_path)
         else:
-            # Unknown node type - create error result
+            # Should never happen due to type system, but handle gracefully
             result = ConstraintResult(
                 satisfied_var=None,
-                errors=[f"Unknown requirement node type: {type(node).__name__} at {parent_path}"]
+                errors=[f"Unknown requirement type: {type(node).__name__}"]
             )
 
         self.results.append(result)
@@ -198,28 +174,21 @@ class RequirementConstraintBuilder:
         course_id = node.course_id
         path = f"{parent_path} -> {course_id}"
 
-        # Extract numeric path for frontend matching (e.g., "root.6.0.0.0" from "root -> Bachelor... [root.6.0.0.0]")
-        if " [" in parent_path:
-            numeric_path = parent_path.split(" [")[1].rstrip("]")
-        else:
-            numeric_path = parent_path
-
         # Handle special requirements
-        # For these, pass the numeric path directly since they don't need the readable path
         if course_id == "HASS":
-            return self._build_hass_any(node, numeric_path)
+            return self._build_hass_any(node, path)
         elif course_id.startswith("GIR:"):
             gir_code = course_id.split(":", 1)[1]
             return self._build_attribute_requirement(
-                node, numeric_path, "gir_attribute", gir_code
+                node, path, "gir_attribute", gir_code
             )
         elif course_id.startswith("HASS-"):
             return self._build_attribute_requirement(
-                node, numeric_path, "hass_attribute", course_id
+                node, path, "hass_attribute", course_id
             )
         elif course_id.startswith("CI-"):
             return self._build_attribute_requirement(
-                node, numeric_path, "communication_requirement", course_id
+                node, path, "communication_requirement", course_id
             )
 
         # Regular course
@@ -230,10 +199,6 @@ class RequirementConstraintBuilder:
                 errors=[f"Course '{course_id}' not found in course database"]
             )
 
-        # Record that this course can satisfy this requirement path (for category rewards)
-        # Use numeric path to match frontend tier system
-        self.ctx.record_course_requirement(course_idx, numeric_path)
-
         # Create a variable for whether this course requirement is satisfied
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
@@ -242,10 +207,10 @@ class RequirementConstraintBuilder:
         debug_name = node.req_id if node.req_id else course_id
         self.ctx.register_var(satisfied_var, debug_name)
 
-
+        # Course is satisfied if it's taken in any valid semester
         valid_takes = [
             self.ctx.take_vars[course_idx, s]
-            for s in VALID_SEMESTERS
+            for s in range(1, 13)
             if (course_idx, s) in self.ctx.take_vars
         ]
 
@@ -274,10 +239,6 @@ class RequirementConstraintBuilder:
                 errors=["No HASS courses found in course database"]
             )
 
-        # Record that all these courses can satisfy this requirement path
-        for course_idx in course_indices:
-            self.ctx.record_course_requirement(course_idx, path)
-
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
@@ -292,7 +253,7 @@ class RequirementConstraintBuilder:
         valid_takes = [
             self.ctx.take_vars[c, s]
             for c in course_indices
-            for s in VALID_SEMESTERS
+            for s in range(1, 13)
             if (c, s) in self.ctx.take_vars
         ]
 
@@ -321,10 +282,6 @@ class RequirementConstraintBuilder:
                 warnings=[f"No courses found with {attribute}='{value}'"]
             )
 
-        # Record that all these courses can satisfy this requirement path
-        for course_idx in course_indices:
-            self.ctx.record_course_requirement(course_idx, path)
-
         var_name = self.ctx.fresh_name("req")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
@@ -336,7 +293,7 @@ class RequirementConstraintBuilder:
         valid_takes = [
             self.ctx.take_vars[c, s]
             for c in course_indices
-            for s in VALID_SEMESTERS
+            for s in range(1, 13)
             if (c, s) in self.ctx.take_vars
         ]
 
@@ -412,11 +369,9 @@ class RequirementConstraintBuilder:
         """
         Build constraints for plain-string requirements.
 
-        Plain-string requirements are descriptive text that cannot be automatically
-        validated (e.g., "2 math subjects (first decimal ≥ 1)", "72 units of electives").
-
-        We create a placeholder variable that's always satisfied, but provide detailed
-        warnings about what constraints are being ignored.
+        Plain-string requirements are descriptive text that can't be automatically
+        validated. We create a placeholder variable that's always true so the
+        requirement structure is preserved, but actual validation must be manual.
         """
         var_name = self.ctx.fresh_name("req")
         placeholder = self.ctx.model.NewBoolVar(var_name)
@@ -425,77 +380,28 @@ class RequirementConstraintBuilder:
         debug_name = node.req_id if node.req_id else f"[Plain: {node.description[:50]}]"
         self.ctx.register_var(placeholder, debug_name)
 
-        # Always mark as satisfied - we can't automatically validate these
+        # Always consider plain-string requirements as satisfied
+        # since we can't automatically validate them
         self.ctx.model.Add(placeholder == 1)
-
-        warnings = []
-
-        # Provide detailed warnings based on threshold type
-        if node.threshold:
-            criterion = node.threshold.criterion
-            cutoff = node.threshold.cutoff
-            thresh_type = node.threshold.type
-
-            if criterion == "units":
-                warnings.append(
-                    f"⚠️  Plain-string unit requirement IGNORED: '{node.description}' "
-                    f"requires {thresh_type} {cutoff} units. This cannot be automatically validated and "
-                    f"must be manually verified in the final schedule."
-                )
-            elif criterion == "subjects":
-                warnings.append(
-                    f"⚠️  Plain-string subject requirement IGNORED: '{node.description}' "
-                    f"requires {thresh_type} {cutoff} subjects. This cannot be automatically validated and "
-                    f"must be manually verified in the final schedule."
-                )
-            else:
-                warnings.append(
-                    f"⚠️  Plain-string requirement IGNORED: '{node.description}' "
-                    f"has threshold {thresh_type} {cutoff} ({criterion}). This cannot be automatically validated."
-                )
-        else:
-            # Plain string without threshold (shouldn't happen based on our analysis, but handle it)
-            warnings.append(
-                f"⚠️  Plain-string requirement cannot be validated: '{node.description}'"
-            )
 
         return ConstraintResult(
             satisfied_var=placeholder,
-            warnings=warnings
+            warnings=[f"Plain-string requirement can't be validated: '{node.description}'"]
         )
 
     def _build_group(self, node: RequirementGroup, parent_path: str) -> ConstraintResult:
         """Build constraints for a group of requirements."""
         group_name = node.title or self.ctx.fresh_name("group")
-
-        # Extract numeric path from parent (e.g., "root.6" from "root [root.6]")
-        if " [" in parent_path:
-            # Parent has both readable and numeric: "root -> Degree [root.6]"
-            readable_parent = parent_path.split(" [")[0]
-            numeric_parent = parent_path.split(" [")[1].rstrip("]")
-        else:
-            # Parent is just the root
-            readable_parent = parent_path
-            numeric_parent = parent_path
-
-        # Build human-readable path
-        readable_path = f"{readable_parent} -> {group_name}"
+        path = f"{parent_path} -> {group_name}"
 
         # Process all child requirements
         child_results = []
         child_vars = []
         warnings = []
         errors = []
-        child_numeric_paths = []
 
-        for idx, child in enumerate(node.items):
-            # Create child path with both human-readable and numeric formats
-            # Format: "root -> Bachelor... -> Architecture [root.6.0.0]"
-            numeric_child = f"{numeric_parent}.{idx}"
-            child_path = f"{readable_path} [{numeric_child}]"
-            child_numeric_paths.append(numeric_child)
-
-            result = self.build(child, child_path)
+        for child in node.items:
+            result = self.build(child, path)
             child_results.append(result)
 
             if result.is_valid:
@@ -503,20 +409,6 @@ class RequirementConstraintBuilder:
 
             warnings.extend(result.warnings)
             errors.extend(result.errors)
-
-        # Collect ALL courses that satisfy any child and record them to this group
-        # This allows category rewards to apply at any level of the requirement tree
-        courses_from_children = set()
-        for course_idx, req_paths in self.ctx.course_to_requirements.items():
-            # Check if this course satisfies any child
-            for child_path in child_numeric_paths:
-                if child_path in req_paths:
-                    courses_from_children.add(course_idx)
-                    break
-
-        # Record all courses from children to this group's path
-        for course_idx in courses_from_children:
-            self.ctx.record_course_requirement(course_idx, numeric_parent)
 
         # Create variable for this group
         var_name = self.ctx.fresh_name("req")
@@ -533,7 +425,7 @@ class RequirementConstraintBuilder:
         # Handle threshold if present
         if node.threshold is not None:
             return self._build_threshold_group(
-                node, group_var, child_vars, child_results, list(node.items), readable_path, warnings, errors
+                node, group_var, child_vars, child_results, list(node.items), path, warnings, errors
             )
 
         # Handle connection type
@@ -598,65 +490,35 @@ class RequirementConstraintBuilder:
         # For GTE thresholds, need at least 'cutoff' items satisfied
         cutoff = threshold.cutoff
 
-        # Handle unit-based thresholds separately
+        # Determine if we're counting subjects or units
         if threshold.criterion == "units":
-            return self._build_units_threshold_group(
-                node, group_var, child_vars, child_results, child_nodes, path, warnings, errors, cutoff
+            # TODO: Implement unit counting - needs access to course units
+            warnings.append(
+                f"Group '{group_name}' uses unit-based threshold - "
+                "not yet implemented, falling back to subject counting"
             )
 
-        # Fireroad's actual behavior (from source code analysis in SUMMARY.md):
-        # From progress.py:809-816:
-        #   if req_progress.statement.connection_type == CONNECTION_TYPE_ALL and req_progress.children:
-        #       num_courses_satisfied += req_progress.is_fulfilled and len(req_progress.satisfied_courses) > 0
-        #   else:
-        #       num_courses_satisfied += len(req_satisfied_courses)
-        #
-        # Translation for constraint builder:
-        # - Direct course children: contribute 1 when taken (no children, goes to else)
-        # - Group with connection_type='all' and children: contributes 1 when satisfied
-        # - Group with other connection_type (including 'any' from thresholds): contributes count of satisfied courses
+        # For 'subjects' criterion, we need to count ALL course variables in the subtree,
+        # not just direct children (to match validator.py logic)
         if threshold.criterion == "subjects":
-            # Build contribution variables for each child
-            contribution_vars = []
+            # Collect all leaf course variables from the subtree
+            all_course_vars = self._collect_all_course_vars_from_results(child_nodes, child_results)
 
-            for idx, (child_node, child_result) in enumerate(zip(child_nodes, child_results)):
-                # Skip children with no satisfied_var (e.g., courses not found in database)
-                if child_result.satisfied_var is None:
-                    continue
-
-                if isinstance(child_node, RequirementCourse):
-                    # Course: contributes 1 when taken
-                    contribution_var = self.ctx.model.NewIntVar(0, 1, f"{group_name}_child{idx}_contribution")
-                    self.ctx.model.Add(contribution_var == 1).OnlyEnforceIf(child_result.satisfied_var)
-                    self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
-                    contribution_vars.append(contribution_var)
-                elif isinstance(child_node, RequirementGroup):
-                    # Check Fireroad's condition: connection_type='all' AND has children AND no threshold
-                    # From progress.py lines 809-816: ALL groups without thresholds contribute 1 when satisfied,
-                    # but ALL groups WITH thresholds contribute their course count (like any other group)
-                    if child_node.connection_type == "all" and len(child_node.items) > 0 and child_node.threshold is None:
-                        # ALL group with children but NO threshold: contributes 1 when satisfied
-                        contribution_var = self.ctx.model.NewIntVar(0, 1, f"{group_name}_child{idx}_contribution")
-                        self.ctx.model.Add(contribution_var == 1).OnlyEnforceIf(child_result.satisfied_var)
-                        self.ctx.model.Add(contribution_var == 0).OnlyEnforceIf(child_result.satisfied_var.Not())
-                        contribution_vars.append(contribution_var)
-                    else:
-                        # Other groups (including those with thresholds): contribute count of satisfied courses
-                        # Per Fireroad semantics: groups with thresholds contribute the ACTUAL number of
-                        # courses taken from that group, not the threshold cutoff
-                        child_course_vars = self._collect_all_course_vars_from_results([child_node], [child_result])
-                        if child_course_vars:
-                            # Sum of courses taken from this child group
-                            contribution_vars.extend(child_course_vars)
-                        # If no courses available in child, it contributes 0 (handled by empty list)
-
-            if not contribution_vars:
+            if len(all_course_vars) < cutoff:
+                errors.append(
+                    f"Group '{group_name}' requires {cutoff} subjects "
+                    f"but only {len(all_course_vars)} valid courses are available in the subtree"
+                )
+                # Make the group unsatisfiable
+                self.ctx.model.Add(group_var == 0)
+            elif not all_course_vars:
                 self.ctx.model.Add(group_var == 0)
             else:
-                # Sum all contributions
-                total_contribution = sum(contribution_vars)
-                self.ctx.model.Add(total_contribution >= cutoff).OnlyEnforceIf(group_var)
-                self.ctx.model.Add(total_contribution < cutoff).OnlyEnforceIf(group_var.Not())
+                # Count how many courses are satisfied
+                # For 'subjects', we want: sum of courses taken >= cutoff
+                sum_satisfied = sum(all_course_vars)
+                self.ctx.model.Add(sum_satisfied >= cutoff).OnlyEnforceIf(group_var)
+                self.ctx.model.Add(sum_satisfied < cutoff).OnlyEnforceIf(group_var.Not())
         else:
             # For other criteria (like 'units'), count direct children
             total_children = len(node.items)
@@ -686,166 +548,14 @@ class RequirementConstraintBuilder:
                     self.ctx.model.Add(child_var == 1).OnlyEnforceIf(group_var)
         elif node.connection_type == "any":
             # ANY: At least one child must be satisfied (in addition to threshold)
-            # We add a one-way implication: if group is satisfied, at least one child must be satisfied
-            # We do NOT use AddMaxEquality because that would override the threshold
-
-            if child_vars and cutoff > 0: # we should ignore optional requirements
-                # If group_var is 1, then at least one child must be 1
-                self.ctx.model.Add(sum(child_vars) >= 1).OnlyEnforceIf(group_var)
-
-                #
-                # IMPORTANT: For threshold >= 0 (optional) groups, we should NOT add this constraint.
-                # When cutoff is 0, the group is satisfied even with 0 courses, so requiring
-                # "at least one child satisfied" would incorrectly force courses to be taken.
-                # The threshold constraint alone is sufficient for optional groups.
-
-        # Enforce distinct_threshold if present (e.g., "from at least N categories")
-        #
-        # The meaning depends on whether child categories have their own thresholds:
-        #
-        # Case 1: Children have threshold > 0 (e.g., "2 Subjects from each of 2 EE Tracks")
-        #   - Each track requires 2 subjects to be "satisfied"
-        #   - distinct_threshold=2 means "at least 2 tracks must be fully satisfied"
-        #   - Use child_vars (which represent full satisfaction of each child)
-        #
-        # Case 2: Children have threshold = 0 (e.g., "4 subjects from at least 3 areas")
-        #   - Each area is "satisfied" with 0 courses (always true)
-        #   - distinct_threshold=3 means "courses must come from at least 3 different areas"
-        #   - Use contributed_vars (which track if any course is taken from each area)
-        if node.distinct_threshold is not None:
-            distinct_cutoff = node.distinct_threshold.cutoff
-            if distinct_cutoff > 0 and child_nodes:
-                # Check if children have non-trivial thresholds
-                children_have_thresholds = any(
-                    isinstance(child, RequirementGroup) and
-                    child.threshold is not None and
-                    child.threshold.cutoff > 0
-                    for child in child_nodes
-                )
-
-                if children_have_thresholds:
-                    # Case 1: Use child_vars (must be fully satisfied)
-                    if child_vars:
-                        if node.distinct_threshold.type == "GTE":
-                            self.ctx.model.Add(sum(child_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
-                        else:  # LTE
-                            self.ctx.model.Add(sum(child_vars) <= distinct_cutoff).OnlyEnforceIf(group_var)
-                else:
-                    # Case 2: Use contributed_vars (any course counts as contribution)
-                    contributed_vars: list[cp_model.IntVar] = []
-
-                    for idx, (child_node, child_result) in enumerate(zip(child_nodes, child_results)):
-                        if child_result.satisfied_var is None:
-                            continue
-
-                        # Collect all course vars from this child
-                        child_course_vars = self._collect_all_course_vars_from_results([child_node], [child_result])
-
-                        if child_course_vars:
-                            # Category contributes if sum of its courses >= 1
-                            contrib_var = self.ctx.model.NewBoolVar(f"{group_name}_child{idx}_contributes")
-                            self.ctx.model.Add(sum(child_course_vars) >= 1).OnlyEnforceIf(contrib_var)
-                            self.ctx.model.Add(sum(child_course_vars) == 0).OnlyEnforceIf(contrib_var.Not())
-                            contributed_vars.append(contrib_var)
-
-                    if contributed_vars:
-                        if node.distinct_threshold.type == "GTE":
-                            self.ctx.model.Add(sum(contributed_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
-                        else:  # LTE
-                            self.ctx.model.Add(sum(contributed_vars) <= distinct_cutoff).OnlyEnforceIf(group_var)
+            if child_vars:
+                self.ctx.model.AddMaxEquality(group_var, child_vars)
 
         return ConstraintResult(
             satisfied_var=group_var,
             warnings=warnings,
             errors=errors
         )
-
-    def _build_units_threshold_group(
-        self,
-        node: RequirementGroup,
-        group_var: cp_model.IntVar,
-        child_vars: list[cp_model.IntVar],
-        child_results: list[ConstraintResult],
-        child_nodes: list[RequirementNode],
-        path: str,
-        warnings: list[str],
-        errors: list[str],
-        cutoff: int
-    ) -> ConstraintResult:
-        """Build constraints for a group with a units-based threshold."""
-        group_name = node.title or "unnamed"
-
-        # Collect all course indices and their unit contributions from children
-        # We need to recursively find all courses that can satisfy this requirement
-        course_unit_contributions: list[tuple[int, int, cp_model.IntVar]] = []  # (course_idx, units, take_var)
-
-        def collect_courses_from_node(n: RequirementNode) -> None:
-            if hasattr(n, 'was_pruned') and n.was_pruned:
-                return
-
-            if isinstance(n, RequirementCourse):
-                course_idx = self.ctx.schedule.get_course_index(n.course_id)
-                if course_idx is not None:
-                    units = self.ctx.schedule.get_course_units(course_idx)
-                    # Get all valid take vars for this course
-                    for s in VALID_SEMESTERS:
-                        if (course_idx, s) in self.ctx.take_vars:
-                            course_unit_contributions.append(
-                                (course_idx, units, self.ctx.take_vars[course_idx, s])
-                            )
-            elif isinstance(n, RequirementGroup):
-                for child in n.items:
-                    collect_courses_from_node(child)
-
-        # Collect from all child nodes
-        for child_node in child_nodes:
-            collect_courses_from_node(child_node)
-
-        # Group by course_idx to avoid double counting
-        course_idx2unit_vars: dict[int, list[cp_model.IntVar]] = {}
-        course_idx2units: dict[int, int] = {}
-        for course_idx, units, take_var in course_unit_contributions:
-            if course_idx not in course_idx2unit_vars:
-                course_idx2unit_vars[course_idx] = []
-                course_idx2units[course_idx] = units
-            course_idx2unit_vars[course_idx].append(take_var)
-
-        # Calculate total available units from listed courses
-        total_available_units = sum(course_idx2units.values())
-
-        # If there are no courses OR total available units is less than cutoff,
-        # this is likely an open-ended requirement (e.g., "take 78 units of electives")
-        # where students can choose from courses not explicitly listed.
-        # In this case, we issue a warning and assume the requirement is satisfiable.
-        if not course_unit_contributions or total_available_units < cutoff:
-            self.ctx.model.Add(group_var == 1)
-            warnings.append(
-                f"⚠️  Unit-based requirement '{group_name}' requires {cutoff} units but only "
-                f"{total_available_units} units are available from listed courses. "
-                f"Assuming requirement is satisfiable with unlisted electives."
-            )
-            return ConstraintResult(satisfied_var=group_var, warnings=warnings, errors=errors)
-
-        # For each unique course, create a "taken" variable (1 if taken in any semester)
-        unit_contributions: list[cp_model.IntVar] = []
-        for course_idx, take_vars_list in course_idx2unit_vars.items():
-            units = course_idx2units[course_idx]
-            # Create variable for "course taken in any semester"
-            course_taken = self.ctx.model.NewBoolVar(f"{group_name}_course{course_idx}_taken")
-            self.ctx.model.AddMaxEquality(course_taken, take_vars_list)
-
-            # Create contribution variable: units if taken, 0 otherwise
-            contribution = self.ctx.model.NewIntVar(0, units, f"{group_name}_course{course_idx}_units")
-            self.ctx.model.Add(contribution == units).OnlyEnforceIf(course_taken)
-            self.ctx.model.Add(contribution == 0).OnlyEnforceIf(course_taken.Not())
-            unit_contributions.append(contribution)
-
-        # Sum all unit contributions
-        total_units = sum(unit_contributions)
-        self.ctx.model.Add(total_units >= cutoff).OnlyEnforceIf(group_var)
-        self.ctx.model.Add(total_units < cutoff).OnlyEnforceIf(group_var.Not())
-
-        return ConstraintResult(satisfied_var=group_var, warnings=warnings, errors=errors)
 
     def enforce_requirement(self, node: RequirementNode) -> None:
         """
@@ -890,10 +600,10 @@ def add_requirement_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     requirement: RequirementNode,
-    courses_df: pl.DataFrame,
+    courses_df: pd.DataFrame,
     planning_year_start: int,
     enforce: bool = True
-) -> tuple[dict[str, cp_model.IntVar], dict[str, str], dict[int, set[str]]]:
+) -> tuple[dict[str, cp_model.IntVar], dict[str, str]]:
     """
     Add constraints for a requirement tree to a CP-SAT model.
 
@@ -912,7 +622,6 @@ def add_requirement_constraints(
         Tuple of:
         - Dictionary of auxiliary variables created during constraint building
         - Dictionary mapping variable names to human-readable debug names
-        - Dictionary mapping course indices to sets of requirement paths they satisfy
 
     Raises:
         ValueError: If enforce=True and the requirement cannot be built
@@ -944,4 +653,4 @@ def add_requirement_constraints(
                 print(f"  - {error}")
         print("=" * 35)
 
-    return ctx.aux_vars, ctx.var_name_map, ctx.course_to_requirements
+    return ctx.aux_vars, ctx.var_name_map
