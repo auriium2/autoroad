@@ -61,3 +61,4 @@ package-lock.json
 .zed
 .ropeproject
 backend/.hypothesis/
+**/.hypothesis
