@@ -38,6 +38,7 @@ python_functions = ["test_*"]
 markers = [
     "e2e: end-to-end integration tests (deselect with '-m \"not e2e\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "fireroad: tests that validate against Fireroad API (requires network)",
 ]
 
 [tool.ruff]

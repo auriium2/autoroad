@@ -212,7 +212,7 @@ class TestRoadFileRegressions:
 
         # Solve
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         print(f"[TEST] Solver status: {status}")

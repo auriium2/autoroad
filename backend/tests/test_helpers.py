@@ -4,16 +4,357 @@ Test helper functions for validating optimizer solutions.
 These helpers provide comprehensive validation beyond just checking
 if a solution is feasible. They verify solution quality, prerequisite
 satisfaction, and realistic constraints.
+
+Key functions:
+- build_optimizer_model(): Unified model builder for all integration tests
+- validate_solution_against_fireroad(): Validate solution against Fireroad API
+- run_optimizer_quality_test(): Full quality test with validation
+- assert_solution_quality(): Comprehensive solution validation
 """
 
+from dataclasses import dataclass
 from typing import Any
 
 import polars as pl
+import requests
 from ortools.sat.python import cp_model
 
+from api.models.requests import Marker
+from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
+from courses.requirements.parser import parse_requirement
+from courses.requirements.validator import validate_and_prune
+from optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from optimizer.objectives import MinimizeUnits, ObjectiveBuilder
 from optimizer.objectives.registry import get_default_objectives, instantiate_objective
+from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from optimizer.requirement_constraint_builder import add_requirement_constraints
+
+
+@dataclass
+class OptimizerModelResult:
+    """Result from build_optimizer_model containing all test artifacts."""
+    model: cp_model.CpModel
+    take_vars: dict[tuple[int, int], cp_model.IntVar]
+    courses_df: pl.DataFrame
+    prereq_trees: dict[int, PrereqNode]
+    course_to_requirements: dict[int, set[str]]
+    requirements_data: dict[str, Any]
+
+
+@dataclass
+class FireroadValidationResult:
+    """Result from Fireroad API validation."""
+    all_satisfied: bool
+    requirement_results: dict[str, bool]  # req_key -> fulfilled
+    details: dict[str, Any]  # req_key -> full Fireroad response
+
+
+def build_optimizer_model(
+    requirement_keys: tuple[str, ...],
+    markers: list[Marker] | None = None,
+    start_year: int = 2025,
+    max_semesters: int = 12,
+    with_objectives: bool = True,
+    freeze_past_semesters: bool = False,
+    cached_data: Any = None,
+) -> OptimizerModelResult:
+    """
+    Build a complete optimizer model - unified helper for all integration tests.
+    
+    This is the single source of truth for building optimizer models in tests.
+    All integration tests should use this function to ensure consistent behavior.
+    
+    Args:
+        requirement_keys: Tuple of requirement keys (e.g., ('major6-3new', 'girs'))
+        markers: Optional list of markers (pins, overrides, banishes)
+        start_year: Planning start year
+        max_semesters: Maximum number of semesters
+        with_objectives: Whether to add objective functions (default True)
+        freeze_past_semesters: Whether to add past semester constraints
+        cached_data: Optional CachedCourseData from conftest fixture
+    
+    Returns:
+        OptimizerModelResult with model, variables, and data
+    """
+    # Load data (use cache if provided)
+    if cached_data is not None:
+        courses_df = cached_data.courses_df
+        prereq_trees = cached_data.prereq_trees
+        requirements_data = cached_data.get_requirements(requirement_keys)
+    else:
+        courses_data = get_courses_data()
+        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+        requirements_data = get_requirements(requirement_keys)
+        prereq_trees = get_parsed_prerequisites(courses_df)
+
+    # Create model
+    model = cp_model.CpModel()
+    take_vars = create_take_vars(model, courses_df, start_year, max_semesters, markers)
+    add_basic_constraints(model, take_vars, courses_df, max_semesters)
+
+    # Add past semester constraints if requested
+    if freeze_past_semesters and markers:
+        from optimizer.constraints.basic import add_past_semester_constraints
+        add_past_semester_constraints(model, take_vars, courses_df, start_year, markers)
+
+    # Add marker constraints if markers provided
+    if markers:
+        from optimizer.marker_constraint_builder import add_marker_constraints
+        add_marker_constraints(model, take_vars, markers, courses_df, start_year)
+
+    # Add prerequisite constraints (with override courses skipping prereqs)
+    override_course_ids = set()
+    if markers:
+        override_course_ids = {m.courseId for m in markers if m.status == 'override'}
+    add_prerequisite_constraints(model, take_vars, courses_df, start_year, prereq_trees, override_course_ids)
+
+    # Add requirement constraints
+    course_to_requirements: dict[int, set[str]] = {}
+    for req_key in requirement_keys:
+        if req_key in requirements_data:
+            req_data = requirements_data[req_key]
+            if isinstance(req_data, dict):
+                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
+                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                if validation.pruned_tree is not None:
+                    _aux_vars, _debug_names, mapping = add_requirement_constraints(
+                        model, take_vars, validation.pruned_tree,
+                        courses_df, start_year, enforce=True
+                    )
+                    # Merge course->requirements mappings
+                    for course_idx, req_paths in mapping.items():
+                        if course_idx not in course_to_requirements:
+                            course_to_requirements[course_idx] = set()
+                        course_to_requirements[course_idx].update(req_paths)
+
+    # Add objectives if requested
+    if with_objectives:
+        setup_optimizer_with_objectives(
+            model, take_vars, courses_df, start_year, course_to_requirements
+        )
+
+    return OptimizerModelResult(
+        model=model,
+        take_vars=take_vars,
+        courses_df=courses_df,
+        prereq_trees=prereq_trees,
+        course_to_requirements=course_to_requirements,
+        requirements_data=requirements_data,
+    )
+
+
+def solve_model(
+    model: cp_model.CpModel,
+    timeout_seconds: float = 20.0,
+    random_seed: int = 42,
+) -> tuple[cp_model.CpSolver, int]:
+    """
+    Solve a model with deterministic settings.
+    
+    Args:
+        model: CP-SAT model to solve
+        timeout_seconds: Solver timeout
+        random_seed: Random seed for deterministic behavior
+    
+    Returns:
+        Tuple of (solver, status)
+    """
+    solver = cp_model.CpSolver()
+    solver.parameters.max_time_in_seconds = timeout_seconds
+    solver.parameters.random_seed = random_seed
+    status = solver.Solve(model)
+    return solver, status
+
+
+def extract_solution_courses(
+    solver: cp_model.CpSolver,
+    take_vars: dict[tuple[int, int], cp_model.IntVar],
+    courses_df: pl.DataFrame,
+) -> list[dict[str, Any]]:
+    """
+    Extract solution courses from a solved model.
+    
+    Args:
+        solver: Solved CP-SAT solver
+        take_vars: Decision variables
+        courses_df: DataFrame of courses
+    
+    Returns:
+        List of course dicts with subject_id, title, units, semester
+    """
+    solution_courses = []
+    for (course_idx, semester_internal), var in take_vars.items():
+        if solver.Value(var) == 1:
+            course_id = courses_df[course_idx, 'subject_id']
+            title = courses_df[course_idx, 'title'] if 'title' in courses_df.columns else course_id
+            units = courses_df[course_idx, 'total_units'] if 'total_units' in courses_df.columns else 12
+
+            # Convert internal semester to Fireroad format
+            # Internal: -1 for ASE, 1-12 for regular semesters
+            # Fireroad: 0 for ASE, 1-12 for regular semesters
+            if semester_internal == -1:
+                semester_fireroad = 0  # ASE
+            else:
+                semester_fireroad = semester_internal
+
+            solution_courses.append({
+                'subject_id': course_id,
+                'title': title,
+                'units': int(units) if units else 12,
+                'semester': semester_fireroad
+            })
+    return solution_courses
+
+
+def validate_solution_against_fireroad(
+    solution_courses: list[dict[str, Any]],
+    requirement_keys: tuple[str, ...],
+    timeout: float = 30.0,
+    verbose: bool = False,
+) -> FireroadValidationResult:
+    """
+    Validate a solution against the Fireroad API.
+    
+    This is the "ground truth" validation - Fireroad is the source of truth
+    for whether requirements are satisfied. Use this to verify our constraint
+    builder matches actual Fireroad behavior.
+    
+    Args:
+        solution_courses: List of course dicts from extract_solution_courses()
+        requirement_keys: Tuple of requirement keys to validate
+        timeout: HTTP request timeout
+        verbose: Print detailed progress info
+    
+    Returns:
+        FireroadValidationResult with satisfaction status for each requirement
+    
+    Raises:
+        requests.RequestException: If Fireroad API is unreachable
+    """
+    requirement_results: dict[str, bool] = {}
+    details: dict[str, Any] = {}
+
+    for req_key in requirement_keys:
+        req_payload = {
+            'coursesOfStudy': [req_key],
+            'selectedSubjects': solution_courses,
+            'progressAssertions': {}
+        }
+
+        # Fireroad API requires trailing slash
+        response = requests.post(
+            f'https://fireroad.mit.edu/requirements/progress/{req_key}/',
+            json=req_payload,
+            headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            timeout=timeout
+        )
+
+        if response.status_code != 200:
+            raise requests.RequestException(
+                f"Fireroad API error for {req_key}: {response.status_code} - {response.text}"
+            )
+
+        fireroad_result = response.json()
+        details[req_key] = fireroad_result
+
+        # Check if top-level requirement is fulfilled
+        fulfilled = fireroad_result.get('fulfilled', False)
+        requirement_results[req_key] = fulfilled
+
+        if verbose:
+            status = "✓" if fulfilled else "✗"
+            progress = fireroad_result.get('progress', 0)
+            max_val = fireroad_result.get('max', '?')
+            print(f"  {status} {req_key}: {progress}/{max_val}")
+
+    all_satisfied = all(requirement_results.values())
+
+    return FireroadValidationResult(
+        all_satisfied=all_satisfied,
+        requirement_results=requirement_results,
+        details=details,
+    )
+
+
+def run_full_optimizer_test(
+    requirement_keys: tuple[str, ...],
+    markers: list[Marker] | None = None,
+    optimizer_config: Any = None,
+    validate_fireroad: bool = False,
+    verbose: bool = False,
+    cached_data: Any = None,
+) -> tuple[cp_model.CpSolver, OptimizerModelResult]:
+    """
+    Run a complete optimizer test with optional Fireroad validation.
+    
+    This is the highest-level test helper that:
+    1. Builds the model
+    2. Solves it
+    3. Optionally validates against Fireroad
+    
+    Args:
+        requirement_keys: Tuple of requirement keys
+        markers: Optional markers
+        optimizer_config: OptimizerTestConfig from conftest (or None for defaults)
+        validate_fireroad: Whether to validate against Fireroad API
+        verbose: Print progress info
+        cached_data: Optional CachedCourseData from conftest fixture
+    
+    Returns:
+        Tuple of (solver, model_result)
+    
+    Raises:
+        AssertionError: If solution is infeasible or Fireroad validation fails
+    """
+    # Get config values
+    start_year = optimizer_config.start_year if optimizer_config else 2025
+    max_semesters = optimizer_config.max_semesters if optimizer_config else 12
+    timeout = optimizer_config.solver_timeout_seconds if optimizer_config else 20.0
+    seed = optimizer_config.solver_random_seed if optimizer_config else 42
+
+    # Build model
+    result = build_optimizer_model(
+        requirement_keys=requirement_keys,
+        markers=markers,
+        start_year=start_year,
+        max_semesters=max_semesters,
+        with_objectives=True,
+        freeze_past_semesters=markers is not None,
+        cached_data=cached_data,
+    )
+
+    # Solve
+    solver, status = solve_model(result.model, timeout, seed)
+
+    assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
+        f"Expected feasible solution for {requirement_keys}, got status {status}"
+
+    if verbose:
+        print(f"Solution found with {solver.ObjectiveValue()} objective value")
+
+    # Validate against Fireroad if requested
+    if validate_fireroad:
+        solution_courses = extract_solution_courses(solver, result.take_vars, result.courses_df)
+
+        if verbose:
+            print(f"Validating {len(solution_courses)} courses against Fireroad...")
+
+        fireroad_result = validate_solution_against_fireroad(
+            solution_courses, requirement_keys, verbose=verbose
+        )
+
+        if not fireroad_result.all_satisfied:
+            failed_reqs = [k for k, v in fireroad_result.requirement_results.items() if not v]
+            raise AssertionError(
+                f"Fireroad validation failed for: {failed_reqs}. "
+                "Optimizer reported FEASIBLE but Fireroad says requirements NOT satisfied."
+            )
+
+    return solver, result
 
 
 def setup_optimizer_with_objectives(
@@ -87,42 +428,16 @@ def run_optimizer_test(
     Raises:
         AssertionError: If no feasible solution found
     """
-    from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-    from courses.requirements.parser import parse_requirement
-    from courses.requirements.validator import validate_and_prune
-    from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-    from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-    from optimizer.requirement_constraint_builder import add_requirement_constraints
+    # Use unified helper
+    result = build_optimizer_model(
+        requirement_keys=requirement_keys,
+        markers=None,
+        start_year=start_year,
+        max_semesters=max_semesters,
+        with_objectives=True,
+    )
 
-    # Fetch data
-    courses_data = get_courses_data()
-    courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-    requirements_data = get_requirements(requirement_keys)
-    prereq_trees = get_parsed_prerequisites(courses_df)
-
-    # Create model
-    model = cp_model.CpModel()
-    take_vars = create_take_vars(model, courses_df, start_year, max_semesters=max_semesters, markers=None)
-    add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-    add_prerequisite_constraints(model, take_vars, courses_df, start_year, prereq_trees, set())
-
-    # Add requirements
-    for req_key in requirement_keys:
-        if req_key in requirements_data:
-            req_data = requirements_data[req_key]
-            if isinstance(req_data, dict):
-                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
-                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                if validation.pruned_tree is not None:
-                    add_requirement_constraints(model, take_vars, validation.pruned_tree, courses_df, start_year, enforce=True)
-
-    # Add objectives
-    setup_optimizer_with_objectives(model, take_vars, courses_df, start_year)
-
-    # Solve
-    solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = solver_timeout
-    status = solver.Solve(model)
+    solver, status = solve_model(result.model, solver_timeout)
 
     assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
         f"Expected feasible solution for {requirement_keys}, got status {status}"
@@ -136,7 +451,9 @@ def run_optimizer_quality_test(
     optimizer_config: Any,
     max_semesters: int | None = None,
     start_year: int | None = None,
-    solver_timeout: float | None = None
+    solver_timeout: float | None = None,
+    validate_fireroad: bool = False,
+    cached_data: Any = None,
 ) -> tuple[cp_model.CpSolver, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame, dict[int, PrereqNode]]:
     """
     Run a comprehensive optimizer quality test.
@@ -145,6 +462,7 @@ def run_optimizer_quality_test(
     - Reasonable course count
     - Prerequisites satisfied
     - Distribution across semesters
+    - Optionally validates against Fireroad API
 
     Args:
         requirement_keys: Tuple of requirement keys (e.g., ('major6-9', 'girs'))
@@ -153,66 +471,46 @@ def run_optimizer_quality_test(
         max_semesters: Override max semesters (defaults to optimizer_config)
         start_year: Override start year (defaults to optimizer_config)
         solver_timeout: Override solver timeout (defaults to optimizer_config)
+        validate_fireroad: Whether to validate solution against Fireroad API
+        cached_data: Optional CachedCourseData from conftest fixture
 
     Returns:
         Tuple of (solver, take_vars, courses_df, prereq_trees)
 
     Raises:
-        AssertionError: If solution quality checks fail
+        AssertionError: If solution quality checks fail or Fireroad validation fails
     """
-    from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-    from courses.requirements.parser import parse_requirement
-    from courses.requirements.validator import validate_and_prune
-    from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-    from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-    from optimizer.requirement_constraint_builder import add_requirement_constraints
-
     # Use config values or overrides
     max_semesters_val: int = max_semesters if max_semesters is not None else optimizer_config.max_semesters
     start_year_val: int = start_year if start_year is not None else optimizer_config.start_year
     solver_timeout_val: float = solver_timeout if solver_timeout is not None else optimizer_config.solver_timeout_seconds
 
-    # Fetch data
-    courses_data = get_courses_data()
-    courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-    requirements_data = get_requirements(requirement_keys)
-    prereq_trees = get_parsed_prerequisites(courses_df)
+    # Use unified helper to build model
+    result = build_optimizer_model(
+        requirement_keys=requirement_keys,
+        markers=None,
+        start_year=start_year_val,
+        max_semesters=max_semesters_val,
+        with_objectives=True,
+        cached_data=cached_data,
+    )
 
-    # Create model
-    model = cp_model.CpModel()
-    take_vars = create_take_vars(model, courses_df, start_year_val, max_semesters=max_semesters_val, markers=None)
-    add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters_val)
-    add_prerequisite_constraints(model, take_vars, courses_df, start_year_val, prereq_trees, set())
-
-    # Add requirements
-    for req_key in requirement_keys:
-        if req_key in requirements_data:
-            req_data = requirements_data[req_key]
-            if isinstance(req_data, dict):
-                req_tree = parse_requirement({'reqs': req_data.get('reqs', []), 'title': req_key})
-                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                if validation.pruned_tree is not None:
-                    add_requirement_constraints(model, take_vars, validation.pruned_tree, courses_df, start_year_val, enforce=True)
-
-    # Add objectives
-    setup_optimizer_with_objectives(model, take_vars, courses_df, start_year_val)
-
-    # Solve
+    # Solve with deterministic settings
     solver = cp_model.CpSolver()
-    solver.parameters.max_time_in_seconds = solver_timeout_val
-    status = solver.Solve(model)
+    optimizer_config.configure_solver(solver)
+    status = solver.Solve(result.model)
 
     assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
         f"Expected feasible solution for {requirement_keys}, got status {status}"
 
     # Validate solution quality
     degree_config = optimizer_config.get_config_for_degree(degree_id)
-    take_vars_nested = convert_take_vars_format(take_vars)
+    take_vars_nested = convert_take_vars_format(result.take_vars)
     assert_solution_quality(
         solver,
         take_vars_nested,
-        courses_df,
-        prereq_trees,
+        result.courses_df,
+        result.prereq_trees,
         min_courses=int(degree_config['min_expected_courses']),
         max_courses=int(degree_config['max_expected_courses']),
         max_courses_per_semester=optimizer_config.max_courses_per_semester,
@@ -221,7 +519,19 @@ def run_optimizer_quality_test(
         max_objective_value=int(degree_config['max_objective_value'])
     )
 
-    return solver, take_vars, courses_df, prereq_trees
+    # Optionally validate against Fireroad
+    if validate_fireroad:
+        solution_courses = extract_solution_courses(solver, result.take_vars, result.courses_df)
+        fireroad_result = validate_solution_against_fireroad(solution_courses, requirement_keys)
+
+        if not fireroad_result.all_satisfied:
+            failed_reqs = [k for k, v in fireroad_result.requirement_results.items() if not v]
+            raise AssertionError(
+                f"Fireroad validation failed for: {failed_reqs}. "
+                "Optimizer reported FEASIBLE but Fireroad says requirements NOT satisfied."
+            )
+
+    return solver, result.take_vars, result.courses_df, result.prereq_trees
 
 
 def convert_take_vars_format(

@@ -72,6 +72,15 @@ class CourseSchedule:
         hass_attrs = self.courses_df["hass_attribute"].to_list()
         return [i for i, v in enumerate(hass_attrs) if v in hass_values]
 
+    def get_course_units(self, course_idx: int) -> int:
+        """Get the total units for a course, defaulting to 12 if not available."""
+        if "total_units" not in self.courses_df.columns:
+            return 12
+        units = self.courses_df[course_idx, "total_units"]
+        if units is None:
+            return 12
+        return int(units)
+
 
 @dataclass
 class ConstraintContext:
@@ -589,12 +598,10 @@ class RequirementConstraintBuilder:
         # For GTE thresholds, need at least 'cutoff' items satisfied
         cutoff = threshold.cutoff
 
-        # Determine if we're counting subjects or units
+        # Handle unit-based thresholds separately
         if threshold.criterion == "units":
-            # TODO: Implement unit counting - needs access to course units
-            warnings.append(
-                f"Group '{group_name}' uses unit-based threshold - "
-                "not yet implemented, falling back to subject counting"
+            return self._build_units_threshold_group(
+                node, group_var, child_vars, child_results, child_nodes, path, warnings, errors, cutoff
             )
 
         # Fireroad's actual behavior (from source code analysis in SUMMARY.md):
@@ -691,6 +698,16 @@ class RequirementConstraintBuilder:
                 # When cutoff is 0, the group is satisfied even with 0 courses, so requiring
                 # "at least one child satisfied" would incorrectly force courses to be taken.
                 # The threshold constraint alone is sufficient for optional groups.
+
+        # Enforce distinct_threshold if present (e.g., "from at least 3 categories")
+        # This requires that courses come from at least N distinct child groups
+        if node.distinct_threshold is not None:
+            distinct_cutoff = node.distinct_threshold.cutoff
+            # Count how many distinct children (categories) have at least one course satisfied
+            # Each child_var represents whether that child/category is satisfied
+            if child_vars and distinct_cutoff > 0:
+                self.ctx.model.Add(sum(child_vars) >= distinct_cutoff).OnlyEnforceIf(group_var)
+
         return ConstraintResult(
             satisfied_var=group_var,
             warnings=warnings,

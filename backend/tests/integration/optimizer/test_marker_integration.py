@@ -16,14 +16,8 @@ import pytest
 from ortools.sat.python import cp_model
 
 from api.models.requests import Marker
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_requirement
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.marker_constraint_builder import add_marker_constraints
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
 from tests.conftest import OptimizerTestConfig
+from tests.test_helpers import build_optimizer_model
 
 
 def build_full_optimizer(
@@ -37,47 +31,14 @@ def build_full_optimizer(
     
     Returns the model, take_vars, and courses_df for verification.
     """
-    # Load real data
-    courses_data = get_courses_data()
-    courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-    requirements_data = get_requirements(requirement_keys)
-    prereq_trees = get_parsed_prerequisites(courses_df)
-
-    # Build model
-    model = cp_model.CpModel()
-    take_vars = create_take_vars(
-        model, courses_df, start_year,
-        max_semesters=max_semesters, markers=markers
+    result = build_optimizer_model(
+        requirement_keys=requirement_keys,
+        markers=markers,
+        start_year=start_year,
+        max_semesters=max_semesters,
+        with_objectives=False,
     )
-    add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-
-    # Add requirement constraints
-    for req_key in requirement_keys:
-        if req_key in requirements_data:
-            req_data = requirements_data[req_key]
-            if isinstance(req_data, dict):
-                req_tree = parse_requirement({
-                    'reqs': req_data.get('reqs', []),
-                    'title': req_key
-                })
-                validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                if validation.pruned_tree is not None:
-                    add_requirement_constraints(
-                        model, take_vars, validation.pruned_tree,
-                        courses_df, start_year, enforce=True
-                    )
-
-    # Add prerequisite constraints (skip override courses)
-    override_course_ids = {m.courseId for m in markers if m.status == 'override'}
-    add_prerequisite_constraints(
-        model, take_vars, courses_df, start_year,
-        prereq_trees, override_course_ids
-    )
-
-    # Add marker constraints
-    add_marker_constraints(model, take_vars, markers, courses_df, start_year)
-
-    return model, take_vars, courses_df
+    return result.model, result.take_vars, result.courses_df
 
 
 def get_course_idx(courses_df: pl.DataFrame, course_id: str) -> int:
@@ -127,7 +88,7 @@ class TestScatteredMarkersCS:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -158,7 +119,7 @@ class TestScatteredMarkersCS:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -188,7 +149,7 @@ class TestScatteredMarkersCS:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -226,7 +187,7 @@ class TestScatteredMarkersMechE:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -255,7 +216,7 @@ class TestScatteredMarkersMechE:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -292,7 +253,7 @@ class TestScatteredMarkersMath:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -322,7 +283,7 @@ class TestScatteredMarkersMath:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -355,7 +316,7 @@ class TestScatteredMarkersMath:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -396,7 +357,7 @@ class TestScatteredMarkersDoubleMajor:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -429,7 +390,7 @@ class TestScatteredMarkersDoubleMajor:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -461,7 +422,7 @@ class TestEdgeCaseMarkers:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -487,7 +448,7 @@ class TestEdgeCaseMarkers:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -516,7 +477,7 @@ class TestEdgeCaseMarkers:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \
@@ -541,7 +502,7 @@ class TestEdgeCaseMarkers:
         )
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
+        optimizer_config.configure_solver(solver)
         status = solver.Solve(model)
 
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE], \

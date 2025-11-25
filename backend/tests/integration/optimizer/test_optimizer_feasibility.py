@@ -11,16 +11,10 @@ These tests use a standardized framework to ensure:
 This replaces the simple feasibility-only tests with comprehensive validation.
 """
 
-import polars as pl
 import pytest
 from ortools.sat.python import cp_model
 
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_requirement
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirement_constraint_builder import add_requirement_constraints
+from tests.test_helpers import build_optimizer_model, solve_model
 
 
 @pytest.mark.slow
@@ -50,44 +44,19 @@ class TestOptimizerFeasibility:
 
         print(f"\n[TEST] Testing {degree_id} ({degree_config['description']})")
 
-        # Load real data
-        courses_data = get_courses_data()
-        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-        requirements_data = get_requirements((degree_id, 'girs'))
-        prereq_trees = get_parsed_prerequisites(courses_df)
-
-        # Build optimization model
-        model = cp_model.CpModel()
-        take_vars = create_take_vars(
-            model, courses_df, optimizer_config.start_year,
-            max_semesters=max_semesters, markers=None
+        # Build and solve using unified helper
+        result = build_optimizer_model(
+            requirement_keys=(degree_id, 'girs'),
+            start_year=optimizer_config.start_year,
+            max_semesters=max_semesters,
+            with_objectives=False,  # Feasibility tests don't need objectives
         )
-        add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-        add_prerequisite_constraints(
-            model, take_vars, courses_df, optimizer_config.start_year,
-            prereq_trees, set()
+        
+        solver, status = solve_model(
+            result.model,
+            timeout_seconds=optimizer_config.solver_timeout_seconds,
+            random_seed=optimizer_config.solver_random_seed,
         )
-
-        # Add degree requirements
-        for req_key in [degree_id, 'girs']:
-            if req_key in requirements_data:
-                req_data = requirements_data[req_key]
-                if isinstance(req_data, dict):
-                    req_tree = parse_requirement({
-                        'reqs': req_data.get('reqs', []),
-                        'title': req_key
-                    })
-                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                    if validation.pruned_tree is not None:
-                        add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, optimizer_config.start_year, enforce=True
-                        )
-
-        # Solve
-        solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
-        status = solver.Solve(model)
 
         print(f"[TEST] Solver status: {status}")
 
@@ -154,54 +123,21 @@ class TestOptimizerFeasibility:
 
         This should be feasible but require more semesters.
         """
-        degree_ids = ['major6-3new', 'major15-1']
-
-        # Double major needs more semesters
-        max_semesters = 12
-        min_courses = 30
-        max_courses = 45
-
         print("\n[TEST] Testing double major: 6-3 + 15")
-        print(f"[TEST] Expected {min_courses}-{max_courses} courses over {max_semesters} semesters")
 
-        # Load data
-        courses_data = get_courses_data()
-        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-        requirements_data = get_requirements(tuple(degree_ids + ['girs']))
-        prereq_trees = get_parsed_prerequisites(courses_df)
-
-        # Build model
-        model = cp_model.CpModel()
-        take_vars = create_take_vars(
-            model, courses_df, optimizer_config.start_year,
-            max_semesters=max_semesters, markers=None
+        # Build and solve using unified helper
+        result = build_optimizer_model(
+            requirement_keys=('major6-3new', 'major15-1', 'girs'),
+            start_year=optimizer_config.start_year,
+            max_semesters=12,
+            with_objectives=False,
         )
-        add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-        add_prerequisite_constraints(
-            model, take_vars, courses_df, optimizer_config.start_year,
-            prereq_trees, set()
+        
+        solver, status = solve_model(
+            result.model,
+            timeout_seconds=optimizer_config.solver_timeout_seconds,
+            random_seed=optimizer_config.solver_random_seed,
         )
-
-        # Add both degree requirements + GIRs
-        for req_key in degree_ids + ['girs']:
-            if req_key in requirements_data:
-                req_data = requirements_data[req_key]
-                if isinstance(req_data, dict):
-                    req_tree = parse_requirement({
-                        'reqs': req_data.get('reqs', []),
-                        'title': req_key
-                    })
-                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                    if validation.pruned_tree is not None:
-                        add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, optimizer_config.start_year, enforce=True
-                        )
-
-        # Solve
-        solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
-        status = solver.Solve(model)
 
         print(f"[TEST] Solver status: {status}")
 
@@ -268,45 +204,21 @@ class TestOptimizerFeasibility:
 
     def test_major_with_minor(self, optimizer_config):
         """Test Course 6-3 + Economics minor remains feasible."""
-        degree_ids = ['major6-3new', 'minor14']
-        max_semesters = optimizer_config.max_semesters
-
         print("\n[TEST] Testing major with minor: 6-3 + Economics minor")
 
-        courses_data = get_courses_data()
-        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-        requirements_data = get_requirements(tuple(degree_ids + ['girs']))
-        prereq_trees = get_parsed_prerequisites(courses_df)
-
-        model = cp_model.CpModel()
-        take_vars = create_take_vars(
-            model, courses_df, optimizer_config.start_year,
-            max_semesters=max_semesters, markers=None
+        # Build and solve using unified helper
+        result = build_optimizer_model(
+            requirement_keys=('major6-3new', 'minor14', 'girs'),
+            start_year=optimizer_config.start_year,
+            max_semesters=optimizer_config.max_semesters,
+            with_objectives=False,
         )
-        add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
-        add_prerequisite_constraints(
-            model, take_vars, courses_df, optimizer_config.start_year,
-            prereq_trees, set()
+        
+        solver, status = solve_model(
+            result.model,
+            timeout_seconds=optimizer_config.solver_timeout_seconds,
+            random_seed=optimizer_config.solver_random_seed,
         )
-
-        for req_key in degree_ids + ['girs']:
-            if req_key in requirements_data:
-                req_data = requirements_data[req_key]
-                if isinstance(req_data, dict):
-                    req_tree = parse_requirement({
-                        'reqs': req_data.get('reqs', []),
-                        'title': req_key
-                    })
-                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                    if validation.pruned_tree is not None:
-                        add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, optimizer_config.start_year, enforce=True
-                        )
-
-        solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = optimizer_config.solver_timeout_seconds
-        status = solver.Solve(model)
 
         print(f"[TEST] Solver status: {status}")
 

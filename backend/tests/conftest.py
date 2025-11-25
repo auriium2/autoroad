@@ -6,8 +6,12 @@ all E2E tests use consistent, realistic parameters.
 """
 
 from dataclasses import dataclass, field
+from typing import Any
 
+import polars as pl
 import pytest
+
+from courses.prerequisites.types import PrereqNode
 
 
 @dataclass
@@ -26,6 +30,14 @@ class OptimizerTestConfig:
     solver_timeout_seconds: float = 20.0
     min_objective_value: int = -1000
     max_objective_value: int = 1000
+
+    # Fixed seed for CI reproducibility
+    solver_random_seed: int = 42
+
+    def configure_solver(self, solver) -> None:
+        """Apply settings to a CP-SAT solver."""
+        solver.parameters.max_time_in_seconds = self.solver_timeout_seconds
+        solver.parameters.random_seed = self.solver_random_seed
 
     degree_configs: dict[str, dict[str, int | str]] = field(default_factory=lambda: {
         'major6-3new': {
@@ -174,3 +186,45 @@ def optimizer_config():
 def test_timeout():
     """Standard timeout for test execution."""
     return 60.0
+
+
+@dataclass
+class CachedCourseData:
+    """Cached course data to avoid reloading for every test."""
+    courses_df: pl.DataFrame
+    prereq_trees: dict[int, PrereqNode]
+    
+    _requirements_cache: dict[tuple[str, ...], dict[str, Any]] = field(default_factory=dict)
+    
+    def get_requirements(self, requirement_keys: tuple[str, ...]) -> dict[str, Any]:
+        """Get requirements, caching results for repeated calls."""
+        if requirement_keys not in self._requirements_cache:
+            from api.services.cache import get_requirements
+            self._requirements_cache[requirement_keys] = get_requirements(requirement_keys)
+        return self._requirements_cache[requirement_keys]
+
+
+@pytest.fixture(scope="session")
+def cached_course_data() -> CachedCourseData:
+    """
+    Session-scoped fixture providing cached course data.
+    
+    This avoids reloading the ~6000 courses and ~2000 prereq trees
+    for every single test, significantly speeding up test runs.
+    
+    Usage:
+        def test_something(cached_course_data):
+            courses_df = cached_course_data.courses_df
+            prereq_trees = cached_course_data.prereq_trees
+            requirements = cached_course_data.get_requirements(('major6-3new', 'girs'))
+    """
+    from api.services.cache import get_courses_data, get_parsed_prerequisites
+    
+    courses_data = get_courses_data()
+    courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+    prereq_trees = get_parsed_prerequisites(courses_df)
+    
+    return CachedCourseData(
+        courses_df=courses_df,
+        prereq_trees=prereq_trees,
+    )
