@@ -67,5 +67,6 @@ The solver runs multi-threaded and streams solutions in real-time over SSE.
 
 ## Credits
 - auriium2
+- ricardo ochoa for telling me to add category weighting
 - reactflow, for their great graph library
 - SIPB, for making and maintaining the fireroad api and the original Courseroad!
