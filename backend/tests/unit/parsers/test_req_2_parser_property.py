@@ -8,6 +8,7 @@ catching edge cases that manual tests miss.
 import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
+from hypothesis.strategies import DrawFn
 
 from courses.requirements.parser import (
     ParseError,
@@ -63,7 +64,7 @@ plain_string_descriptions = st.text(min_size=1, max_size=100)
 def leaf_req_dict(course_id_strategy=any_leaf_course_id, is_plain_string: bool = False):
     """Generate a leaf requirement dictionary."""
     @st.composite
-    def _strategy(draw):
+    def _strategy(draw: DrawFn):
         course_id = draw(course_id_strategy)
         title = draw(optional_title)
         result = {"req": course_id}
@@ -85,7 +86,7 @@ plain_string_req_dict = st.builds(
 
 # Recursive strategy for nested requirement structures
 @st.composite
-def requirement_dict(draw, max_depth: int = 3) -> dict:
+def requirement_dict(draw: DrawFn, max_depth: int = 3) -> dict:
     """Generate a valid Fireroad requirement dictionary (leaf or group)."""
     if max_depth <= 0:
         # At max depth, always return a leaf
@@ -139,7 +140,7 @@ def requirement_dict(draw, max_depth: int = 3) -> dict:
 
 
 @st.composite
-def fireroad_response(draw, max_depth: int = 3) -> dict:
+def fireroad_response(draw: DrawFn, max_depth: int = 3) -> dict:
     """Generate a full Fireroad API response structure."""
     num_reqs = draw(st.integers(min_value=1, max_value=5))
     reqs = [draw(requirement_dict(max_depth=max_depth - 1)) for _ in range(num_reqs)]
@@ -435,9 +436,10 @@ class TestIDGeneration:
         # Root should use a slug of the title as its req_id
         assert result.req_id is not None
         # All children should have IDs that start with root's ID
-        for child in result.children:
-            assert child.req_id is not None
-            assert child.req_id.startswith(result.req_id + "/")
+        if isinstance(result, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
+            for child in result.children:
+                assert child.req_id is not None
+                assert child.req_id.startswith(result.req_id + "/")
 
 
 class TestErrorHandling:

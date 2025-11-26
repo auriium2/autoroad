@@ -43,7 +43,7 @@ class MinimizeUnits:
         Cost = sum(total_units × take_var)
 
         """
-        units_list = context.extra.get('_units_list') or context.courses_df['total_units'].to_list()
+        units_list = (context.extra.get('_units_list') if context.extra else None) or context.courses_df['total_units'].to_list()
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
@@ -113,8 +113,8 @@ class AvoidSmallClasses:
         marked_course_ids = context.marked_course_ids or set()
 
         # Pre-fetch lists for O(1) access
-        units_list = context.extra.get('_units_list') or context.courses_df['total_units'].to_list()
-        subject_ids = context.extra.get('_subject_ids') or context.courses_df['subject_id'].to_list()
+        units_list = (context.extra.get('_units_list') if context.extra else None) or context.courses_df['total_units'].to_list()
+        subject_ids = (context.extra.get('_subject_ids') if context.extra else None) or context.courses_df['subject_id'].to_list()
 
         terms = []
 
