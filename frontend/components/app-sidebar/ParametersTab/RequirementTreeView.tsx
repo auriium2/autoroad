@@ -55,6 +55,10 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
   const requirementTiers = useOptimizationStore((state) => state.requirementTiers);
   const setRequirementTier = useOptimizationStore((state) => state.setRequirementTier);
 
+  // Convert local path (e.g., "root.0") to namespaced path (e.g., "girs.0")
+  // The backend uses requirement_key as root, so we replace "root" with it
+  const getNamespacedPath = (localPath: string) => localPath.replace(/^root/, requirementKey);
+
   const renderNode = (req: RequirementNode, path: string, depth: number = 0): React.ReactNode => {
     const isExpanded = expandedNodes.has(path);
     const hasChildren = req.reqs && req.reqs.length > 0;
@@ -80,7 +84,9 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
     const progress = req.progress ?? 0;
     const max = req.max ?? 1;
     const percentage = req.percent_fulfilled ?? 0;
-    const nodeTier = requirementTiers[path] ?? 0;
+    // Use namespaced path for tier storage to avoid collisions between different requirements
+    const namespacedPath = getNamespacedPath(path);
+    const nodeTier = requirementTiers[namespacedPath] ?? 0;
 
     return (
       <div key={path} style={{ marginLeft: `${depth * 12}px` }}>
@@ -110,13 +116,13 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
               {progress}/{max}
             </span>
             {viewMode === "cost" && lastCostBreakdown && nodeTier > 0 && (() => {
-              // green THROBBING cost indicator
-              const categoryKey = `category:${path}`;
+              // green THROBBING cost indicator - use namespaced path
+              const categoryKey = `category:${namespacedPath}`;
               const categoryCost = lastCostBreakdown[categoryKey];
 
               if (categoryCost !== undefined) {
                 return (
-                  <span className="text-xs font-mono tabular-nums text-green-400 animate-pulse" title={`Category reward for ${path}`}>
+                  <span className="text-xs font-mono tabular-nums text-green-400 animate-pulse" title={`Category reward for ${namespacedPath}`}>
                     {categoryCost}
                   </span>
                 );
@@ -125,7 +131,7 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
             })()}
             <TierSelector
               tier={nodeTier}
-              onChange={(tier) => setRequirementTier(path, tier)}
+              onChange={(tier) => setRequirementTier(namespacedPath, tier)}
               maxTier={3}
             />
           </div>

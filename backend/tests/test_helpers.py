@@ -122,7 +122,7 @@ def build_optimizer_model(
                 if validation.pruned_tree is not None:
                     _aux_vars, _debug_names, mapping = add_requirement_constraints(
                         model, take_vars, validation.pruned_tree,
-                        courses_df, enforce=True
+                        courses_df, req_key, enforce=True
                     )
                     # Merge course->requirements mappings
                     for course_idx, req_paths in mapping.items():

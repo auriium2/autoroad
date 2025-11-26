@@ -28,7 +28,8 @@ class MinimizeUnits:
         return "Minimize the total number of units taken across all semesters"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {'_units_list': courses_df['total_units'].to_list()}
+        units_list = courses_df['total_units'].fill_null(0).to_list()
+        return {'_units_list': units_list}
 
     def add_to_model(
         self,
@@ -41,7 +42,6 @@ class MinimizeUnits:
 
         Cost = sum(total_units × take_var)
 
-        This is the BASE optimization objective in the tier-based system.
         """
         units_list = context.extra.get('_units_list') or context.courses_df['total_units'].to_list()
         terms = []
@@ -79,8 +79,12 @@ class AvoidSmallClasses:
         return f"Penalize classes with fewer than {self.min_units} units (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        if 'total_units' not in courses_df.columns:
+            units_list = [12] * len(courses_df)
+        else:
+            units_list = courses_df['total_units'].fill_null(12).to_list()
         return {
-            '_units_list': courses_df['total_units'].to_list(),
+            '_units_list': units_list,
             '_subject_ids': courses_df['subject_id'].to_list()
         }
 

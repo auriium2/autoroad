@@ -19,7 +19,7 @@ class TestAvoidSmallClasses:
         """Regression test: ensure we read 'total_units' column correctly."""
         # Create sample courses with different unit values
         courses_df = pl.DataFrame({
-            'course_id': ['6.100A', '6.9020', '21M.401', '6.1010'],
+            'subject_id': ['6.100A', '6.9020', '21M.401', '6.1010'],
             'total_units': [12, 6, 3, 1],  # Note: total_units, not 'units'
         })
 
@@ -31,15 +31,17 @@ class TestAvoidSmallClasses:
             var = model.NewBoolVar(f'take_{idx}_1')
             take_vars[(idx, 1)] = var
 
+        objective = AvoidSmallClasses(min_units=3)
+        extra = objective.preprocess(courses_df)
+
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={},
+            extra=extra,
             objective_tiers={'avoid_small_classes': 2}
         )
 
         # Test with default threshold (min_units=3)
-        objective = AvoidSmallClasses(min_units=3)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force all courses to be taken
@@ -61,7 +63,7 @@ class TestAvoidSmallClasses:
     def test_no_penalty_for_courses_at_or_above_threshold(self):
         """Courses with units >= min_units should not be penalized."""
         courses_df = pl.DataFrame({
-            'course_id': ['6.100A', '6.9020'],
+            'subject_id': ['6.100A', '6.9020'],
             'total_units': [12, 6],
         })
 
@@ -71,14 +73,16 @@ class TestAvoidSmallClasses:
             (1, 1): model.NewBoolVar('take_1_1'),
         }
 
+        objective = AvoidSmallClasses(min_units=6)
+        extra = objective.preprocess(courses_df)
+
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={},
+            extra=extra,
             objective_tiers={'avoid_small_classes': 2}
         )
 
-        objective = AvoidSmallClasses(min_units=6)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force both courses to be taken
@@ -96,7 +100,7 @@ class TestAvoidSmallClasses:
     def test_handles_missing_total_units_column(self):
         """When total_units column is missing, should default to 12."""
         courses_df = pl.DataFrame({
-            'course_id': ['6.100A', '6.9020'],
+            'subject_id': ['6.100A', '6.9020'],
         })
 
         model = cp_model.CpModel()
@@ -104,14 +108,16 @@ class TestAvoidSmallClasses:
             (0, 1): model.NewBoolVar('take_0_1'),
         }
 
+        objective = AvoidSmallClasses(min_units=15)
+        extra = objective.preprocess(courses_df)
+
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={},
+            extra=extra,
             objective_tiers={'avoid_small_classes': 2}
         )
 
-        objective = AvoidSmallClasses(min_units=15)
         expr = objective.add_to_model(model, take_vars, context)
 
         # Force course to be taken
@@ -128,22 +134,24 @@ class TestAvoidSmallClasses:
     def test_different_penalty_values(self):
         """Test that tier parameter affects penalty correctly."""
         courses_df = pl.DataFrame({
-            'course_id': ['6.1010'],
+            'subject_id': ['6.1010'],
             'total_units': [1],
         })
 
         model = cp_model.CpModel()
         take_vars = {(0, 1): model.NewBoolVar('take_0_1')}
 
+        objective = AvoidSmallClasses(min_units=3)
+        extra = objective.preprocess(courses_df)
+
         context = ObjectiveContext(
             planning_year_start=2024,
             courses_df=courses_df,
-            extra={},
+            extra=extra,
             objective_tiers={'avoid_small_classes': 3}
         )
 
         # Test with tier 3
-        objective = AvoidSmallClasses(min_units=3)
         expr = objective.add_to_model(model, take_vars, context)
 
         model.Add(take_vars[(0, 1)] == 1)
@@ -162,7 +170,7 @@ class TestMinimizeUnits:
     def test_minimizes_total_units(self):
         """Should prefer schedules with fewer total units."""
         courses_df = pl.DataFrame({
-            'course_id': ['6.100A', '6.9020'],
+            'subject_id': ['6.100A', '6.9020'],
             'total_units': [12, 6],
         })
 
@@ -196,7 +204,7 @@ class TestMinimizeUnits:
     def test_handles_nan_units(self):
         """Should skip courses with NaN units."""
         courses_df = pl.DataFrame({
-            'course_id': ['6.100A', '6.9020'],
+            'subject_id': ['6.100A', '6.9020'],
             'total_units': [12, None],  # Polars uses None instead of NaN
         })
 

@@ -380,6 +380,7 @@ class TestRegressionBugs:
             take_vars=take_vars,
             requirement=req_tree,
             courses_df=courses_df,
+            requirement_key="test",
             enforce=True,
         )
 
@@ -469,6 +470,7 @@ class TestRegressionBugs:
             take_vars=take_vars,
             requirement=req_tree,
             courses_df=courses_df,
+            requirement_key="test",
             enforce=False,
         )
 

@@ -186,7 +186,7 @@ class TestRoadFileRegressions:
                     if validation.pruned_tree is not None:
                         add_requirement_constraints(
                             model, take_vars, validation.pruned_tree,
-                            courses_df, enforce=True
+                            courses_df, req_key, enforce=True
                         )
 
         # Add prerequisite constraints (override courses skip prereqs)

@@ -33,7 +33,7 @@ class TestCourseNode:
                 )
 
         req = nodes.Course(subject_id="6.100A")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert not result.errors
@@ -52,7 +52,7 @@ class TestCourseNode:
             take_vars[(0, semester)] = model.NewBoolVar(f"take_6.100A_s{semester}")
 
         req = nodes.Course(subject_id="MISSING.COURSE")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is None
         assert len(result.errors) > 0
@@ -72,7 +72,7 @@ class TestCourseNode:
             take_vars[(0, semester)] = model.NewBoolVar(f"take_6.100A_s{semester}")
 
         req = nodes.Course(subject_id="6.100A")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=True)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=True)
 
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -102,7 +102,7 @@ class TestGIRNode:
                 )
 
         req = nodes.GIR(gir_code="CAL1")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert not result.errors
@@ -129,7 +129,7 @@ class TestHASSNode:
                 )
 
         req = nodes.HASS(category="HASS-A")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert not result.errors
@@ -152,7 +152,7 @@ class TestHASSNode:
                 )
 
         req = nodes.HASS(category="HASS")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
 
@@ -179,7 +179,7 @@ class TestCINode:
                 )
 
         req = nodes.CI(ci_type="CI-H")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert not result.errors
@@ -202,7 +202,7 @@ class TestPlainStringNode:
         }
 
         req = nodes.PlainString(description="Must maintain a GPA above 4.0")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert len(result.warnings) > 0
@@ -235,7 +235,7 @@ class TestAllGroup:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
         assert "Intro Programming" in ctx.aux_vars
@@ -264,7 +264,7 @@ class TestAllGroup:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=True)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=True)
 
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -302,7 +302,7 @@ class TestAnyGroup:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
 
@@ -330,7 +330,7 @@ class TestAnyGroup:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=True)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=True)
 
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -373,7 +373,7 @@ class TestSubjectThresholdGroup:
                 nodes.Course(subject_id="6.1020"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
 
@@ -404,7 +404,7 @@ class TestSubjectThresholdGroup:
                 nodes.Course(subject_id="6.1010"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=True)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=True)
 
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -461,7 +461,7 @@ class TestSubjectThresholdGroup:
                 ),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
 
@@ -497,7 +497,7 @@ class TestUnitThresholdGroup:
                 nodes.Course(subject_id="6.1010"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         assert result.sat_var is not None
 
@@ -528,7 +528,7 @@ class TestUnitThresholdGroup:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=True)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=True)
 
         solver = cp_model.CpSolver()
         status = solver.Solve(model)
@@ -558,7 +558,7 @@ class TestPrunedNodes:
         }
 
         req = nodes.Course(subject_id="INVALID.COURSE", was_pruned=True)
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         # Pruned courses should contribute 0, not create an error
         # The behavior depends on implementation - check what we actually do
@@ -588,7 +588,7 @@ class TestPrunedNodes:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
         # Group should still be built with valid children
         assert result.sat_var is not None
@@ -611,11 +611,11 @@ class TestCourseToRequirements:
             take_vars[(0, semester)] = model.NewBoolVar(f"take_6.100A_s{semester}")
 
         req = nodes.Course(subject_id="6.100A")
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
-        # Course 0 should be recorded with path "root"
+        # Course 0 should be recorded with path "test" (the requirement_key)
         assert 0 in ctx.course_to_requirements
-        assert "root" in ctx.course_to_requirements[0]
+        assert "test" in ctx.course_to_requirements[0]
 
     def test_nested_paths(self):
         """Test that nested structures have correct paths."""
@@ -640,13 +640,13 @@ class TestCourseToRequirements:
                 nodes.Course(subject_id="6.100B"),
             )
         )
-        result, ctx = build_constraints(model, take_vars, req, df, enforce=False)
+        result, ctx = build_constraints(model, take_vars, req, df, "test", enforce=False)
 
-        # Course 0 should have path "root.0", course 1 should have "root.1"
+        # Course 0 should have path "test.0", course 1 should have "test.1"
         assert 0 in ctx.course_to_requirements
         assert 1 in ctx.course_to_requirements
-        assert "root.0" in ctx.course_to_requirements[0]
-        assert "root.1" in ctx.course_to_requirements[1]
+        assert "test.0" in ctx.course_to_requirements[0]
+        assert "test.1" in ctx.course_to_requirements[1]
 
 
 class TestAddRequirementConstraints:
@@ -672,7 +672,7 @@ class TestAddRequirementConstraints:
         req = nodes.Course(subject_id="6.100A")
 
         aux_vars, var_name_map, course_to_requirements = add_requirement_constraints(
-            model, take_vars, req, df, enforce=True
+            model, take_vars, req, df, "test", enforce=True
         )
 
         assert isinstance(aux_vars, dict)

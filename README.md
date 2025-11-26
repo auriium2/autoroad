@@ -62,6 +62,10 @@ The solver runs multi-threaded and streams solutions in real-time over SSE.
 **Frontend**: Next.js + React  
 **Deploy**: Vercel + Google Cloud Run
 
+## Important Lessons for prospective contributors
+- or tools's integer programming is nondeterministic when you run it via xtest
+- fireroad's distinct threshold progress api is logically incorrect
+
 ## AI Usage
 - Ah, you think vibe coding is your ally? You merely adopted the full stack. I was born in it, molded by it. I didn't touch the grass until I was already a man, by then it was nothing to me but frightening!
 

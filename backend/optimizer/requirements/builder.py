@@ -34,6 +34,7 @@ def build_constraints(
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     requirement: types.Node,
     courses_df: pl.DataFrame,
+    requirement_key: str,
     enforce: bool = True,
 ) -> tuple[ContributionResult, Ctx]:
     """
@@ -44,6 +45,7 @@ def build_constraints(
         take_vars: Dictionary mapping (course_idx, semester) to decision variables
         requirement: Root of the requirement tree
         courses_df: DataFrame containing course information
+        requirement_key: Key to namespace paths (e.g., "girs", "major6-3") to avoid collisions
         enforce: Whether to require the root requirement be satisfied (default: True)
 
     Returns:
@@ -53,7 +55,7 @@ def build_constraints(
 
     # Build the root requirement (no contribution_vars needed at root level)
     # Propagation happens inside dispatch.build for each group node
-    result = dispatch.build(requirement, ctx, "root", need_contribution_vars=False)
+    result = dispatch.build(requirement, ctx, requirement_key, need_contribution_vars=False)
 
     # Enforce if requested
     if enforce and result.sat_var is not None:
@@ -100,6 +102,7 @@ def add_requirement_constraints(
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     requirement: types.Node,
     courses_df: pl.DataFrame,
+    requirement_key: str,
     enforce: bool = True,
 ) -> tuple[dict[str, cp_model.IntVar], dict[str, str], dict[int, set[str]]]:
     """
@@ -119,6 +122,7 @@ def add_requirement_constraints(
         requirement=requirement,
         courses_df=courses_df,
         enforce=enforce,
+        requirement_key=requirement_key,
     )
 
     print_summary(result)

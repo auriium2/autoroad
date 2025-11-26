@@ -269,7 +269,7 @@ async def optimize(request: OptimizationRequest):
                             if validation.pruned_tree is not None:
                                 _, _, mapping = add_requirement_constraints(
                                     model, take_vars, validation.pruned_tree,
-                                    courses_df, enforce=True
+                                    courses_df, req_key, enforce=True
                                 )
                                 all_mappings.append(mapping)
 
@@ -708,7 +708,7 @@ async def get_course_categories(request: OptimizationRequest):
                         if validation.pruned_tree is not None:
                             _, _, mapping = add_requirement_constraints(
                                 model, take_vars, validation.pruned_tree,
-                                courses_df, enforce=False
+                                courses_df, req_key, enforce=False
                             )
                             # Merge this mapping into the combined dict
                             for course_idx, req_paths in mapping.items():

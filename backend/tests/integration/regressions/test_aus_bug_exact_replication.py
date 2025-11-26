@@ -111,7 +111,7 @@ def test_aus_bug_with_exact_solution():
 
     # Add prerequisite constraints
     override_course_ids = {m.courseId for m in markers if m.status == 'override'}
-    prereq_result = add_prerequisite_constraints(
+    prereq_result, _ = add_prerequisite_constraints(
         model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids
     )
     print(f"Prerequisite constraints: {prereq_result.constraints_added}")
@@ -260,9 +260,10 @@ def test_aus_bug_with_exact_solution():
                                 gc_pruned = hasattr(gc, 'was_pruned') and gc.was_pruned
                                 print(f"        Course {j}: {gc.subject_id}, was_pruned={gc_pruned}")
 
+        req_key = 'major6-3new'
         aux_vars_result, debug_names, mapping = add_requirement_constraints(
             model, take_vars, validation.pruned_tree,
-            courses_df, enforce=True
+            courses_df, req_key, enforce=True
         )
         aux_vars.update(aux_vars_result)
         print(f"\nCreated {len(aux_vars)} auxiliary variables")

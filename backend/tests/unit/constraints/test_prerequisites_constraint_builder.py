@@ -270,7 +270,7 @@ class TestAddPrerequisiteConstraints:
         # Course 0 requires Course 1
         prereq_trees = {0: PrereqCourse("6.100B")}
 
-        result = add_prerequisite_constraints(
+        result, _ = add_prerequisite_constraints(
             model, take_vars, df, 2024, prereq_trees
         )
 
@@ -448,7 +448,7 @@ class TestASEAndMustTake:
         prereq_trees = {0: PrereqCourse("8.01")}
         override_course_ids = {'8.02'}
 
-        result = add_prerequisite_constraints(
+        result, _ = add_prerequisite_constraints(
             model, take_vars, df, 2024, prereq_trees, override_course_ids
         )
 
@@ -782,7 +782,7 @@ class TestComplexPrerequisites:
 
         prereq_trees = {0: prereq_tree}
 
-        result = add_prerequisite_constraints(
+        result, _ = add_prerequisite_constraints(
             model, take_vars, df, 2024, prereq_trees
         )
 
@@ -836,7 +836,7 @@ class TestComplexPrerequisites:
         )
 
         prereq_trees = {0: prereq_tree}
-        result = add_prerequisite_constraints(model, take_vars, df, 2024, prereq_trees)
+        result, _ = add_prerequisite_constraints(model, take_vars, df, 2024, prereq_trees)
 
         assert result.constraints_added == 8
         assert not result.has_issues

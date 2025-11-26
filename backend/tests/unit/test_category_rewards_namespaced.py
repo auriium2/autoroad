@@ -3,7 +3,7 @@ Tests for category rewards with namespaced requirement paths.
 
 These tests verify that the fix for the subcategory starring bug works correctly:
 - Different requirements can have subcategories at the same index without conflicts
-- Paths are properly namespaced with requirement keys (e.g., "gir:root.0" vs "major6-3:root.0")
+- Paths are properly namespaced with requirement keys (e.g., "gir.0" vs "major6-3.0")
 - Category rewards are applied correctly to the right courses based on namespaced paths
 """
 
@@ -36,20 +36,20 @@ class TestNamespacedCategoryRewards:
         }
 
         # Simulate the bug scenario:
-        # - User stars "Science Requirement" (root.0) in GIR with tier 3
-        # - "Programming Skills" (root.0) in major6-3 should have tier 0 (not starred)
-        # With the fix, these are now "gir:root.0" and "major6-3:root.0" (separate)
+        # - User stars "Science Requirement" (index 0) in GIR with tier 3
+        # - "Programming Skills" (index 0) in major6-3 should have tier 0 (not starred)
+        # With the fix, these are now "gir.0" and "major6-3.0" (separate)
 
         requirement_tiers = {
-            'gir:root.0': 3,        # Science Requirement starred (tier 3)
-            'major6-3:root.0': 0,   # Programming Skills NOT starred (tier 0)
+            'gir.0': 3,        # Science Requirement starred (tier 3)
+            'major6-3.0': 0,   # Programming Skills NOT starred (tier 0)
         }
 
         course_to_requirements = {
-            0: {'gir:root.0'},              # 8.01 satisfies GIR Science
-            1: {'gir:root.0', 'major6-3:root.0'},  # 6.100A satisfies both
-            2: {'gir:root.1'},              # 18.01 satisfies GIR Math (different subcategory)
-            3: {'major6-3:root.0'},         # 6.1200 satisfies Major Programming
+            0: {'gir.0'},              # 8.01 satisfies GIR Science
+            1: {'gir.0', 'major6-3.0'},  # 6.100A satisfies both
+            2: {'gir.1'},              # 18.01 satisfies GIR Math (different subcategory)
+            3: {'major6-3.0'},         # 6.1200 satisfies Major Programming
         }
 
         context = ObjectiveContext(
@@ -73,12 +73,12 @@ class TestNamespacedCategoryRewards:
         assert status == cp_model.OPTIMAL
 
         # Expected behavior:
-        # - gir:root.0 has tier 3, so courses in it get tier 3 rewards
-        # - major6-3:root.0 has tier 0, so courses in it get NO rewards
-        # - 8.01: only in gir:root.0 (tier 3) → gets reward
+        # - gir.0 has tier 3, so courses in it get tier 3 rewards
+        # - major6-3.0 has tier 0, so courses in it get NO rewards
+        # - 8.01: only in gir.0 (tier 3) → gets reward
         # - 6.100A: in both, but max tier is 3 → gets tier 3 reward
-        # - 18.01: in gir:root.1 (not starred) → no reward
-        # - 6.1200: only in major6-3:root.0 (tier 0) → no reward
+        # - 18.01: in gir.1 (not starred) → no reward
+        # - 6.1200: only in major6-3.0 (tier 0) → no reward
 
         # The objective value should be negative (rewards applied)
         # At least 8.01 and 6.100A should get tier 3 rewards
@@ -101,17 +101,17 @@ class TestNamespacedCategoryRewards:
             (2, 1): model.NewBoolVar('take_C_1'),
         }
 
-        # All subcategories at root.0, but in different requirements
+        # All subcategories at index 0, but in different requirements
         requirement_tiers = {
-            'req1:root.0': 1,   # Tier 1
-            'req2:root.0': 2,   # Tier 2
-            'req3:root.0': 3,   # Tier 3
+            'req1.0': 1,   # Tier 1
+            'req2.0': 2,   # Tier 2
+            'req3.0': 3,   # Tier 3
         }
 
         course_to_requirements = {
-            0: {'req1:root.0'},  # Only in tier 1 category
-            1: {'req2:root.0'},  # Only in tier 2 category
-            2: {'req3:root.0'},  # Only in tier 3 category
+            0: {'req1.0'},  # Only in tier 1 category
+            1: {'req2.0'},  # Only in tier 2 category
+            2: {'req3.0'},  # Only in tier 3 category
         }
 
         context = ObjectiveContext(
@@ -156,17 +156,17 @@ class TestNamespacedCategoryRewards:
             (1, 1): model.NewBoolVar('take_major_1'),
         }
 
-        # OLD BUG: If user starred GIR root.2, it would also star major root.2
-        # NEW FIX: They are separate - gir:root.2 vs major:root.2
+        # OLD BUG: If user starred GIR index 2, it would also star major index 2
+        # NEW FIX: They are separate - gir.2 vs major.2
 
         requirement_tiers = {
-            'gir:root.2': 3,    # GIR subcategory 2 is starred (tier 3)
-            'major:root.2': 0,  # Major subcategory 2 is NOT starred (tier 0)
+            'gir.2': 3,    # GIR subcategory 2 is starred (tier 3)
+            'major.2': 0,  # Major subcategory 2 is NOT starred (tier 0)
         }
 
         course_to_requirements = {
-            0: {'gir:root.2'},    # GIR course in starred category
-            1: {'major:root.2'},  # Major course in non-starred category
+            0: {'gir.2'},    # GIR course in starred category
+            1: {'major.2'},  # Major course in non-starred category
         }
 
         context = ObjectiveContext(
@@ -213,13 +213,13 @@ class TestNamespacedCategoryRewards:
 
         # Test deeply nested paths
         requirement_tiers = {
-            'gir:root.0.1.2': 3,        # Deeply nested in GIR
-            'major:root.0.1.2': 1,      # Same structure in major, different tier
+            'gir.0.1.2': 3,        # Deeply nested in GIR
+            'major.0.1.2': 1,      # Same structure in major, different tier
         }
 
         course_to_requirements = {
-            0: {'gir:root.0.1.2'},
-            1: {'major:root.0.1.2'},
+            0: {'gir.0.1.2'},
+            1: {'major.0.1.2'},
         }
 
         context = ObjectiveContext(

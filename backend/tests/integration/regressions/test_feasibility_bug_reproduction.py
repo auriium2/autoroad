@@ -94,7 +94,7 @@ def test_feasibility_bug_major_6_3_with_markers():
 
     # Add prerequisite constraints (with override courses skipping prereqs)
     override_course_ids = {m.courseId for m in markers if m.status == 'override'}
-    prereq_result = add_prerequisite_constraints(
+    prereq_result, _ = add_prerequisite_constraints(
         model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids
     )
     print(f"[TEST] Prerequisite constraints: {prereq_result.constraints_added}")
@@ -110,7 +110,7 @@ def test_feasibility_bug_major_6_3_with_markers():
                 if validation.pruned_tree is not None:
                     aux_vars, debug_names, mapping = add_requirement_constraints(
                         model, take_vars, validation.pruned_tree,
-                        courses_df, enforce=True
+                        courses_df, req_key, enforce=True
                     )
                     # Merge mappings
                     for course_idx, req_paths in mapping.items():
