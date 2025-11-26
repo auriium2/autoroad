@@ -1,5 +1,3 @@
-"""Custom hatch build hook to regenerate __init__.py barrel exports before build."""
-
 import subprocess
 import sys
 from pathlib import Path
