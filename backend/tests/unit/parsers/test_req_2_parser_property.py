@@ -5,17 +5,19 @@ These tests verify invariants that should hold for ANY valid input,
 catching edge cases that manual tests miss.
 """
 
+from typing import Any
+
 import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 from hypothesis.strategies import DrawFn
 
-from courses.requirements.parser import (
+from shared.courses.requirements.parser import (
     ParseError,
     parse,
     parse_fireroad_response,
 )
-from courses.requirements.types import (
+from shared.courses.requirements.types import (
     CI,
     GIR,
     HASS,
@@ -86,7 +88,7 @@ plain_string_req_dict = st.builds(
 
 # Recursive strategy for nested requirement structures
 @st.composite
-def requirement_dict(draw: DrawFn, max_depth: int = 3) -> dict:
+def requirement_dict(draw: DrawFn, max_depth: int = 3) -> dict[str, Any]:
     """Generate a valid Fireroad requirement dictionary (leaf or group)."""
     if max_depth <= 0:
         # At max depth, always return a leaf
@@ -112,7 +114,7 @@ def requirement_dict(draw: DrawFn, max_depth: int = 3) -> dict:
     # Optionally add a threshold
     has_threshold = draw(st.booleans())
 
-    result: dict = {"reqs": children}
+    result: dict[str, Any] = {"reqs": children}
     if title:
         result["title"] = title
     if connection_type:

@@ -7,14 +7,14 @@ into req_2 typed nodes.
 
 import pytest
 
-from courses.requirements.parser import (
+from shared.courses.requirements.parser import (
     ParseError,
     node_to_string,
     parse,
     parse_fireroad_response,
     parse_requirement_list,
 )
-from courses.requirements.types import (
+from shared.courses.requirements.types import (
     CI,
     GIR,
     HASS,

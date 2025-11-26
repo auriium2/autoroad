@@ -1,0 +1,36 @@
+# Google Cloud Run service definitions
+# Deploy with: gcloud run services replace cloudrun.yaml --region=us-central1
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: autoroad-worker
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/cpu-throttling: "false"
+    spec:
+      containerConcurrency: 1  # One optimization per instance (CPU-bound)
+      timeoutSeconds: 60
+      containers:
+        - image: gcr.io/PROJECT_ID/autoroad-worker:latest
+          resources:
+            limits:
+              memory: 2Gi
+              cpu: "2"
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redis-url
+                  key: latest
+            - name: WORKER_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: worker-secret
+                  key: latest
+            - name: CPSAT_NUM_WORKERS
+              value: "4"

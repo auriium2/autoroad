@@ -8,9 +8,9 @@ translated into CP-SAT constraints.
 import polars as pl
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from optimizer.marker_constraint_builder import add_marker_constraints
-from optimizer.semesters import REGULAR_SEMESTERS
+from shared.optimizer.marker_constraint_builder import add_marker_constraints
+from shared.optimizer.semesters import REGULAR_SEMESTERS
+from shared.models.requests import Marker
 
 
 def create_test_courses_df() -> pl.DataFrame:

@@ -14,7 +14,7 @@ import polars as pl
 import pytest
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
+from shared.models.requests import Marker
 from tests.conftest import OptimizerTestConfig
 from tests.test_helpers import build_optimizer_model, solve_model
 

@@ -7,11 +7,11 @@ Trivial tests removed - covered by property-based tests in test_prerequisites_pa
 
 import pytest
 
-from courses.prerequisites.parser import (
+from shared.courses.prerequisites.parser import (
     extract_course_ids,
     parse_fireroad,
 )
-from courses.prerequisites.types import PrereqCourse, PrereqGroup
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
 
 
 class TestFireroadParser:

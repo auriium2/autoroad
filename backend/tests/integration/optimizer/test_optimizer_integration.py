@@ -13,10 +13,10 @@ These tests cover bugs we've encountered and fixed:
 import polars as pl
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from courses.prerequisites.types import PrereqCourse
-from optimizer.marker_constraint_builder import add_marker_constraints
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.courses.prerequisites.types import PrereqCourse
+from shared.optimizer.marker_constraint_builder import add_marker_constraints
+from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.models.requests import Marker
 
 
 def create_simple_courses_df():
@@ -397,7 +397,7 @@ class TestOptimizerIntegration:
         add_marker_constraints(model, take_vars, markers, courses_df, 2024)
 
         # Add "at most once" constraint (mimics add_basic_constraints)
-        from optimizer.semesters import ALL_SEMESTERS
+        from shared.optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_semester_takes = [
                 take_vars[(course_idx, s)]
@@ -464,7 +464,7 @@ class TestOptimizerIntegration:
         assert result.constraints_added == 1
 
         # Add "at most once" constraint (mimics add_basic_constraints)
-        from optimizer.semesters import ALL_SEMESTERS
+        from shared.optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_semester_takes = [
                 take_vars[(course_idx, s)]
@@ -479,7 +479,7 @@ class TestOptimizerIntegration:
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
 
         # Verify 18.01 is in exactly one regular semester (forced by Must Take)
-        from optimizer.semesters import REGULAR_SEMESTERS
+        from shared.optimizer.semesters import REGULAR_SEMESTERS
         regular_placements = sum(
             solver.Value(take_vars[(course_18_01_idx, s)])
             for s in REGULAR_SEMESTERS
@@ -561,8 +561,8 @@ class TestOptimizerIntegration:
         # This makes semesters 1-4 past
         from unittest.mock import patch
 
-        from optimizer.constraints.basic import add_past_semester_constraints
-        with patch('utils.utils.get_current_semester_index', return_value=4):
+        from shared.optimizer.constraints.basic import add_past_semester_constraints
+        with patch('shared.utils.get_current_semester_index', return_value=4):
             add_past_semester_constraints(model, take_vars, courses_df, 2024, markers)
 
         # Force taking another course (to verify optimizer can still work)
@@ -663,7 +663,7 @@ class TestOptimizerIntegration:
                     model.Add(take_vars[(course_idx, semester)] == 0)
 
         # Add "at most once" constraint
-        from optimizer.semesters import ALL_SEMESTERS
+        from shared.optimizer.semesters import ALL_SEMESTERS
         for course_idx in range(len(courses_df)):
             all_takes = [
                 take_vars[(course_idx, s)]

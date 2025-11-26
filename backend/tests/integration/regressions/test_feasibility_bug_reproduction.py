@@ -9,14 +9,14 @@ import pytest
 import requests
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_fireroad_response
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.objectives.builder import ObjectiveBuilder
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirements.builder import add_requirement_constraints
+from shared.courses.requirements.parser import parse_fireroad_response
+from shared.courses.requirements.validator import validate_and_prune
+from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
+from shared.optimizer.objectives.builder import ObjectiveBuilder
+from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.optimizer.requirements.builder import add_requirement_constraints
+from shared.models.requests import Marker
+from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
 
 @pytest.mark.e2e
@@ -81,14 +81,14 @@ def test_feasibility_bug_major_6_3_with_markers():
     add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
     # Add past semester constraints (freeze past semesters mode enabled)
-    from optimizer.constraints.basic import add_past_semester_constraints
+    from shared.optimizer.constraints.basic import add_past_semester_constraints
     past_constraints = add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, markers)
 
     print(f"\n[TEST] Created {len(take_vars)} decision variables")
     print(f"[TEST] Past semester constraints (freeze mode): {past_constraints}")
 
     # Add marker constraints
-    from optimizer.marker_constraint_builder import add_marker_constraints
+    from shared.optimizer.marker_constraint_builder import add_marker_constraints
     marker_result = add_marker_constraints(model, take_vars, markers, courses_df, planning_year_start)
     print(f"[TEST] Marker constraints: {marker_result.constraints_added}")
 
@@ -120,7 +120,7 @@ def test_feasibility_bug_major_6_3_with_markers():
                     print(f"[TEST] Added requirements for {req_key}")
 
     # Add objectives using the default objectives (same as the actual optimizer)
-    from optimizer.objectives.registry import get_default_objectives, instantiate_objective
+    from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
     builder = ObjectiveBuilder()
 
     for key, params in get_default_objectives():

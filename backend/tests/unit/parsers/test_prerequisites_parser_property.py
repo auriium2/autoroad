@@ -10,8 +10,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from courses.prerequisites.parser import is_valid_course_id, parse_fireroad
-from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
+from shared.courses.prerequisites.parser import is_valid_course_id, parse_fireroad
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
 
 # Strategy for generating valid course IDs
 # Note: Only generate formats that the parser actually accepts

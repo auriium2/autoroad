@@ -5,8 +5,8 @@ Tests for the prerequisite constraint builder.
 import polars as pl
 from ortools.sat.python import cp_model
 
-from courses.prerequisites.types import PrereqCourse, PrereqGroup
-from optimizer.prerequisite_constraint_builder import (
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
+from shared.optimizer.prerequisite_constraint_builder import (
     ConstraintContext,
     CourseSchedule,
     PrerequisiteConstraintBuilder,
@@ -652,7 +652,7 @@ class TestComplexPrerequisites:
         """
         import requests
 
-        from courses.prerequisites.parser import parse_fireroad
+        from shared.courses.prerequisites.parser import parse_fireroad
 
         # Fetch real course data
         response = requests.get('https://fireroad.mit.edu/courses/all?full=true')

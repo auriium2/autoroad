@@ -245,7 +245,7 @@ class TestRegressionBugs:
 
         Fix: Parser now returns None for unparseable prerequisites.
         """
-        from courses.prerequisites.parser import parse_fireroad
+        from shared.courses.prerequisites.parser import parse_fireroad
 
         # Test 1: Parser returns None for unparseable prerequisites
         result = parse_fireroad("''Permission of instructor''")
@@ -279,8 +279,8 @@ class TestRegressionBugs:
 
         Fix: Parser returns None instead.
         """
-        from courses.prerequisites.parser import parse_fireroad
-        from courses.prerequisites.types import PrereqGroup
+        from shared.courses.prerequisites.parser import parse_fireroad
+        from shared.courses.prerequisites.types import PrereqGroup
 
         test_cases = [
             "",
@@ -320,10 +320,10 @@ class TestRegressionBugs:
         import polars as pl
         from ortools.sat.python import cp_model
 
-        from api.services.cache import get_courses_data
-        from courses.requirements.parser import parse
-        from courses.requirements.types import SubjectThresholdGroup
-        from optimizer.requirements.builder import build_constraints
+        from shared.courses.requirements.parser import parse
+        from shared.courses.requirements.types import SubjectThresholdGroup
+        from shared.optimizer.requirements.builder import build_constraints
+        from shared.services.cache import get_courses_data
 
         # Create a minimal test case that replicates the bug structure:
         # Parent with threshold ≥2, containing 3 optional children (threshold ≥0)
@@ -425,12 +425,12 @@ class TestRegressionBugs:
         import polars as pl
         from ortools.sat.python import cp_model
 
-        from api.models.requests import Marker
-        from api.services.cache import get_courses_data
-        from courses.requirements.parser import parse
-        from courses.requirements.types import AllGroup
-        from optimizer.constraints.basic import create_take_vars
-        from optimizer.requirements.builder import build_constraints
+        from shared.courses.requirements.parser import parse
+        from shared.courses.requirements.types import AllGroup
+        from shared.optimizer.constraints.basic import create_take_vars
+        from shared.optimizer.requirements.builder import build_constraints
+        from shared.models.requests import Marker
+        from shared.services.cache import get_courses_data
 
         # Create a simple GIR requirement for CAL1
         test_req = {

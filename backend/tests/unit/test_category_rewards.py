@@ -12,8 +12,8 @@ These tests verify that:
 import polars as pl
 from ortools.sat.python import cp_model
 
-from optimizer.objectives.base import ObjectiveContext
-from optimizer.objectives.categories import CategoryRewards
+from shared.optimizer.objectives.base import ObjectiveContext
+from shared.optimizer.objectives.categories import CategoryRewards
 
 
 class TestCategoryRewardsTierConfiguration:

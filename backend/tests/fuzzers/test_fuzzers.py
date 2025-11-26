@@ -7,8 +7,8 @@ and validators can handle all of it without errors.
 import pytest
 import requests
 
-from courses.prerequisites.parser import parse_fireroad, prereq_to_string
-from courses.prerequisites.types import PrereqCourse, PrereqGroup
+from shared.courses.prerequisites.parser import parse_fireroad, prereq_to_string
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
 
 
 @pytest.fixture(scope="module")
@@ -216,7 +216,7 @@ class TestRequirementParserFuzzer:
 
     def test_parser_handles_all_requirements(self, all_fireroad_requirements):
         """Test that the parser can handle all Fireroad requirements without exceptions."""
-        from courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.parser import parse_fireroad_response
 
         failures = []
 
@@ -241,8 +241,8 @@ class TestRequirementParserFuzzer:
         """
         Verify that the parser produces only valid node types.
         """
-        from courses.requirements.parser import parse_fireroad_response
-        from courses.requirements.types import (
+        from shared.courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.types import (
             CI,
             GIR,
             HASS,
@@ -290,8 +290,8 @@ class TestRequirementParserFuzzer:
         """
         Verify that threshold groups have valid cutoff values (non-negative).
         """
-        from courses.requirements.parser import parse_fireroad_response
-        from courses.requirements.types import (
+        from shared.courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.types import (
             AllGroup,
             AnyGroup,
             Group,
@@ -336,8 +336,8 @@ class TestRequirementParserFuzzer:
         Verify that all group nodes have at least one child.
         Empty groups are invalid and would cause constraint issues.
         """
-        from courses.requirements.parser import parse_fireroad_response
-        from courses.requirements.types import (
+        from shared.courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.types import (
             AllGroup,
             AnyGroup,
             Group,
@@ -373,7 +373,7 @@ class TestRequirementParserFuzzer:
 
     def test_parsing_success_rate(self, all_fireroad_requirements):
         """Test that we can parse at least 95% of Fireroad requirements."""
-        from courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.parser import parse_fireroad_response
 
         total = 0
         successes = 0

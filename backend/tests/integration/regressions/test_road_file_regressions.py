@@ -29,14 +29,14 @@ import polars as pl
 import pytest
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_fireroad_response
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.marker_constraint_builder import add_marker_constraints
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirements.builder import add_requirement_constraints
+from shared.courses.requirements.parser import parse_fireroad_response
+from shared.courses.requirements.validator import validate_and_prune
+from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
+from shared.optimizer.marker_constraint_builder import add_marker_constraints
+from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.optimizer.requirements.builder import add_requirement_constraints
+from shared.models.requests import Marker
+from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from tests.conftest import OptimizerTestConfig
 from tests.test_helpers import setup_optimizer_with_objectives
 

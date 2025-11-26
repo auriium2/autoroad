@@ -8,8 +8,8 @@ and handle edge cases like missing data.
 import polars as pl
 from ortools.sat.python import cp_model
 
-from optimizer.objectives.base import ObjectiveContext
-from optimizer.objectives.units import AvoidSmallClasses, MinimizeUnits
+from shared.optimizer.objectives.base import ObjectiveContext
+from shared.optimizer.objectives.units import AvoidSmallClasses, MinimizeUnits
 
 
 class TestAvoidSmallClasses:

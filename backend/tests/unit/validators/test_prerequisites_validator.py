@@ -5,15 +5,15 @@ Unit tests for prerequisites validator.
 import polars as pl  # type: ignore[import-untyped]
 import pytest
 
-from courses.prerequisites.types import PrereqCourse, PrereqGroup
-from courses.prerequisites.validator import (
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
+from shared.courses.prerequisites.validator import (
     mark_invalid_prerequisites,
     remove_invalid_prerequisites,
 )
-from courses.prerequisites.validator import (
+from shared.courses.prerequisites.validator import (
     validate_and_prune as prereq_validate_and_prune,
 )
-from courses.prerequisites.validator import (
+from shared.courses.prerequisites.validator import (
     validate_course_exists as prereq_validate_course_exists,
 )
 

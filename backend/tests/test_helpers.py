@@ -19,16 +19,16 @@ import polars as pl
 import requests
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
-from courses.requirements.parser import parse_fireroad_response
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.objectives import MinimizeUnits, ObjectiveBuilder
-from optimizer.objectives.registry import get_default_objectives, instantiate_objective
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirements.builder import add_requirement_constraints
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
+from shared.courses.requirements.parser import parse_fireroad_response
+from shared.courses.requirements.validator import validate_and_prune
+from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
+from shared.optimizer.objectives import MinimizeUnits, ObjectiveBuilder
+from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
+from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.optimizer.requirements.builder import add_requirement_constraints
+from shared.models.requests import Marker
+from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
 
 @dataclass
@@ -95,12 +95,12 @@ def build_optimizer_model(
 
     # Add past semester constraints if requested
     if freeze_past_semesters and markers:
-        from optimizer.constraints.basic import add_past_semester_constraints
+        from shared.optimizer.constraints.basic import add_past_semester_constraints
         add_past_semester_constraints(model, take_vars, courses_df, start_year, markers)
 
     # Add marker constraints if markers provided
     if markers:
-        from optimizer.marker_constraint_builder import add_marker_constraints
+        from shared.optimizer.marker_constraint_builder import add_marker_constraints
         add_marker_constraints(model, take_vars, markers, courses_df, start_year)
 
     # Add prerequisite constraints (with override courses skipping prereqs)

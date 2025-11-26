@@ -10,8 +10,11 @@ from typing import Any
 
 import polars as pl
 import pytest
+from dotenv import load_dotenv
 
-from courses.prerequisites.types import PrereqNode
+load_dotenv()
+
+from shared.courses.prerequisites.types import PrereqNode
 
 
 @dataclass
@@ -199,7 +202,7 @@ class CachedCourseData:
     def get_requirements(self, requirement_keys: tuple[str, ...]) -> dict[str, Any]:
         """Get requirements, caching results for repeated calls."""
         if requirement_keys not in self._requirements_cache:
-            from api.services.cache import get_requirements
+            from shared.services.cache import get_requirements
             self._requirements_cache[requirement_keys] = get_requirements(requirement_keys)
         return self._requirements_cache[requirement_keys]
 
@@ -218,7 +221,7 @@ def cached_course_data() -> CachedCourseData:
             prereq_trees = cached_course_data.prereq_trees
             requirements = cached_course_data.get_requirements(('major6-3new', 'girs'))
     """
-    from api.services.cache import get_courses_data, get_parsed_prerequisites
+    from shared.services.cache import get_courses_data, get_parsed_prerequisites
 
     courses_data = get_courses_data()
     courses_df = pl.DataFrame(courses_data, infer_schema_length=None)

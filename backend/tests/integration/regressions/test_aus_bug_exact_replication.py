@@ -5,10 +5,8 @@ my poor choice in classes is forever memorialized in this pytest file. FUCK 6.10
 import polars as pl
 from ortools.sat.python import cp_model
 
-from api.models.requests import Marker
-from api.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
-from courses.requirements.parser import parse_fireroad_response
-from courses.requirements.types import (
+from shared.courses.requirements.parser import parse_fireroad_response
+from shared.courses.requirements.types import (
     AllGroup,
     AnyGroup,
     Course,
@@ -16,11 +14,13 @@ from courses.requirements.types import (
     SubjectThresholdGroup,
     UnitThresholdGroup,
 )
-from courses.requirements.validator import validate_and_prune
-from optimizer.constraints.basic import add_basic_constraints, create_take_vars
-from optimizer.marker_constraint_builder import add_marker_constraints
-from optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from optimizer.requirements.builder import add_requirement_constraints
+from shared.courses.requirements.validator import validate_and_prune
+from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
+from shared.optimizer.marker_constraint_builder import add_marker_constraints
+from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+from shared.optimizer.requirements.builder import add_requirement_constraints
+from shared.models.requests import Marker
+from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
 
 def test_aus_bug_with_exact_solution():
@@ -305,7 +305,7 @@ def test_aus_bug_with_exact_solution():
 
     if status in [cp_model.OPTIMAL, cp_model.FEASIBLE]:
         # Check which courses are taken
-        from optimizer.semesters import VALID_SEMESTERS
+        from shared.optimizer.semesters import VALID_SEMESTERS
         c01_taken = any(solver.Value(take_vars[(c01_idx, s)]) == 1 for s in VALID_SEMESTERS if (c01_idx, s) in take_vars)
         c011_taken = any(solver.Value(take_vars[(c011_idx, s)]) == 1 for s in VALID_SEMESTERS if (c011_idx, s) in take_vars)
         c404_taken = any(solver.Value(take_vars[(c404_idx, s)]) == 1 for s in VALID_SEMESTERS if (c404_idx, s) in take_vars)
