@@ -65,3 +65,4 @@ backend/.hypothesis/
 **/.ruff_cache
 **/.pytest_cache
 **/.claude
+**/temp
