@@ -47,11 +47,7 @@ jobs:
 
       - name: Run all unit tests
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run pytest tests/unit/ -v
+        run: uv run pytest tests/unit/ -v
 
   test-feasibility:
     name: Feasibility - Group ${{ matrix.group }}
@@ -112,11 +108,7 @@ jobs:
 
       - name: Run feasibility tests
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestOptimizerFeasibility -k "${{ matrix.tests }}" -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestOptimizerFeasibility -k "${{ matrix.tests }}" -v -s
 
   test-feasibility-regression:
     name: Feasibility Regression - Group ${{ matrix.group }}
@@ -157,11 +149,7 @@ jobs:
 
       - name: Run regression tests
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs -k "${{ matrix.tests }}" -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_feasibility.py::TestRegressionBugs -k "${{ matrix.tests }}" -v -s
 
   test-quality:
     name: Quality - Group ${{ matrix.group }}
@@ -210,11 +198,7 @@ jobs:
 
       - name: Run quality tests
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run pytest tests/integration/optimizer/test_optimizer_quality.py::TestOptimizerQuality -k "${{ matrix.tests }}" -v -s
+        run: uv run pytest tests/integration/optimizer/test_optimizer_quality.py::TestOptimizerQuality -k "${{ matrix.tests }}" -v -s
 
   test-integration:
     name: Integration - ${{ matrix.name }}
@@ -257,11 +241,7 @@ jobs:
 
       - name: Run integration tests
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run pytest ${{ matrix.file }} -v -s
+        run: uv run pytest ${{ matrix.file }} -v -s
 
   type-check:
     name: Type Checking
@@ -292,11 +272,7 @@ jobs:
 
       - name: Run basedpyright
         working-directory: ./backend
-        run: |
-          uvx mkinit shared --recursive -i --lazy_loader_typed --relative
-          uvx mkinit server --recursive -i --lazy_loader_typed --relative
-          uvx mkinit worker --recursive -i --lazy_loader_typed --relative
-          uv run basedpyright shared/ server/ worker/
+        run: uv run basedpyright shared/ server/ worker/
 
   all-tests-passed:
     name: All Tests Passed

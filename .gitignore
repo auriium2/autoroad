@@ -66,10 +66,3 @@ backend/.hypothesis/
 **/.pytest_cache
 **/.claude
 **/temp
-
-backend/shared/**/__init__.py
-backend/shared/**/__init__.pyi
-backend/server/**/__init__.py
-backend/server/**/__init__.pyi
-backend/worker/**/__init__.py
-backend/worker/**/__init__.pyi

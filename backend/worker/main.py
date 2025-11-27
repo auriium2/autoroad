@@ -13,7 +13,8 @@ load_dotenv()
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import StreamingResponse
 
-from shared import OptimizationRequest, event_stream
+from shared.models.requests import OptimizationRequest
+from shared.optimize import event_stream
 
 app = FastAPI(title="AutoRoad Worker")
 

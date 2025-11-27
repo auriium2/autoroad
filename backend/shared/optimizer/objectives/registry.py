@@ -5,19 +5,12 @@ Registry of available objectives with metadata and validation.
 from dataclasses import dataclass
 from typing import Any
 
-from . import (
-    AvoidIAP,
-    AvoidSmallClasses,
-    CategoryRewards,
-    DiscourageEquivalentCourses,
-    LimitClassesPerSemester,
-    LimitUnitsPerSemester,
-    MinimizeFinalsLoad,
-    MinimizeFridayClasses,
-    MinimizeMaxSemesterHours,
-    MinimumClassesPerSemester,
-)
 from .base import ObjectiveComponent
+from .categories import CategoryRewards
+from .equivalents import DiscourageEquivalentCourses
+from .scheduling import AvoidIAP, MinimizeFridayClasses, MinimumClassesPerSemester
+from .units import AvoidSmallClasses, MinimizeUnits
+from .workload import LimitClassesPerSemester, LimitUnitsPerSemester, MinimizeFinalsLoad, MinimizeMaxSemesterHours
 
 
 @dataclass

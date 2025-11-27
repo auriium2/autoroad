@@ -18,7 +18,7 @@ from ortools.sat.python import cp_model
 
 from shared.courses.requirements.parser import parse_fireroad_response
 from shared.courses.requirements.validator import validate_and_prune
-from shared.optimizer.constraints import ConstraintContext
+from shared.optimizer.constraints.base import ConstraintContext
 from shared.optimizer.constraints.basic import (
     add_basic_constraints,
     add_past_semester_constraints,
@@ -26,7 +26,7 @@ from shared.optimizer.constraints.basic import (
 )
 from shared.optimizer.constraints.registry import instantiate_constraint
 from shared.optimizer.marker_constraint_builder import add_marker_constraints
-from shared.optimizer.objectives import ObjectiveBuilder
+from shared.optimizer.objectives.builder import ObjectiveBuilder
 from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
@@ -212,7 +212,7 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         perf_start = time.time()
         builder = ObjectiveBuilder()
 
-        from shared.optimizer.objectives import MinimizeUnits
+        from shared.optimizer.objectives.units import MinimizeUnits
         builder.add(MinimizeUnits(), key="minimize_units")
 
         if request.objectives:

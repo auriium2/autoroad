@@ -7,7 +7,8 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
-from shared import OptimizationRequest, get_courses_data, get_requirements
+from shared.models.requests import OptimizationRequest
+from shared.services.cache import get_courses_data, get_requirements
 from shared.courses.requirements.parser import parse_fireroad_response
 from shared.courses.requirements.validator import validate_and_prune
 from shared.optimizer.constraints.basic import create_take_vars

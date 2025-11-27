@@ -4,8 +4,8 @@ Registry of available hard constraints with metadata and validation.
 
 from dataclasses import dataclass
 
-from . import BanIAP
 from .base import HardConstraint
+from .scheduling import BanIAP
 
 
 @dataclass
