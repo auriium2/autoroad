@@ -18,6 +18,7 @@ from ortools.sat.python import cp_model
 
 from shared.courses.requirements.parser import parse_fireroad_response
 from shared.courses.requirements.validator import validate_and_prune
+from shared.models.requests import OptimizationRequest
 from shared.optimizer.constraints.base import ConstraintContext
 from shared.optimizer.constraints.basic import (
     add_basic_constraints,
@@ -30,7 +31,6 @@ from shared.optimizer.objectives.builder import ObjectiveBuilder
 from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.models.requests import OptimizationRequest
 from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from shared.utils import find_current_school_year
 

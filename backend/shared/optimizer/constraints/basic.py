@@ -14,8 +14,8 @@ from collections.abc import Sequence
 import polars as pl
 from ortools.sat.python import cp_model
 
-from shared.optimizer.semesters import ALL_SEMESTERS
 from shared.models.requests import Marker
+from shared.optimizer.semesters import ALL_SEMESTERS
 from shared.utils import get_current_semester_index, is_valid_class_semester
 
 

@@ -7,14 +7,14 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
-from shared.models.requests import OptimizationRequest
-from shared.services.cache import get_courses_data, get_requirements
 from shared.courses.requirements.parser import parse_fireroad_response
 from shared.courses.requirements.validator import validate_and_prune
+from shared.models.requests import OptimizationRequest
 from shared.optimizer.constraints.basic import create_take_vars
 from shared.optimizer.constraints.registry import get_all_constraints
 from shared.optimizer.objectives.registry import get_all_objectives, get_default_objectives
 from shared.optimizer.requirements.builder import add_requirement_constraints
+from shared.services.cache import get_courses_data, get_requirements
 from shared.utils import find_current_school_year
 
 router = APIRouter()

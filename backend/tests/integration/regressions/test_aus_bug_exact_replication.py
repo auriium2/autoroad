@@ -15,11 +15,11 @@ from shared.courses.requirements.types import (
     UnitThresholdGroup,
 )
 from shared.courses.requirements.validator import validate_and_prune
+from shared.models.requests import Marker
 from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from shared.optimizer.marker_constraint_builder import add_marker_constraints
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.models.requests import Marker
 from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
 

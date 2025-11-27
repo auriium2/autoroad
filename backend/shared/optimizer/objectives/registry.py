@@ -9,8 +9,13 @@ from .base import ObjectiveComponent
 from .categories import CategoryRewards
 from .equivalents import DiscourageEquivalentCourses
 from .scheduling import AvoidIAP, MinimizeFridayClasses, MinimumClassesPerSemester
-from .units import AvoidSmallClasses, MinimizeUnits
-from .workload import LimitClassesPerSemester, LimitUnitsPerSemester, MinimizeFinalsLoad, MinimizeMaxSemesterHours
+from .units import AvoidSmallClasses
+from .workload import (
+    LimitClassesPerSemester,
+    LimitUnitsPerSemester,
+    MinimizeFinalsLoad,
+    MinimizeMaxSemesterHours,
+)
 
 
 @dataclass

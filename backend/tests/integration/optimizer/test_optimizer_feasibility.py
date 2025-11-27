@@ -427,9 +427,9 @@ class TestRegressionBugs:
 
         from shared.courses.requirements.parser import parse
         from shared.courses.requirements.types import AllGroup
+        from shared.models.requests import Marker
         from shared.optimizer.constraints.basic import create_take_vars
         from shared.optimizer.requirements.builder import build_constraints
-        from shared.models.requests import Marker
         from shared.services.cache import get_courses_data
 
         # Create a simple GIR requirement for CAL1

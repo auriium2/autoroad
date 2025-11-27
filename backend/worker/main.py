@@ -8,6 +8,7 @@ runs optimization, and streams results back via SSE.
 import os
 
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from fastapi import FastAPI, Header, HTTPException

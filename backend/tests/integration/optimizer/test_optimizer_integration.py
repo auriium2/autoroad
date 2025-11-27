@@ -14,9 +14,9 @@ import polars as pl
 from ortools.sat.python import cp_model
 
 from shared.courses.prerequisites.types import PrereqCourse
+from shared.models.requests import Marker
 from shared.optimizer.marker_constraint_builder import add_marker_constraints
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
-from shared.models.requests import Marker
 
 
 def create_simple_courses_df():

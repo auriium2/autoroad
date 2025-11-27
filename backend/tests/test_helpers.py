@@ -22,13 +22,13 @@ from ortools.sat.python import cp_model
 from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
 from shared.courses.requirements.parser import parse_fireroad_response
 from shared.courses.requirements.validator import validate_and_prune
+from shared.models.requests import Marker
 from shared.optimizer.constraints.basic import add_basic_constraints, create_take_vars
 from shared.optimizer.objectives.builder import ObjectiveBuilder
-from shared.optimizer.objectives.units import MinimizeUnits
 from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
+from shared.optimizer.objectives.units import MinimizeUnits
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.models.requests import Marker
 from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
 
