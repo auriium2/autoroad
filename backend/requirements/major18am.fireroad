@@ -1,0 +1,27 @@
+18#,#18 Major (Applied)#,#Applied Mathematics#,#Bachelor of Science in Mathematics (Applied Mathematics Option)
+
+Applied mathematics focuses on the mathematical concepts and techniques applied in science, engineering, and computer science. Particular attention is given to the following principles and their mathematical formulations: propagation, equilibrium, stability, optimization, computation, statistics, and random processes.
+
+required_subjects
+
+restricted_electives
+
+communication
+
+
+%% Required Subjects
+required_subjects, "Required Subjects" := (18.03/18.032/18.152/18.303), (18.04/18.112), 18.06, 18.300, (18.200/18.200A)
+
+%% Group I: Probability and statistics, combinatorics, computer science
+%% Based on MIT Math department Applied Mathematics option requirements (https://math.mit.edu/academics/undergrad/major/course18/applied.html)
+group_i, "Group I: Probability, Statistics, Combinatorics, Computer Science" := 18.204/18.211/18.212/18.400/18.404/18.410/18.424/18.434/18.453/18.600/18.650
+
+%% Group II: Numerical analysis, physical mathematics, nonlinear dynamics
+%% Based on MIT Math department Applied Mathematics option requirements (https://math.mit.edu/academics/undergrad/major/course18/applied.html)
+group_ii, "Group II: Numerical Analysis, Physical Mathematics, Nonlinear Dynamics" := 18.303/18.330/18.352/18.353/18.354/18.384
+
+%% Restricted Electives: Select 4 courses with at least 1 from each group
+restricted_electives, "Restricted Electives" := group_i, group_ii{>=4|>=1}
+
+%% Communication-Intensive Subjects: Select 2 from the following
+communication, "Communication-Intensive Subjects" := 18.104/18.204/18.384/18.424/18.434/18.504/18.704/18.784/18.821/18.904/18.994/8.06/14.18/14.33/18.100P/18.100Q/18.200{>=2}

@@ -1,0 +1,32 @@
+18#,#18 Major (Pure)#,#Pure Mathematics#,#Bachelor of Science in Mathematics (Pure Mathematics Option)
+Pure (or "theoretical") mathematics is the study of the basic concepts and structure of mathematics. Its goal is to arrive at a deeper understanding and an expanded knowledge of mathematics itself.
+
+Traditionally, pure mathematics has been classified into three general fields: analysis, which deals with continuous aspects of mathematics; algebra, which deals with discrete aspects; and geometry. The undergraduate program is designed so that students become familiar with each of these areas. Students also may wish to explore other topics such as logic, number theory, complex analysis, and subjects within applied mathematics.
+
+required_subjects
+
+restricted_electives
+
+cim
+
+
+required_subjects, "Required Subjects" := (18.03/18.032/18.152/18.303), (18.100A/18.100B/18.100P/18.100Q), 18.701, 18.702, 18.901
+
+%% Advanced Analysis: students choose one from this group
+advanced_analysis, "Advanced Analysis" := 18.101/18.102/18.103
+
+%% Undergraduate Seminars: typically CI-M seminars in various math topics
+%% Including seminars in Analysis, Logic, Algebra, Number Theory, Topology, and Geometry
+undergrad_seminars, "Undergraduate Seminar" := 18.104/18.504/18.704/18.784/18.904/18.994
+
+%% Additional math electives: 2 subjects (first decimal >= 1) beyond other selections
+%% This excludes introductory courses (18.0xx) and includes all Course 18 subjects at level 18.1 or higher
+%% Students select 2 additional subjects with essentially different content from other selections
+math_electives_2, "Math Electives" := 18.1001/18.1002/18.100A/18.100B/18.100P/18.100Q/18.101/18.1011/18.102/18.1021/18.103/18.1031/18.104/18.112/18.1121/18.116/18.117/18.118/18.125/18.137/18.152/18.1521/18.155/18.156/18.157/18.158/18.175/18.176/18.177/18.199/18.200/18.200A/18.204/18.211/18.212/18.217/18.218/18.219/18.225/18.226/18.300/18.303/18.305/18.306/18.327/18.330/18.335/18.336/18.337/18.338/18.352/18.353/18.354/18.3541/18.355/18.357/18.358/18.367/18.369/18.376/18.377/18.384/18.385/18.397/18.400/18.404/18.4041/18.405/18.408/18.410/18.413/18.415/18.416/18.417/18.418/18.424/18.425/18.434/18.435/18.436/18.437/18.438/18.453/18.4531/18.455/18.456/18.504/18.510/18.515/18.600/18.604/18.615/18.619/18.642/18.650/18.6501/18.655/18.656/18.657/18.675/18.676/18.677/18.700/18.701/18.702/18.703/18.704/18.705/18.706/18.708/18.715/18.721/18.725/18.726/18.727/18.737/18.745/18.747/18.748/18.755/18.757/18.758/18.781/18.782/18.783/18.7831/18.784/18.785/18.786/18.787/18.821/18.896/18.897/18.899/18.900/18.901/18.9011/18.904/18.905/18.906/18.916/18.917/18.919/18.937/18.950/18.9501/18.952/18.965/18.966/18.968/18.979/18.994/18.999{>=2}
+
+restricted_electives, "Restricted Electives" := advanced_analysis, undergrad_seminars, math_electives_2
+
+%% Communication-Intensive requirement: students must select 2 CI-M subjects
+%% Options include seminars in Analysis, Logic, Algebra, Number Theory, Topology, Geometry
+%% Or other approved CI-M courses
+cim, "Communication-Intensive Subjects" := 18.104/18.204/18.384/18.424/18.434/18.504/18.704/18.784/18.821/18.904/18.994, (18.100P/18.100Q/18.200/18.642){>=2}
