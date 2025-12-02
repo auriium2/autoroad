@@ -1,0 +1,8 @@
+CMS#,#CMS#,#HASS Concentration in Comparative Media Studies#,#Concentration in CMS
+
+A concentration in CMS requires four classes from CMS required and elective classes carrying a HASS designation.
+
+cms_courses, "CMS Courses with HASS Designation" := CMS.100, CMS.125, CMS.150, CMS.300, CMS.301, CMS.303, CMS.305, CMS.306, CMS.307, CMS.309, CMS.311, CMS.313, CMS.315, CMS.334, CMS.335, CMS.336, CMS.337, CMS.338, CMS.339, CMS.340, CMS.341, CMS.342, CMS.343, CMS.351, CMS.352, CMS.353, CMS.354, CMS.355, CMS.356, CMS.357, CMS.358, CMS.359, CMS.361, CMS.362, CMS.374, CMS.375, CMS.376, CMS.400, CMS.405, CMS.406, CMS.407, CMS.418, CMS.422, CMS.425, CMS.427, CMS.481, CMS.524, CMS.560, CMS.586, CMS.587, CMS.590, CMS.591, CMS.592, CMS.593, CMS.594, CMS.595, CMS.609, CMS.611, CMS.614, CMS.616, CMS.618, CMS.619, CMS.621, CMS.627, CMS.628, CMS.631, CMS.633, CMS.634, CMS.635, CMS.636, CMS.C35
+
+total, "Four CMS Subjects" := (cms_courses){>=4}
+

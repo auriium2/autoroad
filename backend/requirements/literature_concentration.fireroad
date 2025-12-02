@@ -1,0 +1,21 @@
+Literature#,#Literature#,#HASS Concentration in Literature#,#Concentration in Literature
+
+A concentration in Literature requires three subjects including one from the intermediate tier (400-600 level) and one from the seminar (700) tier.
+
+intro_courses, "Introductory Literature" := 21L.000, 21L.001, 21L.002, 21L.003, 21L.004, 21L.005, 21L.006, 21L.007, 21L.008, 21L.009, 21L.010, 21L.011, 21L.012, 21L.013, 21L.014, 21L.015, 21L.016, 21L.017, 21L.018, 21L.019, 21L.020, 21L.021, 21L.024, 21L.025, 21L.026, 21L.027, 21L.032, 21L.040, 21L.050
+
+samplings, "Samplings (300-600 level)" := 21L.310, 21L.315, 21L.320, 21L.325, 21L.338, 21L.340, 21L.345, 21L.350, 21L.355
+
+intermediate_courses, "Intermediate Tier (400-600 level)" := 21L.400, 21L.419, 21L.420, 21L.429, 21L.430, 21L.431, 21L.432, 21L.433, 21L.434, 21L.435, 21L.436, 21L.437, 21L.438, 21L.449, 21L.450, 21L.451, 21L.452, 21L.453, 21L.455, 21L.456, 21L.457, 21L.458, 21L.460, 21L.471, 21L.474, 21L.475, 21L.480, 21L.481, 21L.482, 21L.484, 21L.485, 21L.486, 21L.487, 21L.488, 21L.489, 21L.490, 21L.491, 21L.492, 21L.493, 21L.494, 21L.500, 21L.501, 21L.504, 21L.512, 21L.522, 21L.580, 21L.590, 21L.591, 21L.592, 21L.600
+
+seminars, "Seminar Tier (700 level)" := ""700-level literature seminars""
+%% Specific 700-level courses not listed in catalog extract
+
+intermediate_req, "Intermediate Course Requirement" := (intermediate_courses, samplings){>=1}
+
+seminar_req, "Seminar Course Requirement" := seminars
+
+additional, "Additional Literature Course" := intro_courses / samplings / intermediate_courses
+
+total, "Total Requirements" := intermediate_req, seminar_req, (intro_courses, samplings, intermediate_courses){>=1}
+

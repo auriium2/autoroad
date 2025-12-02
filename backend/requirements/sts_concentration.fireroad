@@ -1,0 +1,12 @@
+STS#,#STS#,#HASS Concentration in Science, Technology, and Society#,#Concentration in STS
+
+A concentration in STS consists of any three STS Tier I or Tier II subjects.
+
+tier_i, "STS Tier I Subjects" := STS.001, STS.002, STS.003, STS.004, STS.005, STS.006, STS.008, STS.009, STS.011, STS.012, STS.014
+
+tier_ii, "STS Tier II Subjects" := STS.020, STS.021, STS.022, STS.023, STS.024, STS.031, STS.032, STS.034, STS.035, STS.036, STS.037, STS.038, STS.039, STS.040, STS.041, STS.042, STS.043, STS.044, STS.046, STS.047, STS.048, STS.049, STS.050, STS.051, STS.053, STS.055, STS.057, STS.059, STS.060, STS.064, STS.065, STS.066, STS.074, STS.075, STS.081, STS.082, STS.083, STS.084, STS.085, STS.086, STS.087, STS.088, STS.089
+
+all_sts, "All STS Tier I and II Subjects" := tier_i / tier_ii
+
+total, "Three STS Subjects" := (all_sts){>=3}
+

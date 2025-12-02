@@ -1,0 +1,15 @@
+Philosophy#,#Philosophy#,#HASS Concentration in Philosophy#,#Concentration in Philosophy
+
+A concentration in Philosophy requires three subjects in philosophy. One may be an introductory subject numbered 24.00-24.09, and the remaining subjects should be more advanced philosophy courses (24.1 or higher).
+
+intro_courses, "Introductory Philosophy (Optional)" := 24.00, 24.01, 24.013, 24.02, 24.03, 24.04, 24.05, 24.06, 24.08, 24.09
+
+advanced_courses, "Advanced Philosophy Courses" := 24.111, 24.116, 24.118, 24.121, 24.122, 24.130, 24.131, 24.132, 24.133, 24.134, 24.137, 24.141, 24.C40, 24.200, 24.201, 24.211, 24.212, 24.213, 24.215, 24.220, 24.222, 24.223, 24.230, 24.233, 24.234, 24.235, 24.236, 24.240, 24.242, 24.243, 24.244, 24.245, 24.251, 24.252, 24.253, 24.260, 24.280, 24.191, 24.192
+
+all_phil_courses, "All Philosophy Courses" := intro_courses / advanced_courses
+
+concentration_requirement, "Three Philosophy Subjects" := (intro_courses){>=0, <=2}, (advanced_courses){>=1}
+%% At most two intro courses, at least one advanced course, three total
+
+total, "Total Requirements" := (all_phil_courses){>=3}
+
