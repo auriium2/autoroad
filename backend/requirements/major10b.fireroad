@@ -1,0 +1,28 @@
+10-B#,#10-B Major#,#Chemical-Biological Engineering#,#Bachelor of Science in Chemical-Biological Engineering
+
+This degree is intended for the student who is specifically interested in the application of chemical engineering in the areas of biochemical and biomedical technologies. The degree requirements include core chemical engineering subjects and additional subjects in biological sciences and applied biology. This degree is excellent preparation for students also considering the biomedical engineering minor or medical school.
+
+foundational_subjects
+
+intermediate_subjects
+
+advanced_subjects
+
+communication_intensive
+
+
+foundational_subjects, "Foundational Subjects" := 5.12, 5.601, 7.03, 10.10, (7.002, 7.003), 18.03
+
+intermediate_subjects, "Intermediate Subjects" := (7.05/5.07), 7.06, 10.213, 10.301, 10.302, (10.27/10.28/10.29)
+
+%% Advanced Subjects: ICE courses (Integrated Chemical Engineering)
+%% One ICE subject may be substituted with 10.00, 10.01, a second term of 10.490 (with permission of instructor),
+%% or one subject of at least 9 units in Chemical Engineering.
+%% Excluded: 10.04, 10.702, 10.806, 10.910, 10.911, 10.UR, 10.URG, 10.THU
+%% Graduate subjects may not be used as substitutions.
+
+cheme_electives_9plus, "ChemE Electives (9+ units)" := 10.02/10.05/10.07/10.09/10.10/10.180/10.213/10.22/10.26/10.27/10.28/10.28B/10.29/10.291/10.301/10.302/10.31/10.32/10.321/10.333/10.345/10.352/10.353/10.354/10.37/10.390/10.421/10.424/10.426/10.437/10.441/10.442/10.443/10.450/10.466/10.467/10.489/10.490/10.495/10.496/10.7003/10.S28
+
+advanced_subjects, "Advanced Subjects" := (10.37, 10.490), ((10.492A, 10.492B)/(10.493)/(10.494A, 10.494B)/(cheme_electives_9plus/10.00/10.01)){>=2}
+
+communication_intensive, "Communication-Intensive Subjects" := (7.003/10.27/10.28/10.29){>=2}

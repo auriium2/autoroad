@@ -1,0 +1,18 @@
+14-1#,#14-1 Major#,#Economics#,#Bachelor of Science in Economics
+
+Course 14-1, leading to the Bachelor of Science in Economics, combines training in technical economics with opportunities for a broad and balanced undergraduate education. Students may choose from a diversified group of undergraduate subjects and are encouraged to engage in independent research.
+
+required_subjects
+
+restricted_electives
+
+communication
+
+required_subjects, "Required Subjects" := (14.01/14.03), 14.02, (14.05/14.06), 14.30, 14.32, 14.33, 14.THU, (14.04/14.12/14.15/14.16/14.19/14.26)
+
+restricted_electives, "Restricted Electives" := 14.03/14.06/14.11/14.12/14.13/14.15/14.16/14.18/14.19/14.20/14.26/14.27/14.36/14.38/14.39/14.41/14.42/14.43/14.44/14.45/14.54/14.64/14.70/14.73/14.75/14.76/14.78{>=4}
+
+communication, "Communication-Intensive Subjects" := 14.33, (14.05/14.18)
+
+%% Source: https://catalog.mit.edu/degree-charts/economics-course-14/
+%% The restricted electives list includes all undergraduate economics courses that can be used to satisfy the 4-course elective requirement beyond core courses

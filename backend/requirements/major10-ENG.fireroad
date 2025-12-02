@@ -1,0 +1,61 @@
+10-ENG#,#10-ENG Major#,#Chemical Engineering#,#Bachelor of Science in Engineering as Recommended by the Department of Chemical Engineering
+
+The 10-ENG degree program is designed to offer flexibility within the context of chemical engineering while ensuring significant engineering content, and is a complement to our chemical engineering degree programs 10 and 10-B. The degree is designed to enable students to pursue a deeper level of understanding in a specific interdisciplinary field that is relevant to the chemical engineering core discipline. The degree requirements include all of the core chemical engineering coursework, plus a chosen set of three foundational concept subjects and four subjects with engineering content that make up a comprehensive concentration specific to the interdisciplinary area selected by the student. The concentrations have been selected by the Department of Chemical Engineering to represent new and developing cross-disciplinary areas that benefit from a strong foundation in engineering within the chemical engineering context.
+
+required_subjects
+foundational_concepts
+engineering_concentration
+capstone
+communication
+
+%% Core required subjects for all 10-ENG students
+required_subjects, "Required Subjects" := 5.601, 10.10, 10.213, 10.301, 10.302, 10.37, 18.03
+
+%% Foundational concepts - pick one from each of three groups
+%% Group I: One lab course
+group_i, "Group I - Lab Course" := 10.26/10.27/10.28/10.29/10.467{>=1}
+
+%% Group II: Institute lab or materials lab
+group_ii, "Group II - Materials/Environmental Lab" := (1.106, 1.107)/(2.671)/(3.014)/(5.310)/(10.702)/(12.335)/(20.109)/(5.351, 5.352, 5.353){>=1}
+
+%% Group III: Supporting subject
+group_iii, "Group III - Supporting Subject" := 1.00/(1.018A, 1.018B)/(1.080A, 1.080B)/(3.012)/(3.155)/(5.12)/(5.61)/(6.00)/(7.03)/(8.21){>=1}
+
+foundational_concepts, "Foundational Concepts" := group_i, group_ii, group_iii
+
+%% Engineering Concentration - choose ONE of four concentrations
+%% Each concentration requires 4 courses totaling 39-48 units
+
+%% Biomedical Engineering Concentration
+%% Based on MIT ChemE approved courses for biomedical concentration
+biomedical_concentration, "Biomedical Engineering" := 1.081/1.084/2.001/2.183/2.792/2.797/3.052/3.032/5.07/5.36/10.7003/7.05/10.32/20.109/20.110/20.310/20.320/20.409/2.785/10.539/10.541/10.547{>=4}
+
+%% Energy Concentration
+%% Based on MIT ChemE approved courses for energy concentration
+energy_concentration, "Energy" := 1.044/1.071/2.627/2.813/8.21/10.27/10.426/12.021/22.01/22.07/3.014/3.155/6.007/6.050/6.072/2.28/2.61/10.625{>=4}
+
+%% Environmental Studies Concentration
+%% Based on MIT ChemE approved courses for environmental studies concentration
+environmental_concentration, "Environmental Studies" := 1.006/1.018/1.020/1.061/1.070A/1.070B/1.071/1.076/1.077/1.080/1.086/1.091/1.096/1.106/1.107/2.813/2.814/3.080/5.07/5.12/12.021/12.301/12.306/12.307/12.335/1.831/2.500/10.579/10.817/12.845{>=4}
+
+%% Materials Process and Design Concentration
+%% Based on MIT ChemE approved courses for materials concentration
+materials_concentration, "Materials Process and Design" := 1.035/2.001/2.002/2.627/2.813/3.010/3.013/3.020/3.021/3.023/3.029/3.030/3.033/3.042/3.044/3.046/3.052/3.063/3.071/3.080/3.081/3.14/3.15/3.152/3.155{>=4}
+
+%% Engineering Concentration selector - pick one concentration with 39-48 units total
+engineering_concentration, "Engineering Concentration" := biomedical_concentration/energy_concentration/environmental_concentration/materials_concentration{>=39u}
+
+%% Capstone requirement - one of three options
+%% Option 1: Undergraduate thesis
+capstone_option_1, "Undergraduate Thesis" := 10.THU{>=1}
+
+%% Option 2: Integrated modules
+capstone_option_2, "Integrated Modules" := 10.490/10.491/10.492/10.493/10.494{>=1}
+
+%% Option 3: Independent research + modules
+capstone_option_3, "Research + Modules" := 10.910, (10.492/10.493/10.494){>=1}
+
+capstone, "Capstone" := capstone_option_1/capstone_option_2/capstone_option_3{>=1}
+
+%% Communication-intensive requirement (CI-M) - select 2 from approved list
+communication, "Communication-Intensive Subjects" := 10.26/10.27/10.28/10.29/10.467/2.671/3.014/10.702/12.335/20.109/3.155{>=2}

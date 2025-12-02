@@ -1,0 +1,26 @@
+16#,#16-ENG Major#,#Engineering (Aeronautics and Astronautics)#,#Bachelor of Science in Engineering as Recommended by the Department of Aeronautics and Astronautics
+
+Course 16-ENG is an engineering degree program designed to offer flexibility within the context of aerospace engineering and is a complement to our Course 16 aerospace engineering degree program. The 16-ENG degree is accredited by the Engineering Accreditation Commission of ABET.
+
+concentration_electives
+
+%% Concentration electives - must choose 72 units total with at least 42 units of engineering topics and 12 units of mathematics or science topics
+%% Course 16 electives are listed first (aerospace engineering specific)
+%% Additional engineering courses from other departments are included for the 42 unit engineering requirement
+%% Math and science courses are included for the 12 unit math/science requirement
+
+concentration_electives, "Concentration" := aero_core_electives, aero_advanced_electives, other_engineering_electives, math_science_electives{>=72u}
+
+%% Core AeroAstro electives (most suitable for concentration themes)
+aero_core_electives := 16.09/16.100/16.20/16.30/16.31/16.32/16.35/16.36/16.37/16.50/16.55/16.63/16.64/16.66/16.71/16.72/16.75/16.88/16.89/16.90/16.910/16.920/16.930/16.940
+
+%% Advanced AeroAstro electives suitable for specialized concentrations
+aero_advanced_electives := 16.110/16.120/16.121/16.122/16.13/16.18/16.202/16.215/16.221/16.223/16.225/16.230/16.235/16.322/16.332/16.338/16.343/16.346/16.355/16.363/16.391/16.393/16.395/16.400/16.410/16.412/16.413/16.420/16.422/16.423/16.426/16.430/16.440/16.445/16.453/16.456/16.459/16.460/16.470/16.475/16.485/16.511/16.512/16.522/16.530/16.540/16.632/16.632A/16.632B/16.633/16.634/16.645/16.650/16.651/16.653/16.667/16.669/16.671/16.676/16.677/16.678/16.683/16.707/16.715/16.763/16.767/16.781/16.810/16.811/16.839/16.84/16.842/16.85/16.851/16.853/16.854/16.855/16.857/16.858/16.859/16.861/16.863/16.880/16.885/16.886/16.887/16.888/16.891/16.893/16.895/16.984/16.985/16.987/16.988/16.990/16.995/16.997/16.C20/16.C21/16.C21A/16.C21B/16.C21C/16.C25/16.EPE/16.EPW/16.S090/16.S091/16.S092/16.S093/16.S690/16.S811/16.S987/16.S988
+
+%% Engineering courses from other departments to satisfy 42 unit engineering minimum
+%% EECS (Course 6) courses
+other_engineering_electives := 6.00/6.007/6.027/6.050/6.1000/6.1010/6.1020/6.1040/6.1060/6.1100/6.1120/6.1200/6.1210/6.1220/6.123/6.1400/6.1420/6.1600/6.1800/6.1810/6.182/6.1820/6.1830/6.1850/6.1852/6.1910/6.1920/6.2000/6.2030/6.2040/6.2050/6.2060/6.2061/6.2080/6.2090/6.2092/6.2200/6.2210/6.2220/6.2221/6.2222/6.2300/6.2320/6.2370/6.2400/6.2410/6.247/6.248/6.249/6.2500/2.001/2.002/2.003/2.004/2.005/2.006/2.007/2.008/2.009/2.00A/2.00B/2.00C/2.013/2.014/2.016/2.017/2.019/2.032/2.033/2.034/10.02/10.04/10.05/10.07/10.09/10.10/10.180/10.213/10.22/10.25/10.26/10.27/10.28/10.28B/10.28L/10.29/10.291/10.301/10.302/10.31
+
+%% Mathematics and science courses to satisfy 12 unit science/math minimum
+%% These include advanced math and physics courses
+math_science_electives := 18.01/18.01A/18.01L/18.02/18.022/18.02A/18.03/18.032/18.04/18.05/18.06/18.062/18.065/18.0651/18.075/18.0751/18.085/18.0851/18.086/18.0861/18.089/18.090/18.1001/18.1002/18.100A/18.100B/18.100P/18.100Q/18.101/18.1011/18.102/18.1021/18.103/18.1031/18.104/18.112/18.1121/18.116/18.117/18.118/18.125/18.137/18.152/18.1521/18.155/18.156/18.157/18.158/18.175/18.176/8.01/8.011/8.012/8.01L/8.02/8.021/8.022/8.03/8.033/8.04/8.041/8.044/8.05/8.051/8.06/8.07/8.08/8.09/8.13/8.14/8.16/8.20/8.21/8.224/8.225/8.226/8.231/8.241/8.251/8.276/5.00/5.008/5.03/5.04/5.07/5.08/5.111/5.112/5.12/5.13/5.24/5.310/5.39/5.43/5.52/5.53/5.54/5.60/5.61/5.62

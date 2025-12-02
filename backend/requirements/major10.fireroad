@@ -1,0 +1,36 @@
+10#,#10 Major#,#Chemical Engineering#,#Bachelor of Science in Chemical Engineering
+
+This degree is intended for the student who seeks a broad education in the application of chemical engineering to a variety of specific areas, including energy and the environment, nanotechnology, polymers and colloids, surface science, catalysis and reaction engineering, systems and process design, and biotechnology. The degree requirements include the core chemical engineering subjects with a chemistry emphasis, and the opportunity to add subjects in any of these application areas.
+
+foundational_subjects
+intermediate_subjects
+advanced_subjects
+restricted_electives
+communication
+
+%% Foundational subjects required for all ChemE majors
+foundational_subjects, "Foundational Subjects" := 5.12, 5.310, 5.601, 10.10, (18.03/18.032)
+
+%% Intermediate core subjects
+intermediate_subjects, "Intermediate Subjects" := (5.03/5.07/5.13/(5.611,5.612)/7.05), (10.26/10.27/10.28/10.29/10.467), 10.213, 10.301, 10.302
+
+%% Advanced core subjects - must complete 4 of 5
+advanced_subjects, "Advanced Subjects" := (10.492A/10.492B/10.493/10.494A/10.494B){>=2}, 10.32, 10.37, 10.490
+
+%% Restricted electives - must pick one from each category
+%% Category 1: At least one 6-unit ChemE course
+elec_6, "ChemE Course - 6 Units" := 10.00/10.01/10.02/10.05/10.06/10.07/10.08/10.09/10.180/10.213/10.22/10.25/10.258/10.26/10.27/10.28/10.28B/10.29/10.291/10.301/10.302/10.31/10.32/10.321/10.333/10.34/10.345/10.352/10.353/10.354/10.37/10.390/10.402/10.407/10.421/10.424/10.426/10.43/10.437/10.441/10.442/10.443/10.450/10.466/10.467/10.480/10.489/10.490/10.491/10.492A/10.492B/10.493/10.494A/10.494B/10.495/10.496/10.50/10.51/10.52/10.521/10.524/10.531/10.534/10.535/10.536/10.537/10.538/10.539/10.540/10.542/10.544/10.545/10.546/10.547/10.548/10.55/10.551/10.552/10.553/10.554/10.555/10.557/10.56/10.560/10.562/10.566/10.568/10.569/10.571/10.579/10.580/10.582/10.585/10.586/10.591/10.595/10.600/10.602/10.621/10.625/10.626/10.631/10.637/10.643/10.644/10.65/10.652/10.668/10.677/10.689/10.7003/10.80/10.801/10.805/10.807/10.81/10.817/10.82/10.83/10.84/10.85/10.86/10.87/10.950/10.951/10.952/10.953/10.954/10.955/10.956/10.957/10.958/10.961/10.962/10.963/10.964/10.965/10.966/10.967/10.968/10.969/10.970/10.971/10.972/10.973/10.974/10.975/10.976/10.977/10.978/10.979/10.980/10.981/10.982/10.983/10.984/10.985/10.986/10.987/10.988/10.989/10.990/10.994/10.995/10.997/10.998/10.C01/10.C51/10.UAR{>=6u}
+
+%% Category 2: At least one 9-unit ChemE course
+elec_9, "ChemE Course - 9 Units" := 10.02/10.05/10.07/10.09/10.10/10.180/10.213/10.22/10.25/10.26/10.27/10.28/10.28B/10.29/10.291/10.301/10.302/10.31/10.32/10.321/10.333/10.34/10.345/10.352/10.353/10.354/10.37/10.390/10.421/10.424/10.426/10.43/10.437/10.441/10.442/10.443/10.450/10.466/10.467/10.480/10.489/10.490/10.495/10.496/10.50/10.51/10.52/10.521/10.524/10.531/10.534/10.535/10.536/10.537/10.538/10.539/10.540/10.542/10.544/10.545/10.546/10.547/10.55/10.551/10.552/10.553/10.554/10.555/10.557/10.56/10.560/10.562/10.566/10.568/10.569/10.571/10.579/10.580/10.585/10.586/10.591/10.595/10.621/10.625/10.626/10.631/10.637/10.643/10.644/10.65/10.652/10.668/10.677/10.689/10.7003/10.805/10.807/10.817{>=9u}
+
+%% Category 3: Engineering laboratory course (6+ units)
+%% Includes designated lab courses and research experiences
+elec_lab, "Engineering Laboratory Course" := 10.26/10.27/10.28/10.28B/10.29/10.467/10.7003/10.S28/10.UAR{>=6u}
+
+%% Restricted electives group - must satisfy all three categories above
+restricted_electives, "Restricted Electives" := elec_6, elec_9, elec_lab
+
+%% Communication-intensive (CI-M) subject requirement
+%% Must select one from the approved CI subjects
+communication, "Communication-Intensive Subject" := 5.310/10.26/10.27/10.28/10.29/10.467{>=1}

@@ -1,0 +1,24 @@
+10-C#,#10-C Major#,#Chemical Engineering#,#Bachelor of Science as Recommended by the Department of Chemical Engineering
+
+The curriculum for students in Course 10-C involves basic subjects in chemistry and chemical engineering. Instead of continuing in depth in these areas, students can add breadth by study in another field, such as another engineering discipline, biology, biomedical engineering, economics, or management. Course 10-C is attractive to students who wish to specialize in an area such as those cited above while simultaneously gaining a broad exposure to the chemical engineering approach to solving problems.
+
+Students planning to follow this curriculum should discuss their interests with their faculty advisor in the department at the time they decide to enter the Course 10-C program, and submit to the department's Undergraduate Office a statement of goals and a coherent program of subjects.
+
+departmental_requirements
+restricted_electives
+
+departmental_requirements, "Departmental Requirements" := 5.601, 10.10, 10.213, 10.301, 10.302, 18.03
+
+%% Restricted Electives: CI-M candidates list
+%% Choose one from this first list (lab/CI-M courses)
+cim_labs, "CI-M Laboratory Courses" := 6.152, (7.002, 7.003), 10.26, 10.27, 10.28, 10.29, 10.467
+
+%% Restricted Electives: Alternative CI-M candidates
+%% Can choose second one from above list or from this list
+cim_alternatives, "CI-M Alternative Courses" := 6.021, 6.033, 6.111, 6.805, 14.05, 15.279, 15.301
+
+%% All courses that can count toward the 96-unit elective requirement
+%% Includes Course 10 electives, breadth courses from engineering/biology/economics/management
+all_electives, "Electives for Breadth" := 10.01/10.02/10.04/10.05/10.06/10.07/10.08/10.09/10.10/10.180/10.213/10.22/10.25/10.258/10.26/10.27/10.28/10.28A/10.28B/10.29/10.291/10.301/10.302/10.31/10.32/10.321/10.333/10.34/10.345/10.352/10.353/10.354/10.37/10.390/10.391/10.392/10.40/10.407/10.421/10.424/10.426/10.43/10.437/10.441/10.442/10.443/10.450/10.466/10.467/10.480/10.489/10.490/10.492A/10.492B/10.493/10.494A/10.494B/10.495/10.496/10.50/10.51/10.52/10.521/10.524/10.531/10.534/10.535/10.536/10.537/10.538/10.539/10.540/10.542/10.544/10.545/10.546/10.547/10.548/10.55/10.551/10.552/10.553/10.554/10.555/10.557/10.56/10.560/10.562/10.566/10.568/10.569/10.571/10.580/10.582/10.585/10.586/10.591/10.595/10.600/10.606/10.621/10.625/10.626/10.631/10.637/10.643/10.65/10.652/10.668/10.677/10.689/10.7003/10.792/10.80/10.801/10.805/10.806/10.807/10.81/10.817/10.82/10.83/10.84/10.85/10.86/10.87/10.90/10.910/10.911/10.912/10.950/10.951/10.952/10.953/10.954/10.955/10.956/10.957/10.958/10.960/10.961/10.962/10.963/10.964/10.965/10.966/10.967/10.968/10.969/10.970/10.971/10.972/10.973/10.974/10.975/10.976/10.977/10.978/10.979/10.980/10.981/10.982/10.983/10.984/10.985/10.986/10.987/10.988/10.989/10.990/10.991/10.992/10.994/10.995/10.997/10.998/10.C01/10.C51/10.S28/10.UAR/5.310/5.12/5.611/5.612/6.021/6.033/6.111/6.152/6.805/6.1800/6.2050/6.2600/6.4590/6.4810/7.002/7.003/7.05/7.06/14.05/15.279/15.301
+
+restricted_electives, "Restricted Electives" := cim_labs/cim_alternatives{>=2}, all_electives{>=96u}
