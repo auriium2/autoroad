@@ -8,7 +8,7 @@ from typing import Any
 from .base import ObjectiveComponent
 from .categories import CategoryRewards
 from .equivalents import DiscourageEquivalentCourses
-from .scheduling import AvoidIAP, MinimizeFridayClasses, MinimumClassesPerSemester
+from .scheduling import AvoidIAP, AvoidSpecialClasses, MinimizeFridayClasses, MinimumClassesPerSemester
 from .units import AvoidSmallClasses
 from .workload import (
     LimitClassesPerSemester,
@@ -112,6 +112,17 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         category="scheduling",
         default_tier=2,
     ),
+    "avoid_special_classes": ObjectiveMetadata(
+        key="avoid_special_classes",
+        class_ref=AvoidSpecialClasses,
+        name="Avoid Special Classes",
+        description="Penalize taking Concourse/STS/ES classes, since most students do not take these.",
+        has_parameters=False,
+        default_parameters={},
+        parameter_types={},
+        category="scheduling",
+        default_tier=2,
+    ),
     "minimum_classes_per_semester": ObjectiveMetadata(
         key="minimum_classes_per_semester",
         class_ref=MinimumClassesPerSemester,
@@ -209,6 +220,7 @@ def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
     return [
         ("limit_classes_per_semester", {"max_classes": 4}),
         ("avoid_small_classes", {"min_units": 3}),
+        ("avoid_special_classes", {}),
         ("minimum_classes_per_semester", {"min_classes": 2}),
         ("category_rewards", {"max_courses_per_category": 20, "decay_rate": 0.70}),
         ("discourage_equivalent_courses", {"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}}),

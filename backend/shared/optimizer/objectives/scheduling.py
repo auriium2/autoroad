@@ -1,5 +1,5 @@
 """
-Schedule-based objectives: minimize Fridays, avoid IAP.
+Schedule-based objectives: minimize Fridays, avoid IAP, avoid special classes.
 """
 
 from __future__ import annotations
@@ -112,6 +112,60 @@ class AvoidIAP:
             # IAP semesters: 2, 5, 8, 11 (semester % 3 == 2 and semester >= 1)
             # Must exclude ASE (semester -1) which also has -1 % 3 == 2 in Python
             if semester >= 1 and semester % 3 == 2:
+                terms.append(var * penalty)
+
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
+
+
+class AvoidSpecialClasses:
+    """
+    Tier-based soft constraint to avoid classes with special prefixes (ES., CC., STS.).
+
+    These are typically special versions of courses (Experimental Study Group, Concourse,
+    Science, Technology, and Society) that students may want to avoid by default.
+    """
+
+    SPECIAL_PREFIXES: tuple[str, ...] = ("ES.", "CC.", "STS.")
+
+    def __init__(self):
+        pass
+
+    def get_name(self) -> str:
+        return "Avoid Special Classes"
+
+    def get_description(self) -> str:
+        return "Penalize classes starting with ES., CC., or STS. (tier-based)"
+
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        subject_ids = courses_df['subject_id'].to_list()
+        is_special = [
+            any(str(sid).startswith(prefix) for prefix in self.SPECIAL_PREFIXES)
+            for sid in subject_ids
+        ]
+        return {'_is_special_class': is_special, '_subject_ids': subject_ids}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        tier = 2
+        if context.objective_tiers and 'avoid_special_classes' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_special_classes']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
+        if context.extra is None or '_is_special_class' not in context.extra:
+            return cp_model.LinearExpr.constant(0)
+
+        is_special = context.extra['_is_special_class']
+        terms = []
+
+        for (course_idx, semester), var in take_vars.items():
+            if is_special[course_idx]:
                 terms.append(var * penalty)
 
         if terms:
