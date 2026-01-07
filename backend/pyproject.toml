@@ -7,16 +7,33 @@ dependencies = [
     "requests>=2.32.0",
     "polars>=1.0.0",
     "ortools>=9.0.0",
-    "pyarrow>=22.0.0",
-    "fastapi[standard]>=0.121.1",
+    "fastapi>=0.121.1",
     "uvicorn>=0.38.0",
     "cachetools>=6.2.2",
     "redis>=5.0.0",
-    "httpx>=0.27.0",
-    "python-dotenv>=1.0.0",
+    "claude-agent-sdk>=0.1.10",
 ]
 
 [project.optional-dependencies]
+# Server needs httpx, dotenv, and fastapi extras for dev experience
+server = [
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "uvloop>=0.21.0",
+    "fastapi-cli>=0.0.16",
+]
+# Modal worker needs modal SDK
+modal = [
+    "modal>=1.2.4",
+]
+# All deps (server + modal) for local dev
+all = [
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "uvloop>=0.21.0",
+    "fastapi-cli>=0.0.16",
+    "modal>=1.2.4",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -39,7 +56,6 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 markers = [
-    "e2e: end-to-end integration tests (deselect with '-m \"not e2e\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "fireroad: tests that validate against Fireroad API (requires network)",
 ]

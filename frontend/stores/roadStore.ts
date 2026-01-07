@@ -33,6 +33,9 @@ interface GraphStore {
     totalSteps?: number;
     message?: string;
     solutionNumber?: number;
+    queuePosition?: number;
+    queueLength?: number;
+    tier?: 'fast' | 'slow';
   } | null;
 
   // Cost breakdown from last optimization
@@ -203,6 +206,7 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     const selectedHardConstraints = useOptimizationStore.getState().selectedHardConstraints;
     const requirementTiers = useOptimizationStore.getState().requirementTiers;
     const objectiveTiers = useOptimizationStore.getState().objectiveTiers;
+    const requirementSources = useOptimizationStore.getState().requirementSources;
 
     // Create AbortController for this optimization
     const abortController = new AbortController();
@@ -260,7 +264,8 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
         planningYear,
         lockPastSemesters,
         requirementTiers,
-        objectiveTiers
+        objectiveTiers,
+        requirementSources
       )) {
         // Handle completion status
         if (progress.isComplete && progress.status) {
@@ -292,6 +297,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 totalSteps: progress.totalSteps,
                 message: progress.message,
                 solutionNumber: progress.solutionNumber,
+                queuePosition: progress.queuePosition,
+                queueLength: progress.queueLength,
+                tier: progress.tier,
               } : null,
             });
           } else if (showProgress && timeSinceLastProgress >= PROGRESS_THROTTLE_MS) {
@@ -303,6 +311,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 totalSteps: progress.totalSteps,
                 message: progress.message,
                 solutionNumber: progress.solutionNumber,
+                queuePosition: progress.queuePosition,
+                queueLength: progress.queueLength,
+                tier: progress.tier,
               },
             });
           }
@@ -314,6 +325,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
               totalSteps: progress.totalSteps,
               message: progress.message,
               solutionNumber: progress.solutionNumber,
+              queuePosition: progress.queuePosition,
+              queueLength: progress.queueLength,
+              tier: progress.tier,
             } : null,
           });
         }

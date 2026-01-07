@@ -68,12 +68,12 @@ export interface FireroadSearchParams {
 }
 
 export interface RequirementMetadata {
-  title_no_degree?: string;
+  'title-no-degree'?: string;
   title?: string;
-  short?: string;
-  medium?: string;
-  source?: 'canonical' | 'beta';  // Indicates if this is from Fireroad (canonical) or custom/AI-augmented (beta)
-  hasBothVersions?: boolean;  // True if both canonical and beta versions exist
+  'short-title'?: string;
+  'medium-title'?: string;
+  source?: 'canonical' | 'beta';
+  hasBothVersions?: boolean;
 }
 
 export type RequirementsListResponse = Record<string, RequirementMetadata>;

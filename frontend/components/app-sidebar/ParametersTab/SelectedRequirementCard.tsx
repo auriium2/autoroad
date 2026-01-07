@@ -23,7 +23,7 @@ export function SelectedRequirementCard({
   const setRequirementSource = useOptimizationStore((state) => state.setRequirementSource);
   const removeRequirement = useOptimizationStore((state) => state.removeRequirement);
 
-  const displayName = metadata?.title_no_degree || metadata?.medium || metadata?.title || requirementKey;
+  const displayName = metadata?.['medium-title'] || metadata?.['title-no-degree'] || metadata?.title || requirementKey;
   const isExpanded = expandedRequirements.includes(requirementKey);
   const storedSource = requirementSources[requirementKey] || 'canonical';
   const currentSource = metadata?.source === 'beta' && !metadata?.hasBothVersions ? 'beta' : storedSource;

@@ -84,7 +84,6 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
     const progress = req.progress ?? 0;
     const max = req.max ?? 1;
     const percentage = req.percent_fulfilled ?? 0;
-    // Use namespaced path for tier storage to avoid collisions between different requirements
     const namespacedPath = getNamespacedPath(path);
     const nodeTier = requirementTiers[namespacedPath] ?? 0;
 
@@ -116,7 +115,7 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
               {progress}/{max}
             </span>
             {viewMode === "cost" && lastCostBreakdown && nodeTier > 0 && (() => {
-              // green THROBBING cost indicator - use namespaced path
+              // green THROBBING cost indicator
               const categoryKey = `category:${namespacedPath}`;
               const categoryCost = lastCostBreakdown[categoryKey];
 

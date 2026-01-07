@@ -34,8 +34,8 @@ import { isPastSemesterById } from "@/lib/semesterUtils";
 // Custom node component wrapper for React Flow
 const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean; viewMode?: string; isOptimizing?: boolean } }) => {
   return (
-    <div style={{ 
-      position: 'relative', 
+    <div style={{
+      position: 'relative',
       transform: 'translate(-50%, 0)',
       willChange: data.isOptimizing ? 'transform' : 'auto'
     }}>
@@ -358,7 +358,7 @@ function CourseGraphFlowInner({
       const timer = setTimeout(() => {
         setDebouncedNodes(storeNodes);
       }, 800); // Wait 800ms after last change
-      
+
       return () => clearTimeout(timer);
     }
 
@@ -366,7 +366,7 @@ function CourseGraphFlowInner({
     if (markersChangedSinceOptimization && !hasShownStaleWarning) {
       showToast({
         title: "Optimizer results are stale",
-        description: "You've modified your markers. Press 'Optimize!' to update the schedule.",
+        description: "You've modified the optimization problem. Press optimize to clear this.",
         variant: "default",
         duration: 5000,
       });
@@ -389,9 +389,9 @@ function CourseGraphFlowInner({
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
 
   // Context menu hook
-  const { contextMenu, setContextMenu, onNodeContextMenu } = useContextMenu({ 
-    setNodes, 
-    isOptimizing 
+  const { contextMenu, setContextMenu, onNodeContextMenu } = useContextMenu({
+    setNodes,
+    isOptimizing
   });
 
   // Context menu handlers
@@ -711,7 +711,7 @@ function CourseGraphFlowInner({
       <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
 
       {/* Total Units and Cost Display */}
-      <GraphStats 
+      <GraphStats
         viewMode={viewMode}
         markers={markers}
         optimizerNodes={optimizerNodes}

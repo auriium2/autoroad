@@ -42,6 +42,15 @@ export interface OptimizationProgress {
   costBreakdown?: Record<string, number>;
   status?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID';
   isComplete?: boolean;
+  // Queue info
+  jobId?: string;
+  tier?: 'fast' | 'slow';
+  queuePosition?: number;
+  queueLength?: number;
+  // Rate limit info
+  fastRequestsUsed?: number;
+  fastRequestsRemaining?: number;
+  fastRequestsLimit?: number;
 }
 
 export const optimizerApi = {
@@ -92,6 +101,16 @@ export const optimizerApi = {
     return optimizerFetch<HardConstraintsResponse>('/api/constraints');
   },
 
+  async getRateLimit(): Promise<{
+    fast_requests_used: number;
+    fast_requests_remaining: number;
+    fast_requests_limit: number;
+    window_minutes: number;
+    can_use_fast: boolean;
+  }> {
+    return optimizerFetch(`${BACKEND_URL}/api/optimize/rate-limit`);
+  },
+
   async *optimize(
     markers: Marker[],
     requiredCourses: string[],
@@ -102,7 +121,8 @@ export const optimizerApi = {
     planningYear?: string,
     lockPastSemesters?: boolean,
     requirementTiers?: Record<string, number>,
-    objectiveTiers?: Record<string, number>
+    objectiveTiers?: Record<string, number>,
+    requirementSources?: Record<string, 'canonical' | 'beta'>
   ): AsyncGenerator<OptimizationProgress> {
     const requestBody = {
       markers: markers.map(m => ({
@@ -118,6 +138,7 @@ export const optimizerApi = {
       lockPastSemesters: lockPastSemesters || false,
       requirementTiers: requirementTiers || {},
       objectiveTiers: objectiveTiers || {},
+      requirementSources: requirementSources || {},
     };
 
     const response = await fetch(`${BACKEND_URL}/api/optimize`, {
@@ -159,7 +180,32 @@ export const optimizerApi = {
             try {
               const message = JSON.parse(data);
 
-              if (message.type === 'progress') {
+              if (message.type === 'job_created') {
+                yield {
+                  nodes: [],
+                  step: 0,
+                  message: message.tier === 'fast' ? 'Job queued (fast tier)...' : 'Job queued (slow tier)...',
+                  jobId: message.jobId,
+                  tier: message.tier,
+                  fastRequestsUsed: message.fast_requests_used,
+                  fastRequestsRemaining: message.fast_requests_remaining,
+                  fastRequestsLimit: message.fast_requests_limit,
+                };
+              } else if (message.type === 'queued') {
+                yield {
+                  nodes: [],
+                  step: 0,
+                  message: message.message || (message.position === 1 ? 'Starting worker...' : `Position ${message.position} of ${message.queueLength} in queue`),
+                  queuePosition: message.position,
+                  queueLength: message.queueLength,
+                };
+              } else if (message.type === 'worker_started') {
+                yield {
+                  nodes: [],
+                  step: 0,
+                  message: 'Worker started, optimizing...',
+                };
+              } else if (message.type === 'progress') {
                 yield {
                   nodes: [],
                   step: message.step || 0,

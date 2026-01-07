@@ -39,7 +39,8 @@ import { fireroadApi } from "@/services/fireroad";
 import { prefetchCourses } from "@/lib/cache";
 
 export default function Dashboard() {
-  const [isExporting, setIsExporting] = React.useState(false);
+  const [isExportingMarkers, setIsExportingMarkers] = React.useState(false);
+  const [isExportingGenerated, setIsExportingGenerated] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
   const [optimizationStartTime, setOptimizationStartTime] = React.useState<number | null>(null);
@@ -90,6 +91,15 @@ export default function Dashboard() {
 
   const hasHealthIssue = backendError || fireroadError || nextjsError;
 
+  // Fetch rate limit info
+  const { data: rateLimit, refetch: refetchRateLimit } = useQuery({
+    queryKey: ['rateLimit'],
+    queryFn: () => optimizerApi.getRateLimit(),
+    refetchInterval: 60000, // Refresh every minute
+    retry: 1,
+    staleTime: 30000,
+  });
+
   const healthErrorMessage =
     backendError
     ? "Backend optimization service is unavailable. This means something on our Google Cloud workers has failed. Please contact me at mlui2@mit.edu if you see this."
@@ -125,13 +135,13 @@ export default function Dashboard() {
 
     // Update elapsed time
     if (!isOptimizing || !optimizationStartTime) return;
-    
+
     let rafId: number;
     const updateTime = () => {
       setTimeElapsed((Date.now() - optimizationStartTime) / 1000);
       rafId = requestAnimationFrame(updateTime);
     };
-    
+
     rafId = requestAnimationFrame(updateTime);
     return () => cancelAnimationFrame(rafId);
   }, [isOptimizing, optimizationStartTime]);
@@ -151,13 +161,21 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     console.log('[Dashboard] lastOptimizationStatus changed:', lastOptimizationStatus, 'prev:', prevStatusRef.current);
+
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
       showToast({
         title: "Optimal solution found!",
-        description: "This is the best possible schedule given your constraints and objectives. Note: Results are optimal only in the mathematical sense given your specific objective function and might be wonky to a human",
-        duration: 5000,
+        description: "The schedule generated is mathematically optimal given your constraints. If it does not look how you expect, constrain it further by placing more markers or adding more objectives!",
+        duration: 3000,
+      });
+    } else if (lastOptimizationStatus == 'FEASIBLE' && prevStatusRef.current !== 'FEASIBLE') {
+      showToast({
+        title: "Feasible solution found...",
+        description: "The schedule generated satisfies the constraints you placed but is not the most optimal. This usually happens when the solver runs out of time or you make the problem too complex. If it keeps happening please email mlui2@mit.edu.",
+        duration: 3000,
       });
     }
+
     prevStatusRef.current = lastOptimizationStatus;
   }, [lastOptimizationStatus]);
 
@@ -179,9 +197,9 @@ export default function Dashboard() {
     });
   };
 
-  const handleExport = async () => {
+  const handleExportMarkers = async () => {
     try {
-      setIsExporting(true);
+      setIsExportingMarkers(true);
 
       const roadData = await exportToRoadFormat(
         markers,
@@ -195,15 +213,15 @@ export default function Dashboard() {
         }
       );
 
-      downloadRoadFile(roadData);
+      downloadRoadFile(roadData, "autoroad-markers.road");
 
       showToast({
         title: "Export successful",
-        description: "Your schedule has been exported to .road format",
+        description: "Your markers have been exported to .road format",
         duration: 3000,
       });
     } catch (error) {
-      console.error('Error during export:', error);
+      console.error('Error during markers export:', error);
       showToast({
         title: "Export failed",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -211,7 +229,50 @@ export default function Dashboard() {
         duration: 5000,
       });
     } finally {
-      setIsExporting(false);
+      setIsExportingMarkers(false);
+    }
+  };
+
+  const handleExportGenerated = async () => {
+    try {
+      setIsExportingGenerated(true);
+
+      const generatedMarkers = optimizerNodes.map(node => ({
+        uuid: `generated_${node.courseId}_${node.section}`,
+        courseId: node.courseId,
+        section: node.section,
+        status: 'pin' as const,
+      }));
+
+      const roadData = await exportToRoadFormat(
+        generatedMarkers,
+        selectedRequirements,
+        async (courseId) => {
+          const details = await fireroadApi.getCourseDetails(courseId);
+          return {
+            title: details.title,
+            total_units: details.total_units,
+          };
+        }
+      );
+
+      downloadRoadFile(roadData, "autoroad-generated.road");
+
+      showToast({
+        title: "Export successful",
+        description: "Your generated schedule has been exported to .road format",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error during generated export:', error);
+      showToast({
+        title: "Export failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsExportingGenerated(false);
     }
   };
 
@@ -263,6 +324,9 @@ export default function Dashboard() {
     try {
       const result = await optimizeRoadFromStore(undefined, true);
 
+      // Refetch rate limit after optimization
+      refetchRateLimit();
+
       if (!result.success) {
         showToast({
           title: "Optimization failed",
@@ -271,11 +335,10 @@ export default function Dashboard() {
           duration: 10000,
         });
       } else {
-        showToast({
-          title: "Optimization complete",
-          description: "Your courses should satisfy degree requirements, but it might not be the absolute best possible. You may be able to improve it further!",
-          duration: 3000,
-        });
+
+
+
+
       }
 
     } catch (error) {
@@ -304,9 +367,13 @@ export default function Dashboard() {
                 <Upload className="h-4 w-4" />
                 {isImporting ? "Importing..." : "Import"}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport} disabled={isExporting}>
+              <Button variant="outline" size="sm" onClick={handleExportMarkers} disabled={isExportingMarkers}>
                 <Download className="h-4 w-4" />
-                {isExporting ? "Exporting..." : "Export"}
+                {isExportingMarkers ? "Exporting..." : "Export Markers"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportGenerated} disabled={isExportingGenerated}>
+                <Download className="h-4 w-4" />
+                {isExportingGenerated ? "Exporting..." : "Export Generated"}
               </Button>
             </div>
           </header>
@@ -348,6 +415,22 @@ export default function Dashboard() {
                   </TooltipTrigger>
                   <TooltipContent>Clear Optimizer Results</TooltipContent>
                 </Tooltip>
+
+                {/* Rate limit indicator */}
+                {rateLimit && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={`text-xs px-2 py-1 rounded ${rateLimit.can_use_fast ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                        {rateLimit.fast_requests_remaining}/{rateLimit.fast_requests_limit} fast
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {rateLimit.can_use_fast
+                        ? `${rateLimit.fast_requests_remaining} fast optimizations remaining (resets every ${rateLimit.window_minutes} min)`
+                        : `Fast tier exhausted. Using slow tier. Resets in ~${rateLimit.window_minutes} min`}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
 
                 <Button
                   size="sm"
@@ -397,6 +480,10 @@ export default function Dashboard() {
                             />
                           </svg>
                         </div>
+                      ) : optimizationProgress?.queuePosition && optimizationProgress.queuePosition > 1 ? (
+                        <span className="mr-2 text-xs font-medium bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
+                          #{optimizationProgress.queuePosition}
+                        </span>
                       ) : (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       )}
