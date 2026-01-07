@@ -27,11 +27,6 @@ EXECUTION_MODE = os.environ.get("EXECUTION_MODE", "local")
 WORKER_URL = os.environ.get("WORKER_URL", "")
 
 
-@router.get("/optimize/health")
-async def health_check():
-    return {"status": "healthy", "service": "optimizer", "mode": EXECUTION_MODE}
-
-
 async def event_stream_local(request: OptimizationRequest):
     """Stream optimization results locally (development mode)."""
     from shared.optimize import event_stream

@@ -16,10 +16,8 @@ package-lock.json
 # testing
 /coverage
 
-# next.js
-/.next/
-/frontend/.next/
-/out/
+# vite
+/frontend/dist/
 
 # production
 /build
@@ -42,7 +40,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # temporary files
 /temp/
