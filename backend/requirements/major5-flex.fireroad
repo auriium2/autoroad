@@ -1,0 +1,44 @@
+5#,#5-Flex Major#,#Chemistry#,#Bachelor of Science in Chemistry (Flexible Option)
+The Flexible Chemistry Option, "ChemFlex," is designed to provide an education both for those who intend to pursue chemistry as a career and for those who plan to go into an allied field, such as biotechnology or scientific consulting, in which a sound knowledge of chemistry is important. Students receive thorough instruction in the principles of chemistry, supplemented by a strong foundation in mathematics, physics, biology, and the humanities. This training can be tailored to the student's interests by the judicious choice of elective focus subjects that contribute to the major. The Department of Chemistry also teaches courses jointly with the departments of Biology, Chemical Engineering, Biological Engineering, and Materials Science and Engineering. Students at all levels are encouraged to undertake original research.
+
+required_subjects
+
+elective_focus
+
+lab_requirement
+
+%% Required core courses
+required_subjects, "Required Subjects" := core_required, restricted_electives_required
+
+core_required, "Core Required" := 5.03, 5.07, 5.12, 5.601, 5.611
+
+%% Restricted electives (must select 24+ units)
+restricted_electives_required, "Restricted Electives" := (5.04/5.08/5.13/5.43/5.602/5.612/5.62){>=24u}
+
+%% Elective focus - 36+ units of approved chemistry electives forming a coherent area of focus
+%% These are chemistry courses that allow students to concentrate in areas like:
+%% - Organic chemistry (synthesis, mechanism, structure determination)
+%% - Inorganic chemistry (coordination chemistry, materials)
+%% - Physical chemistry (spectroscopy, quantum mechanics, statistical thermodynamics)
+%% - Chemical biology and biochemistry
+%% - Computational chemistry
+elective_focus, "Elective Focus" := approved_electives{>=36u}
+
+%% Comprehensive list of approved chemistry electives (6+ unit courses)
+%% Includes advanced topics in all areas of chemistry
+approved_electives, "Approved Electives" := 5.04/5.05/5.061/5.062/5.064/5.065/5.067/5.068/5.069/5.08/5.13/5.24/5.43/5.44/5.45/5.46/5.47/5.48/5.49/5.511/5.512/5.52/5.53/5.54/5.55/5.56/5.561/5.602/5.612/5.613/5.62/5.64/5.65/5.68/5.697/5.698/5.70/5.72/5.73/5.74/5.78/5.81/5.811/5.812/5.82/5.83
+
+%% Laboratory requirement with required core modules plus completion option
+lab_requirement, "Laboratory Requirement" := required_labs, lab_completion
+
+%% Four required laboratory modules
+required_labs, "Required Lab Modules" := 5.351, 5.352, 5.353, 5.361
+
+%% Students must complete one of three options:
+%% 1. At least 20 units from restricted lab electives (5.362-5.383)
+%% 2. 5.39 Research and Communication in Chemistry
+%% 3. Department-approved alternative labs (captured by either option 1 or 2)
+lab_completion, "Laboratory Completion" := restricted_lab_electives/5.39{>=1}
+
+%% Restricted lab electives (20+ units required)
+restricted_lab_electives, "Restricted Lab Electives" := 5.362/5.363/5.371/5.372/5.373/5.381/5.382/5.383{>=20u}

@@ -128,7 +128,10 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         # Fetch data
         perf_start = time.time()
         courses_data = get_courses_data()
-        requirements_data = get_requirements(tuple(request.requirements))
+        requirements_data = get_requirements(
+            tuple(request.requirements),
+            requirement_sources=request.requirementSources
+        )
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
         perf_timings['data_fetch'] = time.time() - perf_start
 

@@ -25,4 +25,4 @@ cheme_electives_9plus, "ChemE Electives (9+ units)" := 10.02/10.05/10.07/10.09/1
 
 advanced_subjects, "Advanced Subjects" := (10.37, 10.490), ((10.492A, 10.492B)/(10.493)/(10.494A, 10.494B)/(cheme_electives_9plus/10.00/10.01)){>=2}
 
-communication_intensive, "Communication-Intensive Subjects" := (7.003/10.27/10.28/10.29){>=2}
+communication_intensive, "Communication-Intensive Subjects" := 7.003/10.27/10.28/10.29{>=2}
