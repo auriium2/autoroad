@@ -39,7 +39,10 @@ class LimitClassesPerSemester:
         return f"Penalize semesters with more than {self.max_classes} classes (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        return {}
+        return {
+            '_subject_ids': courses_df['subject_id'].to_list()
+        }
+
 
     def add_to_model(
         self,
@@ -47,6 +50,7 @@ class LimitClassesPerSemester:
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         context: ObjectiveContext
     ) -> cp_model.LinearExpr:
+
         """
         Add tier-based penalty for semesters exceeding max_classes.
 
@@ -56,6 +60,8 @@ class LimitClassesPerSemester:
         tier = 2
         if context.objective_tiers and 'limit_classes_per_semester' in context.objective_tiers:
             tier = context.objective_tiers['limit_classes_per_semester']
+        marked_course_ids = context.marked_course_ids or set()
+        subject_ids = (context.extra.get('_subject_ids') if context.extra else None) or context.courses_df['subject_id'].to_list()
 
         penalty = get_tier_penalty(tier, base_cost=1)
 
@@ -68,6 +74,12 @@ class LimitClassesPerSemester:
             # Count classes in this semester
             classes_in_semester = []
             for (course_idx, semester), var in take_vars.items():
+                course_id = subject_ids[course_idx]
+
+                # Skip courses with user markers - they explicitly want these
+                if course_id and course_id in marked_course_ids:
+                    continue
+
                 if semester == sem:
                     classes_in_semester.append(var)
 
