@@ -6,14 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
-from server.routes import optimize
+from server.routes import optimize, requirements
 
-USE_WORKERS = os.environ.get("USE_WORKERS", "false").lower() == "true"
+USE_WORKERS = os.environ.get("USE_WORKERS", "true").lower() == "true"
 cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 
 app = FastAPI(
     title="Autoroad API",
-    description="Course planning and optimization API for MIT students",
+    description="Course planning and optimization for MIT students",
     version="1.0.0",
 )
 app.add_middleware(
@@ -25,6 +25,7 @@ app.add_middleware(
 )
 
 app.include_router(optimize.router, prefix="/api", tags=["optimization"])
+app.include_router(requirements.router, prefix="/api", tags=["requirements"])
 
 
 @app.get("/")

@@ -25,3 +25,4 @@ class OptimizationRequest(BaseModel):
     lockPastSemesters: bool = Field(default=False, description="Prevent optimizer from modifying semesters that have already passed")
     requirementTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for requirement tree nodes (0-3)")
     objectiveTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for objectives (1-4)")
+    requirementSources: dict[str, Literal["canonical", "beta"]] = Field(default_factory=dict, description="Source preference for requirements with both versions")

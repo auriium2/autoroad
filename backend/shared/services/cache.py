@@ -9,6 +9,7 @@ import concurrent.futures
 import json
 import os
 import threading
+from pathlib import Path
 from typing import cast
 
 import polars as pl
@@ -19,6 +20,9 @@ from cachetools import TTLCache
 from shared.courses.prerequisites.types import PrereqNode
 
 REDIS_URL = os.environ.get("REDIS_URL")
+
+# Local custom requirements directory
+REQUIREMENTS_DIR = Path(__file__).parent.parent.parent / "requirements"
 
 # L1: In-memory caches (60s TTL - helps with sequential requests on same instance)
 _courses_l1: TTLCache[str, list[dict[str, object]]] = TTLCache(maxsize=1, ttl=60)
@@ -38,6 +42,8 @@ REDIS_TTL = 3600 * 24
 
 def _get_redis() -> redis.Redis | None:  # type: ignore[type-arg]
     global _redis_client
+    if not REDIS_URL:
+        return None
     if _redis_client is None:
         with _redis_lock:
             if _redis_client is None:
@@ -90,100 +96,131 @@ def get_courses_data() -> list[dict[str, object]]:
     return data
 
 
-def _fetch_requirement(key: str) -> dict[str, object]:
-    resp = requests.get(f"https://fireroad.mit.edu/requirements/get_json/{key}")
-    resp.raise_for_status()
-    return resp.json()
+def _parse_local_requirement(content: str) -> dict[str, object]:
+    """Parse a .fireroad file into the same format as Fireroad API."""
+    from shared.courses.requirements.fireroad_parser import parse_fireroad_file
+    return parse_fireroad_file(content)
 
 
-def get_requirement(key: str) -> dict[str, object]:
-    # L1
-    with _requirements_lock:
-        if key in _requirements_l1:
-            return _requirements_l1[key]
+def _load_local_requirement(key: str) -> dict[str, object] | None:
+    """
+    Try to load a requirement from local files.
+    
+    Local files are preferred over Fireroad because:
+    - If both exist: local is the "beta" improved version
+    - If only local exists: it's a custom requirement (e.g. concentrations)
+    """
+    for ext in ['.fireroad', '.txt']:
+        path = REQUIREMENTS_DIR / f"{key}{ext}"
+        if path.exists():
+            try:
+                content = path.read_text()
+                return _parse_local_requirement(content)
+            except Exception as e:
+                print(f"[CACHE] Error parsing local requirement {key}: {e}")
+    return None
 
-    # L2
-    r = _get_redis()
-    if r:
+
+def fetch_requirement(key: str, source: str = "beta") -> dict[str, object]:
+    """
+    Fetch a requirement, respecting source preference.
+    
+    Args:
+        key: Requirement key (e.g., 'girs', 'chinese_concentration')
+        source: 'beta' prefers local files, 'canonical' prefers Fireroad
+    """
+    if source == "canonical":
+        # Try Fireroad first for canonical
         try:
-            cached = r.get(f"{REQUIREMENTS_PREFIX}{key}")
-            if cached:
-                data = json.loads(cached)
-                with _requirements_lock:
-                    _requirements_l1[key] = data
-                return data
-        except Exception:
-            pass
+            resp = requests.get(f"https://fireroad.mit.edu/requirements/get_json/{key}")
+            resp.raise_for_status()
+            return resp.json()
+        except requests.HTTPError:
+            # Fall back to local if Fireroad doesn't have it
+            local = _load_local_requirement(key)
+            if local is not None:
+                return local
+            raise
+    else:
+        # Beta: prefer local files
+        local = _load_local_requirement(key)
+        if local is not None:
+            return local
 
-    # Fetch
-    data = _fetch_requirement(key)
-
-    with _requirements_lock:
-        _requirements_l1[key] = data
-
-    if r:
-        try:
-            r.setex(f"{REQUIREMENTS_PREFIX}{key}", REDIS_TTL, json.dumps(data))
-        except Exception:
-            pass
-
-    return data
+        # Fall back to Fireroad API
+        resp = requests.get(f"https://fireroad.mit.edu/requirements/get_json/{key}")
+        resp.raise_for_status()
+        return resp.json()
 
 
-def get_requirements(requirement_keys: tuple[str, ...]) -> dict[str, object]:
+def _cache_key(key: str, source: str) -> str:
+    """Generate a cache key that includes the source to avoid mixing canonical/beta."""
+    return f"{key}:{source}"
+
+
+def get_requirements(
+    requirement_keys: tuple[str, ...],
+    requirement_sources: dict[str, str] | None = None
+) -> dict[str, object]:
     if not requirement_keys:
         return {}
 
+    sources = requirement_sources or {}
+    default_source = "canonical"
+
     result: dict[str, object] = {}
-    missing: list[str] = []
+    missing: list[tuple[str, str]] = []  # (key, source) pairs
 
     # Check L1
     with _requirements_lock:
         for key in requirement_keys:
-            if key in _requirements_l1:
-                result[key] = _requirements_l1[key]
+            source = sources.get(key, default_source)
+            cache_key = _cache_key(key, source)
+            if cache_key in _requirements_l1:
+                result[key] = _requirements_l1[cache_key]
             else:
-                missing.append(key)
+                missing.append((key, source))
 
     if not missing:
         return result
 
     # Check L2 for missing
     r = _get_redis()
-    still_missing: list[str] = []
+    still_missing: list[tuple[str, str]] = []
 
     if r:
         try:
-            keys = [f"{REQUIREMENTS_PREFIX}{k}" for k in missing]
-            values = r.mget(keys)
-            for key, val in zip(missing, values):
+            redis_keys = [f"{REQUIREMENTS_PREFIX}{_cache_key(k, s)}" for k, s in missing]
+            values = r.mget(redis_keys)
+            for (key, source), val in zip(missing, values):
                 if val:
                     data = json.loads(val)
                     result[key] = data
                     with _requirements_lock:
-                        _requirements_l1[key] = data
+                        _requirements_l1[_cache_key(key, source)] = data
                 else:
-                    still_missing.append(key)
+                    still_missing.append((key, source))
         except Exception:
-            still_missing = missing
+            still_missing = list(missing)
     else:
-        still_missing = missing
+        still_missing = list(missing)
 
     # Fetch remaining in parallel
     if still_missing:
-        def fetch(k: str) -> tuple[str, dict[str, object]]:
-            return k, _fetch_requirement(k)
+        def fetch(k: str, src: str) -> tuple[str, str, dict[str, object]]:
+            return k, src, fetch_requirement(k, src)
 
         with concurrent.futures.ThreadPoolExecutor() as ex:
-            futures = [ex.submit(fetch, k) for k in still_missing]
+            futures = [ex.submit(fetch, k, s) for k, s in still_missing]
             for future in concurrent.futures.as_completed(futures):
-                key, data = future.result()
+                key, source, data = future.result()
                 result[key] = data
+                cache_key = _cache_key(key, source)
                 with _requirements_lock:
-                    _requirements_l1[key] = data
+                    _requirements_l1[cache_key] = data
                 if r:
                     try:
-                        r.setex(f"{REQUIREMENTS_PREFIX}{key}", REDIS_TTL, json.dumps(data))
+                        r.setex(f"{REQUIREMENTS_PREFIX}{cache_key}", REDIS_TTL, json.dumps(data))
                     except Exception:
                         pass
 

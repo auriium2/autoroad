@@ -4,7 +4,6 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { loadCustomRequirements } from '@/lib/requirementFileParser';
 import type { RequirementsListResponse } from '@/types/models/fireroad';
 import type {
   ObjectivesResponse,
@@ -24,9 +23,9 @@ export async function GET(request: NextRequest) {
     const excludeObjectives = searchParams.get('excludeObjectives')?.split(',') || [];
     const excludeConstraints = searchParams.get('excludeConstraints')?.split(',') || [];
 
-    // Fetch all data sources in parallel
-    const [fireroadResponse, objectivesResponse, constraintsResponse] = await Promise.all([
-      fetch('https://fireroad.mit.edu/requirements/list_reqs', {
+    // Fetch all data sources in parallel (requirements now from backend)
+    const [requirementsResponse, objectivesResponse, constraintsResponse] = await Promise.all([
+      fetch(`${BACKEND_URL}/api/requirements/list`, {
         headers: { 'Accept': 'application/json' },
         next: { revalidate: 24 * 60 * 60 },
       }),
@@ -38,40 +37,13 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    if (!fireroadResponse.ok || !objectivesResponse.ok || !constraintsResponse.ok) {
+    if (!requirementsResponse.ok || !objectivesResponse.ok || !constraintsResponse.ok) {
       throw new Error('Failed to fetch data from upstream services');
     }
 
-    const fireroadRequirements = await fireroadResponse.json() as RequirementsListResponse;
+    const allRequirements = await requirementsResponse.json() as RequirementsListResponse;
     const objectivesData = await objectivesResponse.json() as ObjectivesResponse;
     const constraintsData = await constraintsResponse.json() as HardConstraintsResponse;
-
-    // Load custom requirements
-    let customRequirements: RequirementsListResponse = {};
-    try {
-      customRequirements = loadCustomRequirements();
-    } catch (error) {
-      console.error('Failed to load custom requirements:', error);
-    }
-
-    // Merge requirements with source metadata
-    const allRequirements: RequirementsListResponse = {};
-    for (const [key, metadata] of Object.entries(fireroadRequirements)) {
-      allRequirements[key] = {
-        ...metadata,
-        source: 'canonical' as const,
-        hasBothVersions: key in customRequirements,
-      };
-    }
-    for (const [key, metadata] of Object.entries(customRequirements)) {
-      if (!(key in fireroadRequirements)) {
-        allRequirements[key] = {
-          ...metadata,
-          source: 'beta' as const,
-          hasBothVersions: false,
-        };
-      }
-    }
 
     // Build searchable items
     const objectives: SearchableItem[] = [];
@@ -125,13 +97,13 @@ export async function GET(request: NextRequest) {
     Object.entries(allRequirements).forEach(([key, metadata]) => {
       if (excludeRequirements.includes(key)) return;
 
-      const displayName = metadata.short || metadata.medium || key;
+      const displayName = metadata['medium-title'] || metadata['title-no-degree'] || metadata['short-title'] || key;
       const searchableText = [
         key,
         metadata.title,
-        metadata.title_no_degree,
-        metadata.medium,
-        metadata.short,
+        metadata['title-no-degree'],
+        metadata['medium-title'],
+        metadata['short-title'],
       ].filter(Boolean).join(' ').toLowerCase();
 
       if (!query || searchableText.includes(query)) {

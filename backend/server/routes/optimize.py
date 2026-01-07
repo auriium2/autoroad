@@ -3,7 +3,7 @@ import json
 import os
 
 import polars as pl
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from ortools.sat.python import cp_model
 
@@ -19,23 +19,17 @@ from shared.utils import find_current_school_year
 
 router = APIRouter()
 
-USE_WORKERS = os.environ.get("USE_WORKERS", "false").lower() == "true"
+# Execution modes:
+# - "local": Run optimization in-process (development)
+# - "direct": Proxy to worker's /optimize endpoint (production, single worker)
+# - "queue": Use Redis job queue (production, multi-worker)
+EXECUTION_MODE = os.environ.get("EXECUTION_MODE", "local")
+WORKER_URL = os.environ.get("WORKER_URL", "")
 
 
 @router.get("/optimize/health")
 async def health_check():
-    return {"status": "healthy", "service": "optimizer"}
-
-
-async def event_stream_via_worker(request: OptimizationRequest):
-    """Stream optimization results via HTTP call to worker (production mode)."""
-    from shared.services.worker_client import call_worker_optimize
-
-    try:
-        async for line in call_worker_optimize(request.model_dump()):
-            yield line
-    except Exception as e:
-        yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
+    return {"status": "healthy", "service": "optimizer", "mode": EXECUTION_MODE}
 
 
 async def event_stream_local(request: OptimizationRequest):
@@ -49,21 +43,121 @@ async def event_stream_local(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
 
 
+async def event_stream_direct(request: OptimizationRequest):
+    """Stream optimization by proxying directly to worker (single worker mode)."""
+    import httpx
+
+    if not WORKER_URL:
+        yield f"data: {json.dumps({'type': 'error', 'error': 'WORKER_URL not configured'})}\n\n"
+        return
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
+            async with client.stream(
+                "POST",
+                f"{WORKER_URL}/optimize",
+                json=request.model_dump(),
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                if response.status_code != 200:
+                    yield f"data: {json.dumps({'type': 'error', 'error': f'Worker returned {response.status_code}'})}\n\n"
+                    return
+
+                async for line in response.aiter_lines():
+                    if line:
+                        yield f"{line}\n"
+
+    except httpx.ConnectError as e:
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Failed to connect to worker', 'details': str(e)})}\n\n"
+    except Exception as e:
+        yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
+
+
+async def event_stream_via_queue(request: OptimizationRequest):
+    """Stream optimization results via Redis job queue (multi-worker mode)."""
+    from shared.services.job_queue import get_job_queue
+
+    queue = get_job_queue()
+
+    try:
+        job_id = await queue.create_job(request.model_dump())
+        print(f"[QUEUE] Job {job_id[:8]} created")
+
+        yield f"data: {json.dumps({'type': 'job_created', 'jobId': job_id})}\n\n"
+
+        async for event in queue.subscribe_to_job(job_id):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    except Exception as e:
+        yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
+
+
 @router.post("/optimize")
-async def optimize(request: OptimizationRequest):
+async def optimize(request: Request, opt_request: OptimizationRequest):
     """
     Run optimization and stream progress via SSE.
 
-    In production (USE_WORKERS=true), forwards to Cloud Run workers via HTTP.
-    In development (USE_WORKERS=false), runs optimization locally.
+    Execution modes (set via EXECUTION_MODE env var):
+    - "local": Run in-process (development)
+    - "queue": Use Redis job queue (production)
     """
-    if USE_WORKERS:
-        stream_func = event_stream_via_worker(request)
+    if EXECUTION_MODE == "queue":
+        stream_func = event_stream_via_queue(opt_request)
+    elif EXECUTION_MODE == "direct":
+        stream_func = event_stream_direct(opt_request)
     else:
-        stream_func = event_stream_local(request)
+        stream_func = event_stream_local(opt_request)
 
     return StreamingResponse(
         stream_func,
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@router.get("/optimize/job/{job_id}")
+async def get_job_status(job_id: str):
+    """Get the status of a job. Useful for reconnection."""
+    from shared.services.job_queue import get_job_queue
+
+    queue = get_job_queue()
+    job = await queue.get_job(job_id)
+
+    if not job:
+        return {"error": "Job not found"}
+
+    return {
+        "jobId": job.job_id,
+        "status": job.status.value,
+        "queuePosition": job.queue_position,
+        "createdAt": job.created_at,
+        "startedAt": job.started_at,
+        "completedAt": job.completed_at,
+        "error": job.error,
+    }
+
+
+@router.get("/optimize/job/{job_id}/stream")
+async def stream_job(job_id: str):
+    """
+    Reconnect to a job's event stream.
+    If the job is complete, returns cached results.
+    If still running, streams remaining events.
+    """
+    from shared.services.job_queue import get_job_queue
+
+    queue = get_job_queue()
+
+    async def stream():
+        async for event in queue.subscribe_to_job(job_id):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
