@@ -21,7 +21,7 @@ import sys
 import redis
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Clear Redis cache")
     parser.add_argument("--all", action="store_true", help="Clear all autoroad caches")
     parser.add_argument("--pattern", default="*", help="Pattern to match requirement keys")
@@ -43,14 +43,15 @@ def main():
 
     # Clear requirement caches
     req_pattern = f"autoroad:req:{args.pattern}"
-    cursor = 0
+    cursor: int = 0
     while True:
-        cursor, keys = r.scan(cursor, match=req_pattern, count=100)
-        if keys:
-            for key in keys:
-                print(f"Deleting: {key}")
-                r.delete(key)
-                deleted += 1
+        result = r.scan(cursor, match=req_pattern, count=100)
+        cursor = int(result[0])
+        keys: list[str] = result[1]  # type: ignore[assignment]
+        for key in keys:
+            print(f"Deleting: {key}")
+            r.delete(key)
+            deleted += 1
         if cursor == 0:
             break
 

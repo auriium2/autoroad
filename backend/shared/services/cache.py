@@ -10,7 +10,7 @@ import json
 import os
 import threading
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import polars as pl
 import redis
@@ -25,7 +25,7 @@ REDIS_URL = os.environ.get("REDIS_URL")
 REQUIREMENTS_DIR = Path(__file__).parent.parent.parent / "requirements"
 
 # L1: In-memory caches (60s TTL - helps with sequential requests on same instance)
-_courses_l1: TTLCache[str, list[dict[str, object]]] = TTLCache(maxsize=1, ttl=60)
+_courses_l1: TTLCache[str, list[dict[str, Any]]] = TTLCache(maxsize=1, ttl=60)
 _courses_lock = threading.RLock()
 
 _requirements_l1: TTLCache[str, dict[str, object]] = TTLCache(maxsize=128, ttl=60)
@@ -56,13 +56,13 @@ def _get_redis() -> redis.Redis | None:  # type: ignore[type-arg]
     return _redis_client
 
 
-def _fetch_courses() -> list[dict[str, object]]:
+def _fetch_courses() -> list[dict[str, Any]]:
     response = requests.get('https://fireroad.mit.edu/courses/all?full=true')
     response.raise_for_status()
     return [c for c in response.json() if not c.get('is_historical')]
 
 
-def get_courses_data() -> list[dict[str, object]]:
+def get_courses_data() -> list[dict[str, Any]]:
     # L1
     with _courses_lock:
         if "courses" in _courses_l1:

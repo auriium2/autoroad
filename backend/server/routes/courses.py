@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Query
 
@@ -91,21 +91,21 @@ async def search_courses(
 
     # Filter by units
     if units:
-        def units_match(c: dict) -> bool:
+        def units_match(c: dict[str, Any]) -> bool:
             u = c.get("total_units") or 0
-            if units == "<6":
-                return u < 6
-            elif units == "6":
-                return u == 6
-            elif units == "9":
-                return u == 9
-            elif units == "12":
-                return u == 12
-            elif units == "15":
-                return u == 15
-            elif units == "6+":
-                return u >= 6
-            return True
+            match units:
+                case "<6":
+                    return u < 6
+                case "6":
+                    return u == 6
+                case "9":
+                    return u == 9
+                case "12":
+                    return u == 12
+                case "15":
+                    return u == 15
+                case "6+":
+                    return u >= 6
         all_courses = [c for c in all_courses if units_match(c)]
 
     # Filter by term
