@@ -1,0 +1,50 @@
+6-4#,#6-4 Major#,#Artificial Intelligence and Decision Making#,#Bachelor of Science in Artificial Intelligence and Decision Making
+
+The Bachelor of Science in Artificial Intelligence and Decision Making aims to integrate disciplines typically taught in different departments including electrical engineering, computer science, statistics, operations research, and brain and cognitive sciences.
+
+fundamentals
+centers
+ci_m
+social_ethics
+electives
+
+fundamentals, "Fundamentals" := (6.100A/6.100L), 6.1200, (6.S084/18.C06/18.06), (6.3700/6.3800/18.05), 6.1010, 6.1210
+
+centers, "Centers (select 5 from 5 categories)" := data_centric, model_centric, decision_centric, computation_centric, human_centric{>=5}
+
+data_centric, "Data Centric" := (6.3720/6.3900/(6.C01, 6.S052)/(6.C51, 6.S952)/6.S059){>=1}
+
+model_centric, "Model Centric" := (6.3000/6.4110/6.4400){>=1}
+
+decision_centric, "Decision Centric" := (6.3100/6.4110/6.7201){>=1}
+
+computation_centric, "Computation Centric" := (6.1220/6.4400/6.7201){>=1}
+
+human_centric, "Human Centric" := (6.3260/6.3950/6.4120/6.4590/6.C35/6.S041/9.660){>=1}
+
+ci_m, "Communication-Intensive (select 2)" := 6.1800/6.2040/6.2060/6.2061/6.2220/6.2221/6.2370/6.2600/6.4200/6.4210/6.4590/6.4860/6.4880/6.8301/6.8611/6.9030/6.UAR/6.UAT{>=2}
+
+social_ethics, "Social and Ethical Responsibilities of Computing" := 6.3900/6.3950/6.4590/6.8301/6.8611
+
+electives, "Electives" := app_cim, elective_choice
+
+%% Mandatory Application CI-M course plus either another Application CI-M or an AI+D_AUS
+app_cim, "Application CI-M and AI+D_AUS" := mandatory_app_cim, additional_app_or_aus
+
+%% Choose either a course from the large approved list or a math (Course 18) course
+elective_choice, "Additional elective (Course or Math 18)" := major_elective_courses/math_requirement{>=1}
+
+mandatory_app_cim, "Mandatory Application CI-M" := 6.4200/6.4210/6.8301/6.8611
+
+additional_app_or_aus, "Additional Application CI-M or AI+D_AUS (select 2)" := aus_options/app_cim_options{>=2|>=1}
+
+aus_options, "AI+D_AUS" := 18.404/6.3730/6.4210/6.5151/6.5831/6.7411/6.7930/6.8300/6.8301/6.8371/6.8611/6.8701/6.8711/6.S079/6.S966
+
+app_cim_options, "Application CI-M" := 6.4200/6.4210/6.8301/6.8611
+
+%% Large list of approved elective courses from the original requirement
+%% Includes many EECS courses and selected math and other courses
+major_elective_courses, "Approved Major Elective Courses" := 18.03/18.032/18.05/18.06/18.404/18.600/18.C06/(6.100A,6.100B)/6.1010/6.1020/6.1040/6.1060/6.1100/6.1120/6.1200/6.1210/6.1220/6.1400/6.1800/6.1810/6.1820/6.1850/6.1910/6.1920/6.2000/6.2040/6.2050/6.2060/6.2061/6.2080/6.2090/6.2092/6.2200/6.2210/6.2220/6.2221/6.2300/6.2370/6.2400/6.2410/6.2500/6.2530/6.2540/6.2600/6.3000/6.3010/6.3020/6.3100/6.3102/6.3260/6.3400/6.3700/6.3720/6.3730/6.3800/6.3900/6.3950/6.4100/6.4110/6.4120/6.4200/6.4210/6.4300/6.4400/6.4420/6.4510/6.4530/6.4550/6.4570/6.4590/6.4580/6.4810/6.4820/6.4830/6.4860/6.4880/6.4900/6.5060/6.5080/6.5081/6.5110/6.5120/6.5151/6.5210/6.5220/6.5230/6.5240/6.5250/6.5310/6.5320/6.5340/6.5350/6.5400/6.5410/6.5420/6.5430/6.5490/6.5610/6.5620/6.5630/6.5660/6.5810/6.5820/6.5830/6.5831/6.5840/6.5850/6.5890/6.5900/6.5930/6.5931/6.5940/6.5951/6.6010/6.6210/6.6320/6.6331/6.7100/6.7120/6.7201/6.7210/6.7220/6.7230/6.7250/6.7260/6.7300/6.7310/6.7320/6.7330/6.7340/6.7411/6.7370/6.7480/6.7700/6.7710/6.7720/6.7800/6.7810/6.7830/6.7900/6.7910/6.7920/6.7930/6.7940/6.7960/6.8200/6.8210/6.8300/6.8370/6.8371/6.8420/6.8510/6.8530/6.8611/6.8620/6.8701/6.8710/6.8711/6.8721/6.8801/6.8850/6.9000/6.9010/6.9030/6.9080/6.9160/(6.C01,6.C011)/(6.C01,6.C511)/6.C06/6.C25/6.C27/6.C35/6.C40/6.C571/6.C85/6.S041/6.S057/6.S058/6.S899/6.S963/6.S966/6.UAR/6.UAT/9.660/CC.1803/ES.1803
+
+%% Comprehensive list of Course 18 (Math) subjects for the elective requirement
+math_requirement, "Math (course 18) requirement" := 18.01/18.01A/18.01L/18.02/18.022/18.02A/18.03/18.031/18.032/18.04/18.05/18.06/18.062/18.063/18.065/18.0651/18.075/18.0751/18.085/18.0851/18.086/18.0861/18.089/18.090/18.091/18.094/18.095/18.098/18.099/18.1001/18.1002/18.100A/18.100B/18.100P/18.100Q/18.101/18.1011/18.102/18.1021/18.103/18.1031/18.104/18.112/18.1121/18.116/18.117/18.118/18.125/18.137/18.152/18.1521/18.155/18.156/18.157/18.158/18.199/18.200/18.200A/18.204/18.211/18.212/18.217/18.218/18.219/18.225/18.226/18.300/18.303/18.305/18.306/18.327/18.330/18.335/18.336/18.337/18.338/18.352/18.353/18.354/18.3541/18.355/18.357/18.358/18.367/18.369/18.376/18.377/18.384/18.385/18.397/18.400/18.404/18.4041/18.405/18.408/18.410/18.413/18.415/18.416/18.417/18.418/18.424/18.425/18.434/18.435/18.436/18.437/18.438/18.453/18.4531/18.455/18.456/18.504/18.510/18.515/18.600/18.604/18.615/18.619/18.642/18.650/18.6501/18.655/18.656/18.657/18.675/18.676/18.677/18.700/18.701/18.702/18.703/18.704/18.705/18.706/18.708/18.715/18.721/18.725/18.726/18.727/18.737/18.745/18.747/18.748/18.755/18.757/18.758/18.781/18.782/18.783/18.7831/18.784/18.785/18.786/18.787/18.821/18.896/18.897/18.899/18.900/18.901/18.9011/18.904/18.905/18.906/18.916/18.917/18.919/18.937/18.950/18.9501/18.952/18.965/18.966/18.968/18.979/18.994/18.999/18.C06/18.C20/18.C21/18.C21A/18.C21B/18.C21C/18.C25/18.S001/18.S096/18.S097/18.S190/18.S191/18.S192/18.S995/18.S996/18.S997/18.S998/18.TAC/18.THG/18.UR
