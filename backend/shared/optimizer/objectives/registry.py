@@ -8,7 +8,12 @@ from typing import Any
 from .base import ObjectiveComponent
 from .categories import CategoryRewards
 from .equivalents import DiscourageEquivalentCourses
-from .scheduling import AvoidIAP, AvoidSpecialClasses, MinimizeFridayClasses, MinimumClassesPerSemester
+from .scheduling import (
+    AvoidIAP,
+    AvoidSpecialClasses,
+    MinimizeFridayClasses,
+    MinimumClassesPerSemester,
+)
 from .units import AvoidSmallClasses
 from .workload import (
     LimitClassesPerSemester,
