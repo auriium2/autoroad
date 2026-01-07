@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
+
+from shared.optimizer.objectives.registry import get_all_objectives
+from shared.optimizer.constraints.registry import get_all_constraints
 
 router = APIRouter()
 
@@ -141,3 +144,120 @@ async def get_requirement_progress(key: str, request: ProgressRequest, source: s
         return await loop.run_in_executor(None, compute)
     except Exception as e:
         return {"error": str(e), "details": type(e).__name__}
+
+
+@router.get("/parameters/search")
+async def search_parameters(
+    q: str = Query("", description="Search query"),
+    limit: int = Query(30, ge=1, le=100),
+    exclude_requirements: str = Query("", description="Comma-separated requirement keys to exclude"),
+    exclude_objectives: str = Query("", description="Comma-separated objective keys to exclude"),
+    exclude_constraints: str = Query("", description="Comma-separated constraint keys to exclude"),
+):
+    """
+    Unified search across requirements, objectives, and constraints.
+    """
+    query = q.lower()
+    excluded_reqs = set(exclude_requirements.split(",")) if exclude_requirements else set()
+    excluded_objs = set(exclude_objectives.split(",")) if exclude_objectives else set()
+    excluded_cons = set(exclude_constraints.split(",")) if exclude_constraints else set()
+
+    # Fetch requirements list
+    all_requirements = await list_requirements()
+
+    # Get objectives and constraints
+    all_objectives = get_all_objectives()
+    all_constraints = get_all_constraints()
+
+    objectives: list[dict[str, Any]] = []
+    constraints: list[dict[str, Any]] = []
+    concentrations: list[dict[str, Any]] = []
+    degrees: list[dict[str, Any]] = []
+
+    # Process objectives
+    for obj in all_objectives:
+        if obj.key in excluded_objs:
+            continue
+        searchable = f"{obj.key} {obj.name} {obj.description} {obj.category}".lower()
+        if not query or query in searchable:
+            objectives.append({
+                "type": "objective",
+                "key": obj.key,
+                "displayName": obj.name,
+                "metadata": {
+                    "key": obj.key,
+                    "name": obj.name,
+                    "description": obj.description,
+                    "category": obj.category,
+                    "hasParameters": obj.has_parameters,
+                    "defaultParameters": obj.default_parameters,
+                    "defaultTier": obj.default_tier,
+                    "unremovable": obj.unremovable,
+                },
+            })
+
+    # Process constraints
+    for con in all_constraints:
+        if con.key in excluded_cons:
+            continue
+        searchable = f"{con.key} {con.name} {con.description} {con.category}".lower()
+        if not query or query in searchable:
+            constraints.append({
+                "type": "constraint",
+                "key": con.key,
+                "displayName": con.name,
+                "metadata": {
+                    "key": con.key,
+                    "name": con.name,
+                    "description": con.description,
+                    "category": con.category,
+                },
+            })
+
+    # Process requirements
+    for key, metadata in all_requirements.items():
+        if key in excluded_reqs:
+            continue
+        display_name = (
+            metadata.get("medium-title")
+            or metadata.get("title-no-degree")
+            or metadata.get("short-title")
+            or key
+        )
+        searchable = " ".join(
+            str(v) for v in [
+                key,
+                metadata.get("title"),
+                metadata.get("title-no-degree"),
+                metadata.get("medium-title"),
+                metadata.get("short-title"),
+            ]
+            if v
+        ).lower()
+
+        if not query or query in searchable:
+            item = {
+                "type": "degree",
+                "key": key,
+                "displayName": display_name,
+                "metadata": metadata,
+            }
+            # Concentrations are beta-only requirements
+            is_concentration = metadata.get("source") == "beta" and not metadata.get("hasBothVersions")
+            if is_concentration:
+                concentrations.append(item)
+            else:
+                degrees.append(item)
+
+    return {
+        "objectives": objectives[:limit],
+        "constraints": constraints[:limit],
+        "concentrations": concentrations[:limit],
+        "degrees": degrees[:limit],
+        "totalCounts": {
+            "objectives": len(objectives),
+            "constraints": len(constraints),
+            "concentrations": len(concentrations),
+            "degrees": len(degrees),
+        },
+    }
