@@ -43,22 +43,19 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   const { data: requirementsList, isLoading: requirementsLoading } = useQuery({
     queryKey: queryKeys.requirements.list(),
     queryFn: () => fireroadApi.getRequirementsList(),
-    staleTime: process.env.NODE_ENV === 'development' ? 0 : 24 * 60 * 60 * 1000,
-    gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
+    staleTime: import.meta.env.DEV ? 60 * 1000 : 24 * 60 * 60 * 1000, // 1 min dev, 24h prod
   });
 
   const { data: objectivesData, isLoading: objectivesLoading } = useQuery({
     queryKey: queryKeys.objectives.list(),
     queryFn: () => optimizerApi.getObjectives(),
-    staleTime: process.env.NODE_ENV === 'development' ? 0 : 24 * 60 * 60 * 1000,
-    gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
+    staleTime: import.meta.env.DEV ? 60 * 1000 : 24 * 60 * 60 * 1000,
   });
 
   const { data: constraintsData } = useQuery({
     queryKey: queryKeys.constraints.hard(),
     queryFn: () => optimizerApi.getHardConstraints(),
-    staleTime: process.env.NODE_ENV === 'development' ? 0 : 24 * 60 * 60 * 1000,
-    gcTime: process.env.NODE_ENV === 'development' ? 0 : undefined,
+    staleTime: import.meta.env.DEV ? 60 * 1000 : 24 * 60 * 60 * 1000,
   });
 
   const { data: searchResults, isLoading: searchLoading } = useQuery({

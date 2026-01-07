@@ -1,10 +1,3 @@
-// DEBUG: Clear optimization storage FIRST before any imports (remove this in production)
-if (typeof window !== 'undefined') {
-  console.log('DEBUG: Clearing optimization-storage BEFORE imports...');
-  window.localStorage.removeItem('optimization-storage');
-  window.localStorage.removeItem('autoroad_query_cache');
-}
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ObjectiveConfig } from '@/types/models/optimizer';

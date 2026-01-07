@@ -5,14 +5,6 @@ import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, Op
 import { optimizerApi } from '@/services/optimizer';
 import { useOptimizationStore } from '@/stores/optimizationStore';
 
-// DEBUG: Clear localStorage on every page load (remove this in production)
-if (typeof window !== 'undefined') {
-  console.log('DEBUG: Clearing localStorage on module load...');
-  window.localStorage.removeItem('autoroad_data');
-  window.localStorage.removeItem('optimization-storage');
-  window.localStorage.removeItem('autoroad_query_cache');
-}
-
 export type { CourseNode, Section, OptimizerNode, Edge, AvailableNode, Marker };
 
 interface GraphStore {
@@ -150,15 +142,6 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   // Load road data from localStorage
   fetchRoadData: async () => {
     set({ loadingState: 'loading', error: null });
-
-    // DEBUG: Clear localStorage on every page load (remove this in production)
-    const DEBUG_CLEAR_ON_RELOAD = true;
-    if (DEBUG_CLEAR_ON_RELOAD && typeof window !== 'undefined') {
-      console.log('DEBUG: Clearing localStorage on page reload...');
-      window.localStorage.removeItem('autoroad_data');
-      window.localStorage.removeItem('optimization-storage');
-      window.localStorage.removeItem('autoroad_query_cache');
-    }
 
     // Load from localStorage
     const cached = storage.load();
