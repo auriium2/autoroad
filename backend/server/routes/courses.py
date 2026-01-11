@@ -20,7 +20,7 @@ def calculate_imdb_rating(rating: float | None, enrollment: int | None) -> float
 async def search_courses(
     q: str = Query(..., description="Search query, use '*' for all courses"),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     department: str | None = Query(None, description="Filter by department (e.g., '6', '18')"),
     search_type: Literal["contains", "starts"] = Query("contains"),
     sort: Literal[

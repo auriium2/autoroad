@@ -16,7 +16,7 @@ export function useSearchCourses(query: string, department?: string, filters?: C
     queryKey: queryKeys.courses.search(query, department, filters),
     queryFn: async () => {
       const trimmedQuery = query.trim();
-      
+
       if (!trimmedQuery) {
         return [];
       }
@@ -24,7 +24,7 @@ export function useSearchCourses(query: string, department?: string, filters?: C
       // Determine search type based on query
       // Use 'starts' for course IDs (e.g., "6.100"), 'contains' for text search
       const searchType = trimmedQuery.includes('.') ? 'starts' : 'contains';
-      
+
       // Normalize department filter - treat 'all' as undefined
       const deptFilter = department === 'all' ? undefined : department;
 
@@ -32,7 +32,7 @@ export function useSearchCourses(query: string, department?: string, filters?: C
         type: searchType,
         department: deptFilter,
         offset: 0,
-        limit: 2000,
+        limit: 1000,
         ...filters,
       });
 
