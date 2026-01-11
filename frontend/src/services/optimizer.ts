@@ -157,32 +157,7 @@ export const optimizerApi = {
             try {
               const message = JSON.parse(data);
 
-              if (message.type === 'job_created') {
-                yield {
-                  nodes: [],
-                  step: 0,
-                  message: message.tier === 'fast' ? 'Job queued (fast tier)...' : 'Job queued (slow tier)...',
-                  jobId: message.jobId,
-                  tier: message.tier,
-                  fastRequestsUsed: message.fast_requests_used,
-                  fastRequestsRemaining: message.fast_requests_remaining,
-                  fastRequestsLimit: message.fast_requests_limit,
-                };
-              } else if (message.type === 'queued') {
-                yield {
-                  nodes: [],
-                  step: 0,
-                  message: message.message || (message.position === 1 ? 'Starting worker...' : `Position ${message.position} of ${message.queueLength} in queue`),
-                  queuePosition: message.position,
-                  queueLength: message.queueLength,
-                };
-              } else if (message.type === 'worker_started') {
-                yield {
-                  nodes: [],
-                  step: 0,
-                  message: 'Worker started, optimizing...',
-                };
-              } else if (message.type === 'progress') {
+              if (message.type === 'progress') {
                 yield {
                   nodes: [],
                   step: message.step || 0,
