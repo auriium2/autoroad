@@ -486,7 +486,6 @@ def run_optimizer_quality_test(
     # Use config values or overrides
     max_semesters_val: int = max_semesters if max_semesters is not None else optimizer_config.max_semesters
     start_year_val: int = start_year if start_year is not None else optimizer_config.start_year
-    solver_timeout_val: float = solver_timeout if solver_timeout is not None else optimizer_config.solver_timeout_seconds
 
     # Use unified helper to build model
     result = build_optimizer_model(

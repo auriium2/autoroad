@@ -14,7 +14,7 @@ Fireroad file format:
 
 Expression syntax:
 - Comma (,) = AND
-- Slash (/) = OR  
+- Slash (/) = OR
 - Parentheses for grouping
 - {>=N} = threshold (at least N)
 - {<=N} = threshold (at most N)
@@ -117,7 +117,7 @@ def _unwrap_parens(s: str) -> str:
 def _parse_modifier(modifier: str) -> tuple[str | None, int, str, str | None, int]:
     """
     Parse a modifier like {>=3}, {<=2u}, {>=2|>=1}.
-    
+
     Returns: (threshold_type, cutoff, criterion, distinct_type, distinct_cutoff)
     """
     threshold_type: str | None = None
@@ -169,7 +169,7 @@ def _parse_single_modifier(mod: str) -> tuple[str, int, str]:
 def _separate_top_level(text: str) -> tuple[list[str], str]:
     """
     Split expression by top-level separators (not inside parens).
-    
+
     Returns: (components, connection_type)
     """
     text = text.strip()
@@ -277,7 +277,7 @@ def _substitute_variables(stmt: ParsedStatement, variables: dict[str, ParsedStat
 def parse_fireroad_file(content: str) -> dict[str, Any]:
     """
     Parse a .fireroad file into the JSON format expected by our requirements parser.
-    
+
     Returns dict with: short, medium, title, description, reqs
     """
     lines = content.split("\n")

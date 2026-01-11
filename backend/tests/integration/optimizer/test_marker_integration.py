@@ -28,7 +28,7 @@ def build_full_optimizer(
 ) -> tuple[cp_model.CpModel, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame]:
     """
     Build a complete optimizer with real data, requirements, and markers.
-    
+
     Returns the model, take_vars, and courses_df for verification.
     """
     result = build_optimizer_model(
@@ -54,7 +54,7 @@ class TestScatteredMarkersCS:
     def test_cs_scattered_pins_across_four_years(self, optimizer_config: OptimizerTestConfig):
         """
         Pin courses scattered across all four years - should remain feasible.
-        
+
         Section to semester mapping:
         - section 0 = semester 1 (Freshman Fall)
         - section 2 = semester 3 (Freshman Spring)
@@ -230,7 +230,7 @@ class TestScatteredMarkersMath:
     def test_math_heavy_first_year(self, optimizer_config: OptimizerTestConfig):
         """
         Math major with heavy course load pinned to freshman year.
-        
+
         Note: 18.02 requires 18.01 as prereq, so we put 18.01 in ASE.
         18.06 requires CAL2 (18.02), so we put 18.02 in fall and 18.06 in spring.
         """
@@ -262,7 +262,7 @@ class TestScatteredMarkersMath:
     def test_math_override_to_skip_prereqs(self, optimizer_config: OptimizerTestConfig):
         """
         Override allows taking 18.06 without CAL2 prerequisite.
-        
+
         Without override, 18.06 requires 18.02 (CAL2) first.
         With override, we can take 18.06 in Freshman Fall.
         """

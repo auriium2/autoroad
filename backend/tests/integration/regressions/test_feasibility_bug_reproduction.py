@@ -185,12 +185,6 @@ def test_feasibility_bug_major_6_3_with_markers():
     print("[TEST] Validating solution against Fireroad API...")
 
     # Convert to Fireroad "road" format (what the frontend sends)
-    road_payload = {
-        'coursesOfStudy': ['major6-3new', 'girs'],
-        'selectedSubjects': solution_courses,
-        'progressOverrides': {},
-        'progressAssertions': {}
-    }
 
     print(f"[TEST] Sending {len(solution_courses)} courses to Fireroad API")
 

@@ -269,7 +269,7 @@ class TestOverrideMarkers:
             Marker(courseId='18.02', section=0, status='override'),
             Marker(courseId='8.01', section=0, status='pin'),  # Not override
         ]
-        take_vars = create_take_vars(model, courses_df, markers)
+        create_take_vars(model, courses_df, markers)
 
         # Extract override course IDs (this is how it's done in real code)
         override_ids = {m.courseId for m in markers if m.status == 'override'}

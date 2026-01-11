@@ -46,7 +46,7 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures" / "road_files"
 def graduation_year_to_start_year(graduation_year: int) -> int:
     """
     Convert graduation year to planning start year.
-    
+
     Matches frontend logic: graduationYearToPlanningYear
     Class of 2028 -> freshman fall 2024 -> start_year = 2024
     """
@@ -272,14 +272,14 @@ class TestRoadFileRegressions:
     def test_autoroad3_equivalent_courses_bug(self, optimizer_config: OptimizerTestConfig):
         """
         Regression test for equivalent courses penalty not being avoided.
-        
-        The optimizer was choosing to take equivalent courses despite the 50,000+ 
+
+        The optimizer was choosing to take equivalent courses despite the 50,000+
         penalty, indicating the equivalent courses constraint is broken.
-        
+
         Root cause: The requirement_constraint_builder was only checking semesters 1-12,
         not ASE semester (-1). So courses placed in ASE weren't satisfying requirements,
         forcing the optimizer to take equivalent courses to satisfy GIRs.
-        
+
         Fix: Changed range(1, 13) to VALID_SEMESTERS (which is [-1] + list(range(1, 13)))
         in _build_course, _build_hass_any, and _build_attribute_requirement.
         """

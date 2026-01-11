@@ -17,7 +17,7 @@ WORKER_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=10.0, pool=10.0)
 async def call_worker_optimize(request_data: dict[str, object]) -> AsyncIterator[str]:
     """
     Call the worker's /optimize endpoint and stream the SSE response.
-    
+
     Yields raw SSE lines (including "data: " prefix).
     """
     headers = {"Accept": "text/event-stream"}

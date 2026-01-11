@@ -211,10 +211,10 @@ class CachedCourseData:
 def cached_course_data() -> CachedCourseData:
     """
     Session-scoped fixture providing cached course data.
-    
+
     This avoids reloading the ~6000 courses and ~2000 prereq trees
     for every single test, significantly speeding up test runs.
-    
+
     Usage:
         def test_something(cached_course_data):
             courses_df = cached_course_data.courses_df

@@ -27,7 +27,7 @@ def build_optimizer_with_markers(
 ) -> tuple[cp_model.CpModel, dict[tuple[int, int], cp_model.IntVar], pl.DataFrame, cp_model.CpSolver]:
     """
     Build optimizer with markers and return solved state.
-    
+
     Returns model, take_vars, courses_df, and solver (after solving).
     """
     result = build_optimizer_model(
@@ -56,7 +56,7 @@ def get_course_idx(courses_df: pl.DataFrame, course_id: str) -> int:
 def section_to_semester(section: int) -> int:
     """
     Convert section to semester.
-    
+
     section -1 = semester -1 (ASE)
     section 0 = semester 1 (Freshman Fall)
     section 1 = semester 2 (Freshman IAP)
@@ -152,7 +152,7 @@ class TestPinBehavior:
     def test_pin_respects_prerequisites(self, optimizer_config: OptimizerTestConfig):
         """
         Pin should still enforce prerequisites.
-        
+
         6.100B requires 6.100A, so pinning 6.100B to semester 1 should fail
         if 6.100A isn't taken before.
         """
@@ -227,7 +227,7 @@ class TestOverrideBehavior:
     def test_override_skips_prerequisites(self, optimizer_config: OptimizerTestConfig):
         """
         Override should allow taking a course without its prerequisites.
-        
+
         6.100B normally requires 6.100A first.
         Override should allow 6.100B in semester 1 without 6.100A.
         """
@@ -251,7 +251,7 @@ class TestOverrideBehavior:
     def test_override_allows_prereq_after_course(self, optimizer_config: OptimizerTestConfig):
         """
         Override allows taking the prerequisite AFTER the course.
-        
+
         18.06 requires 18.02 (CAL2).
         With override, we can take 18.06 first and 18.02 later.
         """
@@ -608,7 +608,7 @@ class TestMarkerEdgeCases:
     def test_banish_course_with_equivalents_still_feasible(self, optimizer_config: OptimizerTestConfig):
         """
         Banishing a course from all regular semesters is still feasible if equivalents exist.
-        
+
         18.01 has equivalents (like 18.01A) that can satisfy CAL1, so banishing
         18.01 from all regular semesters should NOT make the problem infeasible.
         """

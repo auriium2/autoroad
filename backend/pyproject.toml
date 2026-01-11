@@ -72,6 +72,10 @@ failOnWarnings = false
 reportArgumentType = false
 reportUnknownMemberType = false
 reportImplicitStringConcatenation = false
+reportCallInDefaultInitializer = false
+reportUnnecessaryIsInstance = false
+reportUnreachable = false
+reportDeprecated = false
 reportUnknownVariableType = false
 reportAny = false
 reportExplicitAny = false
@@ -79,6 +83,11 @@ reportUnusedCallResult = false
 reportUnusedVariable = false
 reportUnusedParameter = false
 reportUnknownArgumentType = false
+reportUnusedImport = false
+reportUnusedFunction = false
+reportUnannotatedClassAttribute = false
+reportUnknownParameterType = false
+reportUnnecessaryComparison = false
 
 [dependency-groups]
 dev = [

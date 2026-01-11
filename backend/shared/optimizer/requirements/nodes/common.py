@@ -13,7 +13,7 @@ from shared.optimizer.requirements.result import ContributionResult
 def propagate_children_to_parent(ctx: Ctx, child_paths: list[str], parent_path: str) -> None:
     """
     Propagate course-to-requirement mappings from children up to parent.
-    
+
     This allows category rewards to apply at any level of the requirement tree.
     If a course satisfies root.6.0.0.0, it should also be recorded as satisfying
     root.6.0.0, root.6.0, root.6, etc.

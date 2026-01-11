@@ -498,7 +498,6 @@ class TestOptimizerIntegration:
 
         courses_df = create_simple_courses_df()
         model = cp_model.CpModel()
-        planning_year_start = 2024
 
         # No markers - optimizer is free to place courses anywhere
         take_vars = create_take_vars_simple(model, courses_df, markers=None)

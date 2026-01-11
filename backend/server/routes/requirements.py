@@ -10,8 +10,8 @@ import requests
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from shared.optimizer.objectives.registry import get_all_objectives
 from shared.optimizer.constraints.registry import get_all_constraints
+from shared.optimizer.objectives.registry import get_all_objectives
 
 router = APIRouter()
 
@@ -107,7 +107,7 @@ async def get_requirement_json(key: str, source: str = "canonical"):
 async def get_requirement_progress(key: str, request: ProgressRequest, source: str = "canonical"):
     """
     Get requirement progress for a list of selected subjects.
-    
+
     Uses our own progress calculator with the distinct_threshold bug fixed.
     """
     loop = asyncio.get_event_loop()

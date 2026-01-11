@@ -25,7 +25,7 @@ def _build_impl(node: Any, ctx: Ctx, path: str, need_contribution_vars: bool) ->
 class BuildDispatcher:
     """
     Wrapper around singledispatch that provides a cleaner interface.
-    
+
     This allows calling build(node, ctx, path, need_contribution_vars=False)
     while still using singledispatch for the implementation.
     """
@@ -33,7 +33,7 @@ class BuildDispatcher:
     def __call__(self, node: Any, ctx: Ctx, path: str, need_contribution_vars: bool = False) -> ContributionResult:
         """
         Build constraints for a requirement node.
-        
+
         Args:
             node: The requirement node to process
             ctx: The constraint building context
@@ -41,7 +41,7 @@ class BuildDispatcher:
             need_contribution_vars: Whether to collect contribution variables.
                 Only SubjectThresholdGroup needs these, so this is False by default
                 to avoid unnecessary work.
-        
+
         Returns:
             ContributionResult with sat_var and optionally contribution_vars
         """

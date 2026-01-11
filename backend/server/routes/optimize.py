@@ -39,7 +39,7 @@ async def event_stream_local(request: OptimizationRequest):
 async def event_stream_cpp_worker(request: OptimizationRequest):
     """
     Build CpModel in Python, serialize, and send to C++ worker for solving.
-    
+
     This mode gives fast cold starts (C++ worker is lightweight) while keeping
     the complex model-building logic in Python.
     """
