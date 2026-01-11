@@ -280,9 +280,6 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 totalSteps: progress.totalSteps,
                 message: progress.message,
                 solutionNumber: progress.solutionNumber,
-                queuePosition: progress.queuePosition,
-                queueLength: progress.queueLength,
-                tier: progress.tier,
               } : null,
             });
           } else if (showProgress && timeSinceLastProgress >= PROGRESS_THROTTLE_MS) {
@@ -294,9 +291,6 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
                 totalSteps: progress.totalSteps,
                 message: progress.message,
                 solutionNumber: progress.solutionNumber,
-                queuePosition: progress.queuePosition,
-                queueLength: progress.queueLength,
-                tier: progress.tier,
               },
             });
           }
@@ -308,9 +302,6 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
               totalSteps: progress.totalSteps,
               message: progress.message,
               solutionNumber: progress.solutionNumber,
-              queuePosition: progress.queuePosition,
-              queueLength: progress.queueLength,
-              tier: progress.tier,
             } : null,
           });
         }
