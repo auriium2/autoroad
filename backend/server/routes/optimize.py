@@ -19,12 +19,10 @@ from shared.utils import find_current_school_year
 
 router = APIRouter()
 
-# Execution modes:
-# - "local": Run optimization in-process (development)
-# - "direct": Proxy to worker's /optimize endpoint (production, single worker)
-# - "queue": Use Redis job queue (production, multi-worker)
-EXECUTION_MODE = os.environ.get("EXECUTION_MODE", "local")
-WORKER_URL = os.environ.get("WORKER_URL", "")
+# Solver URL - if set, use C++ worker; otherwise solve locally
+# In development: leave unset for local solving
+# In production (Fly): set to the C++ worker URL
+SOLVER_URL = os.environ.get("SOLVER_URL", "")
 
 
 async def event_stream_local(request: OptimizationRequest):
@@ -38,52 +36,165 @@ async def event_stream_local(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
 
 
-async def event_stream_direct(request: OptimizationRequest):
-    """Stream optimization by proxying directly to worker (single worker mode)."""
+async def event_stream_cpp_worker(request: OptimizationRequest):
+    """
+    Build CpModel in Python, serialize, and send to C++ worker for solving.
+    
+    This mode gives fast cold starts (C++ worker is lightweight) while keeping
+    the complex model-building logic in Python.
+    """
     import httpx
 
-    if not WORKER_URL:
-        yield f"data: {json.dumps({'type': 'error', 'error': 'WORKER_URL not configured'})}\n\n"
-        return
+    from shared.optimize import serialize_model
+    from shared.optimizer.constraints.base import ConstraintContext
+    from shared.optimizer.constraints.basic import (
+        add_basic_constraints,
+        add_past_semester_constraints,
+        create_take_vars,
+    )
+    from shared.optimizer.constraints.registry import instantiate_constraint
+    from shared.optimizer.marker_constraint_builder import add_marker_constraints
+    from shared.optimizer.objectives.builder import ObjectiveBuilder
+    from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
+    from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
+    from shared.optimizer.requirements.builder import add_requirement_constraints
+    from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 
     try:
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10})}\n\n"
+
+        # Fetch data
+        courses_data = get_courses_data()
+        requirements_data = get_requirements(
+            tuple(request.requirements),
+            requirement_sources=request.requirementSources
+        )
+        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+
+        planning_year = request.planningYear
+        if not planning_year:
+            _, planning_year = find_current_school_year()
+        planning_year_start = int(planning_year.split('-')[0])
+        max_semesters = request.maxSemesters
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
+
+        # Create model
+        model = cp_model.CpModel()
+        take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
+        add_basic_constraints(model, take_vars, courses_df, max_semesters)
+
+        if request.lockPastSemesters:
+            add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
+
+        # Add requirement constraints
+        course_to_requirements: dict[int, set[str]] = {}
+        for req_key in request.requirements:
+            if req_key in requirements_data:
+                req_data = requirements_data[req_key]
+                if isinstance(req_data, dict):
+                    req_tree = parse_fireroad_response(req_data)
+                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                    if validation.pruned_tree is not None:
+                        _, _, mapping = add_requirement_constraints(
+                            model, take_vars, validation.pruned_tree,
+                            courses_df, req_key, enforce=True
+                        )
+                        for course_idx, req_paths in mapping.items():
+                            if course_idx not in course_to_requirements:
+                                course_to_requirements[course_idx] = set()
+                            course_to_requirements[course_idx].update(req_paths)
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
+
+        # Add prerequisite constraints
+        prereq_trees = get_parsed_prerequisites(courses_df)
+        override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
+        add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10})}\n\n"
+
+        # Add marker constraints
+        add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
+
+        # Add hard constraints
+        if request.hardConstraints:
+            constraint_context = ConstraintContext(
+                planning_year_start=planning_year_start,
+                courses_df=courses_df,
+                max_semesters=max_semesters,
+                markers=request.markers,
+            )
+            for constraint_key in request.hardConstraints:
+                try:
+                    constraint = instantiate_constraint(constraint_key)
+                    constraint.add_to_model(model, take_vars, constraint_context)
+                except ValueError:
+                    pass
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
+
+        # Build objective
+        builder = ObjectiveBuilder()
+
+        from shared.optimizer.objectives.units import MinimizeUnits
+        builder.add(MinimizeUnits(), key="minimize_units")
+
+        if request.objectives:
+            for obj_config in request.objectives:
+                try:
+                    obj = instantiate_objective(obj_config.key, obj_config.parameters)
+                    builder.add(obj, key=obj_config.key)
+                except ValueError:
+                    pass
+        else:
+            for key, params in get_default_objectives():
+                obj = instantiate_objective(key, params)
+                builder.add(obj, key=key)
+
+        marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
+
+        objective = builder.build(
+            model, take_vars, courses_df, planning_year_start,
+            objective_tiers=request.objectiveTiers,
+            requirement_tiers=request.requirementTiers,
+            marked_course_ids=marked_course_ids,
+            course_to_requirements=course_to_requirements
+        )
+        model.Minimize(objective)
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Serializing model...', 'step': 7, 'totalSteps': 10})}\n\n"
+
+        # Serialize model for C++ worker
+        num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "8"))
+        serialized = serialize_model(model, take_vars, courses_df, max_time_seconds=20.0, num_workers=num_workers)
+
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Sending to solver...', 'step': 8, 'totalSteps': 10})}\n\n"
+
+        # Send to C++ worker and stream results
+        print(f"[OPTIMIZE] Connecting to {SOLVER_URL}/solve...")
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
             async with client.stream(
                 "POST",
-                f"{WORKER_URL}/optimize",
-                json=request.model_dump(),
+                f"{SOLVER_URL}/solve",
+                content=serialized.to_json(),
                 headers={"Content-Type": "application/json"}
             ) as response:
                 if response.status_code != 200:
-                    yield f"data: {json.dumps({'type': 'error', 'error': f'Worker returned {response.status_code}'})}\n\n"
+                    yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
                     return
 
                 async for line in response.aiter_lines():
-                    if line:
-                        yield f"{line}\n"
+                    if line.startswith("data: "):
+                        yield f"{line}\n\n"
 
     except httpx.ConnectError as e:
-        yield f"data: {json.dumps({'type': 'error', 'error': 'Failed to connect to worker', 'details': str(e)})}\n\n"
+        print(f"[OPTIMIZE] Failed to connect to C++ worker: {e}")
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Failed to connect to solver', 'details': str(e)})}\n\n"
     except Exception as e:
-        yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
-
-
-async def event_stream_via_queue(request: OptimizationRequest):
-    """Stream optimization results via Redis job queue (multi-worker mode)."""
-    from shared.services.job_queue import get_job_queue
-
-    queue = get_job_queue()
-
-    try:
-        job_id = await queue.create_job(request.model_dump())
-        print(f"[QUEUE] Job {job_id[:8]} created")
-
-        yield f"data: {json.dumps({'type': 'job_created', 'jobId': job_id})}\n\n"
-
-        async for event in queue.subscribe_to_job(job_id):
-            yield f"data: {json.dumps(event)}\n\n"
-
-    except Exception as e:
+        print(f"[OPTIMIZE] Error in C++ worker path: {type(e).__name__}: {e}")
         yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
 
 
@@ -92,67 +203,18 @@ async def optimize(request: Request, opt_request: OptimizationRequest):
     """
     Run optimization and stream progress via SSE.
 
-    Execution modes (set via EXECUTION_MODE env var):
-    - "local": Run in-process (development)
-    - "queue": Use Redis job queue (production)
+    If SOLVER_URL is set, builds model locally and sends to C++ worker.
+    Otherwise, runs the full optimization in-process (development mode).
     """
-    if EXECUTION_MODE == "queue":
-        stream_func = event_stream_via_queue(opt_request)
-    elif EXECUTION_MODE == "direct":
-        stream_func = event_stream_direct(opt_request)
+    if SOLVER_URL:
+        print(f"[OPTIMIZE] Using C++ worker at {SOLVER_URL}")
+        stream_func = event_stream_cpp_worker(opt_request)
     else:
+        print("[OPTIMIZE] Using local Python solver")
         stream_func = event_stream_local(opt_request)
 
     return StreamingResponse(
         stream_func,
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
-    )
-
-
-@router.get("/optimize/job/{job_id}")
-async def get_job_status(job_id: str):
-    """Get the status of a job. Useful for reconnection."""
-    from shared.services.job_queue import get_job_queue
-
-    queue = get_job_queue()
-    job = await queue.get_job(job_id)
-
-    if not job:
-        return {"error": "Job not found"}
-
-    return {
-        "jobId": job.job_id,
-        "status": job.status.value,
-        "queuePosition": job.queue_position,
-        "createdAt": job.created_at,
-        "startedAt": job.started_at,
-        "completedAt": job.completed_at,
-        "error": job.error,
-    }
-
-
-@router.get("/optimize/job/{job_id}/stream")
-async def stream_job(job_id: str):
-    """
-    Reconnect to a job's event stream.
-    If the job is complete, returns cached results.
-    If still running, streams remaining events.
-    """
-    from shared.services.job_queue import get_job_queue
-
-    queue = get_job_queue()
-
-    async def stream():
-        async for event in queue.subscribe_to_job(job_id):
-            yield f"data: {json.dumps(event)}\n\n"
-
-    return StreamingResponse(
-        stream(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

@@ -3,6 +3,7 @@ Core optimization logic for the worker.
 """
 
 import asyncio
+import base64
 import json
 import os
 import queue
@@ -10,8 +11,10 @@ import threading
 import time
 from collections.abc import AsyncIterator
 from ctypes import c_double, c_int
+from dataclasses import dataclass
 from multiprocessing import Value
 from threading import RLock
+from typing import Any
 
 import polars as pl
 from ortools.sat.python import cp_model
@@ -33,6 +36,113 @@ from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_co
 from shared.optimizer.requirements.builder import add_requirement_constraints
 from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from shared.utils import find_current_school_year
+
+
+@dataclass
+class VariableInfo:
+    var_index: int
+    course_idx: int
+    semester: int
+
+    def to_dict(self) -> dict[str, int]:
+        return {"var_index": self.var_index, "course_idx": self.course_idx, "semester": self.semester}
+
+
+@dataclass
+class CourseMetadata:
+    subject_id: str
+    title: str
+    units: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"subject_id": self.subject_id, "title": self.title, "units": self.units}
+
+
+@dataclass
+class SerializedModel:
+    """Serialized CpModel with metadata for C++ worker."""
+    cpmodel_proto: bytes
+    variable_mapping: list[VariableInfo]
+    courses_metadata: list[CourseMetadata]
+    solver_params: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "cpmodel_proto": base64.b64encode(self.cpmodel_proto).decode('ascii'),
+            "variable_mapping": [v.to_dict() for v in self.variable_mapping],
+            "courses_metadata": [c.to_dict() for c in self.courses_metadata],
+            "solver_params": self.solver_params,
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict())
+
+
+def serialize_model(
+    model: cp_model.CpModel,
+    take_vars: dict[tuple[int, int], cp_model.IntVar],
+    courses_df: pl.DataFrame,
+    max_time_seconds: float = 20.0,
+    num_workers: int = 8,
+) -> SerializedModel:
+    """
+    Serialize a CpModel and its metadata for the C++ worker.
+
+    The C++ worker needs:
+    1. The CpModel protobuf (the mathematical structure)
+    2. Variable mapping: which variable index corresponds to which (course_idx, semester)
+    3. Course metadata: subject_id, title, units for each course_idx
+    """
+    # Serialize the model to protobuf bytes
+    proto = model.Proto()
+    cpmodel_proto = proto.SerializeToString()
+
+    # Build variable mapping
+    # We need to map from our take_vars to the variable indices in the proto
+    variable_mapping: list[VariableInfo] = []
+
+    # Create a map from variable name to index in the proto
+    var_name2idx: dict[str, int] = {}
+    for idx, var in enumerate(proto.variables):
+        var_name2idx[var.name] = idx
+
+    for (course_idx, semester), var in take_vars.items():
+        var_name = var.Name()
+        if var_name in var_name2idx:
+            variable_mapping.append(VariableInfo(
+                var_index=var_name2idx[var_name],
+                course_idx=course_idx,
+                semester=semester,
+            ))
+
+    # Build courses metadata
+    # Get unique course indices from the variable mapping
+    course_indices = sorted(set(v.course_idx for v in variable_mapping))
+    max_course_idx = max(course_indices) if course_indices else 0
+
+    courses_metadata: list[CourseMetadata] = []
+    for idx in range(max_course_idx + 1):
+        if idx < len(courses_df):
+            subject_id = str(courses_df[idx, 'subject_id'])
+            title = str(courses_df[idx, 'title']) if 'title' in courses_df.columns else ""
+            units = int(courses_df[idx, 'total_units']) if 'total_units' in courses_df.columns else 12
+        else:
+            subject_id = f"UNKNOWN_{idx}"
+            title = ""
+            units = 12
+        courses_metadata.append(CourseMetadata(subject_id=subject_id, title=title, units=units))
+
+    solver_params = {
+        "max_time_seconds": max_time_seconds,
+        "num_workers": num_workers,
+    }
+
+    return SerializedModel(
+        cpmodel_proto=cpmodel_proto,
+        variable_mapping=variable_mapping,
+        courses_metadata=courses_metadata,
+        solver_params=solver_params,
+    )
 
 
 class StreamingCallback(cp_model.CpSolverSolutionCallback):
