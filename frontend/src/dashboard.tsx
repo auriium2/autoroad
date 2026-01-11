@@ -287,9 +287,6 @@ export default function Dashboard() {
     try {
       const result = await optimizeRoadFromStore(undefined, true);
 
-      // Refetch rate limit after optimization
-      refetchRateLimit();
-
       if (!result.success) {
         showToast({
           title: "Optimization failed",
