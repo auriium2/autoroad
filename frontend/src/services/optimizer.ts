@@ -40,15 +40,7 @@ export interface OptimizationProgress {
   costBreakdown?: Record<string, number>;
   status?: 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'MODEL_INVALID';
   isComplete?: boolean;
-  // Queue info
-  jobId?: string;
-  tier?: 'fast' | 'slow';
-  queuePosition?: number;
-  queueLength?: number;
-  // Rate limit info
-  fastRequestsUsed?: number;
-  fastRequestsRemaining?: number;
-  fastRequestsLimit?: number;
+  waiting?: boolean;
 }
 
 export const optimizerApi = {
@@ -196,6 +188,7 @@ export const optimizerApi = {
                   step: message.step || 0,
                   totalSteps: message.totalSteps,
                   message: message.message,
+                  waiting: message.waiting || false,
                 };
               } else if (message.type === 'solution') {
                 yield {

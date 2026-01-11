@@ -171,11 +171,11 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "8"))
         serialized = serialize_model(model, take_vars, courses_df, max_time_seconds=20.0, num_workers=num_workers)
 
-        yield f"data: {json.dumps({'type': 'progress', 'message': 'Sending to solver...', 'step': 8, 'totalSteps': 10})}\n\n"
+        yield f"data: {json.dumps({'type': 'progress', 'message': 'Connecting to solver...', 'step': 8, 'totalSteps': 10, 'waiting': True})}\n\n"
 
         # Send to C++ worker and stream results
         print(f"[OPTIMIZE] Connecting to {SOLVER_URL}/solve...")
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=10.0)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
             async with client.stream(
                 "POST",
                 f"{SOLVER_URL}/solve",
