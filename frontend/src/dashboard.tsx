@@ -65,14 +65,6 @@ export default function Dashboard() {
   const fireroadUnhealthy = healthData?.services?.fireroad?.status !== 'healthy';
   const hasHealthIssue = backendError || fireroadUnhealthy;
 
-  // Fetch rate limit info
-  const { data: rateLimit, refetch: refetchRateLimit } = useQuery({
-    queryKey: ['rateLimit'],
-    queryFn: () => optimizerApi.getRateLimit(),
-    refetchInterval: 60000, // Refresh every minute
-    retry: 1,
-    staleTime: 30000,
-  });
 
   const healthErrorMessage = backendError
     ? "Backend service is unavailable. Please contact mlui2@mit.edu if this persists."
@@ -387,21 +379,6 @@ export default function Dashboard() {
                   <TooltipContent>Clear Optimizer Results</TooltipContent>
                 </Tooltip>
 
-                {/* Rate limit indicator */}
-                {rateLimit && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={`text-xs px-2 py-1 rounded ${rateLimit.can_use_fast ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                        {rateLimit.fast_requests_remaining}/{rateLimit.fast_requests_limit} fast
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {rateLimit.can_use_fast
-                        ? `${rateLimit.fast_requests_remaining} fast optimizations remaining (resets every ${rateLimit.window_minutes} min)`
-                        : `Fast tier exhausted. Using slow tier. Resets in ~${rateLimit.window_minutes} min`}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
 
                 <Button
                   size="sm"

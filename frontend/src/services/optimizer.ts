@@ -96,16 +96,6 @@ export const optimizerApi = {
     return optimizerFetch<HardConstraintsResponse>('/api/optimize/constraints');
   },
 
-  async getRateLimit(): Promise<{
-    fast_requests_used: number;
-    fast_requests_remaining: number;
-    fast_requests_limit: number;
-    window_minutes: number;
-    can_use_fast: boolean;
-  }> {
-    return optimizerFetch('/api/optimize/rate-limit');
-  },
-
   async *optimize(
     markers: Marker[],
     requiredCourses: string[],
