@@ -278,6 +278,17 @@ function CourseGraphFlowInner({
   // Track viewport for column headers
   const [viewport, setViewport] = React.useState({ x: 0, y: 20, zoom: 1 });
 
+  // Debounce error display to avoid flash on initial load
+  const [debouncedError, setDebouncedError] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (loadingState === 'error' && error) {
+      const timer = setTimeout(() => setDebouncedError(error), 500);
+      return () => clearTimeout(timer);
+    } else {
+      setDebouncedError(null);
+    }
+  }, [loadingState, error]);
+
   // Track if we've shown the stale warning alert
   const [hasShownStaleWarning, setHasShownStaleWarning] = React.useState(false);
 
@@ -643,11 +654,11 @@ function CourseGraphFlowInner({
     );
   }
 
-  if (loadingState === 'error' && markers.length === 0 && optimizerNodes.length === 0 && error) {
+  if (loadingState === 'error' && markers.length === 0 && optimizerNodes.length === 0 && debouncedError) {
     return (
       <div className="h-full w-full rounded-md border border-border bg-card relative overflow-hidden">
         <ErrorDisplay
-          error={error}
+          error={debouncedError}
           onRetry={() => fetchRoadData()}
           title="Failed to load schedule"
         />
