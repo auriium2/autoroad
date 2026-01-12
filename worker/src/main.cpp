@@ -63,11 +63,13 @@ int main(int argc, char* argv[]) {
     
     // Health check endpoint
     svr.Get("/health", [](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Connection", "close");
         res.set_content(R"({"status":"healthy","solver":"cpp-worker"})", "application/json");
     });
     
     // Solve endpoint with SSE streaming
     svr.Post("/solve", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Connection", "close");
         res.set_header("Cache-Control", "no-cache");
         res.set_header("Access-Control-Allow-Origin", "*");
         
@@ -114,6 +116,7 @@ int main(int argc, char* argv[]) {
     
     // CORS preflight
     svr.Options("/solve", [](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Connection", "close");
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
