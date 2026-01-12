@@ -71,7 +71,37 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
       title = req.req;
     }
 
-    // If still no title, use a generic label
+    // If still no title, generate one based on connection type and threshold
+    if (!title && hasChildren) {
+      const threshold = req.threshold;
+      const connectionType = req['connection-type'];
+      const childCount = req.reqs?.length ?? 0;
+      
+      if (threshold) {
+        const cutoff = threshold.cutoff;
+        const isUnits = threshold.criterion === 'units';
+        const unitSuffix = isUnits ? ' units' : '';
+        
+        if (threshold.type === 'GTE') {
+          // "Select 2+" or "Select 48+ units"
+          title = `Select ${cutoff}${unitSuffix}+`;
+        } else if (threshold.type === 'LTE') {
+          // "Select up to 2" or "Select up to 48 units"
+          title = `Select up to ${cutoff}${unitSuffix}`;
+        } else {
+          title = `Select ${cutoff}${unitSuffix}`;
+        }
+      } else if (connectionType === 'any') {
+        // No threshold, just "any" - pick one from the list
+        title = 'Select one';
+      } else {
+        // No threshold, "all" or unspecified - must complete all children
+        // But if there's only 1 child, don't say "Complete all"
+        title = childCount > 1 ? 'Complete all' : 'Required';
+      }
+    }
+    
+    // Final fallback
     if (!title) {
       title = 'Requirement';
     }
