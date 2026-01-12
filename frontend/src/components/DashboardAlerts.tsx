@@ -27,15 +27,15 @@ export function DashboardAlerts() {
     });
   };
 
-  React.useEffect(() => {
-    showOrReplaceToast("welcome", {
-      type: "info",
-      title: "Welcome to Autoroad",
-      description:
-        "Plan semesters, drop in ASEs, and optimize your road whenever you're ready.",
-      durationMs: 30000,
-    });
-  }, []);
+  // React.useEffect(() => {
+  //   showOrReplaceToast("welcome", {
+  //     type: "info",
+  //     title: "Welcome to Autoroad",
+  //     description:
+  //       "Plan semesters, drop in ASEs, and optimize your road whenever you're ready.",
+  //     durationMs: 30000,
+  //   });
+  // }, []);
 
   return null;
 }
