@@ -6,7 +6,7 @@ import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Users } from "lucide-react";
 
 type CourseNodeComponentProps = {
   node: CourseNode & { 
@@ -261,6 +261,28 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
             </div>
           ) : (
             <div className="text-center w-full truncate">{courseDetails.title}</div>
+          )}
+        </div>
+      )}
+
+      {/* Stats bar in nerd/cost mode */}
+      {viewMode === "cost" && courseDetails && (
+        <div className="absolute text-[9px] text-muted-foreground/70 w-[120px] flex items-center justify-center gap-1.5 left-1/2 -translate-x-1/2" style={{ top: '64px' }}>
+          {(courseDetails.in_class_hours != null || courseDetails.out_of_class_hours != null) && (
+            <span className="whitespace-nowrap">
+              {((courseDetails.in_class_hours ?? 0) + (courseDetails.out_of_class_hours ?? 0)).toFixed(0)}h
+            </span>
+          )}
+          {courseDetails.enrollment_number != null && (
+            <span className="flex items-center gap-0.5 whitespace-nowrap">
+              <Users className="w-2.5 h-2.5" />
+              {Math.round(courseDetails.enrollment_number)}
+            </span>
+          )}
+          {courseDetails.rating != null && (
+            <span className="whitespace-nowrap">
+              ★{courseDetails.rating.toFixed(1)}
+            </span>
           )}
         </div>
       )}
