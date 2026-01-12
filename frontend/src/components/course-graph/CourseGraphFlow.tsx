@@ -658,10 +658,10 @@ function CourseGraphFlowInner({
   const COLUMN_WIDTH = 200;
   const numColumns = ALL_SECTIONS.length;
 
-  const borderClass = lastOptimizationStatus === 'OPTIMAL'
-    ? 'border-2 border-green-500'
-    : markersChangedSinceOptimization
+  const borderClass = markersChangedSinceOptimization
     ? 'border-yellow-500 border'
+    : lastOptimizationStatus === 'OPTIMAL'
+    ? 'border-2 border-green-500'
     : 'border border-border';
 
   return (
