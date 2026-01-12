@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TierSelector } from "./TierSelector";
+import { CourseTooltip } from "@/components/CourseTooltip";
 
 interface RequirementTreeViewProps {
   requirementKey: string;
@@ -104,9 +105,17 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
             )}
             {!hasChildren && <div className="w-3" />}
 
-            <span className={`text-xs truncate ${req.req ? 'font-mono' : ''}`}>
-              {title}
-            </span>
+            {req.req ? (
+              <CourseTooltip courseId={req.req}>
+                <span className="text-xs truncate font-mono">
+                  {title}
+                </span>
+              </CourseTooltip>
+            ) : (
+              <span className="text-xs truncate">
+                {title}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">
