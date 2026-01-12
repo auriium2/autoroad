@@ -258,6 +258,9 @@ def _substitute_variables(stmt: ParsedStatement, variables: dict[str, ParsedStat
                 stmt.requirement = None
             stmt.connection_type = var_stmt.connection_type
             stmt.is_plain_string = var_stmt.is_plain_string
+            # Keep our own title if we have one, otherwise use variable's
+            if stmt.title is None:
+                stmt.title = var_stmt.title
             # Keep our own threshold if we have one, otherwise use variable's
             if stmt.threshold_type is None:
                 stmt.threshold_type = var_stmt.threshold_type
