@@ -5,6 +5,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Aggressive optimizations
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto -ffast-math")
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+
 # Find OR-Tools
 find_package(ortools CONFIG REQUIRED)
 

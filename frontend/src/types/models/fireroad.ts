@@ -41,6 +41,7 @@ export interface FireroadCourse {
   is_half_class?: boolean;
   url?: string;
   source_semester?: string;
+  virtual?: boolean;  // True for generic requirement placeholders (HASS-A, etc.)
 }
 
 export interface PaginatedCoursesResponse {

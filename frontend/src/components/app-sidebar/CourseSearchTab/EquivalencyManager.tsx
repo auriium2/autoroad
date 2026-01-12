@@ -16,8 +16,11 @@ export function EquivalencyManager() {
   const [showDropdownA, setShowDropdownA] = React.useState(false);
   const [showDropdownB, setShowDropdownB] = React.useState(false);
 
-  const { data: coursesA = [] } = useSearchCourses(courseA, "all");
-  const { data: coursesB = [] } = useSearchCourses(courseB, "all");
+  const { data: dataA } = useSearchCourses(courseA, "all");
+  const { data: dataB } = useSearchCourses(courseB, "all");
+
+  const coursesA = dataA?.pages.flatMap(p => p.courses) ?? [];
+  const coursesB = dataB?.pages.flatMap(p => p.courses) ?? [];
 
   const dropdownRefA = React.useRef<HTMLDivElement>(null);
   const dropdownRefB = React.useRef<HTMLDivElement>(null);

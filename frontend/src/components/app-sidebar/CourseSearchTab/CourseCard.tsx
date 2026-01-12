@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Users, TicketPercent } from "lucide-react";
+import { Users, TicketPercent, Sparkles } from "lucide-react";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { getTermBorderHighlight } from "@/lib/graph";
 import type { FireroadCourse } from "@/services/fireroad";
@@ -15,6 +15,34 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
   if (!course || !course.subject_id || !course.title) {
     console.warn('Invalid course data:', course);
     return null;
+  }
+
+  if (course.virtual) {
+    return (
+      <div className="relative p-4 pb-3 border border-amber-600/30 rounded-lg transition-colors overflow-hidden min-h-[80px] bg-gradient-to-br from-amber-900/20 to-amber-800/10">
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="font-medium text-sm mb-0.5 text-white">{course.subject_id}</div>
+            <div className="text-xs text-muted-foreground line-clamp-2">
+              {course.title}
+            </div>
+            <div className="text-[10px] text-amber-200/40 mt-2">
+              Generic requirement placeholder
+            </div>
+          </div>
+          <div
+            draggable
+            onDragStart={(e) => onDragStart(e, course)}
+            onDragEnd={onDragEnd}
+            className="relative w-9 h-9 rounded-full flex-shrink-0 cursor-move transition-all duration-200"
+          >
+            <div className="absolute inset-0 rounded-full border-2 border-amber-600/50 bg-amber-900/20 hover:border-amber-500/60 hover:bg-amber-800/30 hover:shadow-md flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-amber-200/80" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const termHighlight = getTermBorderHighlight({

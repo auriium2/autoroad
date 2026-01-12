@@ -6,6 +6,15 @@ from shared.services.cache import get_courses_data
 
 router = APIRouter()
 
+# Virtual items for generic requirement markers
+# These appear in search results and can be dragged to semesters
+VIRTUAL_ITEMS: list[dict[str, Any]] = [
+    {"subject_id": "HASS-A", "title": "Any HASS Arts", "total_units": 12, "virtual": True, "hass_attribute": "HASS-A"},
+    {"subject_id": "HASS-H", "title": "Any HASS Humanities", "total_units": 12, "virtual": True, "hass_attribute": "HASS-H"},
+    {"subject_id": "HASS-S", "title": "Any HASS Social Sciences", "total_units": 12, "virtual": True, "hass_attribute": "HASS-S"},
+    {"subject_id": "HASS-E", "title": "Any HASS Elective", "total_units": 12, "virtual": True, "hass_attribute": "HASS-E"},
+]
+
 
 def calculate_imdb_rating(rating: float | None, enrollment: int | None) -> float | None:
     if rating is None or enrollment is None:
@@ -20,7 +29,7 @@ def calculate_imdb_rating(rating: float | None, enrollment: int | None) -> float
 async def search_courses(
     q: str = Query(..., description="Search query, use '*' for all courses"),
     offset: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=2000),
     department: str | None = Query(None, description="Filter by department (e.g., '6', '18')"),
     search_type: Literal["contains", "starts"] = Query("contains"),
     sort: Literal[
@@ -36,6 +45,15 @@ async def search_courses(
     term: Literal["FA", "IAP", "SP"] | None = Query(None),
 ):
     all_courses = get_courses_data()
+
+    # Find matching virtual items (always check before filtering)
+    matching_virtual: list[dict[str, Any]] = []
+    if q != "*":
+        query_lower = q.lower()
+        for item in VIRTUAL_ITEMS:
+            if (query_lower in item["subject_id"].lower()
+                or query_lower in item["title"].lower()):
+                matching_virtual.append(item)
 
     # Filter by search query (skip if wildcard)
     if q != "*":
@@ -125,7 +143,19 @@ async def search_courses(
                 course.get("enrollment_number")  # type: ignore[arg-type]
             )
 
-    # Sort
+    # Sort by relevance first (exact department match), then by explicit sort if provided
+    # This ensures "6.100" shows 6.100A before 16.100
+    if q != "*" and "." in q:
+        query_dept = q.split(".")[0]
+        def relevance_key(c: dict[str, Any]) -> tuple[int, str]:
+            subject_id = c.get("subject_id") or ""
+            course_dept = subject_id.split(".")[0] if "." in subject_id else ""
+            # 0 = exact match (highest priority), 1 = no match
+            exact_match = 0 if course_dept == query_dept else 1
+            return (exact_match, subject_id)
+        all_courses.sort(key=relevance_key)
+
+    # Apply explicit sort (overrides relevance sort)
     if sort:
         reverse = sort.endswith("-desc")
         if "imdb-rating" in sort:
@@ -134,6 +164,10 @@ async def search_courses(
             all_courses.sort(key=lambda c: c.get("total_units") or 0, reverse=reverse)
         elif "enrollment" in sort:
             all_courses.sort(key=lambda c: c.get("enrollment_number") or 0, reverse=reverse)
+
+    # Prepend virtual items on first page
+    if offset == 0 and matching_virtual:
+        all_courses = matching_virtual + all_courses
 
     # Paginate
     total = len(all_courses)
@@ -150,6 +184,11 @@ async def search_courses(
 
 @router.get("/courses/lookup/{course_id:path}")
 async def lookup_course(course_id: str):
+    # Check virtual items first
+    for item in VIRTUAL_ITEMS:
+        if item["subject_id"] == course_id:
+            return item
+
     all_courses = get_courses_data()
 
     for course in all_courses:

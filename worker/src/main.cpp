@@ -29,6 +29,13 @@ WorkerRequest parse_request(const std::string& body) {
         meta.subject_id = c["subject_id"].get<std::string>();
         meta.title = c["title"].get<std::string>();
         meta.units = c["units"].get<int>();
+        if (c.contains("attributes") && c["attributes"].is_object()) {
+            for (const auto& [key, value] : c["attributes"].items()) {
+                if (value.is_string()) {
+                    meta.attributes[key] = value.get<std::string>();
+                }
+            }
+        }
         request.courses_metadata.push_back(meta);
     }
     
@@ -126,12 +133,19 @@ int main(int argc, char* argv[]) {
     std::cout << "Starting autoroad worker on port " << port << std::endl;
     std::cout.flush();
     
+    // Short keep-alive timeout
+    svr.set_keep_alive_max_count(1);
+    svr.set_keep_alive_timeout(5);
+    
     svr.set_logger([](const httplib::Request& req, const httplib::Response& res) {
         std::cout << req.method << " " << req.path << " -> " << res.status << std::endl;
         std::cout.flush();
     });
     
-    svr.listen("0.0.0.0", port);
+    if (!svr.listen("0.0.0.0", port)) {
+        std::cerr << "Failed to bind to port " << port << std::endl;
+        return 1;
+    }
     
     return 0;
 }

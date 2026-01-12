@@ -7,6 +7,7 @@ This module translates those user intentions into hard constraints for the optim
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -22,6 +23,14 @@ class MarkerConstraintResult(BaseModel):
     constraints_added: int
     warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
+
+
+# Virtual course IDs that represent generic requirement categories
+VIRTUAL_COURSE_IDS = {"HASS-A", "HASS-H", "HASS-S", "HASS-E"}
+
+
+def is_virtual_marker(course_id: str) -> bool:
+    return course_id in VIRTUAL_COURSE_IDS
 
 
 def add_marker_constraints(
@@ -56,7 +65,85 @@ def add_marker_constraints(
         subject_id = courses_df[idx, 'subject_id']
         course_id_to_idx[subject_id] = idx
 
+    # Build hass_attribute -> list of course indices mapping for virtual markers
+    hass_attr_to_indices: dict[str, list[int]] = {
+        "HASS-A": [],
+        "HASS-H": [],
+        "HASS-S": [],
+        "HASS-E": [],
+    }
+    if "hass_attribute" in courses_df.columns:
+        for idx in range(len(courses_df)):
+            hass_attr = courses_df[idx, "hass_attribute"]
+            if hass_attr in hass_attr_to_indices:
+                hass_attr_to_indices[hass_attr].append(idx)
+
+    # Count HASS markers by (category, section) to handle multiple markers of same type
+    hass_pin_counts: Counter[tuple[str, int]] = Counter()
+    hass_banish_markers: list[tuple[str, int]] = []
+
     for marker in markers:
+        if is_virtual_marker(marker.courseId):
+            if marker.status == "pin":
+                if marker.section == -2:
+                    errors.append(f"{marker.courseId} markers cannot be placed in Must Take section")
+                else:
+                    hass_pin_counts[(marker.courseId, marker.section)] += 1
+            elif marker.status == "banish":
+                hass_banish_markers.append((marker.courseId, marker.section))
+            elif marker.status == "override":
+                errors.append(f"Override is not supported for generic {marker.courseId} markers")
+            continue
+
+    # Add constraints for HASS pin markers (grouped by category and section)
+    for (hass_category, section), count in hass_pin_counts.items():
+        matching_indices = hass_attr_to_indices.get(hass_category, [])
+
+        if not matching_indices:
+            errors.append(f"No courses found with {hass_category} attribute")
+            continue
+
+        if section == -1:
+            # ASE semester
+            semester_vars = [
+                take_vars[(idx, -1)]
+                for idx in matching_indices
+                if (idx, -1) in take_vars
+            ]
+            if semester_vars:
+                model.Add(sum(semester_vars) >= count)
+                constraints_added += 1
+            else:
+                errors.append(f"No {hass_category} courses available in ASE semester")
+        elif section >= 0:
+            # Specific semester: require `count` courses of this category
+            semester = section + 1
+            semester_vars = [
+                take_vars[(idx, semester)]
+                for idx in matching_indices
+                if (idx, semester) in take_vars
+            ]
+            if semester_vars:
+                model.Add(sum(semester_vars) >= count)
+                constraints_added += 1
+            else:
+                errors.append(f"No {hass_category} courses available in semester {semester}")
+
+    # Add constraints for HASS banish markers
+    for hass_category, section in hass_banish_markers:
+        matching_indices = hass_attr_to_indices.get(hass_category, [])
+
+        if section < 0:
+            errors.append(f"Cannot banish {hass_category} from special semesters")
+            continue
+
+        semester = section + 1
+        for idx in matching_indices:
+            if (idx, semester) in take_vars:
+                model.Add(take_vars[(idx, semester)] == 0)
+                constraints_added += 1
+
+        # Regular course marker handling
         course_idx = course_id_to_idx.get(marker.courseId)
 
         if course_idx is None:

@@ -70,12 +70,16 @@ void Solver::emit_progress(const std::string& message, int step, int total_steps
 void Solver::emit_solution(const SolutionEvent& solution) {
     json nodes = json::array();
     for (const auto& node : solution.nodes) {
-        nodes.push_back({
+        json node_json = {
             {"courseId", node.course_id},
             {"section", node.section},
             {"title", node.title},
             {"units", node.units}
-        });
+        };
+        if (!node.attributes.empty()) {
+            node_json["attributes"] = node.attributes;
+        }
+        nodes.push_back(std::move(node_json));
     }
 
     json data = {
@@ -109,10 +113,11 @@ void Solver::solve() {
 
     emit_progress("Configuring solver...", 2, 3);
 
-    // Configure solver parameters
+    // Configure solver parameters - match Python behavior
     SatParameters params;
     params.set_max_time_in_seconds(request_.solver_params.max_time_seconds);
-    params.set_num_workers(request_.solver_params.num_workers);
+    params.set_num_workers(0);  // Auto-detect CPU count
+    params.set_enumerate_all_solutions(false);
     params.set_log_search_progress(false);
 
     int solution_count = 0;
@@ -138,6 +143,7 @@ void Solver::solve() {
                 node.section = var_info.semester >= 0 ? var_info.semester - 1 : var_info.semester;
                 node.title = course.title;
                 node.units = course.units;
+                node.attributes = course.attributes;
                 event.nodes.push_back(std::move(node));
             }
         }

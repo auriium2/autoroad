@@ -49,20 +49,22 @@ export default function Dashboard() {
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
 
   // Check health of backend service
-  const { data: healthData, isError: backendError } = useQuery({
+  const { data: healthData, isError: backendError, isPending: healthPending } = useQuery({
     queryKey: queryKeys.health.backend(),
     queryFn: async () => {
       const response = await fetch('/api/health', {
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(5000),
       });
       if (!response.ok) throw new Error('Backend health check failed');
       return response.json();
     },
-    refetchInterval: 30000,
-    retry: 1,
+    refetchInterval: 10000,
+    retry: 0,
+    staleTime: 0,
   });
 
-  const fireroadUnhealthy = healthData?.services?.fireroad?.status !== 'healthy';
+  // Only show health issues after the initial check completes
+  const fireroadUnhealthy = !healthPending && healthData?.services?.fireroad?.status !== 'healthy';
   const hasHealthIssue = backendError || fireroadUnhealthy;
 
 

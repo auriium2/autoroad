@@ -8,7 +8,6 @@ import { CourseCard } from "./CourseCard";
 import { FilterBar } from "./FilterBar";
 import type { FireroadCourse } from "@/services/fireroad";
 
-const COURSES_PER_PAGE = 20;
 const DEPARTMENTS = ["all", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "14", "15", "16", "17", "18", "20", "21A", "21G", "21H", "21M", "22", "24"];
 
 const ALL_FILTERS = [
@@ -38,7 +37,6 @@ const ALL_FILTERS = [
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeFilters, setActiveFilters] = React.useState<Set<string>>(new Set());
-  const [displayCount, setDisplayCount] = React.useState(COURSES_PER_PAGE);
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
   const selectedDepartment = React.useMemo(() => {
@@ -64,23 +62,33 @@ export function CourseSearchTab() {
     return Object.keys(filters).length > 0 ? filters : undefined;
   }, [activeFilters]);
 
-  const { data: allCourses = [], isLoading, isError } = useSearchCourses(effectiveSearchQuery, selectedDepartment, apiFilters);
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSearchCourses(effectiveSearchQuery, selectedDepartment, apiFilters);
+
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
-  React.useEffect(() => {
-    setDisplayCount(COURSES_PER_PAGE);
-  }, [effectiveSearchQuery, selectedDepartment, activeFilters]);
+  // Flatten pages into a single array of courses
+  const courses = React.useMemo(() => {
+    if (!data?.pages) return [];
+    return data.pages.flatMap(page => page.courses);
+  }, [data]);
 
-  const courses = allCourses.slice(0, displayCount);
-  const hasMore = displayCount < allCourses.length;
+  const totalCount = data?.pages[0]?.total ?? 0;
 
+  // Intersection observer for infinite scroll
   React.useEffect(() => {
-    if (!loadMoreRef.current || !hasMore || isLoading) return;
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setDisplayCount(prev => prev + COURSES_PER_PAGE);
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
@@ -88,7 +96,7 @@ export function CourseSearchTab() {
 
     observer.observe(loadMoreRef.current);
     return () => observer.disconnect();
-  }, [hasMore, isLoading]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const createDragPreview = (courseId: string, units: number) => {
     const preview = document.createElement('div');
@@ -189,9 +197,9 @@ export function CourseSearchTab() {
             )}
           </div>
         )}
-        {!isLoading && !isError && hasMore && (
+        {!isLoading && !isError && hasNextPage && (
           <div ref={loadMoreRef} className="text-center py-4 text-xs text-muted-foreground/50">
-            {allCourses.length - displayCount} more courses...
+            {isFetchingNextPage ? "Loading more..." : `${totalCount - courses.length} more courses...`}
           </div>
         )}
       </div>

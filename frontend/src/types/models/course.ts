@@ -11,6 +11,11 @@ export interface OptimizerNode {
   courseId: string;
   section: number;
   units?: number;
+  attributes?: {
+    hass_attribute?: string;
+    gir_attribute?: string;
+    communication_requirement?: string;
+  };
 }
 
 export interface CourseNode {
@@ -23,6 +28,7 @@ export interface CourseNode {
   offeredFall?: boolean;
   offeredSpring?: boolean;
   offeredIAP?: boolean;
+  satisfiesHassMarker?: boolean;
 }
 
 export interface AvailableNode {

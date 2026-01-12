@@ -14,6 +14,7 @@ import ReactFlow, {
   Handle,
   Position,
 } from 'reactflow';
+
 import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
 
@@ -29,6 +30,9 @@ import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrereq
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { toast as showToast } from "@/hooks/useToast";
 import { isPastSemesterById } from "@/lib/semesterUtils";
+
+// Virtual marker types (attribute-based markers like HASS-A, HASS-H, etc.)
+const VIRTUAL_MARKER_TYPES = new Set(['HASS-A', 'HASS-H', 'HASS-S', 'HASS-E']);
 
 // Custom node component wrapper for React Flow
 const FlowCourseNode = ({ data }: { data: CourseNodeType & { disableTooltip?: boolean; viewMode?: string; isOptimizing?: boolean } }) => {
@@ -292,9 +296,48 @@ function CourseGraphFlowInner({
   // Track if we've shown the stale warning alert
   const [hasShownStaleWarning, setHasShownStaleWarning] = React.useState(false);
 
+  // Map (section, markerType) -> list of marker uuids for controlling virtual markers
+  const virtualMarkerLookup = React.useMemo(() => {
+    const map = new Map<string, string[]>(); // "section_HASS-A" -> [marker uuid, ...]
+    for (const marker of markers) {
+      if (VIRTUAL_MARKER_TYPES.has(marker.courseId) && marker.status !== 'banish') {
+        const key = `${marker.section}_${marker.courseId}`;
+        const existing = map.get(key) || [];
+        existing.push(marker.uuid);
+        map.set(key, existing);
+      }
+    }
+    return map;
+  }, [markers]);
+
+  // Build map of which optimizer node satisfies which HASS marker: markerUuid -> optimizerNode
+  // Matches optimizer nodes to markers in order (first node -> first marker, etc.)
+  const hassMarkerToOptimizerNode = React.useMemo(() => {
+    const map = new Map<string, OptimizerNode>();
+    // Group optimizer nodes by (section, hassAttr)
+    const optimizerNodesByKey = new Map<string, OptimizerNode[]>();
+    for (const on of optimizerNodes) {
+      const hassAttr = on.attributes?.hass_attribute;
+      if (hassAttr && VIRTUAL_MARKER_TYPES.has(hassAttr)) {
+        const key = `${on.section}_${hassAttr}`;
+        const existing = optimizerNodesByKey.get(key) || [];
+        existing.push(on);
+        optimizerNodesByKey.set(key, existing);
+      }
+    }
+    // Match optimizer nodes to markers
+    for (const [key, markerUuids] of virtualMarkerLookup) {
+      const nodes = optimizerNodesByKey.get(key) || [];
+      for (let i = 0; i < Math.min(markerUuids.length, nodes.length); i++) {
+        map.set(markerUuids[i], nodes[i]);
+      }
+    }
+    return map;
+  }, [optimizerNodes, virtualMarkerLookup]);
+
   // Compute display nodes from markers + optimizer nodes
   const storeNodes = React.useMemo(() => {
-    // Build a map of optimizer nodes by (courseId, section) for overlap detection
+
     const optimizerMap = new Map<string, OptimizerNode>();
     const optimizerCourseIds = new Set<string>();
     for (const on of optimizerNodes) {
@@ -304,35 +347,55 @@ function CourseGraphFlowInner({
     }
 
     // Markers become nodes with userControlled=true
-    const markerNodes: CourseNodeType[] = markers.map((marker) => {
-      let hasOptimizerOverlap = false;
+    const markerNodes: CourseNodeType[] = markers
+      .map((marker) => {
+        const isVirtualHass = VIRTUAL_MARKER_TYPES.has(marker.courseId) && marker.status !== 'banish';
+        const satisfyingOptimizerNode = isVirtualHass ? hassMarkerToOptimizerNode.get(marker.uuid) : undefined;
+        
+        let hasOptimizerOverlap = false;
+        let displayCourseId = marker.courseId;
 
-      if (marker.status !== 'banish') {
-        if (marker.section === -2) {
-          // Must Take: satisfied if course exists in ANY optimizer semester
-          hasOptimizerOverlap = optimizerCourseIds.has(marker.courseId);
-        } else {
-          // Regular sections: satisfied if course exists in exact same section
-          const key = `${marker.courseId}_${marker.section}`;
-          hasOptimizerOverlap = optimizerMap.has(key);
+        if (satisfyingOptimizerNode) {
+          // HASS marker is satisfied - show the actual course instead of "HASS-A"
+          hasOptimizerOverlap = true;
+          displayCourseId = satisfyingOptimizerNode.courseId;
+        } else if (marker.status !== 'banish' && !isVirtualHass) {
+          // For regular (non-virtual) markers, check for optimizer overlap
+          if (marker.section === -2) {
+            // Must Take: satisfied if course exists in ANY optimizer semester
+            hasOptimizerOverlap = optimizerCourseIds.has(marker.courseId);
+          } else {
+            // Regular sections: satisfied if course exists in exact same section
+            const key = `${marker.courseId}_${marker.section}`;
+            hasOptimizerOverlap = optimizerMap.has(key);
+          }
         }
-      }
 
-      return {
-        uuid: marker.uuid,
-        courseId: marker.courseId,
-        section: marker.section,
-        userControlled: true,
-        nodeStatus: marker.status,
-        ...(hasOptimizerOverlap ? { optimizerAgreed: true } : {}),
-      } as CourseNodeType & { optimizerAgreed?: boolean };
-    });
+        const result = {
+          uuid: marker.uuid,
+          courseId: displayCourseId,
+          section: marker.section,
+          userControlled: true,
+          nodeStatus: marker.status,
+          ...(hasOptimizerOverlap ? { optimizerAgreed: true } : {}),
+          ...(satisfyingOptimizerNode ? { satisfiesHassMarker: true } : {}),
+        } as CourseNodeType & { optimizerAgreed?: boolean; satisfiesHassMarker?: boolean };
+        
+        return result;
+      });
 
-    // Filter out optimizer nodes that overlap with non-banish markers
+    // Filter out optimizer nodes that overlap with non-banish markers (including satisfied HASS markers)
     const markerKeys = new Set(
       markers
         .filter(m => m.status !== 'banish')
-        .map(m => `${m.courseId}_${m.section}`)
+        .map(m => {
+          // For satisfied HASS markers, use the satisfying course's key
+          const satisfying = hassMarkerToOptimizerNode.get(m.uuid);
+          if (satisfying) {
+            return `${satisfying.courseId}_${m.section}`;
+          }
+          return `${m.courseId}_${m.section}`;
+        })
     );
 
     const optimizerOnlyNodes: CourseNodeType[] = optimizerNodes
@@ -349,7 +412,7 @@ function CourseGraphFlowInner({
       }));
 
     return [...markerNodes, ...optimizerOnlyNodes];
-  }, [markers, optimizerNodes]);
+  }, [markers, optimizerNodes, hassMarkerToOptimizerNode]);
 
   // Create a stable key for storeNodes to prevent infinite loops
   const storeNodesKey = React.useMemo(
@@ -490,8 +553,9 @@ function CourseGraphFlowInner({
           missingPrereqs,
           viewMode,
           isOptimizing,
+          satisfiesHassMarker: node.satisfiesHassMarker,
         },
-        draggable: !isOptimizing && (node.userControlled || false),
+        draggable: !isOptimizing && node.userControlled,
       };
     });
 
@@ -579,13 +643,18 @@ function CourseGraphFlowInner({
     // To find which column: (x - 100) / 200, then round to nearest
     const sectionIndex = Math.round((node.position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
     const clampedIndex = Math.max(0, Math.min(sectionIndex, ALL_SECTIONS.length - 1));
-    const section = ALL_SECTIONS[clampedIndex];
+    let section = ALL_SECTIONS[clampedIndex];
+
+    // HASS markers cannot be placed in Must Take section
+    const isVirtualMarker = VIRTUAL_MARKER_TYPES.has(node.data.courseId);
+    if (isVirtualMarker && section.id === -2) {
+      section = ALL_SECTIONS[1]; // Fall back to first regular semester
+    }
 
     if (section && node.data.section !== section.id) {
-      // Update the section in the store, which will trigger a re-render with correct positioning
       updateMarker(node.id, { section: section.id });
     } else {
-      // Same section, but need to snap back to center - force a re-render
+      // Same section, snap back to center
       updateMarker(node.id, { section: node.data.section });
     }
   };
@@ -631,7 +700,13 @@ function CourseGraphFlowInner({
       const COLUMN_WIDTH = 200;
       const sectionIndex = Math.round((position.x - COLUMN_WIDTH / 2) / COLUMN_WIDTH);
       const clampedIndex = Math.max(0, Math.min(sectionIndex, ALL_SECTIONS.length - 1));
-      const section = ALL_SECTIONS[clampedIndex];
+      let section = ALL_SECTIONS[clampedIndex];
+
+      // HASS markers cannot be placed in Must Take section
+      const isVirtualMarker = VIRTUAL_MARKER_TYPES.has(nodeData.courseId);
+      if (isVirtualMarker && section.id === -2) {
+        section = ALL_SECTIONS[1]; // Fall back to first regular semester
+      }
 
       // Add the marker with the correct section
       addMarker(nodeData.courseId, section.id, 'pin');

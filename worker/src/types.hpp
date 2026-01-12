@@ -16,6 +16,7 @@ struct CourseMetadata {
     std::string subject_id;
     std::string title;
     int units;
+    std::unordered_map<std::string, std::string> attributes;
 };
 
 struct SolverParams {
@@ -36,6 +37,7 @@ struct SolutionNode {
     int section;
     std::string title;
     int units;
+    std::unordered_map<std::string, std::string> attributes;
 };
 
 struct SolutionEvent {

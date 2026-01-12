@@ -6,9 +6,14 @@ import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
+import { Sparkles } from "lucide-react";
 
 type CourseNodeComponentProps = {
-  node: CourseNode & { optimizerAgreed?: boolean; missingPrereqs?: string[] };
+  node: CourseNode & { 
+    optimizerAgreed?: boolean; 
+    missingPrereqs?: string[];
+    satisfiesHassMarker?: boolean;
+  };
   disableTooltip?: boolean;
   viewMode?: string;
 };
@@ -21,8 +26,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   } = props;
 
   const { courseId, userControlled, disabled, section, nodeStatus: markerStatus } = node;
-  const optimizerAgreed = node.optimizerAgreed;
   const missingPrereqs = node.missingPrereqs || [];
+  const satisfiesHassMarker = node.satisfiesHassMarker || false;
 
   // Check node status
   const isBanished = markerStatus === 'banish';
@@ -32,9 +37,15 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const getCourseCategoryTier = useOptimizationStore((state) => state.getCourseCategoryTier);
   const categoryTier = getCourseCategoryTier(courseId);
 
+  // Check if this is a virtual/generic marker (HASS-A, etc.)
+  const isVirtual = courseId.startsWith('HASS-');
+
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
   const units = courseDetails?.total_units || 12; // Default to 12 if not available
+
+  // Combine explicit optimizerAgreed prop with HASS marker satisfaction (but use different styling)
+  const optimizerAgreed = node.optimizerAgreed;
 
   // Check if course is placed in wrong semester
   // Special semesters (-2 for Must Take, -1 for ASE) are always valid
@@ -54,11 +65,18 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   }
 
   // Get node styling from shared utility
-  let { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ section, userControlled, disabled });
+  let { borderColor, bgColor, textColor, boxShadow } = getNodeStyle({ 
+    section, 
+    userControlled: userControlled && !satisfiesHassMarker, 
+    disabled 
+  });
 
   // Override styling based on node state
-  if (isWrongSemester && !isBanished) {
-    // Course placed in wrong semester: yellow warning with soft pulse
+  if (satisfiesHassMarker && !isBanished) {
+    borderColor = 'border-amber-600/50';
+    bgColor = 'bg-amber-900/20';
+    textColor = 'text-amber-200/80';
+  } else if (isWrongSemester && !isBanished) {
     borderColor = 'border-yellow-500';
     bgColor = 'bg-yellow-500/10';
     textColor = 'text-yellow-400';
@@ -88,6 +106,34 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const MAX_DISPLAYED_PREREQS = 3;
   const displayedPrereqs = missingPrereqs.slice(0, MAX_DISPLAYED_PREREQS);
   const hasMore = missingPrereqs.length > MAX_DISPLAYED_PREREQS;
+
+  if (isVirtual) {
+    return (
+      <div className="flex flex-col items-center">
+        <CourseTooltip courseId={courseId} disabled={disableTooltip}>
+          <div
+            data-node-circle={node.uuid}
+            className="relative w-9 h-9 rounded-full cursor-pointer"
+            style={{ boxShadow: '0 0 12px rgba(251, 191, 36, 0.4)' }}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="absolute inset-0 rounded-full border-2 border-amber-600/50 bg-amber-900/20 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-amber-200/80" />
+            </div>
+          </div>
+        </CourseTooltip>
+        <div className="text-xs font-medium text-center mt-2 text-white">
+          {courseId}
+        </div>
+        {viewMode === "default" && courseDetails?.title && (
+          <div className="absolute text-[10px] text-gray-300 w-[120px] h-[28px] flex items-center justify-center left-1/2 -translate-x-1/2" style={{ top: '64px' }}>
+            <div className="text-center w-full truncate">{courseDetails.title}</div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center">
@@ -138,7 +184,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
           </div>
 
           {/* Combined SVG overlay for all decorations */}
-          {(isBanished || termHighlight || optimizerAgreed) && (
+          {(isBanished || termHighlight || optimizerAgreed || satisfiesHassMarker) && (
             <svg
               className="pointer-events-none absolute inset-0"
               viewBox="0 0 36 36"
@@ -169,6 +215,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
                       ? "rgba(234, 179, 8, 0.9)" // Yellow for wrong semester
                       : hasUnsatisfiedPrereqs
                       ? "rgba(239, 68, 68, 0.8)" // Red for any node with errors
+                      : satisfiesHassMarker
+                      ? "rgba(251, 146, 60, 0.8)" // Orange for HASS-satisfying markers (checked before userControlled!)
                       : userControlled
                       ? "rgba(147, 197, 253, 0.8)" // Blue for user-controlled without errors
                       : "rgba(255,255,255,0.35)" // White for optimizer nodes without errors

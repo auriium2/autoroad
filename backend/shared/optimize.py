@@ -37,6 +37,9 @@ from shared.optimizer.requirements.builder import add_requirement_constraints
 from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
 from shared.utils import find_current_school_year
 
+# Attribute columns to include for frontend marker matching
+ATTRIBUTE_COLUMNS = ('hass_attribute', 'gir_attribute', 'communication_requirement')
+
 
 @dataclass
 class VariableInfo:
@@ -53,9 +56,13 @@ class CourseMetadata:
     subject_id: str
     title: str
     units: int
+    attributes: dict[str, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {"subject_id": self.subject_id, "title": self.title, "units": self.units}
+        d: dict[str, Any] = {"subject_id": self.subject_id, "title": self.title, "units": self.units}
+        if self.attributes:
+            d["attributes"] = self.attributes
+        return d
 
 
 @dataclass
@@ -126,11 +133,20 @@ def serialize_model(
             subject_id = str(courses_df[idx, 'subject_id'])
             title = str(courses_df[idx, 'title']) if 'title' in courses_df.columns else ""
             units = int(courses_df[idx, 'total_units']) if 'total_units' in courses_df.columns else 12
+            
+            # Collect non-null attributes
+            attrs: dict[str, str] = {}
+            for col in ATTRIBUTE_COLUMNS:
+                if col in courses_df.columns:
+                    val = courses_df[idx, col]
+                    if val is not None:
+                        attrs[col] = str(val)
         else:
             subject_id = f"UNKNOWN_{idx}"
             title = ""
             units = 12
-        courses_metadata.append(CourseMetadata(subject_id=subject_id, title=title, units=units))
+            attrs = {}
+        courses_metadata.append(CourseMetadata(subject_id=subject_id, title=title, units=units, attributes=attrs if attrs else None))
 
     solver_params = {
         "max_time_seconds": max_time_seconds,
@@ -189,12 +205,24 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
                 section = semester - 1 if semester >= 0 else semester
                 units = self.courses_df[course_idx, 'total_units'] if 'total_units' in self.courses_df.columns else 12
 
-                nodes.append({
+                # Collect non-null attributes for marker matching
+                attrs = {}
+                for col in ATTRIBUTE_COLUMNS:
+                    if col in self.courses_df.columns:
+                        val = self.courses_df[course_idx, col]
+                        if val is not None:
+                            attrs[col] = val
+
+                node: dict[str, object] = {
                     "courseId": course_id,
                     "section": section,
                     "title": title,
-                    "units": units
-                })
+                    "units": units,
+                }
+                if attrs:
+                    node["attributes"] = attrs
+
+                nodes.append(node)
 
         current_objective = self.ObjectiveValue()
 
@@ -362,8 +390,10 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = 20
         solver.parameters.enumerate_all_solutions = False
+        solver.parameters.log_search_progress = True  # Enable OR-Tools logging for comparison
         num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "0"))
         solver.parameters.num_search_workers = num_workers
+        print(f"[PYTHON SOLVER] Starting with num_workers={num_workers}")
 
         # Run solver in thread
         solver_done = threading.Event()

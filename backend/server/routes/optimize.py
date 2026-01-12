@@ -174,13 +174,12 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Connecting to solver...', 'step': 8, 'totalSteps': 10, 'waiting': True})}\n\n"
 
         # Send to C++ worker and stream results
-        print(f"[OPTIMIZE] Connecting to {SOLVER_URL}/solve...")
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
             async with client.stream(
                 "POST",
                 f"{SOLVER_URL}/solve",
                 content=serialized.to_json(),
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json", "Connection": "close"}
             ) as response:
                 if response.status_code != 200:
                     yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
@@ -191,10 +190,8 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                         yield f"{line}\n\n"
 
     except httpx.ConnectError as e:
-        print(f"[OPTIMIZE] Failed to connect to C++ worker: {e}")
         yield f"data: {json.dumps({'type': 'error', 'error': 'Failed to connect to solver', 'details': str(e)})}\n\n"
     except Exception as e:
-        print(f"[OPTIMIZE] Error in C++ worker path: {type(e).__name__}: {e}")
         yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
 
 
@@ -207,10 +204,8 @@ async def optimize(request: Request, opt_request: OptimizationRequest):
     Otherwise, runs the full optimization in-process (development mode).
     """
     if SOLVER_URL:
-        print(f"[OPTIMIZE] Using C++ worker at {SOLVER_URL}")
         stream_func = event_stream_cpp_worker(opt_request)
     else:
-        print("[OPTIMIZE] Using local Python solver")
         stream_func = event_stream_local(opt_request)
 
     return StreamingResponse(
