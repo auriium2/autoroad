@@ -143,14 +143,18 @@ def add_marker_constraints(
                 model.Add(take_vars[(idx, semester)] == 0)
                 constraints_added += 1
 
-        # Regular course marker handling
+    # Regular course marker handling
+    for marker in markers:
+        if is_virtual_marker(marker.courseId):
+            continue
+
         course_idx = course_id_to_idx.get(marker.courseId)
 
         if course_idx is None:
             warnings.append(f"Course {marker.courseId} not found in course catalog")
             continue
 
-        if marker.status == "pin": #force course to be taken in specified semester. if section is -2, force to be taken in any semester. if section is -1, force to be taken in ASE semester
+        if marker.status == "pin":
             if marker.section == -2:
                 # Must Take: course must be taken in any regular semester (1-12)
                 # Don't pin to a specific semester, just ensure it's taken
@@ -248,7 +252,7 @@ def add_marker_constraints(
                 continue
 
             # Must take this course in this semester (prerequisite checking skipped elsewhere)
-            _ = model.Add(take_vars[(course_idx, semester)] == 1)
+            model.Add(take_vars[(course_idx, semester)] == 1)
             constraints_added += 1
         else:
             warnings.append(f"Unknown marker status: {marker.status}")
