@@ -652,7 +652,17 @@ function CourseGraphFlowInner({
     }
 
     if (section && node.data.section !== section.id) {
-      updateMarker(node.id, { section: section.id });
+      // Reset invalid statuses when moving to special sections
+      const currentStatus = node.data.nodeStatus || 'pin';
+      const needsReset = 
+        (section.id === -2 && currentStatus === 'override') || // Override not allowed in Must Take
+        (section.id === -1 && currentStatus === 'banish');     // Banish not allowed in ASE
+      
+      if (needsReset) {
+        updateMarker(node.id, { section: section.id, status: 'pin' });
+      } else {
+        updateMarker(node.id, { section: section.id });
+      }
     } else {
       // Same section, snap back to center
       updateMarker(node.id, { section: node.data.section });
@@ -813,6 +823,8 @@ function CourseGraphFlowInner({
 
         const isUserControlled = node.userControlled;
         const currentStatus = node.nodeStatus || 'pin';
+        const isInMustTake = node.section === -2;
+        const isInASE = node.section === -1;
 
         return (
           <div
@@ -841,7 +853,8 @@ function CourseGraphFlowInner({
                 <button
                   className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleOverride(contextMenu.nodeUuid)}
-                  disabled={currentStatus === 'override'}
+                  disabled={currentStatus === 'override' || isInMustTake}
+                  title={isInMustTake ? "Override not available in Must Take - move to a specific semester" : undefined}
                 >
                   <Unlink className="w-3 h-3" />
                   <span>Pin + ignore prerequisites</span>
@@ -853,10 +866,11 @@ function CourseGraphFlowInner({
                 <button
                   className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={() => handleBanish(contextMenu.nodeUuid)}
-                  disabled={currentStatus === 'banish'}
+                  disabled={currentStatus === 'banish' || isInASE}
+                  title={isInASE ? "Banish not available in ASE" : undefined}
                 >
                   <Ban className="w-3 h-3" />
-                  <span>Banish</span>
+                  <span>{isInMustTake ? "Banish (never take)" : "Banish"}</span>
                   {currentStatus === 'banish' && (
                     <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
                   )}

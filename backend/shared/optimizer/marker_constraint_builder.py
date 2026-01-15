@@ -199,12 +199,35 @@ def add_marker_constraints(
             constraints_added += 1
 
         elif marker.status == "banish":
-            # Banish: Prevent course from being taken in this specific semester
-            # Special sections not allowed for banish
-            if marker.section < 0:
+            # Banish: Prevent course from being taken
+            if marker.section == -2:
+                # Must Take banish: never take this course in any semester
+                any_semester_vars = [
+                    take_vars[(course_idx, s)]
+                    for s in range(1, 13)
+                    if (course_idx, s) in take_vars
+                ]
+                # Also include ASE if available
+                if (course_idx, -1) in take_vars:
+                    any_semester_vars.append(take_vars[(course_idx, -1)])
+
+                if not any_semester_vars:
+                    warnings.append(
+                        f"Course {marker.courseId} has no available semesters, "
+                        f"banish constraint has no effect"
+                    )
+                    continue
+
+                # Add constraint: must NOT take this course in any semester
+                for var in any_semester_vars:
+                    model.Add(var == 0)
+                constraints_added += len(any_semester_vars)
+                continue
+
+            if marker.section == -1:
+                # ASE banish: don't allow in ASE
                 errors.append(
-                    f"Banish marker for {marker.courseId} has section={marker.section}, "
-                    f"cannot banish from special semesters (Must Take/ASE)"
+                    f"Banish marker for {marker.courseId} in ASE section is not supported"
                 )
                 continue
 

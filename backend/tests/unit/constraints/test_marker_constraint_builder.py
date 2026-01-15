@@ -332,8 +332,8 @@ class TestBanishMarkers:
         assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
         assert solver.Value(take_vars[(course_idx, 2)]) == 1
 
-    def test_banish_from_special_semester_errors(self):
-        """Banish cannot target special semesters (ASE, Must Take)."""
+    def test_banish_from_ase_errors(self):
+        """Banish cannot target ASE semester."""
         courses_df = create_test_courses_df()
         model = cp_model.CpModel()
 
@@ -345,6 +345,30 @@ class TestBanishMarkers:
 
         assert result.constraints_added == 0
         assert len(result.errors) == 1
+
+    def test_banish_from_must_take_prevents_all_semesters(self):
+        """Banish in Must Take (section=-2) prevents course from all semesters."""
+        courses_df = create_test_courses_df()
+        model = cp_model.CpModel()
+
+        # Banish 18.01 from Must Take = never take it
+        markers = [Marker(courseId='18.01', section=-2, status='banish')]
+        take_vars = create_take_vars(model, courses_df, markers)
+
+        result = add_marker_constraints(model, take_vars, markers, courses_df, 2025)
+
+        # Should add a constraint for each semester the course is available
+        assert result.constraints_added == 12  # All regular semesters
+        assert len(result.errors) == 0
+
+        solver = cp_model.CpSolver()
+        status = solver.Solve(model)
+        assert status in [cp_model.OPTIMAL, cp_model.FEASIBLE]
+
+        # Course should not be taken in any semester
+        course_idx = 0
+        for s in REGULAR_SEMESTERS:
+            assert solver.Value(take_vars[(course_idx, s)]) == 0
 
     def test_multiple_banish_same_course(self):
         """Multiple banish markers can exclude course from multiple semesters."""
