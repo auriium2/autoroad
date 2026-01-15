@@ -390,7 +390,7 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = 20
         solver.parameters.enumerate_all_solutions = False
-        solver.parameters.log_search_progress = True  # Enable OR-Tools logging for comparison
+        solver.parameters.log_search_progress = False
         num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "0"))
         solver.parameters.num_search_workers = num_workers
         print(f"[PYTHON SOLVER] Starting with num_workers={num_workers}")
