@@ -10,8 +10,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-package-lock.json
-/frontend/package-lock.json
+
 
 # testing
 /coverage
@@ -52,8 +51,6 @@ __pycache__/
 venv/
 .Python
 *.egg-info/
-package-lock.json
-
 
 .zed
 .ropeproject
