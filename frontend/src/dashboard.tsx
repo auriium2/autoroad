@@ -9,7 +9,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X } from "lucide-react";
+import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X } from "lucide-react";
+import { BugReportDialog } from "@/components/BugReportDialog";
 import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
 import { DashboardAlerts } from "@/components/DashboardAlerts";
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [isExportingGenerated, setIsExportingGenerated] = React.useState(false);
   const [isImporting, setIsImporting] = React.useState(false);
   const [viewMode, setViewMode] = React.useState<string>("default");
+  const [showBugReport, setShowBugReport] = React.useState(false);
   const [optimizationStartTime, setOptimizationStartTime] = React.useState<number | null>(null);
   const [timeElapsed, setTimeElapsed] = React.useState(0);
 
@@ -477,6 +479,18 @@ export default function Dashboard() {
         </SidebarInset>
         <StarOnGithubPopup />
         <Toaster />
+        
+        {/* Bug report button - fixed bottom left */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowBugReport(true)}
+          className="fixed bottom-4 left-4 z-50 text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-opacity"
+        >
+          <Bug className="h-4 w-4 mr-1" />
+          Send Feedback
+        </Button>
+        <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
       </div>
     </SidebarProvider>
   );

@@ -133,7 +133,7 @@ def serialize_model(
             subject_id = str(courses_df[idx, 'subject_id'])
             title = str(courses_df[idx, 'title']) if 'title' in courses_df.columns else ""
             units = int(courses_df[idx, 'total_units']) if 'total_units' in courses_df.columns else 12
-            
+
             # Collect non-null attributes
             attrs: dict[str, str] = {}
             for col in ATTRIBUTE_COLUMNS:
