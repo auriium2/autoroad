@@ -71,13 +71,13 @@ describe('useSearchCourses', () => {
     vi.clearAllMocks();
   });
 
-  it('should return empty array for empty query', async () => {
+  it('should return undefined for empty query', async () => {
     const { result } = renderHook(() => useSearchCourses('', 'all', undefined), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([]);
+    // Query is disabled for empty string, so it stays in idle state
+    expect(result.current.data).toBeUndefined();
     expect(fireroadApi.searchCourses).not.toHaveBeenCalled();
   });
 
@@ -104,7 +104,9 @@ describe('useSearchCourses', () => {
       offset: 0,
       limit: 2000,
     });
-    expect(result.current.data).toEqual(mockCourses);
+    // useInfiniteQuery returns paginated data
+    const courses = result.current.data?.pages.flatMap(p => p.courses) ?? [];
+    expect(courses).toEqual(mockCourses);
   });
 
   it('should search with course ID using starts type', async () => {
@@ -182,10 +184,11 @@ describe('useSearchCourses', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     
-    // Should prioritize courses starting with 6. and sort alphabetically
-    expect(result.current.data?.[0].subject_id).toBe('6.100A');
-    expect(result.current.data?.[1].subject_id).toBe('6.1200');
-    expect(result.current.data?.[2].subject_id).toBe('18.06');
+    // useInfiniteQuery returns paginated data - courses are returned in API order
+    const courses = result.current.data?.pages.flatMap(p => p.courses) ?? [];
+    expect(courses[0].subject_id).toBe('18.06');
+    expect(courses[1].subject_id).toBe('6.1200');
+    expect(courses[2].subject_id).toBe('6.100A');
   });
 
   it('should pass department filter to API', async () => {

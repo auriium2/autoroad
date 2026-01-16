@@ -12,7 +12,7 @@ export interface CourseFilters {
   sort?: string;
 }
 
-const COURSES_PER_PAGE = 30;
+const COURSES_PER_PAGE = 2000;
 
 export function useSearchCourses(query: string, department?: string, filters?: CourseFilters) {
   const trimmedQuery = query.trim();
