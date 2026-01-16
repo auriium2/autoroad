@@ -16,13 +16,92 @@ VIRTUAL_ITEMS: list[dict[str, Any]] = [
 ]
 
 
-def calculate_imdb_rating(rating: float | None, enrollment: int | None) -> float | None:
-    if rating is None or enrollment is None:
-        return None
-    m = 30
-    c = 5.0
-    weighted = (enrollment / (enrollment + m)) * rating + (m / (enrollment + m)) * c
-    return round(weighted, 1)
+def _matches_filters(
+    course: dict[str, Any],
+    query_lower: str | None,
+    search_type: str,
+    department: str | None,
+    gir: str | None,
+    hass: str | None,
+    ci: str | None,
+    level_code: str | None,
+    units: str | None,
+    term_key: str | None,
+) -> bool:
+    """Single-pass filter check for a course."""
+    # Search query filter
+    if query_lower is not None:
+        subject_id = (course.get("subject_id") or "").lower()
+        title = (course.get("title") or "").lower()
+        if search_type == "starts":
+            if not (subject_id.startswith(query_lower) or title.startswith(query_lower)):
+                return False
+        else:
+            if query_lower not in subject_id and query_lower not in title:
+                return False
+
+    # Department filter
+    if department:
+        subject_id = course.get("subject_id") or ""
+        if not subject_id.startswith(f"{department}."):
+            return False
+
+    # GIR filter
+    if gir:
+        if gir not in (course.get("gir_attribute") or ""):
+            return False
+
+    # HASS filter
+    if hass:
+        if hass not in (course.get("hass_attribute") or ""):
+            return False
+
+    # CI filter
+    if ci:
+        comm_req = course.get("communication_requirement")
+        if ci == "NONE":
+            if comm_req:
+                return False
+        else:
+            if ci not in (comm_req or ""):
+                return False
+
+    # Level filter
+    if level_code:
+        if course.get("level") != level_code:
+            return False
+
+    # Units filter
+    if units:
+        u = course.get("total_units") or 0
+        match units:
+            case "<6":
+                if not u < 6:
+                    return False
+            case "6":
+                if u != 6:
+                    return False
+            case "9":
+                if u != 9:
+                    return False
+            case "12":
+                if u != 12:
+                    return False
+            case "15":
+                if u != 15:
+                    return False
+            case "6+":
+                if not u >= 6:
+                    return False
+            case _:
+                pass
+
+    # Term filter
+    if term_key:
+        if not course.get(term_key):
+            return False
+
+    return True
 
 
 @router.get("/courses/search")
@@ -44,7 +123,7 @@ async def search_courses(
     units: Literal["<6", "6", "9", "12", "15", "6+"] | None = Query(None),
     term: Literal["FA", "IAP", "SP"] | None = Query(None),
 ):
-    all_courses = get_courses_data()
+    all_courses = await get_courses_data()
 
     # Find matching virtual items (always check before filtering)
     matching_virtual: list[dict[str, Any]] = []
@@ -55,93 +134,17 @@ async def search_courses(
                 or query_lower in item["title"].lower()):
                 matching_virtual.append(item)
 
-    # Filter by search query (skip if wildcard)
-    if q != "*":
-        query_lower = q.lower()
-        if search_type == "starts":
-            all_courses = [
-                c for c in all_courses
-                if (c.get("subject_id") or "").lower().startswith(query_lower)
-                or (c.get("title") or "").lower().startswith(query_lower)
-            ]
-        else:
-            all_courses = [
-                c for c in all_courses
-                if query_lower in (c.get("subject_id") or "").lower()
-                or query_lower in (c.get("title") or "").lower()
-            ]
+    # Pre-compute filter parameters
+    query_lower = q.lower() if q != "*" else None
+    dept_filter = department if department and department != "all" else None
+    level_code = "U" if level == "UG" else ("G" if level == "G" else None)
+    term_key = {"FA": "offered_fall", "IAP": "offered_IAP", "SP": "offered_spring"}.get(term) if term else None
 
-    # Filter by department
-    if department and department != "all":
-        all_courses = [
-            c for c in all_courses
-            if (c.get("subject_id") or "").startswith(f"{department}.")
-        ]
-
-    # Filter by GIR
-    if gir:
-        all_courses = [
-            c for c in all_courses
-            if gir in (c.get("gir_attribute") or "")
-        ]
-
-    # Filter by HASS
-    if hass:
-        all_courses = [
-            c for c in all_courses
-            if hass in (c.get("hass_attribute") or "")
-        ]
-
-    # Filter by CI
-    if ci:
-        if ci == "NONE":
-            all_courses = [c for c in all_courses if not c.get("communication_requirement")]
-        else:
-            all_courses = [
-                c for c in all_courses
-                if ci in (c.get("communication_requirement") or "")
-            ]
-
-    # Filter by level
-    if level:
-        level_code = "U" if level == "UG" else "G"
-        all_courses = [c for c in all_courses if c.get("level") == level_code]
-
-    # Filter by units
-    if units:
-        def units_match(c: dict[str, Any]) -> bool:
-            u = c.get("total_units") or 0
-            match units:
-                case "<6":
-                    return u < 6
-                case "6":
-                    return u == 6
-                case "9":
-                    return u == 9
-                case "12":
-                    return u == 12
-                case "15":
-                    return u == 15
-                case "6+":
-                    return u >= 6
-        all_courses = [c for c in all_courses if units_match(c)]
-
-    # Filter by term
-    if term:
-        term_key = {
-            "FA": "offered_fall",
-            "IAP": "offered_IAP",
-            "SP": "offered_spring",
-        }[term]
-        all_courses = [c for c in all_courses if c.get(term_key)]
-
-    # Enrich with IMDB rating
-    for course in all_courses:
-        if course.get("imdb_rating") is None:
-            course["imdb_rating"] = calculate_imdb_rating(
-                course.get("rating"),  # type: ignore[arg-type]
-                course.get("enrollment_number")  # type: ignore[arg-type]
-            )
+    # Single-pass filtering
+    filtered = [
+        c for c in all_courses
+        if _matches_filters(c, query_lower, search_type, dept_filter, gir, hass, ci, level_code, units, term_key)
+    ]
 
     # Sort by relevance first (exact department match), then by explicit sort if provided
     # This ensures "6.100" shows 6.100A before 16.100
@@ -153,25 +156,25 @@ async def search_courses(
             # 0 = exact match (highest priority), 1 = no match
             exact_match = 0 if course_dept == query_dept else 1
             return (exact_match, subject_id)
-        all_courses.sort(key=relevance_key)
+        filtered.sort(key=relevance_key)
 
     # Apply explicit sort (overrides relevance sort)
     if sort:
         reverse = sort.endswith("-desc")
         if "imdb-rating" in sort:
-            all_courses.sort(key=lambda c: c.get("imdb_rating") or 0, reverse=reverse)
+            filtered.sort(key=lambda c: c.get("imdb_rating") or 0, reverse=reverse)
         elif "units" in sort:
-            all_courses.sort(key=lambda c: c.get("total_units") or 0, reverse=reverse)
+            filtered.sort(key=lambda c: c.get("total_units") or 0, reverse=reverse)
         elif "enrollment" in sort:
-            all_courses.sort(key=lambda c: c.get("enrollment_number") or 0, reverse=reverse)
+            filtered.sort(key=lambda c: c.get("enrollment_number") or 0, reverse=reverse)
 
     # Prepend virtual items on first page
     if offset == 0 and matching_virtual:
-        all_courses = matching_virtual + all_courses
+        filtered = matching_virtual + filtered
 
     # Paginate
-    total = len(all_courses)
-    paginated = all_courses[offset:offset + limit]
+    total = len(filtered)
+    paginated = filtered[offset:offset + limit]
 
     return {
         "courses": paginated,
@@ -189,15 +192,10 @@ async def lookup_course(course_id: str):
         if item["subject_id"] == course_id:
             return item
 
-    all_courses = get_courses_data()
+    all_courses = await get_courses_data()
 
     for course in all_courses:
         if course.get("subject_id") == course_id:
-            if course.get("imdb_rating") is None:
-                course["imdb_rating"] = calculate_imdb_rating(
-                    course.get("rating"),  # type: ignore[arg-type]
-                    course.get("enrollment_number")  # type: ignore[arg-type]
-                )
             return course
 
     return {"error": "Course not found"}, 404
@@ -209,20 +207,12 @@ async def get_courses_by_department(
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ):
-    all_courses = get_courses_data()
+    all_courses = await get_courses_data()
 
     filtered = [
         c for c in all_courses
         if (c.get("subject_id") or "").startswith(f"{dept}.")
     ]
-
-    # Enrich with IMDB rating
-    for course in filtered:
-        if course.get("imdb_rating") is None:
-            course["imdb_rating"] = calculate_imdb_rating(
-                course.get("rating"),  # type: ignore[arg-type]
-                course.get("enrollment_number")  # type: ignore[arg-type]
-            )
 
     total = len(filtered)
     paginated = filtered[offset:offset + limit]

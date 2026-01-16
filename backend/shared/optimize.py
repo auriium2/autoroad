@@ -34,7 +34,11 @@ from shared.optimizer.objectives.builder import ObjectiveBuilder
 from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
+from shared.services.cache import (
+    get_courses_data,
+    get_parsed_prerequisites_by_index,
+    get_requirements,
+)
 from shared.utils import find_current_school_year
 
 # Attribute columns to include for frontend marker matching
@@ -265,8 +269,8 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         # Fetch data
         perf_start = time.time()
-        courses_data = get_courses_data()
-        requirements_data = get_requirements(
+        courses_data = await get_courses_data()
+        requirements_data = await get_requirements(
             tuple(request.requirements),
             requirement_sources=request.requirementSources
         )
@@ -318,7 +322,7 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         # Add prerequisite constraints
         perf_start = time.time()
-        prereq_trees = get_parsed_prerequisites(courses_df)
+        prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
         override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
         add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
         perf_timings['prerequisites'] = time.time() - perf_start

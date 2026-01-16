@@ -214,12 +214,12 @@ name = "autoroad-backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "cachetools" },
+    { name = "cashews" },
     { name = "claude-agent-sdk" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "ortools" },
     { name = "polars" },
-    { name = "requests" },
     { name = "uvicorn" },
 ]
 
@@ -237,6 +237,7 @@ dev = [
     { name = "hypothesis", version = "6.148.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10.2'" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "requests" },
     { name = "ruff" },
 ]
 modal = [
@@ -257,11 +258,12 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "basedpyright", marker = "extra == 'dev'", specifier = ">=1.33.0" },
-    { name = "cachetools", specifier = ">=6.2.2" },
+    { name = "cashews", specifier = ">=7.0.0" },
     { name = "claude-agent-sdk", specifier = ">=0.1.10" },
     { name = "fastapi", specifier = ">=0.121.1" },
     { name = "fastapi-cli", marker = "extra == 'all'", specifier = ">=0.0.16" },
     { name = "fastapi-cli", marker = "extra == 'server'", specifier = ">=0.0.16" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "httpx", marker = "extra == 'all'", specifier = ">=0.27.0" },
     { name = "httpx", marker = "extra == 'server'", specifier = ">=0.27.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.0.0" },
@@ -273,7 +275,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dotenv", marker = "extra == 'all'", specifier = ">=1.0.0" },
     { name = "python-dotenv", marker = "extra == 'server'", specifier = ">=1.0.0" },
-    { name = "requests", specifier = ">=2.32.0" },
+    { name = "requests", marker = "extra == 'dev'", specifier = ">=2.32.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
     { name = "uvicorn", specifier = ">=0.38.0" },
     { name = "uvloop", marker = "extra == 'all'", specifier = ">=0.21.0" },
@@ -296,12 +298,12 @@ wheels = [
 ]
 
 [[package]]
-name = "cachetools"
-version = "6.2.2"
+name = "cashews"
+version = "7.4.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/fb/44/ca1675be2a83aeee1886ab745b28cda92093066590233cc501890eb8417a/cachetools-6.2.2.tar.gz", hash = "sha256:8e6d266b25e539df852251cfd6f990b4bc3a141db73b939058d809ebd2590fc6", size = 31571 }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/5d/26eb556824a7ac9e24f751645961d2078b7b15be105f7fc39eda5308896f/cashews-7.4.4.tar.gz", hash = "sha256:dca761c60192bfe354abd6e9eb98d6f62c817e675df3fbe7d1bdfaa4303d1320", size = 92948 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/46/eb6eca305c77a4489affe1c5d8f4cae82f285d9addd8de4ec084a7184221/cachetools-6.2.2-py3-none-any.whl", hash = "sha256:6c09c98183bf58560c97b2abfcedcbaf6a896a490f534b031b661d3723b45ace", size = 11503 },
+    { url = "https://files.pythonhosted.org/packages/bf/65/29d94c27dfa3cdb213ae62a328c6efe6cd37b888d334e90ecaa22eadafe9/cashews-7.4.4-py3-none-any.whl", hash = "sha256:d5b8fc3cb590ed388823388b972947fd5659e2a94109af107cb508a3240f5ef0", size = 79893 },
 ]
 
 [[package]]
@@ -2531,11 +2533,11 @@ wheels = [
 
 [[package]]
 name = "urllib3"
-version = "2.5.0"
+version = "2.6.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/15/22/9ee70a2574a4f4599c47dd506532914ce044817c7752a79b6a51286319bc/urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760", size = 393185 }
+sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/c2/fe1e52489ae3122415c51f387e221dd0773709bad6c6cdaa599e8a2c5185/urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc", size = 129795 },
+    { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584 },
 ]
 
 [[package]]

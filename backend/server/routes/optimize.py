@@ -14,7 +14,11 @@ from shared.optimizer.constraints.basic import create_take_vars
 from shared.optimizer.constraints.registry import get_all_constraints
 from shared.optimizer.objectives.registry import get_all_objectives, get_default_objectives
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.services.cache import get_courses_data, get_requirements
+from shared.services.cache import (
+    get_courses_data,
+    get_parsed_prerequisites_by_index,
+    get_requirements,
+)
 from shared.utils import find_current_school_year
 
 router = APIRouter()
@@ -58,14 +62,14 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
     from shared.optimizer.objectives.registry import get_default_objectives, instantiate_objective
     from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
     from shared.optimizer.requirements.builder import add_requirement_constraints
-    from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
+    from shared.services.cache import get_courses_data, get_requirements
 
     try:
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10})}\n\n"
 
         # Fetch data
-        courses_data = get_courses_data()
-        requirements_data = get_requirements(
+        courses_data = await get_courses_data()
+        requirements_data = await get_requirements(
             tuple(request.requirements),
             requirement_sources=request.requirementSources
         )
@@ -110,7 +114,7 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
 
         # Add prerequisite constraints
-        prereq_trees = get_parsed_prerequisites(courses_df)
+        prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
         override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
         add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
 
@@ -269,9 +273,8 @@ async def get_course_categories(request: OptimizationRequest):
     This is used by the frontend to display category tier stars on courses.
     """
     try:
-        loop = asyncio.get_event_loop()
-        courses_data = await loop.run_in_executor(None, get_courses_data)
-        requirements_data = await loop.run_in_executor(None, get_requirements, tuple(request.requirements))
+        courses_data = await get_courses_data()
+        requirements_data = await get_requirements(tuple(request.requirements))
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
         planning_year = request.planningYear
@@ -301,6 +304,7 @@ async def get_course_categories(request: OptimizationRequest):
                                 course_to_requirements[course_idx].update(req_paths)
             return course_to_requirements
 
+        loop = asyncio.get_event_loop()
         course_to_requirements = await loop.run_in_executor(None, build_mappings)
 
         result = {}

@@ -13,6 +13,9 @@ class CourseSchedule:
     Represents the available courses and their scheduling information.
     Pre-computes indexes for O(1) lookups.
     """
+    _instance: "CourseSchedule | None" = None
+    _df_id: int | None = None
+
     courses_df: pl.DataFrame
     planning_year_start: int
     _course_id_to_index: dict[str, int]
@@ -46,6 +49,15 @@ class CourseSchedule:
                     if hass not in self._hass_to_courses:
                         self._hass_to_courses[hass] = []
                     self._hass_to_courses[hass].append(i)
+
+    @classmethod
+    def get(cls, courses_df: pl.DataFrame, planning_year_start: int) -> "CourseSchedule":
+        """Get or create a cached CourseSchedule instance."""
+        df_id = id(courses_df)
+        if cls._instance is None or cls._df_id != df_id:
+            cls._instance = cls(courses_df, planning_year_start)
+            cls._df_id = df_id
+        return cls._instance
 
     def get_course_index(self, course_id: str) -> int | None:
         return self._course_id_to_index.get(course_id)
@@ -423,7 +435,7 @@ def add_prerequisite_constraints(
         if course_id not in override_course_ids:
             filtered_prereq_trees[course_idx] = prereq_tree
 
-    schedule = CourseSchedule(courses_df, planning_year_start)
+    schedule = CourseSchedule.get(courses_df, planning_year_start)
     ctx = ConstraintContext(model, take_vars, schedule)
     builder = PrerequisiteConstraintBuilder(ctx)
 
