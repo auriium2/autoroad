@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,10 +35,13 @@ const ALL_FILTERS = [
   { id: "sort:enrollment-desc", label: "Enrollment ↓", category: "Sort" },
 ];
 
+// Estimated row height: 100px card + 8px gap
+const ESTIMATED_ROW_HEIGHT = 108;
+
 export function CourseSearchTab() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeFilters, setActiveFilters] = React.useState<Set<string>>(new Set());
-  const loadMoreRef = React.useRef<HTMLDivElement>(null);
+  const parentRef = React.useRef<HTMLDivElement>(null);
 
   const selectedDepartment = React.useMemo(() => {
     const deptFilter = Array.from(activeFilters).find(f => f.startsWith("dept:"));
@@ -81,22 +85,29 @@ export function CourseSearchTab() {
 
   const totalCount = data?.pages[0]?.total ?? 0;
 
-  // Intersection observer for infinite scroll
+  // Virtual list setup
+  const virtualizer = useVirtualizer({
+    count: courses.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ESTIMATED_ROW_HEIGHT,
+    overscan: 5,
+  });
+
+  // Fetch more when scrolling near the end
   React.useEffect(() => {
-    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(loadMoreRef.current);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    const items = virtualizer.getVirtualItems();
+    if (items.length === 0) return;
+    
+    const lastItem = items[items.length - 1];
+    if (
+      lastItem &&
+      lastItem.index >= courses.length - 5 &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [virtualizer.getVirtualItems(), courses.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const createDragPreview = (courseId: string, units: number) => {
     const preview = document.createElement('div');
@@ -163,7 +174,7 @@ export function CourseSearchTab() {
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div ref={parentRef} className="flex-1 overflow-y-auto">
         <div className="text-xs text-muted-foreground mb-2">
           Drag circles (course nodes) to add them
         </div>
@@ -177,14 +188,40 @@ export function CourseSearchTab() {
             Failed to load courses
           </div>
         )}
-        {!isLoading && !isError && courses.map((course) => (
-          <CourseCard
-            key={course.subject_id}
-            course={course}
-            onDragStart={handleCourseStart}
-            onDragEnd={handleDragEnd}
-          />
-        ))}
+        {!isLoading && !isError && courses.length > 0 && (
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const course = courses[virtualRow.index];
+              return (
+                <div
+                  key={course.subject_id}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div className="pb-2">
+                    <CourseCard
+                      course={course}
+                      onDragStart={handleCourseStart}
+                      onDragEnd={handleDragEnd}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
         {!isLoading && !isError && courses.length === 0 && (
           <div className="text-center text-sm text-muted-foreground py-8">
             {searchQuery === "" && selectedDepartment === "all" ? (
@@ -198,7 +235,7 @@ export function CourseSearchTab() {
           </div>
         )}
         {!isLoading && !isError && hasNextPage && (
-          <div ref={loadMoreRef} className="text-center py-4 text-xs text-muted-foreground/50">
+          <div className="text-center py-4 text-xs text-muted-foreground/50">
             {isFetchingNextPage ? "Loading more..." : `${totalCount - courses.length} more courses...`}
           </div>
         )}
