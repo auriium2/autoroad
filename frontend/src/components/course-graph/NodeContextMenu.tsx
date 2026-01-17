@@ -1,76 +1,111 @@
-
 import * as React from "react";
-import * as ContextMenu from "@radix-ui/react-context-menu";
-import { Pin, Ban, Trash2 } from "lucide-react";
-import type { CourseNode } from "@/types";
+import { Pin, Ban, Trash2, Unlink } from "lucide-react";
+import type { CourseNode } from "@/stores/roadStore";
+
+interface ContextMenuState {
+  nodeUuid: string;
+  x: number;
+  y: number;
+}
 
 interface NodeContextMenuProps {
-  node: CourseNode;
-  onPin: () => void;
-  onBanish: () => void;
-  onRemove: () => void;
-  children: React.ReactNode;
+  contextMenu: ContextMenuState | null;
+  storeNodes: CourseNode[];
+  onPin: (nodeId: string) => void;
+  onOverride: (nodeId: string) => void;
+  onBanish: (nodeId: string) => void;
+  onRemove: (nodeId: string) => void;
+  onConvertToMarker: (nodeId: string) => void;
 }
 
 export function NodeContextMenu({
-  node,
+  contextMenu,
+  storeNodes,
   onPin,
+  onOverride,
   onBanish,
   onRemove,
-  children,
+  onConvertToMarker,
 }: NodeContextMenuProps) {
-  // Only show context menu for user-controlled nodes
-  if (!node.userControlled) {
-    return <>{children}</>;
-  }
+  if (!contextMenu) return null;
 
+  const node = storeNodes.find(n => n.uuid === contextMenu.nodeUuid);
+  if (!node) return null;
+
+  const isUserControlled = node.userControlled;
   const currentStatus = node.nodeStatus || 'pin';
+  const isInMustTake = node.section === -2;
+  const isInASE = node.section === -1;
 
   return (
-    <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>
-        {children}
-      </ContextMenu.Trigger>
-
-      <ContextMenu.Portal>
-        <ContextMenu.Content
-          className="min-w-[180px] bg-card border border-border rounded-md shadow-lg p-1 z-50"
-        >
-          <ContextMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 focus:bg-muted/50 transition-colors data-[disabled]:opacity-50 data-[disabled]:pointer-events-none"
-            onSelect={onPin}
+    <div
+      className="fixed bg-popover/95 border border-border rounded-lg shadow-lg backdrop-blur-md p-1"
+      style={{
+        top: contextMenu.y,
+        left: contextMenu.x,
+        zIndex: 10000,
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {isUserControlled ? (
+        <>
+          <button
+            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => onPin(contextMenu.nodeUuid)}
             disabled={currentStatus === 'pin'}
           >
-            <Pin className="w-4 h-4" />
+            <Pin className="w-3 h-3" />
             <span>Pin (default)</span>
             {currentStatus === 'pin' && (
-              <span className="ml-auto text-xs text-muted-foreground">✓</span>
+              <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
             )}
-          </ContextMenu.Item>
+          </button>
 
-          <ContextMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-muted/50 focus:bg-muted/50 transition-colors data-[disabled]:opacity-50 data-[disabled]:pointer-events-none"
-            onSelect={onBanish}
-            disabled={currentStatus === 'banish'}
+          <button
+            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => onOverride(contextMenu.nodeUuid)}
+            disabled={currentStatus === 'override' || isInMustTake}
+            title={isInMustTake ? "Override not available in Must Take - move to a specific semester" : undefined}
           >
-            <Ban className="w-4 h-4" />
-            <span>Banish</span>
+            <Unlink className="w-3 h-3" />
+            <span>Pin + ignore prerequisites</span>
+            {currentStatus === 'override' && (
+              <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
+            )}
+          </button>
+
+          <button
+            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => onBanish(contextMenu.nodeUuid)}
+            disabled={currentStatus === 'banish' || isInASE}
+            title={isInASE ? "Banish not available in ASE" : undefined}
+          >
+            <Ban className="w-3 h-3" />
+            <span>{isInMustTake ? "Banish (never take)" : "Banish"}</span>
             {currentStatus === 'banish' && (
-              <span className="ml-auto text-xs text-muted-foreground">✓</span>
+              <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
             )}
-          </ContextMenu.Item>
+          </button>
 
-          <ContextMenu.Separator className="h-px bg-border my-1" />
+          <div className="h-px bg-border/50 my-0.5" />
 
-          <ContextMenu.Item
-            className="flex items-center gap-2 px-3 py-2 text-sm rounded cursor-pointer outline-none hover:bg-destructive/10 focus:bg-destructive/10 text-destructive transition-colors"
-            onSelect={onRemove}
+          <button
+            className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-destructive/10 text-destructive transition-colors w-full text-left"
+            onClick={() => onRemove(contextMenu.nodeUuid)}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3" />
             <span>Remove marker</span>
-          </ContextMenu.Item>
-        </ContextMenu.Content>
-      </ContextMenu.Portal>
-    </ContextMenu.Root>
+          </button>
+        </>
+      ) : (
+        <button
+          className="flex items-center gap-1.5 px-2 py-1 text-xs rounded cursor-pointer outline-none hover:bg-muted/50 transition-colors w-full text-left"
+          onClick={() => onConvertToMarker(contextMenu.nodeUuid)}
+        >
+          <Pin className="w-3 h-3" />
+          <span>Convert to marker</span>
+        </button>
+      )}
+    </div>
   );
 }
