@@ -45,7 +45,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = React.useState<string>("default");
   const [showBugReport, setShowBugReport] = React.useState(false);
   const [optimizationStartTime, setOptimizationStartTime] = React.useState<number | null>(null);
-  const [timeElapsed, setTimeElapsed] = React.useState(0);
+  const timeoutCircleRef = React.useRef<SVGCircleElement>(null);
 
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
@@ -96,16 +96,19 @@ export default function Dashboard() {
       setOptimizationStartTime(Date.now());
     } else if (!isOptimizing && optimizationStartTime) {
       setOptimizationStartTime(null);
-      setTimeElapsed(0);
       return;
     }
 
-    // Update elapsed time
     if (!isOptimizing || !optimizationStartTime) return;
 
     let rafId: number;
+    const circumference = 2 * Math.PI * 4;
     const updateTime = () => {
-      setTimeElapsed((Date.now() - optimizationStartTime) / 1000);
+      const elapsed = (Date.now() - optimizationStartTime) / 1000;
+      if (timeoutCircleRef.current) {
+        const offset = circumference * (1 - Math.min(elapsed / SOLVER_TIMEOUT_SECONDS, 1));
+        timeoutCircleRef.current.setAttribute('stroke-dashoffset', String(offset));
+      }
       rafId = requestAnimationFrame(updateTime);
     };
 
@@ -417,6 +420,7 @@ export default function Dashboard() {
                             />
                             {/* Timeout progress*/}
                             <circle
+                              ref={timeoutCircleRef}
                               cx="8"
                               cy="8"
                               r="4"
@@ -424,8 +428,7 @@ export default function Dashboard() {
                               strokeWidth="2"
                               fill="none"
                               strokeDasharray={`${2 * Math.PI * 4}`}
-                              strokeDashoffset={`${2 * Math.PI * 4 * (1 - Math.min(timeElapsed / SOLVER_TIMEOUT_SECONDS, 1))}`}
-                              className="transition-all duration-100"
+                              strokeDashoffset={`${2 * Math.PI * 4}`}
                             />
                           </svg>
                         </div>
