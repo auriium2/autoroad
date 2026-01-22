@@ -110,9 +110,16 @@ WorkerRequest parse_request(const std::string& body) {
         request.courses_metadata.push_back(meta);
     }
 
-    if (j.contains("objective_components")) {
-        for (const auto& [key, value] : j["objective_components"].items()) {
-            request.objective_components[key] = value.get<std::vector<int>>();
+    if (j.contains("objective_components") && j["objective_components"].is_array()) {
+        for (const auto& comp : j["objective_components"]) {
+            ObjectiveComponent oc;
+            oc.name = comp["name"].get<std::string>();
+            oc.var_indices = comp["var_indices"].get<std::vector<int>>();
+            oc.coefficients = comp["coefficients"].get<std::vector<int64_t>>();
+            if (comp.contains("offset")) {
+                oc.offset = comp["offset"].get<int64_t>();
+            }
+            request.objective_components.push_back(std::move(oc));
         }
     }
 
@@ -147,6 +154,14 @@ int main(int argc, char* argv[]) {
 
     // Solve endpoint with SSE streaming
     svr.Post("/solve", [](const httplib::Request& req, httplib::Response& res) {
+        // Check auth
+        const char* expected_secret = std::getenv("WORKER_SECRET");
+        if (expected_secret && req.get_header_value("X-Worker-Secret") != expected_secret) {
+            res.status = 401;
+            res.set_content(R"({"error":"unauthorized"})", "application/json");
+            return;
+        }
+        
         active_solves++;
         update_activity();
         res.set_header("Connection", "close");

@@ -24,11 +24,18 @@ struct SolverParams {
     int num_workers = 8;
 };
 
+struct ObjectiveComponent {
+    std::string name;
+    std::vector<int> var_indices;
+    std::vector<int64_t> coefficients;
+    int64_t offset = 0;
+};
+
 struct WorkerRequest {
     std::string cpmodel_proto_base64;
     std::vector<VariableInfo> variable_mapping;
     std::vector<CourseMetadata> courses_metadata;
-    std::unordered_map<std::string, std::vector<int>> objective_components;
+    std::vector<ObjectiveComponent> objective_components;
     SolverParams solver_params;
 };
 

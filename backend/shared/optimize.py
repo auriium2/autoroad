@@ -70,12 +70,30 @@ class CourseMetadata:
 
 
 @dataclass
+class ObjectiveComponent:
+    """Serialized objective component for cost breakdown."""
+    name: str
+    var_indices: list[int]
+    coefficients: list[int]
+    offset: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "var_indices": self.var_indices,
+            "coefficients": self.coefficients,
+            "offset": self.offset,
+        }
+
+
+@dataclass
 class SerializedModel:
     """Serialized CpModel with metadata for C++ worker."""
     cpmodel_proto: bytes
     variable_mapping: list[VariableInfo]
     courses_metadata: list[CourseMetadata]
     solver_params: dict[str, Any]
+    objective_components: list[ObjectiveComponent]
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -83,6 +101,7 @@ class SerializedModel:
             "variable_mapping": [v.to_dict() for v in self.variable_mapping],
             "courses_metadata": [c.to_dict() for c in self.courses_metadata],
             "solver_params": self.solver_params,
+            "objective_components": [c.to_dict() for c in self.objective_components],
         }
 
     def to_json(self) -> str:
@@ -93,6 +112,7 @@ def serialize_model(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
     courses_df: pl.DataFrame,
+    builder: "ObjectiveBuilder",
     max_time_seconds: float = 20.0,
     num_workers: int = 8,
 ) -> SerializedModel:
@@ -103,6 +123,7 @@ def serialize_model(
     1. The CpModel protobuf (the mathematical structure)
     2. Variable mapping: which variable index corresponds to which (course_idx, semester)
     3. Course metadata: subject_id, title, units for each course_idx
+    4. Objective components: coefficients for cost breakdown calculation
     """
     # Serialize the model to protobuf bytes
     proto = model.Proto()
@@ -157,11 +178,23 @@ def serialize_model(
         "num_workers": num_workers,
     }
 
+    # Serialize objective components for cost breakdown
+    objective_components: list[ObjectiveComponent] = []
+    for name, expr in builder.component_expressions:
+        linear_expr_proto = model.parse_linear_expression(expr)
+        objective_components.append(ObjectiveComponent(
+            name=name,
+            var_indices=list(linear_expr_proto.vars),
+            coefficients=list(linear_expr_proto.coeffs),
+            offset=linear_expr_proto.offset,
+        ))
+
     return SerializedModel(
         cpmodel_proto=cpmodel_proto,
         variable_mapping=variable_mapping,
         courses_metadata=courses_metadata,
         solver_params=solver_params,
+        objective_components=objective_components,
     )
 
 

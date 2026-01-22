@@ -124,7 +124,7 @@ void Solver::solve() {
     // Configure solver parameters - match Python behavior
     SatParameters params;
     params.set_max_time_in_seconds(request_.solver_params.max_time_seconds);
-    params.set_num_workers(0);  // Auto-detect CPU count
+    params.set_num_workers(request_.solver_params.num_workers);
     params.set_enumerate_all_solutions(false);
     params.set_log_search_progress(false);
 
@@ -157,6 +157,18 @@ void Solver::solve() {
                     event.nodes.push_back(std::move(node));
                 }
             }
+        }
+
+        // Calculate cost breakdown from objective components
+        for (const auto& component : request_.objective_components) {
+            int64_t cost = component.offset;
+            for (size_t j = 0; j < component.var_indices.size(); j++) {
+                int var_idx = component.var_indices[j];
+                if (var_idx >= 0 && var_idx < response.solution_size()) {
+                    cost += component.coefficients[j] * response.solution(var_idx);
+                }
+            }
+            event.cost_breakdown[component.name] = static_cast<double>(cost);
         }
 
         emit_solution(event);
