@@ -54,7 +54,15 @@ Solver::Solver(const WorkerRequest& request, EventCallback on_event)
 
 bool Solver::deserialize_model() {
     auto proto_bytes = base64_decode(request_.cpmodel_proto_base64);
-    return model_proto_.ParseFromArray(proto_bytes.data(), static_cast<int>(proto_bytes.size()));
+    if (!model_proto_.ParseFromArray(proto_bytes.data(), static_cast<int>(proto_bytes.size()))) {
+        return false;
+    }
+
+    //indexing
+    for (size_t i = 0; i < request_.variable_mapping.size(); i++) {
+        var_idx_to_mapping_idx_[request_.variable_mapping[i].var_index] = i;
+    }
+    return true;
 }
 
 void Solver::emit_progress(const std::string& message, int step, int total_steps) {
@@ -131,20 +139,23 @@ void Solver::solve() {
         SolutionEvent event;
         event.solution_number = solution_count;
         event.objective_value = response.objective_value();
+        event.nodes.reserve(50);
 
         // Extract assigned courses from solution
-        // response.solution(i) gives the value of variable at index i
-        for (const auto& var_info : request_.variable_mapping) {
-            // Boolean variable: value is 0 or 1
-            if (response.solution(var_info.var_index) == 1) {
-                const auto& course = request_.courses_metadata[var_info.course_idx];
-                SolutionNode node;
-                node.course_id = course.subject_id;
-                node.section = var_info.semester >= 0 ? var_info.semester - 1 : var_info.semester;
-                node.title = course.title;
-                node.units = course.units;
-                node.attributes = course.attributes;
-                event.nodes.push_back(std::move(node));
+        for (int i = 0; i < response.solution_size(); i++) {
+            if (response.solution(i) == 1) {
+                auto it = var_idx_to_mapping_idx_.find(i);
+                if (it != var_idx_to_mapping_idx_.end()) {
+                    const auto& var_info = request_.variable_mapping[it->second];
+                    const auto& course = request_.courses_metadata[var_info.course_idx];
+                    SolutionNode node;
+                    node.course_id = course.subject_id;
+                    node.section = var_info.semester >= 0 ? var_info.semester - 1 : var_info.semester;
+                    node.title = course.title;
+                    node.units = course.units;
+                    node.attributes = course.attributes;
+                    event.nodes.push_back(std::move(node));
+                }
             }
         }
 

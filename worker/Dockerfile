@@ -27,10 +27,8 @@ WORKDIR /app
 COPY CMakeLists.txt .
 COPY src/ src/
 
-# Build with maximum optimizations - the key is -march=x86-64-v3 for modern CPU features
-# and PGO-like flags for better branch prediction
+
 RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG -march=x86-64-v3 -mtune=skylake -flto=auto -ffast-math -funroll-loops -fomit-frame-pointer" \
     && cmake --build build --parallel \
     && strip --strip-all build/worker
 

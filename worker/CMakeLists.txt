@@ -5,8 +5,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Aggressive optimizations
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -flto -ffast-math")
+
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -flto=auto -ffast-math -funroll-loops -fomit-frame-pointer" CACHE STRING "Release flags" FORCE)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 # Find OR-Tools
@@ -37,5 +37,3 @@ target_link_libraries(worker
 )
 
 target_include_directories(worker PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include "types.hpp"
 #include "ortools/sat/cp_model.h"
 #include "ortools/sat/cp_model.pb.h"
@@ -19,7 +20,8 @@ public:
 private:
     const WorkerRequest& request_;
     EventCallback on_event_;
-    operations_research::sat::CpModelProto model_proto_; //sent from the core
+    operations_research::sat::CpModelProto model_proto_;
+    std::unordered_map<int, size_t> var_idx_to_mapping_idx_;
 
     bool deserialize_model();
     void emit_progress(const std::string& message, int step, int total_steps);
