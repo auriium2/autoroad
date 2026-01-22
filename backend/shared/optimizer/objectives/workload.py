@@ -76,10 +76,6 @@ class LimitClassesPerSemester:
             for (course_idx, semester), var in take_vars.items():
                 course_id = subject_ids[course_idx]
 
-                # Skip courses with user markers - they explicitly want these
-                if course_id and course_id in marked_course_ids:
-                    continue
-
                 if semester == sem:
                     classes_in_semester.append(var)
 
