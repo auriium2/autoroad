@@ -147,6 +147,7 @@ int main(int argc, char* argv[]) {
 
     // Solve endpoint with SSE streaming
     svr.Post("/solve", [](const httplib::Request& req, httplib::Response& res) {
+        active_solves++;
         update_activity();
         res.set_header("Connection", "close");
         res.set_header("Cache-Control", "no-cache");
@@ -164,7 +165,6 @@ int main(int argc, char* argv[]) {
             res.set_chunked_content_provider(
                 "text/event-stream",
                 [request = std::move(request), start_time](size_t /*offset*/, httplib::DataSink& sink) {
-                    active_solves++;
                     int solution_count = 0;
                     autoroad::Solver solver(request, [&sink, &solution_count](const std::string& event_type, const std::string& data) {
                         std::string sse_event = "data: " + data + "\n\n";
@@ -188,6 +188,7 @@ int main(int argc, char* argv[]) {
                 }
             );
         } catch (const std::exception& e) {
+            active_solves--;
             std::cout << "[solve] Error: " << e.what() << std::endl;
             std::cout.flush();
             json error = {{"type", "error"}, {"error", e.what()}};
@@ -209,7 +210,7 @@ int main(int argc, char* argv[]) {
     std::cout.flush();
 
     //Begin autosuspend
-    std::thread suspend_thread(fly_suspend_thread, 10);
+    std::thread suspend_thread(fly_suspend_thread, 3);
     suspend_thread.detach();
 
     // Short keep-alive timeout
