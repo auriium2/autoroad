@@ -201,9 +201,10 @@ class CachedCourseData:
 
     def get_requirements(self, requirement_keys: tuple[str, ...]) -> dict[str, Any]:
         """Get requirements, caching results for repeated calls."""
+        import asyncio
         if requirement_keys not in self._requirements_cache:
             from shared.services.cache import get_requirements
-            self._requirements_cache[requirement_keys] = get_requirements(requirement_keys)
+            self._requirements_cache[requirement_keys] = asyncio.run(get_requirements(requirement_keys))
         return self._requirements_cache[requirement_keys]
 
 
@@ -221,11 +222,12 @@ def cached_course_data() -> CachedCourseData:
             prereq_trees = cached_course_data.prereq_trees
             requirements = cached_course_data.get_requirements(('major6-3new', 'girs'))
     """
-    from shared.services.cache import get_courses_data, get_parsed_prerequisites
+    import asyncio
+    from shared.services.cache import get_courses_data, get_parsed_prerequisites_by_index
 
-    courses_data = get_courses_data()
+    courses_data = asyncio.run(get_courses_data())
     courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-    prereq_trees = get_parsed_prerequisites(courses_df)
+    prereq_trees = asyncio.run(get_parsed_prerequisites_by_index(courses_df))
 
     return CachedCourseData(
         courses_df=courses_df,

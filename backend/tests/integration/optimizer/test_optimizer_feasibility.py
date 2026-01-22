@@ -323,6 +323,7 @@ class TestRegressionBugs:
         from shared.courses.requirements.parser import parse
         from shared.courses.requirements.types import SubjectThresholdGroup
         from shared.optimizer.requirements.builder import build_constraints
+        import asyncio
         from shared.services.cache import get_courses_data
 
         # Create a minimal test case that replicates the bug structure:
@@ -357,7 +358,7 @@ class TestRegressionBugs:
         assert isinstance(req_tree, SubjectThresholdGroup)
 
         # Load real course data
-        courses_data = get_courses_data()
+        courses_data = asyncio.run(get_courses_data())
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
         # Create model
@@ -426,6 +427,7 @@ class TestRegressionBugs:
         from ortools.sat.python import cp_model
 
         from shared.courses.requirements.parser import parse
+        import asyncio
         from shared.courses.requirements.types import AllGroup
         from shared.models.requests import Marker
         from shared.optimizer.constraints.basic import create_take_vars
@@ -442,7 +444,7 @@ class TestRegressionBugs:
         assert isinstance(req_tree, AllGroup)
 
         # Load real course data
-        courses_data = get_courses_data()
+        courses_data = asyncio.run(get_courses_data())
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
         # Create a marker placing 18.01 in ASE (section=-1)

@@ -16,7 +16,7 @@ from shared.optimizer.constraints.basic import add_basic_constraints, create_tak
 from shared.optimizer.objectives.builder import ObjectiveBuilder
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.services.cache import get_courses_data, get_parsed_prerequisites, get_requirements
+from shared.services.cache import get_courses_data, get_parsed_prerequisites_by_index, get_requirements
 
 
 @pytest.mark.e2e
@@ -66,11 +66,12 @@ def test_feasibility_bug_major_6_3_with_markers():
     ]
 
     # Get data
-    courses_data = get_courses_data()
+    import asyncio
+    courses_data = asyncio.run(get_courses_data())
     courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
 
-    requirements_data = get_requirements(('major6-3new', 'girs'))
-    prereq_trees = get_parsed_prerequisites(courses_df)
+    requirements_data = asyncio.run(get_requirements(('major6-3new', 'girs')))
+    prereq_trees = asyncio.run(get_parsed_prerequisites_by_index(courses_df))
 
     # Create model
     model = cp_model.CpModel()
