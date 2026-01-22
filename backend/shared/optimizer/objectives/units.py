@@ -122,10 +122,6 @@ class AvoidSmallClasses:
             course_id = subject_ids[course_idx]
             units = units_list[course_idx]
 
-            # Skip courses with user markers - they explicitly want these
-            if course_id and course_id in marked_course_ids:
-                continue
-
             if units is not None and units < self.min_units:
                 # Penalize taking this small class with tier-based penalty
                 terms.append(var * penalty)
