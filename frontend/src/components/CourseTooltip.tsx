@@ -180,7 +180,7 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
               )}
 
               {/* Attributes */}
-              {(courseDetails.level || courseDetails.gir_attribute || courseDetails.hass_attribute) && (
+              {(courseDetails.level || courseDetails.gir_attribute || courseDetails.hass_attribute || courseDetails.has_final) && (
                 <div className="flex gap-1.5 flex-wrap">
                   {courseDetails.level && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
@@ -195,6 +195,11 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                   {courseDetails.hass_attribute && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-200/80">
                       HASS
+                    </span>
+                  )}
+                  {courseDetails.has_final && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/30 text-yellow-300">
+                      Has Final
                     </span>
                   )}
                 </div>

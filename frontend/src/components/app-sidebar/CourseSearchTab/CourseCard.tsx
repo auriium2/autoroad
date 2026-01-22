@@ -87,7 +87,13 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
 
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0 flex flex-col">
-          <div className="font-medium text-sm mb-0.5">{course.subject_id}</div>
+          <div className="font-medium text-sm mb-0.5">
+            {course.has_final ? (
+              <span className="bg-yellow-500/30 px-1 -mx-1 rounded-sm">{course.subject_id}</span>
+            ) : (
+              course.subject_id
+            )}
+          </div>
           <div className="text-xs text-muted-foreground line-clamp-2 mb-2">
             {course.title}
           </div>

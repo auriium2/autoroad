@@ -43,6 +43,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Fetch course details to get units and term availability
   const { data: courseDetails } = useCourseDetails(courseId);
   const units = courseDetails?.total_units || 12; // Default to 12 if not available
+  const hasFinal = courseDetails?.has_final ?? false;
 
   // Combine explicit optimizerAgreed prop with HASS marker satisfaction (but use different styling)
   const optimizerAgreed = node.optimizerAgreed;
@@ -247,7 +248,11 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
 
       {/* Course ID label below */}
       <div className={`text-xs font-medium text-center mt-2 ${isBanished ? 'text-red-400' : textColor}`}>
-        {courseId}
+        {hasFinal ? (
+          <span className="bg-yellow-500/30 px-1 rounded-sm">{courseId}</span>
+        ) : (
+          courseId
+        )}
       </div>
 
       {/* Course name in friendly mode - absolute positioned to not affect node width */}
