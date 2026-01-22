@@ -90,7 +90,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         name="Minimize Finals Load",
         description="Penalize semesters with too many finals",
         has_parameters=True,
-        default_parameters={"max_finals": 4},
+        default_parameters={"max_finals": 2},
         parameter_types={"max_finals": int},
         category="workload",
         default_tier=1,
@@ -226,7 +226,6 @@ def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
         ("limit_classes_per_semester", {"max_classes": 4}),
         ("avoid_small_classes", {"min_units": 3}),
         ("avoid_special_classes", {}),
-        ("minimum_classes_per_semester", {"min_classes": 2}),
         ("category_rewards", {"max_courses_per_category": 20, "decay_rate": 0.70}),
         ("discourage_equivalent_courses", {"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}}),
     ]

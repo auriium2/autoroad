@@ -250,6 +250,7 @@ function CourseGraphFlowInner({
     <div
       className={`h-full w-full rounded-md ${borderClass} bg-muted/30 relative`}
       style={{ overflow: 'hidden' }}
+      data-tutorial="graph"
     >
       <ReactFlow
         nodes={nodes}

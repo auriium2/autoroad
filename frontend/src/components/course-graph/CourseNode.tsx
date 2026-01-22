@@ -165,6 +165,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       <CourseTooltip courseId={courseId} disabled={disableTooltip}>
         <div
           data-node-circle={node.uuid}
+          data-course-id={courseId}
+          data-tutorial="course-node"
           className="relative w-9 h-9 rounded-full cursor-pointer"
           style={glowStyle}
           role="button"

@@ -20,7 +20,7 @@ export function AppSidebar({ viewMode, ...props }: AppSidebarProps) {
     <Sidebar variant="sidebar" className="z-40" {...props}>
       <SidebarHeader>
         {/* Header with Tabs */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border" data-tutorial="sidebar-tabs">
           <button
             onClick={() => setActiveTab('courses')}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${

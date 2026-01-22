@@ -129,7 +129,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
   const filteredCoursesB = courseB.length > 0 ? coursesB.slice(0, 10) : [];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-tutorial="equivalency-manager">
       {/* Add new equivalency */}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-1.5 items-center">
         {/* Course A Input with Autocomplete */}

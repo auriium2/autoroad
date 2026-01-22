@@ -148,7 +148,10 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
               width: `${COLUMN_WIDTH}px`,
             }}
           >
-            <span className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap">
+            <span 
+              className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap"
+              data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+            >
               {section.title}
             </span>
           </div>

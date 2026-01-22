@@ -97,7 +97,7 @@ export function CourseSearchTab() {
   React.useEffect(() => {
     const items = virtualizer.getVirtualItems();
     if (items.length === 0) return;
-    
+
     const lastItem = items[items.length - 1];
     if (
       lastItem &&
@@ -163,6 +163,7 @@ export function CourseSearchTab() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-8"
+            data-tutorial="course-search"
           />
         </div>
 
@@ -176,7 +177,7 @@ export function CourseSearchTab() {
 
       <div ref={parentRef} className="flex-1 overflow-y-auto">
         <div className="text-xs text-muted-foreground mb-2">
-          Drag circles (course nodes) to add them
+          Drag course markers to add them
         </div>
         {isLoading && (
           <div className="text-center text-sm text-muted-foreground py-8">

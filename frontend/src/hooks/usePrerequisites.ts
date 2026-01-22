@@ -176,10 +176,17 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
 export function usePrerequisiteEdges(nodes: CourseNode[]) {
   const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
   
+  // Include sections in cache key - edges depend on section ordering
   const courseKey = React.useMemo(
-    () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
+    () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}`).sort().join(','),
     [nodes]
   );
+
+  // Build uuid -> fresh node map (React Compiler will memoize this)
+  const uuid2freshNode = new Map<string, CourseNode>();
+  for (const node of nodes) {
+    uuid2freshNode.set(node.uuid, node);
+  }
 
   return useQuery({
     queryKey: queryKeys.prerequisites.edges(courseKey),
@@ -192,14 +199,20 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       const startTime = performance.now();
       const edges: Array<{ fromUuid: string; toUuid: string }> = [];
 
-      // Build a map of courseId -> node for quick lookup
+      // Build a map of courseId -> node for quick lookup (using fresh node data)
       const courseToNode = new Map<string, CourseNode>();
       for (const node of nodes) {
         courseToNode.set(node.courseId, node);
       }
 
-      // Use the shared fetched data
-      const results = courseDetailsQuery.data;
+      // Use the shared fetched data, but get fresh section from current nodes
+      // (courseDetailsQuery.data may have stale node.section values due to caching)
+      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqCourseIds, tags, prereqString }) => ({
+        node: uuid2freshNode.get(cachedNode.uuid) || cachedNode,
+        prereqCourseIds,
+        tags,
+        prereqString,
+      }));
 
       // Build tag -> courses map
       const tag2courses = new Map<string, CourseNode[]>();
@@ -272,6 +285,12 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
     [nodes]
   );
 
+  // Build uuid -> fresh node map (React Compiler will memoize this)
+  const uuid2freshNode = new Map<string, CourseNode>();
+  for (const node of nodes) {
+    uuid2freshNode.set(node.uuid, node);
+  }
+
   return useQuery({
     queryKey: queryKeys.prerequisites.missing(courseKey),
     queryFn: async () => {
@@ -283,8 +302,11 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       const startTime = performance.now();
       const uuid2missingPrereqs = new Map<string, string[]>();
 
-      // Use the shared fetched data
-      const results = courseDetailsQuery.data.map(({ node, prereqString, tags }) => {
+      // Use the shared fetched data, but get fresh section/status from current nodes
+      // (courseDetailsQuery.data may have stale node.section values due to caching)
+      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqString, tags }) => {
+        const node = uuid2freshNode.get(cachedNode.uuid) || cachedNode;
+        
         // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
         const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'override';
         

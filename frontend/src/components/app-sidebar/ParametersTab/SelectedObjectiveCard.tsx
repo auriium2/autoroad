@@ -54,7 +54,7 @@ export function SelectedObjectiveCard({
   };
 
   return (
-    <div className="relative border border-border rounded overflow-hidden">
+    <div className="relative border border-border rounded overflow-hidden" data-tutorial="objective-card">
       {isCategoryRewards && (
         <div className="absolute inset-0 pointer-events-none opacity-10" style={{
           backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgb(239 68 68) 10px, rgb(239 68 68) 20px)'

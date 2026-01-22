@@ -36,11 +36,12 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
             value={selectedYear}
             onValueChange={setYear}
             disabled={isOptimizing}
+            data-tutorial="class-year"
           />
         </div>
 
         {/* Lock Past Semesters */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3" data-tutorial="freeze-past">
           <div className="flex-1">
             <Label
               htmlFor="lock-past-semesters"

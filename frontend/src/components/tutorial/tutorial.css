@@ -1,0 +1,222 @@
+/* Autoroad Tutorial Styles */
+
+/* ============================================
+   Modal Overlay (SVG-based in Shepherd)
+   ============================================ */
+.shepherd-modal-overlay-container {
+  fill: rgba(0, 0, 0, 0.7);
+}
+
+/* ============================================
+   Tooltip Container
+   ============================================ */
+.shepherd-element {
+  background: #18181b !important;
+  border: 1px solid #3f3f46 !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.4),
+    0 8px 10px -6px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+  max-width: 360px !important;
+  z-index: 9999 !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+.shepherd-element.shepherd-has-title .shepherd-content .shepherd-header {
+  background: transparent !important;
+  padding: 1rem 1rem 0.5rem 1rem !important;
+}
+
+/* ============================================
+   Content Area
+   ============================================ */
+.shepherd-content {
+  background: transparent !important;
+  border-radius: 12px !important;
+}
+
+/* ============================================
+   Header (Title + Close)
+   ============================================ */
+.shepherd-header {
+  background: transparent !important;
+  padding: 1rem 1rem 0.5rem 1rem !important;
+  border: none !important;
+}
+
+.shepherd-title {
+  color: #fafafa !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.shepherd-cancel-icon {
+  background: transparent !important;
+  border: none !important;
+  color: #71717a !important;
+  cursor: pointer !important;
+  font-size: 1.5rem !important;
+  font-weight: 300 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transition: color 0.15s ease !important;
+}
+
+.shepherd-cancel-icon:hover {
+  color: #fafafa !important;
+}
+
+/* ============================================
+   Text Content
+   ============================================ */
+.shepherd-text {
+  background: transparent !important;
+  color: #a1a1aa !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.65 !important;
+  padding: 0 1rem 1rem 1rem !important;
+}
+
+.shepherd-text p {
+  margin: 0 !important;
+}
+
+/* ============================================
+   Footer (Buttons)
+   ============================================ */
+.shepherd-footer {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 1rem 1rem 1rem !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.5rem !important;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.shepherd-button {
+  background: #3b82f6 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  transition: background 0.15s ease !important;
+}
+
+.shepherd-button:hover {
+  background: #2563eb !important;
+}
+
+.shepherd-button:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.4) !important;
+  outline-offset: 2px !important;
+}
+
+.shepherd-button:not(:disabled):hover {
+  background: #2563eb !important;
+}
+
+/* Disabled button */
+.shepherd-button:disabled,
+.shepherd-button-disabled {
+  background: #3f3f46 !important;
+  color: #71717a !important;
+  cursor: not-allowed !important;
+  opacity: 0.6 !important;
+}
+
+.shepherd-button:disabled:hover,
+.shepherd-button-disabled:hover {
+  background: #3f3f46 !important;
+}
+
+/* Secondary button (Back, Skip, Solution) */
+.shepherd-button-secondary {
+  background: #27272a !important;
+  color: #a1a1aa !important;
+}
+
+.shepherd-button-secondary:hover,
+.shepherd-button-secondary:not(:disabled):hover {
+  background: #3f3f46 !important;
+  color: #fafafa !important;
+}
+
+/* ============================================
+   Arrow
+   ============================================ */
+.shepherd-arrow,
+.shepherd-arrow:before {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  z-index: -1;
+}
+
+.shepherd-arrow {
+  visibility: hidden;
+}
+
+.shepherd-arrow:before {
+  visibility: visible;
+  content: '';
+  transform: rotate(45deg);
+  background: #18181b !important;
+  border: 1px solid #3f3f46 !important;
+}
+
+.shepherd-element[data-popper-placement^='top'] > .shepherd-arrow {
+  bottom: -9px;
+}
+.shepherd-element[data-popper-placement^='top'] > .shepherd-arrow:before {
+  border-top: none !important;
+  border-left: none !important;
+}
+
+.shepherd-element[data-popper-placement^='bottom'] > .shepherd-arrow {
+  top: -9px;
+}
+.shepherd-element[data-popper-placement^='bottom'] > .shepherd-arrow:before {
+  border-bottom: none !important;
+  border-right: none !important;
+}
+
+.shepherd-element[data-popper-placement^='left'] > .shepherd-arrow {
+  right: -9px;
+}
+.shepherd-element[data-popper-placement^='left'] > .shepherd-arrow:before {
+  border-bottom: none !important;
+  border-left: none !important;
+}
+
+.shepherd-element[data-popper-placement^='right'] > .shepherd-arrow {
+  left: -9px;
+}
+.shepherd-element[data-popper-placement^='right'] > .shepherd-arrow:before {
+  border-top: none !important;
+  border-right: none !important;
+}
+
+/* ============================================
+   Target Element Highlight
+   ============================================ */
+.shepherd-target {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6) !important;
+  border-radius: 6px !important;
+}
+
+/* ============================================
+   Enabled State (when tour is active)
+   ============================================ */
+.shepherd-enabled.shepherd-element {
+  opacity: 1 !important;
+  visibility: visible !important;
+}

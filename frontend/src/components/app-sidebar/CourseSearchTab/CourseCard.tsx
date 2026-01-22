@@ -148,6 +148,7 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
             onDragStart={(e) => onDragStart(e, course)}
             onDragEnd={onDragEnd}
             className="relative w-9 h-9 rounded-full flex-shrink-0 cursor-move transition-all duration-200"
+            data-tutorial="course-drag-handle"
           >
             <div className="absolute inset-0 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold">
               {course.total_units ?? 12}

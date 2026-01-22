@@ -9,7 +9,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X } from "lucide-react";
+import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X, HelpCircle } from "lucide-react";
 import { BugReportDialog } from "@/components/BugReportDialog";
 import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
@@ -35,6 +35,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadFile } from "@/lib/roadFormat";
+import { useTutorial } from "@/components/tutorial/TutorialProvider";
+import { DEMO_MARKERS_ALL_FIXED, DEMO_OPTIMIZER_NODES, DEMO_COST_BREAKDOWN } from "@/components/tutorial/demoData";
 import { fireroadApi } from "@/services/fireroad";
 import { prefetchCourses } from "@/lib/cache";
 
@@ -49,6 +51,7 @@ export default function Dashboard() {
 
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
+  const { startTutorial, isActive: tutorialActive, getCurrentStepId, advanceTutorial } = useTutorial();
 
   // Check health of backend service
   const { data: healthData, isError: backendError, isPending: healthPending } = useQuery({
@@ -291,6 +294,19 @@ export default function Dashboard() {
   };
 
   const handleOptimize = async () => {
+    // // During tutorial on ready-to-optimize step, use demo data instead of real optimization
+    // if (tutorialActive && getCurrentStepId() === 'ready-to-optimize') {
+    //   useGraphStore.setState({
+    //     markers: DEMO_MARKERS_ALL_FIXED,
+    //     optimizerNodes: DEMO_OPTIMIZER_NODES,
+    //     lastCostBreakdown: DEMO_COST_BREAKDOWN,
+    //     lastOptimizationStatus: 'OPTIMAL',
+    //     markersChangedSinceOptimization: false,
+    //   });
+    //   advanceTutorial();
+    //   return;
+    // }
+
     try {
       const result = await optimizeRoadFromStore(undefined, true);
 
@@ -390,6 +406,7 @@ export default function Dashboard() {
                   onClick={handleOptimize}
                   disabled={isOptimizing}
                   className="relative"
+                  data-tutorial="optimize-button"
                 >
                   {isOptimizing ? (
                     <>
@@ -482,17 +499,28 @@ export default function Dashboard() {
         </SidebarInset>
         <StarOnGithubPopup />
         <Toaster />
-        
-        {/* Bug report button - fixed bottom left */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowBugReport(true)}
-          className="fixed bottom-4 left-4 z-50 text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-opacity"
-        >
-          <Bug className="h-4 w-4 mr-1" />
-          Send Feedback
-        </Button>
+
+        {/* Bottom left buttons */}
+        <div className="fixed bottom-4 left-4 z-50 flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={startTutorial}
+            className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <HelpCircle className="h-4 w-4 mr-1" />
+            Tutorial
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowBugReport(true)}
+            className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-opacity"
+          >
+            <Bug className="h-4 w-4 mr-1" />
+            Send Feedback
+          </Button>
+        </div>
         <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
       </div>
     </SidebarProvider>
