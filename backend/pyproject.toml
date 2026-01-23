@@ -12,6 +12,7 @@ dependencies = [
     "cashews>=7.0.0",
     "claude-agent-sdk>=0.1.10",
     "slowapi>=0.1.9",
+    "sentry-sdk>=2.50.0",
 ]
 
 [project.optional-dependencies]

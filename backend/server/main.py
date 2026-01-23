@@ -1,5 +1,6 @@
 import os
 
+import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,14 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 load_dotenv()
+
+# Initialize Sentry for error tracking
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        environment=os.environ.get("ENVIRONMENT", "development"),
+    )
 
 from server.routes import bug_report, courses, optimize, requirements
 
