@@ -22,6 +22,7 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy application code
 COPY shared/ ./shared/
 COPY server/ ./server/
+COPY requirements/ ./requirements/
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
