@@ -1,10 +1,16 @@
 import asyncio
 import json
+import logging
 import os
+import time
 
 import polars as pl
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
 from ortools.sat.python import cp_model
 
 from shared.courses.requirements.parser import parse_fireroad_response
@@ -20,6 +26,8 @@ from shared.services.cache import (
     get_requirements,
 )
 from shared.utils import find_current_school_year
+
+logger = logging.getLogger("uvicorn.error")
 
 router = APIRouter()
 
@@ -64,16 +72,26 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
     from shared.optimizer.requirements.builder import add_requirement_constraints
     from shared.services.cache import get_courses_data, get_requirements
 
+    start_time = time.time()
+    timings: dict[str, float] = {}
+
     try:
+        logger.info("Starting optimization request: requirements=%s, markers=%d",
+                    request.requirements, len(request.markers) if request.markers else 0)
+
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10})}\n\n"
 
         # Fetch data
+        t0 = time.time()
         courses_data = await get_courses_data()
         requirements_data = await get_requirements(
             tuple(request.requirements),
             requirement_sources=request.requirementSources
         )
         courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+        timings["fetch_data"] = time.time() - t0
+        logger.info("Fetched %d courses, %d requirements in %.2fs",
+                    len(courses_data), len(requirements_data), timings["fetch_data"])
 
         planning_year = request.planningYear
         if not planning_year:
@@ -84,16 +102,20 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
 
         # Create model
+        t0 = time.time()
         model = cp_model.CpModel()
         take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
         add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
         if request.lockPastSemesters:
             add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
+        timings["create_model"] = time.time() - t0
+        logger.info("Created model with %d variables in %.2fs", len(take_vars), timings["create_model"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
 
         # Add requirement constraints
+        t0 = time.time()
         course_to_requirements: dict[int, set[str]] = {}
         for req_key in request.requirements:
             if req_key in requirements_data:
@@ -110,18 +132,23 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                             if course_idx not in course_to_requirements:
                                 course_to_requirements[course_idx] = set()
                             course_to_requirements[course_idx].update(req_paths)
+        timings["add_requirements"] = time.time() - t0
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
 
         # Add prerequisite constraints
+        t0 = time.time()
         prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
         override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
         add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+        timings["add_prerequisites"] = time.time() - t0
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10})}\n\n"
 
         # Add marker constraints
+        t0 = time.time()
         add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
+        timings["add_markers"] = time.time() - t0
 
         # Add hard constraints
         if request.hardConstraints:
@@ -141,6 +168,7 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
 
         # Build objective
+        t0 = time.time()
         builder = ObjectiveBuilder()
 
         from shared.optimizer.objectives.units import MinimizeUnits
@@ -168,16 +196,26 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
             course_to_requirements=course_to_requirements
         )
         model.Minimize(objective)
+        timings["build_objective"] = time.time() - t0
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Serializing model...', 'step': 7, 'totalSteps': 10})}\n\n"
 
+        t0 = time.time()
         num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "8"))
         serialized = serialize_model(model, take_vars, courses_df, builder, max_time_seconds=20.0, num_workers=num_workers)
+        timings["serialize"] = time.time() - t0
+
+        model_size_kb = len(serialized.to_json()) / 1024
+        logger.info("Model built: %d vars, %.1f KB payload, serialized in %.2fs",
+                    len(take_vars), model_size_kb, timings["serialize"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Connecting to solver...', 'step': 8, 'totalSteps': 10, 'waiting': True})}\n\n"
 
         # Send to C++ worker and stream results
         worker_secret = os.getenv("WORKER_SECRET", "")
+        t0 = time.time()
+        logger.info("Connecting to C++ worker at %s", SOLVER_URL)
+
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
             async with client.stream(
                 "POST",
@@ -185,21 +223,45 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                 content=serialized.to_json(),
                 headers={"Content-Type": "application/json", "Connection": "close", "X-Worker-Secret": worker_secret}
             ) as response:
+                timings["worker_connect"] = time.time() - t0
+                logger.info("Worker connected in %.2fs, status=%d", timings["worker_connect"], response.status_code)
+
                 if response.status_code != 200:
+                    logger.error("Worker returned error status %d", response.status_code)
                     yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
                     return
 
+                solution_count = 0
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
                         yield f"{line}\n\n"
+                        # Count solutions for logging
+                        try:
+                            event = json.loads(line[6:])
+                            if event.get("type") == "solution":
+                                solution_count += 1
+                            elif event.get("type") == "complete":
+                                timings["solve"] = time.time() - t0 - timings["worker_connect"]
+                                total_time = time.time() - start_time
+                                logger.info(
+                                    "Optimization complete: status=%s, solutions=%d, "
+                                    "solve_time=%.2fs, total_time=%.2fs, timings=%s",
+                                    event.get("status"), solution_count,
+                                    timings.get("solve", 0), total_time, timings
+                                )
+                        except json.JSONDecodeError:
+                            pass
 
     except httpx.ConnectError as e:
+        logger.error("Failed to connect to C++ worker: %s", e)
         yield f"data: {json.dumps({'type': 'error', 'error': 'Failed to connect to solver', 'details': str(e)})}\n\n"
     except Exception as e:
+        logger.exception("Optimization error: %s", e)
         yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'details': type(e).__name__})}\n\n"
 
 
 @router.post("/optimize")
+@limiter.limit("10/minute")
 async def optimize(request: Request, opt_request: OptimizationRequest):
     """
     Run optimization and stream progress via SSE.

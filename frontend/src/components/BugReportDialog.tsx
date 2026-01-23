@@ -299,7 +299,7 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Please describe the issue you encountered. Include steps to reproduce if possible."
+              placeholder="Please describe the issue you encountered or feature you desire. Include steps to reproduce or interaction workflow if possible."
               className="w-full min-h-32 px-3 py-2 text-sm border rounded-md bg-background resize-y focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>

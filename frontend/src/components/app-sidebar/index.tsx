@@ -34,6 +34,7 @@ export function AppSidebar({ viewMode, ...props }: AppSidebarProps) {
           </button>
           <button
             onClick={() => setActiveTab('objectives')}
+            data-tab="objectives"
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
               activeTab === 'objectives'
                 ? 'text-foreground border-b-2 border-primary'

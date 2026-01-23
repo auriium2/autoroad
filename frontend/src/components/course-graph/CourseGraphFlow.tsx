@@ -82,7 +82,42 @@ function CourseGraphFlowInner({
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [viewport, setViewport] = React.useState({ x: 0, y: 20, zoom: 1 });
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNodes } = useReactFlow();
+
+  // Expose panToCourse globally for tutorial
+  const { setViewport: setRFViewport, getViewport: getRFViewport } = useReactFlow();
+  React.useEffect(() => {
+    const numColumns = ALL_SECTIONS.length;
+    const maxFlowX = numColumns * COLUMN_WIDTH;
+    
+    (window as unknown as { panToCourse?: (courseId: string) => void }).panToCourse = (courseId: string) => {
+      const node = getNodes().find(n => n.data?.courseId === courseId);
+      if (!node) return;
+      
+      const flowWrapper = document.querySelector('[data-tutorial="graph"]');
+      if (!flowWrapper) return;
+      
+      const viewportWidth = flowWrapper.clientWidth;
+      const viewportHeight = flowWrapper.clientHeight;
+      const { zoom } = getRFViewport();
+      
+      // Calculate viewport position to center on node
+      let targetX = -(node.position.x * zoom) + (viewportWidth / 2);
+      const targetY = -(node.position.y * zoom) + (viewportHeight / 2);
+      
+      // Clamp X to respect translateExtent [[0, -Inf], [maxFlowX, Inf]]
+      // viewport.x = 0 means flow x=0 is at left edge
+      // viewport.x = -(maxFlowX * zoom) + viewportWidth means flow x=maxFlowX is at right edge
+      const minViewportX = -(maxFlowX * zoom) + viewportWidth;
+      const maxViewportX = 0;
+      targetX = Math.max(minViewportX, Math.min(maxViewportX, targetX));
+      
+      setRFViewport({ x: targetX, y: targetY, zoom }, { duration: 300 });
+    };
+    return () => {
+      delete (window as unknown as { panToCourse?: (courseId: string) => void }).panToCourse;
+    };
+  }, [getNodes, setRFViewport, getRFViewport]);
 
   // Debounce error display
   const [debouncedError, setDebouncedError] = React.useState<string | null>(null);

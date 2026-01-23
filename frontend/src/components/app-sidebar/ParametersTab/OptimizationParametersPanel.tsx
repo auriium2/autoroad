@@ -136,7 +136,7 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
 
   return (
     <div className="space-y-4">
-      <div className="relative">
+      <div className="relative" data-tutorial="parameter-search">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           type="text"

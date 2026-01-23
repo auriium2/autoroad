@@ -24,7 +24,7 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Class Selection - Always Visible */}
-      <div className="p-4 space-y-3 border-b border-border">
+      <div className="p-4 space-y-3 border-b border-border" data-tutorial="class-year">
         <div className="space-y-2">
           <Label className="text-sm font-medium">
             Select Class
@@ -36,12 +36,11 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
             value={selectedYear}
             onValueChange={setYear}
             disabled={isOptimizing}
-            data-tutorial="class-year"
           />
         </div>
 
         {/* Lock Past Semesters */}
-        <div className="flex items-center justify-between gap-3" data-tutorial="freeze-past">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex-1">
             <Label
               htmlFor="lock-past-semesters"

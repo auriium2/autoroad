@@ -63,6 +63,13 @@ export function SelectedObjectiveCard({
       {isRecommended && !isCategoryRewards && (
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-red-500/15" />
       )}
+      {isRecommended && !isCategoryRewards && isExpanded && objective.hasParameters && (
+        <div className="absolute right-3 bottom-1.5 pointer-events-none">
+          <span className="text-xs font-medium text-red-400/30 select-none tracking-wide uppercase">
+            suggested
+          </span>
+        </div>
+      )}
 
       <div className="relative z-10 p-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
@@ -100,6 +107,11 @@ export function SelectedObjectiveCard({
           <>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">{objective.description}</p>
+              {isRecommended && !isCategoryRewards && !objective.hasParameters && (
+                <p className="text-xs font-medium text-red-400/30 text-right tracking-wide uppercase">
+                  suggested
+                </p>
+              )}
             </div>
             {objective.hasParameters && (
               <div className="space-y-2 pt-1">
@@ -140,6 +152,7 @@ export function SelectedObjectiveCard({
                 })}
               </div>
             )}
+
           </>
         )}
       </div>

@@ -1,12 +1,17 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 load_dotenv()
 
 from server.routes import bug_report, courses, optimize, requirements
+
+limiter = Limiter(key_func=get_remote_address)
 
 cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 
@@ -15,6 +20,9 @@ app = FastAPI(
     description="Course planning and optimization for MIT students",
     version="1.0.0",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins.split(","),
