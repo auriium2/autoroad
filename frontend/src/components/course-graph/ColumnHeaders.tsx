@@ -1,8 +1,14 @@
 import * as React from "react";
+import { ExternalLink } from "lucide-react";
 import type { Section } from "@/stores/roadStore";
+import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
-import { isPastSemesterById } from "@/lib/semesterUtils";
+import { isPastSemesterById, sectionIdToTargetSemester } from "@/lib/semesterUtils";
+import { generateHydrantUrl } from "@/lib/hydrant";
 import { COLUMN_WIDTH } from "@/lib/graphConstants";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { MiniSchedulePreview } from "./MiniSchedulePreview";
 
 interface ColumnHeadersProps {
   sections: Section[];
@@ -15,6 +21,42 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
   const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
+
+  const markers = useGraphStore((state) => state.markers);
+  const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
+
+  const getCoursesForSection = React.useCallback(
+    (sectionId: number): string[] => {
+      const courseIds = new Set<string>();
+
+      markers
+        .filter((m) => m.section === sectionId && m.status !== "banish")
+        .forEach((m) => courseIds.add(m.courseId));
+
+      optimizerNodes
+        .filter((n) => n.section === sectionId)
+        .forEach((n) => courseIds.add(n.courseId));
+
+      return Array.from(courseIds);
+    },
+    [markers, optimizerNodes]
+  );
+
+  const handleOpenInHydrant = React.useCallback(
+    (sectionId: number, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!graduationYear) return;
+
+      const semester = sectionIdToTargetSemester(sectionId, graduationYear);
+      if (!semester) return;
+
+      const courses = getCoursesForSection(sectionId);
+      const url = generateHydrantUrl(courses, semester);
+
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    [graduationYear, getCoursesForSection]
+  );
 
   return (
     <>
@@ -140,22 +182,62 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
           zIndex: 10,
         }}
       >
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className="flex items-center justify-center px-2 py-2"
-            style={{
-              width: `${COLUMN_WIDTH}px`,
-            }}
-          >
-            <span 
-              className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap"
-              data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+        {sections.map((section) => {
+          const isRegularSemester = section.id >= 0 && section.id <= 11;
+          const hasGraduationYear = graduationYear > 0;
+          const courses = isRegularSemester ? getCoursesForSection(section.id) : [];
+          const canInteract = isRegularSemester && hasGraduationYear;
+
+          return (
+            <div
+              key={section.id}
+              className="flex items-center justify-center px-2 py-2"
+              style={{
+                width: `${COLUMN_WIDTH}px`,
+                pointerEvents: canInteract ? 'auto' : 'none',
+              }}
             >
-              {section.title}
-            </span>
-          </div>
-        ))}
+              {canInteract ? (
+                <HoverCard openDelay={200} closeDelay={100}>
+                  <HoverCardTrigger asChild>
+                    <span
+                      className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap flex items-center gap-1.5 cursor-default hover:bg-white/5 transition-colors"
+                      data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+                    >
+                      {section.title}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={(e) => handleOpenInHydrant(section.id, e)}
+                            className="text-gray-500 hover:text-gray-200 transition-colors"
+                            aria-label="Open in Hydrant"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom">
+                          {courses.length > 0
+                            ? `Open ${courses.length} course${courses.length > 1 ? "s" : ""} in Hydrant`
+                            : "Open semester in Hydrant"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="bottom" align="center" className="w-auto p-0">
+                    <MiniSchedulePreview courseIds={courses} sectionId={section.id} graduationYear={graduationYear} />
+                  </HoverCardContent>
+                </HoverCard>
+              ) : (
+                <span
+                  className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap flex items-center gap-1.5"
+                  data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+                >
+                  {section.title}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );

@@ -10,15 +10,14 @@ from slowapi.util import get_remote_address
 
 load_dotenv()
 
-# Initialize Sentry for error tracking
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
-        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        traces_sample_rate=0.1,
         environment=os.environ.get("ENVIRONMENT", "development"),
     )
 
-from server.routes import bug_report, courses, optimize, requirements
+from server.routes import bug_report, courses, hydrant, optimize, requirements
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -43,6 +42,7 @@ app.add_middleware(
 app.include_router(optimize.router, prefix="/api", tags=["optimization"])
 app.include_router(requirements.router, prefix="/api", tags=["requirements"])
 app.include_router(courses.router, prefix="/api", tags=["courses"])
+app.include_router(hydrant.router, prefix="/api", tags=["hydrant"])
 app.include_router(bug_report.router, prefix="/api", tags=["bug-report"])
 
 

@@ -47,4 +47,11 @@ export const queryKeys = {
     all: ['health'] as const,
     backend: () => ['health', 'backend'] as const,
   },
+
+  // Hydrant schedule data
+  hydrant: {
+    all: ['hydrant'] as const,
+    schedule: (semester: string, courseIds: string[]) => 
+      ['hydrant', 'schedule', semester, courseIds.sort().join(',')] as const,
+  },
 } as const;

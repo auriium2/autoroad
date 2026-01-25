@@ -162,3 +162,38 @@ export function getGraduationYearOptions(): Array<{ value: string; label: string
     { value: String(freshmanGradYear - 3), label: `Class of ${freshmanGradYear - 3}` },
   ];
 }
+
+/**
+ * Converts a section ID (0-11) to the target Hydrant semester code.
+ * This is the actual semester the section represents (e.g., "s27" for Spring 2027).
+ * 
+ * Section IDs: 0=Freshman Fall, 1=Freshman IAP, 2=Freshman Spring, etc.
+ * Hydrant codes: f25, i26, s26, etc.
+ */
+export function sectionIdToTargetSemester(
+  sectionId: number,
+  graduationYear: number
+): string | null {
+  if (sectionId < 0 || sectionId > 11) return null;
+
+  const termInYear = sectionId % 3; // 0=Fall, 1=IAP, 2=Spring
+  const yearLevel = Math.floor(sectionId / 3); // 0=Freshman, 1=Sophomore, etc.
+  
+  const academicYear = graduationYear - 4 + yearLevel;
+  
+  let semesterYear: number;
+  let termCode: string;
+  
+  if (termInYear === 0) { // Fall
+    semesterYear = academicYear;
+    termCode = "f";
+  } else if (termInYear === 1) { // IAP
+    semesterYear = academicYear + 1;
+    termCode = "i";
+  } else { // Spring
+    semesterYear = academicYear + 1;
+    termCode = "s";
+  }
+  
+  return `${termCode}${semesterYear % 100}`;
+}

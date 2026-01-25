@@ -14,6 +14,7 @@ from shared.courses.prerequisites.types import PrereqNode
 
 REQUIREMENTS_DIR = Path(__file__).parent.parent.parent / "requirements"
 FIREROAD_BASE_URL = "https://fireroad.mit.edu"
+HYDRANT_BASE_URL = "https://hydrant.mit.edu"
 
 # Configure in-memory cache
 cache.setup("mem://")
@@ -195,3 +196,38 @@ async def get_requirements(
 async def clear_cache() -> None:
     """Clear all cached data."""
     await cache.clear()
+
+@cache(ttl="1h", lock=True, key="hydrant:latest")
+async def _get_hydrant_latest() -> dict[str, Any]:
+    """Fetch latest.json from Hydrant."""
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        response = await client.get(f"{HYDRANT_BASE_URL}/latest.json")
+        response.raise_for_status()
+        return response.json()
+
+
+@cache(ttl="1h", lock=True, key="hydrant:{semester}")
+async def get_hydrant_semester_data(semester: str) -> dict[str, Any]:
+    url = f"{HYDRANT_BASE_URL}/latest.json" if semester == "latest" else f"{HYDRANT_BASE_URL}/{semester}.json"
+    
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        response = await client.get(url)
+        content_type = response.headers.get("content-type", "")
+        if "text/html" in content_type or response.text.strip().startswith("<!DOCTYPE"):
+            raise ValueError(f"Semester {semester} not available on Hydrant")
+        response.raise_for_status()
+        return response.json()
+
+
+async def get_hydrant_courses(
+    semester: str,
+    course_ids: list[str]
+) -> dict[str, dict[str, Any]]:
+    data = await get_hydrant_semester_data(semester)
+    classes = data.get("classes", {})
+    
+    return {
+        course_id: classes[course_id]
+        for course_id in course_ids
+        if course_id in classes
+    }
