@@ -74,6 +74,49 @@ def find_current_school_year() -> tuple[str, str]:
     return school_year, planning_for_year
 
 
+def semester_idx_to_hydrant_code(semester_idx: int, planning_year_start: int) -> str:
+    """
+    Convert 1-based semester index to Hydrant semester code.
+    
+    Semester 1 = Freshman Fall (f{planning_year_start})
+    Semester 2 = Freshman IAP (i{planning_year_start + 1})
+    Semester 3 = Freshman Spring (s{planning_year_start + 1})
+    """
+    year_in_plan = (semester_idx - 1) // 3
+    term_in_year = (semester_idx - 1) % 3  # 0=Fall, 1=IAP, 2=Spring
+    
+    academic_year = planning_year_start + year_in_plan
+    
+    if term_in_year == 0:  # Fall
+        return f"f{academic_year % 100}"
+    elif term_in_year == 1:  # IAP
+        return f"i{(academic_year + 1) % 100}"
+    else:  # Spring
+        return f"s{(academic_year + 1) % 100}"
+
+
+def hydrant_code_to_semester_idx(code: str, planning_year_start: int) -> int:
+    """
+    Convert Hydrant semester code to 1-based semester index.
+    
+    f25 with planning_year_start=2025 -> 1 (Freshman Fall)
+    i26 with planning_year_start=2025 -> 2 (Freshman IAP)
+    s26 with planning_year_start=2025 -> 3 (Freshman Spring)
+    """
+    term = code[0]
+    year = int(code[1:]) + 2000
+    
+    if term == "f":
+        year_in_plan = year - planning_year_start
+        return year_in_plan * 3 + 1
+    elif term == "i":
+        year_in_plan = year - 1 - planning_year_start
+        return year_in_plan * 3 + 2
+    else:  # spring
+        year_in_plan = year - 1 - planning_year_start
+        return year_in_plan * 3 + 3
+
+
 def get_current_semester_index(planning_year_start: int) -> int:
     """
     Calculate which semester index (1-12) is the current semester.

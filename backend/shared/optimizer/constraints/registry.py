@@ -5,6 +5,7 @@ Registry of available hard constraints with metadata and validation.
 from dataclasses import dataclass
 
 from .base import HardConstraint
+from .conflicts import NoScheduleConflicts
 from .scheduling import BanIAP
 
 
@@ -27,6 +28,14 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         description="Hard constraint: prevents optimizer from placing any classes in IAP. Your manual markers still work.",
         category="scheduling",
         default_enabled=False,
+    ),
+    "no_schedule_conflicts": ConstraintMetadata(
+        key="no_schedule_conflicts",
+        class_ref=NoScheduleConflicts,
+        name="No Schedule Conflicts",
+        description="Hard constraint: prevents taking courses with overlapping lecture times. Uses Hydrant schedule data for the current semester.",
+        category="scheduling",
+        default_enabled=True,
     ),
 }
 

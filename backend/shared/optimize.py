@@ -369,14 +369,33 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         # Add hard constraints
         perf_start = time.time()
-        if request.hardConstraints:
+        
+        # Use exactly what the frontend sends - no defaults
+        constraint_keys = request.hardConstraints or []
+        
+        if constraint_keys:
+            # Fetch Hydrant schedule data for the current semester (for conflict detection)
+            hydrant_extra: dict[str, object] = {}
+            if 'no_schedule_conflicts' in constraint_keys:
+                from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
+                
+                # Extrapolate mode: apply constraint to all semesters using best available data
+                semester_to_slots = await fetch_hydrant_data_for_semesters(
+                    take_vars, courses_df, planning_year_start, max_semesters
+                )
+                
+                hydrant_extra['hydrant_schedule_data'] = {
+                    'semester_to_slots': semester_to_slots,
+                }
+            
             constraint_context = ConstraintContext(
                 planning_year_start=planning_year_start,
                 courses_df=courses_df,
                 max_semesters=max_semesters,
                 markers=request.markers,
+                extra=hydrant_extra if hydrant_extra else None,
             )
-            for constraint_key in request.hardConstraints:
+            for constraint_key in constraint_keys:
                 try:
                     constraint = instantiate_constraint(constraint_key)
                     constraint.add_to_model(model, take_vars, constraint_context)

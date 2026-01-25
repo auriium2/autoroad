@@ -10,6 +10,7 @@ export interface TimeBlock {
   day: number; // 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday
   start_hour: number; // 24-hour decimal (e.g., 15.5 for 3:30pm)
   end_hour: number;
+  is_required: boolean; // true if only 1 section of this type (must attend)
 }
 
 export interface ScheduleResponse {

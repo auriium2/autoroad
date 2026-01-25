@@ -24,6 +24,7 @@ class TimeBlock(BaseModel):
     day: int  # 0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday, 4=Friday
     start_hour: float  # 24-hour format decimal (e.g., 15.5 for 3:30pm)
     end_hour: float
+    is_required: bool  # True if this block is required (only 1 section of this type)
 
 
 class ScheduleResponse(BaseModel):
@@ -43,18 +44,24 @@ def slot_to_time(slot: int) -> tuple[int, float]:
 
 
 def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlock]:
-    """Parse a Hydrant course into time blocks."""
+    """Parse a Hydrant course into time blocks with is_required flag."""
     blocks: list[TimeBlock] = []
 
     section_types = [
-        ("Lecture", course.get("lectureSections")),
-        ("Recitation", course.get("recitationSections")),
-        ("Lab", course.get("labSections")),
+        ("Lecture", "lectureSections"),
+        ("Recitation", "recitationSections"),
+        ("Lab", "labSections"),
+        ("Design", "designSections"),
     ]
 
-    for kind, sections in section_types:
+    for kind, key in section_types:
+        sections = course.get(key, [])
         if not sections:
             continue
+        
+        # A section type is required if there's exactly ONE section of that type
+        # Multiple sections = options (student picks one)
+        is_required = len(sections) == 1
 
         for section in sections:
             # section format: [[[startSlot, numSlots], ...], room]
@@ -72,51 +79,80 @@ def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlo
                     day=day,
                     start_hour=start_hour,
                     end_hour=end_hour,
+                    is_required=is_required,
                 ))
 
     return blocks
 
 
-def detect_conflicts(blocks: list[TimeBlock]) -> bool:
+def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[TimeBlock]:
     """
-    Check if any required time blocks overlap.
+    Get only the required (non-optional) time blocks for a course.
     
-    A block is "required" (not optional) if there's only one unique time-of-day
-    for that course+type on any given day. Multiple times on the SAME day = options.
-    Same time on different days = required (you attend all).
+    A section type is required if there's only ONE section of that type.
+    Multiple sections of the same type = options (student picks one).
     """
-    from collections import defaultdict
+    required: list[TimeBlock] = []
     
-    # Group blocks by (course_id, type, day) to find options per day
-    day_times: dict[tuple[str, str, int], set[tuple[float, float]]] = defaultdict(set)
-    for b in blocks:
-        key = (b.course_id, b.type, b.day)
-        time_key = (b.start_hour, b.end_hour)
-        day_times[key].add(time_key)
+    section_types = [
+        ("Lecture", "lectureSections"),
+        ("Recitation", "recitationSections"),
+        ("Lab", "labSections"),
+        ("Design", "designSections"),
+    ]
     
-    # A block is "required" if on its day, there's only one unique time for that course+type
-    required_blocks: list[TimeBlock] = []
-    for b in blocks:
-        key = (b.course_id, b.type, b.day)
-        if len(day_times[key]) == 1:
-            required_blocks.append(b)
+    for kind, key in section_types:
+        sections = course_data.get(key, [])
+        
+        # If there's exactly ONE section of this type, all its slots are required
+        if len(sections) == 1:
+            section = sections[0]
+            if section and len(section) >= 2:
+                timeslots, room = section[0], section[1]
+                for slot_pair in timeslots:
+                    if len(slot_pair) >= 2:
+                        start_slot, num_slots = slot_pair
+                        day, start_hour = slot_to_time(start_slot)
+                        end_hour = start_hour + num_slots * SLOT_DURATION_HOURS
+                        required.append(TimeBlock(
+                            course_id=course_id,
+                            type=kind,
+                            room=room,
+                            day=day,
+                            start_hour=start_hour,
+                            end_hour=end_hour,
+                            is_required=True,
+                        ))
     
-    # Deduplicate required blocks (same course+type+day+time)
-    seen: set[tuple[str, str, int, float, float]] = set()
-    deduped_required: list[TimeBlock] = []
-    for b in required_blocks:
-        key = (b.course_id, b.type, b.day, b.start_hour, b.end_hour)
-        if key not in seen:
-            seen.add(key)
-            deduped_required.append(b)
+    return required
+
+
+def detect_conflicts_from_courses(courses: dict[str, dict[str, Any]]) -> bool:
+    """
+    Check if any required time blocks overlap across courses.
     
-    # Check for overlaps among required blocks only
-    for i, a in enumerate(deduped_required):
-        for b in deduped_required[i + 1:]:
+    Args:
+        courses: Dict mapping course_id -> raw Hydrant course data
+    
+    Returns:
+        True if there are unavoidable conflicts
+    """
+    # Collect all required blocks from all courses
+    all_required: list[TimeBlock] = []
+    for course_id, course_data in courses.items():
+        all_required.extend(get_required_blocks(course_id, course_data))
+    
+    # Check for overlaps between different courses
+    for i, a in enumerate(all_required):
+        for b in all_required[i + 1:]:
+            # Only check conflicts between DIFFERENT courses
+            if a.course_id == b.course_id:
+                continue
             if a.day != b.day:
                 continue
             if a.start_hour < b.end_hour and b.start_hour < a.end_hour:
                 return True
+    
     return False
 
 
@@ -216,16 +252,19 @@ async def get_schedule_blocks(
     classes = data.get("classes", {})
     all_blocks: list[TimeBlock] = []
     missing_courses: list[str] = []
+    found_courses: dict[str, dict[str, Any]] = {}
 
     for course_id in course_ids:
         course = classes.get(course_id)
         if course:
             blocks = parse_hydrant_course(course_id, course)
             all_blocks.extend(blocks)
+            found_courses[course_id] = course
         else:
             missing_courses.append(course_id)
 
-    has_conflicts = detect_conflicts(all_blocks)
+    # Use the conflict detection that checks only required blocks
+    has_conflicts = detect_conflicts_from_courses(found_courses)
 
     return ScheduleResponse(
         target_semester=target_semester,

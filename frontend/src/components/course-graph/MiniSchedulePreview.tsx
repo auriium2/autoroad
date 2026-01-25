@@ -32,8 +32,7 @@ interface RenderBlock {
   type: string;
   start_hour: number;
   end_hour: number;
-  isOption: boolean; // true for recitations, false for lectures
-  slotDuration?: number; // duration of one slot in hours
+  isRequired: boolean; // from backend: true if only 1 section of this type
 }
 
 function getRenderBlocks(blocks: TimeBlock[], dayIndex: number): RenderBlock[] {
@@ -49,67 +48,60 @@ function getRenderBlocks(blocks: TimeBlock[], dayIndex: number): RenderBlock[] {
     return true;
   });
 
-  // Group by course_id + type to determine if something is an "option" (multiple times on THIS day)
-  // Multiple times on same day = options (pick one)
-  // Single time on this day = required (even if same course has other days)
-  const groups = new Map<string, TimeBlock[]>();
-  for (const block of dedupedBlocks) {
-    const key = `${block.course_id}-${block.type}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(block);
-  }
+  // For optional blocks (is_required=false), merge adjacent/overlapping times
+  // For required blocks (is_required=true), keep as-is
+  const requiredBlocks = dedupedBlocks.filter((b) => b.is_required);
+  const optionalBlocks = dedupedBlocks.filter((b) => !b.is_required);
 
   const renderBlocks: RenderBlock[] = [];
 
-  for (const [, groupBlocks] of groups) {
-    const uniqueTimes = new Set(groupBlocks.map((b) => `${b.start_hour}-${b.end_hour}`));
-    const isOption = uniqueTimes.size > 1;
+  // Add required blocks directly
+  for (const block of requiredBlocks) {
+    renderBlocks.push({
+      course_id: block.course_id,
+      type: block.type,
+      start_hour: block.start_hour,
+      end_hour: block.end_hour,
+      isRequired: true,
+    });
+  }
 
-    if (isOption) {
-      // Calculate typical slot duration (use first block's duration)
-      const firstBlock = groupBlocks[0];
-      const slotDuration = firstBlock.end_hour - firstBlock.start_hour;
+  // Group optional blocks by course_id + type to merge overlapping ranges
+  const optionalGroups = new Map<string, TimeBlock[]>();
+  for (const block of optionalBlocks) {
+    const key = `${block.course_id}-${block.type}`;
+    if (!optionalGroups.has(key)) optionalGroups.set(key, []);
+    optionalGroups.get(key)!.push(block);
+  }
 
-      // Merge adjacent/overlapping blocks into continuous ranges
-      const sorted = [...groupBlocks].sort((a, b) => a.start_hour - b.start_hour);
+  for (const [, groupBlocks] of optionalGroups) {
+    // Merge adjacent/overlapping blocks into continuous ranges
+    const sorted = [...groupBlocks].sort((a, b) => a.start_hour - b.start_hour);
 
-      let current: RenderBlock | null = null;
-      for (const block of sorted) {
-        if (!current) {
-          current = {
-            course_id: block.course_id,
-            type: block.type,
-            start_hour: block.start_hour,
-            end_hour: block.end_hour,
-            isOption: true,
-            slotDuration,
-          };
-        } else if (block.start_hour <= current.end_hour) {
-          current.end_hour = Math.max(current.end_hour, block.end_hour);
-        } else {
-          renderBlocks.push(current);
-          current = {
-            course_id: block.course_id,
-            type: block.type,
-            start_hour: block.start_hour,
-            end_hour: block.end_hour,
-            isOption: true,
-            slotDuration,
-          };
-        }
+    let current: RenderBlock | null = null;
+    for (const block of sorted) {
+      if (!current) {
+        current = {
+          course_id: block.course_id,
+          type: block.type,
+          start_hour: block.start_hour,
+          end_hour: block.end_hour,
+          isRequired: false,
+        };
+      } else if (block.start_hour <= current.end_hour) {
+        current.end_hour = Math.max(current.end_hour, block.end_hour);
+      } else {
+        renderBlocks.push(current);
+        current = {
+          course_id: block.course_id,
+          type: block.type,
+          start_hour: block.start_hour,
+          end_hour: block.end_hour,
+          isRequired: false,
+        };
       }
-      if (current) renderBlocks.push(current);
-    } else {
-      // Single time slot - not an option, render as solid
-      const block = groupBlocks[0];
-      renderBlocks.push({
-        course_id: block.course_id,
-        type: block.type,
-        start_hour: block.start_hour,
-        end_hour: block.end_hour,
-        isOption: false,
-      });
     }
+    if (current) renderBlocks.push(current);
   }
 
   return renderBlocks;
@@ -257,9 +249,9 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
             {DAYS.map((day, dayIndex) => {
               const renderBlocks = getRenderBlocks(blocks, dayIndex);
 
-              // Separate solid blocks (render first, full width) from option blocks
-              const solidBlocks = renderBlocks.filter((b) => !b.isOption);
-              const optionBlocks = renderBlocks.filter((b) => b.isOption);
+              // Separate required blocks (solid) from optional blocks (outlined)
+              const solidBlocks = renderBlocks.filter((b) => b.isRequired);
+              const optionBlocks = renderBlocks.filter((b) => !b.isRequired);
 
               return (
                 <div key={day} className="flex-1 bg-gray-800 relative" style={{ minWidth: 28, height: HOURS * 8 }}>
