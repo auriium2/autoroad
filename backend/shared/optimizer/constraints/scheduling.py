@@ -12,6 +12,39 @@ if TYPE_CHECKING:
     from .base import ConstraintContext
 
 
+class BanPrefix:
+    """
+    Hard constraint: Ban all classes with a specific prefix.
+
+    Prevents the optimizer from scheduling any course whose subject_id
+    starts with the specified prefix (e.g., "21M" to ban music classes).
+    """
+
+    def __init__(self, prefix: str):
+        self.prefix: str = prefix
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ConstraintContext
+    ) -> None:
+        """Add prefix ban constraint to model."""
+        for (course_idx, semester), var in take_vars.items():
+            subject_id = context.courses_df[course_idx, 'subject_id']
+            if subject_id.startswith(self.prefix):
+                model.Add(var == 0)
+
+    def get_name(self) -> str:
+        return f"Ban {self.prefix} Classes"
+
+    def get_description(self) -> str:
+        return f"Hard constraint: prevents taking any classes with prefix '{self.prefix}'."
+
+    def get_category(self) -> str:
+        return "scheduling"
+
+
 class BanIAP:
     """
     Hard constraint: Prevent optimizer from placing any classes in IAP.

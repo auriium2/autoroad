@@ -4,7 +4,7 @@
  */
 
 import type { Marker, OptimizerNode } from '@/types';
-import type { ObjectivesResponse, HardConstraintsResponse, ObjectiveConfig } from '@/types/models/optimizer';
+import type { ObjectivesResponse, HardConstraintsResponse, ObjectiveConfig, ConstraintConfig } from '@/types/models/optimizer';
 
 async function optimizerFetch<T>(
   url: string,
@@ -94,7 +94,7 @@ export const optimizerApi = {
     maxSemesters: number,
     signal?: AbortSignal,
     objectives?: ObjectiveConfig[],
-    hardConstraints?: string[],
+    hardConstraints?: ConstraintConfig[],
     planningYear?: string,
     lockPastSemesters?: boolean,
     requirementTiers?: Record<string, number>,

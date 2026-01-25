@@ -15,13 +15,18 @@ class ObjectiveConfig(BaseModel):
     parameters: dict[str, object] = Field(default_factory=dict, description="Optional parameters for the objective")
 
 
+class ConstraintConfig(BaseModel):
+    key: str = Field(..., description="Constraint key (e.g., 'ban_prefix')")
+    parameters: dict[str, object] = Field(default_factory=dict, description="Optional parameters for the constraint")
+
+
 class OptimizationRequest(BaseModel):
     markers: list[Marker] = Field(default_factory=list, description="User-placed course markers")
     requirements: list[str] = Field(default=["major6-3new", "girs"], description="Requirement keys to satisfy")
     maxSemesters: int = Field(default=12, ge=1, le=12, description="Maximum number of semesters to plan")
     planningYear: str | None = Field(default=None, description="Planning year (e.g., '2024-2025')")
     objectives: list[ObjectiveConfig] | None = Field(default=None, description="Optimization objectives (if None, uses defaults)")
-    hardConstraints: list[str] = Field(default_factory=list, description="Hard constraint keys to enable (e.g., ['ban_iap'])")
+    hardConstraints: list[ConstraintConfig] = Field(default_factory=list, description="Hard constraints to enable")
     lockPastSemesters: bool = Field(default=False, description="Prevent optimizer from modifying semesters that have already passed")
     requirementTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for requirement tree nodes (0-3)")
     objectiveTiers: dict[str, int] = Field(default_factory=dict, description="Tier priorities for objectives (1-4)")

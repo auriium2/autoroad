@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ObjectiveConfig } from '@/types/models/optimizer';
+import type { ObjectiveConfig, ConstraintConfig } from '@/types/models/optimizer';
 import { useGraphStore } from './roadStore';
 
 interface OptimizationState {
@@ -8,7 +8,7 @@ interface OptimizationState {
   selectedRequirements: string[];
   selectedYear?: string;
   lockPastSemesters: boolean;
-  selectedHardConstraints: string[];
+  selectedHardConstraints: ConstraintConfig[];
   expandedRequirements: string[];
   expandedRequirementNodes: Record<string, Set<string>>;
   requirementTiers: Record<string, number>;
@@ -21,8 +21,9 @@ interface OptimizationState {
   setRequirements: (requirements: string[]) => void;
   setYear: (year?: string) => void;
   setLockPastSemesters: (lock: boolean) => void;
-  setHardConstraints: (constraints: string[]) => void;
-  toggleHardConstraint: (constraintKey: string) => void;
+  setHardConstraints: (constraints: ConstraintConfig[]) => void;
+  toggleHardConstraint: (constraintKey: string, defaultParameters?: Record<string, unknown>) => void;
+  updateConstraintParameters: (constraintKey: string, parameters: Record<string, unknown>) => void;
   
   addRequirement: (requirement: string) => void;
   removeRequirement: (requirement: string) => void;
@@ -95,20 +96,28 @@ export const useOptimizationStore = create<OptimizationState>()(
     markOptimizationAsStale();
     set({ selectedHardConstraints: constraints });
   },
-  toggleHardConstraint: (constraintKey) => {
+  toggleHardConstraint: (constraintKey, defaultParameters = {}) => {
     markOptimizationAsStale();
     set((state) => {
-      const isEnabled = state.selectedHardConstraints.includes(constraintKey);
-      if (isEnabled) {
+      const existingIdx = state.selectedHardConstraints.findIndex(c => c.key === constraintKey);
+      if (existingIdx >= 0) {
         return {
-          selectedHardConstraints: state.selectedHardConstraints.filter(k => k !== constraintKey)
+          selectedHardConstraints: state.selectedHardConstraints.filter(c => c.key !== constraintKey)
         };
       } else {
         return {
-          selectedHardConstraints: [...state.selectedHardConstraints, constraintKey]
+          selectedHardConstraints: [...state.selectedHardConstraints, { key: constraintKey, parameters: defaultParameters }]
         };
       }
     });
+  },
+  updateConstraintParameters: (constraintKey, parameters) => {
+    markOptimizationAsStale();
+    set((state) => ({
+      selectedHardConstraints: state.selectedHardConstraints.map(c =>
+        c.key === constraintKey ? { ...c, parameters } : c
+      )
+    }));
   },
   
   addRequirement: (requirement) => {

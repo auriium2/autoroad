@@ -103,8 +103,13 @@ class NoScheduleConflicts:
     Hard constraint: Prevent courses with overlapping required time slots.
     
     This uses Hydrant schedule data for accurate time slot detection.
-    Applies to all semesters using the best available schedule data for each
-    (extrapolates current semester data to future semesters of the same term type).
+    
+    When extrapolate=True (default), applies to all semesters using the best available
+    schedule data for each (extrapolates current semester data to future semesters
+    of the same term type).
+    
+    When extrapolate=False, only applies to semesters that have real schedule data
+    available (typically just the current/upcoming semester).
     
     A time slot is "required" if there's no alternative on that day for that section type.
     Multiple times on the same day = options (student picks one), so no conflict.
@@ -115,6 +120,9 @@ class NoScheduleConflicts:
             # semester_idx -> (course_id -> required slots)
     }
     """
+
+    def __init__(self, extrapolate: bool = False):
+        self.extrapolate: bool = extrapolate
     
     def add_to_model(
         self,
@@ -246,9 +254,18 @@ async def fetch_hydrant_data_for_semesters(
     courses_df: Any,
     planning_year_start: int,
     max_semesters: int,
+    extrapolate: bool = False,
 ) -> dict[int, dict[str, list[tuple[int, int, int]]]]:
     """
     Fetch Hydrant schedule data for all semesters, using fallback logic.
+    
+    Args:
+        take_vars: Course take decision variables
+        courses_df: Polars DataFrame with course data
+        planning_year_start: Start year of planning (e.g., 2025 for class of 2029)
+        max_semesters: Maximum number of semesters
+        extrapolate: If True, use fallback data for future semesters. If False, only
+                     use semesters with real data available.
     
     Returns:
         Dict mapping semester_idx -> (course_id -> required slots)
@@ -270,6 +287,10 @@ async def fetch_hydrant_data_for_semesters(
         
         target_code = semester_idx_to_hydrant_code(semester_idx, planning_year_start)
         _, data_semester = resolve_semester(target_code, now.year, now.month)
+        
+        # When not extrapolating, skip semesters that would use fallback data
+        if not extrapolate and data_semester != target_code:
+            continue
         
         if data_semester not in data_source_to_semesters:
             data_source_to_semesters[data_semester] = []

@@ -30,6 +30,15 @@ export interface HardConstraintMetadata {
   name: string;
   description: string;
   category: string;
+  hasParameters: boolean;
+  defaultParameters: Record<string, unknown>;
+  parameterTypes: Record<string, string>;
+  beta: boolean;
+}
+
+export interface ConstraintConfig {
+  key: string;
+  parameters: Record<string, unknown>;
 }
 
 export interface HardConstraintsResponse {

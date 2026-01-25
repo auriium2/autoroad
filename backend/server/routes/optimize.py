@@ -323,6 +323,10 @@ async def get_hard_constraints():
             "description": constraint.description,
             "category": constraint.category,
             "defaultEnabled": constraint.default_enabled,
+            "hasParameters": constraint.has_parameters,
+            "defaultParameters": constraint.default_parameters,
+            "parameterTypes": {k: v.__name__ for k, v in constraint.parameter_types.items()},
+            "beta": constraint.beta,
         })
 
     return {"constraints": result}

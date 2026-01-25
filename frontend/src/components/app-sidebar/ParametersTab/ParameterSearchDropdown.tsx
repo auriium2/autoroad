@@ -1,7 +1,7 @@
 
 import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { SearchableItem, ObjectiveMetadata } from "@/types/models/optimizer";
+import type { SearchableItem, ObjectiveMetadata, HardConstraintMetadata } from "@/types/models/optimizer";
 
 interface ParameterSearchDropdownProps {
   searchResults?: {
@@ -19,7 +19,7 @@ interface ParameterSearchDropdownProps {
   isLoading: boolean;
   searchTerm: string;
   onSelectObjective: (objective: ObjectiveMetadata) => void;
-  onSelectConstraint: (key: string) => void;
+  onSelectConstraint: (constraint: HardConstraintMetadata) => void;
   onSelectRequirement: (key: string) => void;
 }
 
@@ -90,7 +90,11 @@ export function ParameterSearchDropdown({
           {searchResults.constraints.map((item) => (
             <button
               key={`search-${item.type}-${item.key}`}
-              onClick={() => onSelectConstraint(item.key)}
+              onClick={() => {
+                if (item.metadata && 'key' in item.metadata) {
+                  onSelectConstraint(item.metadata as HardConstraintMetadata);
+                }
+              }}
               className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
             >
               <div className="font-medium">{item.displayName}</div>

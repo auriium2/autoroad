@@ -59,13 +59,13 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   });
 
   const { data: searchResults, isLoading: searchLoading } = useQuery({
-    queryKey: ['parameters', 'search', debouncedSearch, selectedRequirements, selectedObjectives.map(o => o.key), selectedHardConstraints],
+    queryKey: ['parameters', 'search', debouncedSearch, selectedRequirements, selectedObjectives.map(o => o.key), selectedHardConstraints.map(c => c.key)],
     queryFn: () => parametersApi.search({
       query: debouncedSearch || undefined,
       limit: 30,
       excludeRequirements: selectedRequirements,
       excludeObjectives: selectedObjectives.map(o => o.key),
-      excludeConstraints: selectedHardConstraints,
+      excludeConstraints: selectedHardConstraints.map(c => c.key),
     }),
     enabled: showSearchResults,
     staleTime: 5000,
@@ -128,7 +128,7 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
     ...selectedObjectives
       .filter(o => o.key !== 'category_rewards')
       .map(o => ({ type: 'objective' as const, key: o.key })),
-    ...selectedHardConstraints.map(key => ({ type: 'constraint' as const, key })),
+    ...selectedHardConstraints.map(c => ({ type: 'constraint' as const, key: c.key })),
     ...selectedObjectives
       .filter(o => o.key === 'category_rewards')
       .map(o => ({ type: 'objective' as const, key: o.key })),
@@ -165,8 +165,8 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
               setInputValue("");
               setShowSearchResults(false);
             }}
-            onSelectConstraint={(key) => {
-              toggleHardConstraint(key);
+            onSelectConstraint={(constraint) => {
+              toggleHardConstraint(constraint.key, constraint.defaultParameters);
               setInputValue("");
               setShowSearchResults(false);
             }}
@@ -209,13 +209,15 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
                 />
               );
             } else if (item.type === 'constraint') {
-              const constraint = constraintsData?.constraints.find(c => c.key === item.key);
-              if (!constraint) return null;
+              const constraintMetadata = constraintsData?.constraints.find(c => c.key === item.key);
+              const constraintConfig = selectedHardConstraints.find(c => c.key === item.key);
+              if (!constraintMetadata || !constraintConfig) return null;
 
               return (
                 <SelectedConstraintCard
                   key={`selected-${item.type}-${item.key}`}
-                  constraint={constraint}
+                  metadata={constraintMetadata}
+                  config={constraintConfig}
                 />
               );
             }

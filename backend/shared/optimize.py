@@ -371,17 +371,21 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         perf_start = time.time()
         
         # Use exactly what the frontend sends - no defaults
-        constraint_keys = request.hardConstraints or []
+        constraint_configs = request.hardConstraints or []
+        constraint_keys = [c.key for c in constraint_configs]
         
-        if constraint_keys:
+        if constraint_configs:
             # Fetch Hydrant schedule data for the current semester (for conflict detection)
             hydrant_extra: dict[str, object] = {}
             if 'no_schedule_conflicts' in constraint_keys:
                 from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
                 
-                # Extrapolate mode: apply constraint to all semesters using best available data
+                # Get extrapolate parameter from the constraint config
+                conflicts_config = next((c for c in constraint_configs if c.key == 'no_schedule_conflicts'), None)
+                extrapolate = bool(conflicts_config.parameters.get('extrapolate', False)) if conflicts_config else False
+                
                 semester_to_slots = await fetch_hydrant_data_for_semesters(
-                    take_vars, courses_df, planning_year_start, max_semesters
+                    take_vars, courses_df, planning_year_start, max_semesters, extrapolate
                 )
                 
                 hydrant_extra['hydrant_schedule_data'] = {
@@ -395,9 +399,9 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                 markers=request.markers,
                 extra=hydrant_extra if hydrant_extra else None,
             )
-            for constraint_key in constraint_keys:
+            for constraint_config in constraint_configs:
                 try:
-                    constraint = instantiate_constraint(constraint_key)
+                    constraint = instantiate_constraint(constraint_config.key, constraint_config.parameters)
                     constraint.add_to_model(model, take_vars, constraint_context)
                 except ValueError:
                     pass
