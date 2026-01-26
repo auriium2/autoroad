@@ -84,9 +84,9 @@ def semester_idx_to_hydrant_code(semester_idx: int, planning_year_start: int) ->
     """
     year_in_plan = (semester_idx - 1) // 3
     term_in_year = (semester_idx - 1) % 3  # 0=Fall, 1=IAP, 2=Spring
-    
+
     academic_year = planning_year_start + year_in_plan
-    
+
     if term_in_year == 0:  # Fall
         return f"f{academic_year % 100}"
     elif term_in_year == 1:  # IAP
@@ -105,7 +105,7 @@ def hydrant_code_to_semester_idx(code: str, planning_year_start: int) -> int:
     """
     term = code[0]
     year = int(code[1:]) + 2000
-    
+
     if term == "f":
         year_in_plan = year - planning_year_start
         return year_in_plan * 3 + 1

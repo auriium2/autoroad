@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TimeBlockPicker } from "./TimeBlockPicker";
 import type { HardConstraintMetadata, ConstraintConfig } from "@/types/models/optimizer";
 
 interface SelectedConstraintCardProps {
@@ -51,24 +52,31 @@ export function SelectedConstraintCard({ metadata, config }: SelectedConstraintC
             
             {metadata.hasParameters && Object.keys(metadata.parameterTypes).length > 0 && (
               <div className="mt-2 space-y-2 pt-1">
-                {Object.entries(metadata.parameterTypes).map(([paramKey, paramType]) => (
-                  <div key={paramKey} className="flex items-center gap-2 min-w-0">
-                    {paramType === 'bool' ? (
-                      <>
+                {Object.entries(metadata.parameterTypes).map(([paramKey, paramType]) => {
+                  // Special handling for blocked_slots - render TimeBlockPicker
+                  if (paramKey === 'blocked_slots' && paramType === 'list') {
+                    const slots = (getParamValue(paramKey) as number[][]) || [];
+                    return (
+                      <TimeBlockPicker
+                        key={paramKey}
+                        blockedSlots={slots}
+                        onChange={(newSlots) => handleParameterChange(paramKey, newSlots)}
+                      />
+                    );
+                  }
+
+                  return (
+                    <div key={paramKey} className="flex items-center gap-2 min-w-0">
+                      <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
+                        {paramKey.replace(/_/g, ' ')}:
+                      </Label>
+                      {paramType === 'bool' ? (
                         <Checkbox
                           id={`${metadata.key}-${paramKey}`}
                           checked={Boolean(getParamValue(paramKey))}
                           onCheckedChange={(checked: boolean) => handleParameterChange(paramKey, checked)}
                         />
-                        <Label htmlFor={`${metadata.key}-${paramKey}`} className="text-xs text-muted-foreground capitalize cursor-pointer">
-                          {paramKey.replace(/_/g, ' ')}
-                        </Label>
-                      </>
-                    ) : (
-                      <>
-                        <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
-                          {paramKey.replace(/_/g, ' ')}:
-                        </Label>
+                      ) : (
                         <input
                           type="text"
                           value={String(getParamValue(paramKey) ?? '')}
@@ -76,10 +84,10 @@ export function SelectedConstraintCard({ metadata, config }: SelectedConstraintC
                           className="w-24 px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded shrink-0"
                           placeholder={String(metadata.defaultParameters[paramKey] ?? '')}
                         />
-                      </>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

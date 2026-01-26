@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { hydrantApi, type TimeBlock } from "@/services/hydrant";
 import { queryKeys } from "@/lib/queryKeys";
 import { isPastSemesterById } from "@/lib/semesterUtils";
+import { useOptimizationStore } from "@/stores/optimizationStore";
 
 interface MiniSchedulePreviewProps {
   courseIds: string[];
@@ -181,6 +182,15 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
     enabled: courseIds.length > 0,
   });
 
+  // Get blocked slots from the schedule_free_time constraint
+  const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);
+  const blockedSlots = React.useMemo(() => {
+    const freeTimeConstraint = selectedHardConstraints.find(c => c.key === 'schedule_free_time');
+    if (!freeTimeConstraint) return [];
+    const slots = freeTimeConstraint.parameters.blocked_slots;
+    return Array.isArray(slots) ? slots as number[][] : [];
+  }, [selectedHardConstraints]);
+
   const courseId2Color = React.useMemo(() => {
     const map = new Map<string, { bg: string; hex: string }>();
     courseIds.forEach((id, i) => {
@@ -253,6 +263,9 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
               const solidBlocks = renderBlocks.filter((b) => b.isRequired);
               const optionBlocks = renderBlocks.filter((b) => !b.isRequired);
 
+              // Get blocked slots for this day
+              const dayBlockedSlots = blockedSlots.filter(([d]) => d === dayIndex);
+
               return (
                 <div key={day} className="flex-1 bg-gray-800 relative" style={{ minWidth: 28, height: HOURS * 8 }}>
                 {Array.from({ length: HOURS }, (_, i) => (
@@ -262,6 +275,31 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
                     style={{ top: i * 8 }}
                   />
                 ))}
+                {/* Render blocked time slots */}
+                {dayBlockedSlots.map(([, startHour, endHour], idx) => {
+                  const top = (startHour - START_HOUR) * 8;
+                  const height = (endHour - startHour) * 8;
+                  
+                  if (endHour <= START_HOUR || startHour >= END_HOUR) return null;
+                  
+                  const clampedTop = Math.max(0, top);
+                  const clampedHeight = Math.min(height, HOURS * 8 - clampedTop);
+                  
+                  return (
+                    <div
+                      key={`blocked-${idx}`}
+                      className="absolute w-full"
+                      style={{
+                        top: clampedTop,
+                        height: clampedHeight,
+                        backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(239, 68, 68, 0.1) 2px, rgba(239, 68, 68, 0.1) 4px)',
+                        zIndex: 0,
+                      }}
+                      title="Blocked time"
+                    />
+                  );
+                })}
                 {/* Render option blocks with nesting for overlaps */}
                 {optionBlocks.map((block, idx) => {
                   const top = (block.start_hour - START_HOUR) * 8;

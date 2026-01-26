@@ -2,7 +2,7 @@ import os
 
 import sentry_sdk
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded

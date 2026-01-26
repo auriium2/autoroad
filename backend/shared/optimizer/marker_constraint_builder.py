@@ -55,17 +55,23 @@ def add_marker_constraints(
     Returns:
         MarkerConstraintResult with statistics and any warnings/errors
     """
+    import time
+    start = time.time()
+    
     constraints_added = 0
     warnings = []
     errors = []
 
     # Build course_id -> course_idx mapping
+    t0 = time.time()
     course_id_to_idx = {}
     for idx in range(len(courses_df)):
         subject_id = courses_df[idx, 'subject_id']
         course_id_to_idx[subject_id] = idx
+    build_idx_time = time.time() - t0
 
     # Build hass_attribute -> list of course indices mapping for virtual markers
+    t0 = time.time()
     hass_attr_to_indices: dict[str, list[int]] = {
         "HASS-A": [],
         "HASS-H": [],
@@ -77,6 +83,7 @@ def add_marker_constraints(
             hass_attr = courses_df[idx, "hass_attribute"]
             if hass_attr in hass_attr_to_indices:
                 hass_attr_to_indices[hass_attr].append(idx)
+    build_hass_time = time.time() - t0
 
     # Count HASS markers by (category, section) to handle multiple markers of same type
     hass_pin_counts: Counter[tuple[str, int]] = Counter()
@@ -280,6 +287,10 @@ def add_marker_constraints(
         else:
             warnings.append(f"Unknown marker status: {marker.status}")
 
+    total_time = time.time() - start
+    print(f"[Markers] Added {constraints_added} constraints in {total_time:.3f}s "
+          f"(build_idx={build_idx_time:.3f}s, build_hass={build_hass_time:.3f}s)")
+    
     return MarkerConstraintResult(
         constraints_added=constraints_added,
         warnings=warnings,

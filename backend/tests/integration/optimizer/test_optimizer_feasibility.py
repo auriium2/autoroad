@@ -317,13 +317,14 @@ class TestRegressionBugs:
 
         Fix: Only add the connection_type='any' constraint when cutoff > 0.
         """
+        import asyncio
+
         import polars as pl
         from ortools.sat.python import cp_model
 
         from shared.courses.requirements.parser import parse
         from shared.courses.requirements.types import SubjectThresholdGroup
         from shared.optimizer.requirements.builder import build_constraints
-        import asyncio
         from shared.services.cache import get_courses_data
 
         # Create a minimal test case that replicates the bug structure:
@@ -423,11 +424,12 @@ class TestRegressionBugs:
         Fix: Changed range(1, 13) to VALID_SEMESTERS ([-1] + list(range(1, 13)))
         in constraint building for courses, HASS, and attribute requirements.
         """
+        import asyncio
+
         import polars as pl
         from ortools.sat.python import cp_model
 
         from shared.courses.requirements.parser import parse
-        import asyncio
         from shared.courses.requirements.types import AllGroup
         from shared.models.requests import Marker
         from shared.optimizer.constraints.basic import create_take_vars

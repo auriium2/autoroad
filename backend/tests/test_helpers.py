@@ -29,7 +29,11 @@ from shared.optimizer.objectives.registry import get_default_objectives, instant
 from shared.optimizer.objectives.units import MinimizeUnits
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.services.cache import get_courses_data, get_parsed_prerequisites_by_index, get_requirements
+from shared.services.cache import (
+    get_courses_data,
+    get_parsed_prerequisites_by_index,
+    get_requirements,
+)
 
 
 @dataclass

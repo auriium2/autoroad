@@ -209,7 +209,7 @@ async def _get_hydrant_latest() -> dict[str, Any]:
 @cache(ttl="1h", lock=True, key="hydrant:{semester}")
 async def get_hydrant_semester_data(semester: str) -> dict[str, Any]:
     url = f"{HYDRANT_BASE_URL}/latest.json" if semester == "latest" else f"{HYDRANT_BASE_URL}/{semester}.json"
-    
+
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         response = await client.get(url)
         content_type = response.headers.get("content-type", "")
@@ -225,7 +225,7 @@ async def get_hydrant_courses(
 ) -> dict[str, dict[str, Any]]:
     data = await get_hydrant_semester_data(semester)
     classes = data.get("classes", {})
-    
+
     return {
         course_id: classes[course_id]
         for course_id in course_ids

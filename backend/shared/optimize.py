@@ -369,29 +369,37 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         # Add hard constraints
         perf_start = time.time()
-        
+
         # Use exactly what the frontend sends - no defaults
         constraint_configs = request.hardConstraints or []
         constraint_keys = [c.key for c in constraint_configs]
-        
+
         if constraint_configs:
-            # Fetch Hydrant schedule data for the current semester (for conflict detection)
+            # Fetch Hydrant schedule data for constraints that need it
             hydrant_extra: dict[str, object] = {}
-            if 'no_schedule_conflicts' in constraint_keys:
+            needs_hydrant_data = 'no_schedule_conflicts' in constraint_keys or 'schedule_free_time' in constraint_keys
+
+            if needs_hydrant_data:
                 from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
-                
-                # Get extrapolate parameter from the constraint config
+
+                # Get extrapolate parameter from constraints that need hydrant data
                 conflicts_config = next((c for c in constraint_configs if c.key == 'no_schedule_conflicts'), None)
-                extrapolate = bool(conflicts_config.parameters.get('extrapolate', False)) if conflicts_config else False
-                
+                free_time_config = next((c for c in constraint_configs if c.key == 'schedule_free_time'), None)
+
+                # Use extrapolate if either constraint has it enabled
+                extrapolate = (
+                    (conflicts_config and bool(conflicts_config.parameters.get('extrapolate', False))) or
+                    (free_time_config and bool(free_time_config.parameters.get('extrapolate', False)))
+                )
+
                 semester_to_slots = await fetch_hydrant_data_for_semesters(
                     take_vars, courses_df, planning_year_start, max_semesters, extrapolate
                 )
-                
+
                 hydrant_extra['hydrant_schedule_data'] = {
                     'semester_to_slots': semester_to_slots,
                 }
-            
+
             constraint_context = ConstraintContext(
                 planning_year_start=planning_year_start,
                 courses_df=courses_df,

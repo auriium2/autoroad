@@ -223,6 +223,7 @@ def cached_course_data() -> CachedCourseData:
             requirements = cached_course_data.get_requirements(('major6-3new', 'girs'))
     """
     import asyncio
+
     from shared.services.cache import get_courses_data, get_parsed_prerequisites_by_index
 
     courses_data = asyncio.run(get_courses_data())

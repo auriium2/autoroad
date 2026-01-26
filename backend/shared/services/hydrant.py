@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from shared.services.cache import get_hydrant_semester_data
 
-
 # Hydrant slot system:
 # - 34 slots per day (6am-11pm, 30 min each)
 # - Slot 0-33 = Monday, 34-67 = Tuesday, etc.
@@ -58,7 +57,7 @@ def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlo
         sections = course.get(key, [])
         if not sections:
             continue
-        
+
         # A section type is required if there's exactly ONE section of that type
         # Multiple sections = options (student picks one)
         is_required = len(sections) == 1
@@ -93,17 +92,17 @@ def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[Tim
     Multiple sections of the same type = options (student picks one).
     """
     required: list[TimeBlock] = []
-    
+
     section_types = [
         ("Lecture", "lectureSections"),
         ("Recitation", "recitationSections"),
         ("Lab", "labSections"),
         ("Design", "designSections"),
     ]
-    
+
     for kind, key in section_types:
         sections = course_data.get(key, [])
-        
+
         # If there's exactly ONE section of this type, all its slots are required
         if len(sections) == 1:
             section = sections[0]
@@ -123,7 +122,7 @@ def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[Tim
                             end_hour=end_hour,
                             is_required=True,
                         ))
-    
+
     return required
 
 
@@ -141,7 +140,7 @@ def detect_conflicts_from_courses(courses: dict[str, dict[str, Any]]) -> bool:
     all_required: list[TimeBlock] = []
     for course_id, course_data in courses.items():
         all_required.extend(get_required_blocks(course_id, course_data))
-    
+
     # Check for overlaps between different courses
     for i, a in enumerate(all_required):
         for b in all_required[i + 1:]:
@@ -152,7 +151,7 @@ def detect_conflicts_from_courses(courses: dict[str, dict[str, Any]]) -> bool:
                 continue
             if a.start_hour < b.end_hour and b.start_hour < a.end_hour:
                 return True
-    
+
     return False
 
 
@@ -181,12 +180,12 @@ def resolve_semester(
         latest_semester = f"s{current_year % 100}"
     else:
         latest_semester = f"f{current_year % 100}"
-    
+
     target_year = int(target_semester[1:]) + 2000
     target_term = target_semester[0]
     latest_term = latest_semester[0]
     latest_year = int(latest_semester[1:]) + 2000
-    
+
     if target_semester == latest_semester:
         # Target is current semester
         return "latest", latest_semester
@@ -209,7 +208,7 @@ def resolve_semester(
             # Spring X occurs Jan-May of year X
             # If we're past May, spring of current year has occurred
             most_recent_year = current_year if current_month > 5 else current_year - 1
-        
+
         if target_year <= most_recent_year:
             # Past semester - fetch directly
             return target_semester, target_semester
@@ -232,14 +231,14 @@ async def get_schedule_blocks(
     Tries: 1) target directly, 2) fallback by term type
     """
     from datetime import datetime
-    
+
     now = datetime.now()
     fetch_semester, data_semester = resolve_semester(
         target_semester, now.year, now.month
     )
-    
+
     data = await get_hydrant_semester_data(fetch_semester)
-    
+
     if data is None:
         return ScheduleResponse(
             target_semester=target_semester,
@@ -248,7 +247,7 @@ async def get_schedule_blocks(
             missing_courses=course_ids,
             has_conflicts=False,
         )
-    
+
     classes = data.get("classes", {})
     all_blocks: list[TimeBlock] = []
     missing_courses: list[str] = []

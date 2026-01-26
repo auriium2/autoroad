@@ -16,7 +16,11 @@ from shared.optimizer.constraints.basic import add_basic_constraints, create_tak
 from shared.optimizer.objectives.builder import ObjectiveBuilder
 from shared.optimizer.prerequisite_constraint_builder import add_prerequisite_constraints
 from shared.optimizer.requirements.builder import add_requirement_constraints
-from shared.services.cache import get_courses_data, get_parsed_prerequisites_by_index, get_requirements
+from shared.services.cache import (
+    get_courses_data,
+    get_parsed_prerequisites_by_index,
+    get_requirements,
+)
 
 
 @pytest.mark.e2e

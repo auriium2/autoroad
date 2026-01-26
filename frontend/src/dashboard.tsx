@@ -58,12 +58,12 @@ export default function Dashboard() {
     queryKey: queryKeys.health.backend(),
     queryFn: async () => {
       const response = await fetch('/api/health', {
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw new Error('Backend health check failed');
       return response.json();
     },
-    refetchInterval: 10000,
+    refetchInterval: 30000,
     retry: 0,
     staleTime: 0,
   });

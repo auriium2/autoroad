@@ -25,7 +25,7 @@ export function HealthIndicator({ className }: HealthIndicatorProps) {
     queryKey: queryKeys.health.backend(),
     queryFn: async (): Promise<HealthResponse> => {
       const response = await fetch('/api/health', {
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw new Error('Health check failed');
       return response.json();
