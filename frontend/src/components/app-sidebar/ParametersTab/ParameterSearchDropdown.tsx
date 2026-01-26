@@ -58,7 +58,7 @@ export function ParameterSearchDropdown({
     <div className="absolute z-20 w-full mt-1 bg-gray-900 border border-gray-700 rounded shadow-xl max-h-80 overflow-y-auto backdrop-blur-sm">
       {searchResults.objectives.length > 0 && (
         <div>
-          <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-purple-400 uppercase tracking-wider border-b border-gray-700/50">
+          <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-red-400 uppercase tracking-wider border-b border-gray-700/50">
             Objectives ({searchResults.totalCounts.objectives})
           </div>
           {searchResults.objectives.map((item) => (
@@ -84,7 +84,7 @@ export function ParameterSearchDropdown({
 
       {searchResults.constraints.length > 0 && (
         <div>
-          <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-orange-400 uppercase tracking-wider border-b border-gray-700/50">
+          <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-purple-400 uppercase tracking-wider border-b border-gray-700/50">
             Hard Constraints ({searchResults.totalCounts.constraints})
           </div>
           {searchResults.constraints.map((item) => (
