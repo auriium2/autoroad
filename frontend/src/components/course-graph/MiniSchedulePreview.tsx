@@ -329,10 +329,13 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
 
                   const blockHeight = Math.max(2, Math.min(height, HOURS * 8 - Math.max(0, top)) - inset * 2);
 
+                  // Type label: L=Lecture, R=Recitation, B=Lab, D=Design
+                  const typeLabel = block.type === "Lecture" ? "L" : block.type === "Recitation" ? "R" : block.type === "Lab" ? "B" : block.type === "Design" ? "D" : "";
+
                   return (
                     <div
                       key={`option-${block.course_id}-${block.type}-${block.start_hour}-${idx}`}
-                      className="absolute rounded-sm"
+                      className="absolute rounded-sm flex items-center justify-center"
                       style={{
                         top: Math.max(0, top) + inset,
                         height: blockHeight,
@@ -343,7 +346,16 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
                         zIndex: 1 + nestingDepth,
                       }}
                       title={`${block.course_id} ${block.type} (options)`}
-                    />
+                    >
+                      {typeLabel && blockHeight >= 6 && (
+                        <span
+                          className="absolute top-0 right-0.5 text-[5px] font-bold leading-none"
+                          style={{ color: `${colorInfo.hex}99` }}
+                        >
+                          {typeLabel}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
                 {/* Render solid blocks with overlap detection */}
@@ -371,6 +383,10 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
 
                   const inset = nestingDepth * 4; // 4px inset per nesting level
                   const hasOverlap = overlappingBlocks.length > 0;
+                  const blockHeight = Math.max(2, Math.min(height, HOURS * 8 - Math.max(0, top)) - inset * 2);
+
+                  // Type label: L=Lecture, R=Recitation, B=Lab, D=Design
+                  const typeLabel = block.type === "Lecture" ? "L" : block.type === "Recitation" ? "R" : block.type === "Lab" ? "B" : block.type === "Design" ? "D" : "";
 
                   return (
                     <div
@@ -378,7 +394,7 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
                       className="absolute rounded-sm"
                       style={{
                         top: Math.max(0, top) + inset,
-                        height: Math.max(2, Math.min(height, HOURS * 8 - Math.max(0, top)) - inset * 2),
+                        height: blockHeight,
                         left: 2 + inset,
                         right: 2 + inset,
                         backgroundColor: colorInfo.hex,
@@ -396,7 +412,16 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
                         }),
                       }}
                       title={`${block.course_id} ${block.type}${hasOverlap ? " (conflict)" : ""}`}
-                    />
+                    >
+                      {typeLabel && blockHeight >= 6 && (
+                        <span
+                          className="absolute top-0 right-0.5 text-[5px] font-bold leading-none"
+                          style={{ color: 'rgba(0,0,0,0.5)' }}
+                        >
+                          {typeLabel}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
                 </div>

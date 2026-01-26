@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TimeBlockPicker } from "./TimeBlockPicker";
 import type { HardConstraintMetadata, ConstraintConfig } from "@/types/models/optimizer";
 
@@ -49,7 +50,7 @@ export function SelectedConstraintCard({ metadata, config }: SelectedConstraintC
               </button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">{metadata.description}</p>
-            
+
             {metadata.hasParameters && Object.keys(metadata.parameterTypes).length > 0 && (
               <div className="mt-2 space-y-2 pt-1">
                 {Object.entries(metadata.parameterTypes).map(([paramKey, paramType]) => {
@@ -71,11 +72,26 @@ export function SelectedConstraintCard({ metadata, config }: SelectedConstraintC
                         {paramKey.replace(/_/g, ' ')}:
                       </Label>
                       {paramType === 'bool' ? (
-                        <Checkbox
-                          id={`${metadata.key}-${paramKey}`}
-                          checked={Boolean(getParamValue(paramKey))}
-                          onCheckedChange={(checked: boolean) => handleParameterChange(paramKey, checked)}
-                        />
+                        paramKey === 'extrapolate' ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Checkbox
+                                  id={`${metadata.key}-${paramKey}`}
+                                  checked={Boolean(getParamValue(paramKey))}
+                                  onCheckedChange={(checked: boolean) => handleParameterChange(paramKey, checked)}
+                                />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>Attempts to use hydrant's scheduling data for this semester for all future semesters (don't use this)</TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Checkbox
+                            id={`${metadata.key}-${paramKey}`}
+                            checked={Boolean(getParamValue(paramKey))}
+                            onCheckedChange={(checked: boolean) => handleParameterChange(paramKey, checked)}
+                          />
+                        )
                       ) : (
                         <input
                           type="text"
