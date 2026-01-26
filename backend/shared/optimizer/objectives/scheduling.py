@@ -1,5 +1,5 @@
 """
-Schedule-based objectives: minimize Fridays, avoid IAP, avoid special classes.
+Schedule-based objectives: avoid IAP, avoid special classes.
 """
 
 from __future__ import annotations
@@ -10,61 +10,6 @@ import polars as pl
 from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext, get_tier_penalty
-from .utils import preprocess_schedule_data
-
-
-class MinimizeFridayClasses:
-    """
-    Tier-based soft constraint to avoid classes that meet on Friday.
-
-    This maximizes long weekends for students who want to minimize Friday schedules.
-    """
-
-    def __init__(self):
-        """Initialize MinimizeFridayClasses."""
-        pass
-
-    def get_name(self) -> str:
-        return "Minimize Friday Classes"
-
-    def get_description(self) -> str:
-        return "Avoid courses that meet on Fridays (tier-based)"
-
-    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        """Preprocess schedule data to identify Friday classes."""
-        return preprocess_schedule_data(courses_df)
-
-    def add_to_model(
-        self,
-        model: cp_model.CpModel,
-        take_vars: dict[tuple[int, int], cp_model.IntVar],
-        context: ObjectiveContext
-    ) -> cp_model.LinearExpr:
-        """
-        Add tier-based penalty for courses that meet on Friday.
-
-        Formula: penalty = violations × TIER_BASE^tier × 1
-        """
-        # Get tier for this objective (default tier 2 if not set)
-        tier = 2
-        if context.objective_tiers and 'minimize_friday_classes' in context.objective_tiers:
-            tier = context.objective_tiers['minimize_friday_classes']
-
-        penalty = get_tier_penalty(tier, base_cost=1)
-
-        if context.extra is None or 'has_friday' not in context.extra:
-            return cp_model.LinearExpr.constant(0)
-
-        has_friday = context.extra['has_friday']
-        terms = []
-
-        for (course_idx, semester), var in take_vars.items():
-            if has_friday.get(course_idx, False):
-                terms.append(var * penalty)
-
-        if terms:
-            return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
-        return cp_model.LinearExpr.constant(0)
 
 
 class AvoidIAP:

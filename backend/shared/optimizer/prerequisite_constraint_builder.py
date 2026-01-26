@@ -425,6 +425,9 @@ def add_prerequisite_constraints(
     Returns:
         Tuple of (ConstraintResult, PrerequisiteConstraintBuilder) - result has summary, builder has cache stats
     """
+    import time
+    start = time.time()
+    
     if override_course_ids is None:
         override_course_ids = set()
 
@@ -440,4 +443,6 @@ def add_prerequisite_constraints(
     builder = PrerequisiteConstraintBuilder(ctx)
 
     result = builder.add_all_prerequisite_constraints(filtered_prereq_trees)
+    
+    print(f"[add_prerequisite_constraints] Added {result.constraints_added} constraints in {time.time() - start:.3f}s")
     return result, builder

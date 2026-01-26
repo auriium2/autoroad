@@ -1,15 +1,15 @@
 """
-Schedule conflict hard constraint using Hydrant data.
+Schedule conflict constraint using Hydrant data.
 
 Prevents taking courses with overlapping required time slots in the same semester.
-Only applies to the current/latest semester where schedule data is accurate.
 
-A time slot is "required" if there's no alternative - i.e., only one unique time
-for that course+type on a given day. Multiple times on the same day = options (pick one).
+A time slot is "required" if there's no alternative - i.e., only one section of that
+type exists. Multiple sections = student picks one (optional).
 """
 
 from __future__ import annotations
 
+import time
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any
 
@@ -19,22 +19,13 @@ if TYPE_CHECKING:
     from .base import ConstraintContext
 
 
-# Hydrant slot system constants
 SLOTS_PER_DAY = 34
 SLOT_START_HOUR = 6
 SLOT_DURATION_MINUTES = 30
 
 
 def slot_to_day_and_time(slot: int) -> tuple[int, int, int]:
-    """
-    Convert Hydrant slot to (day, start_minutes, end_minutes).
-    
-    Args:
-        slot: Hydrant slot number (0-based)
-        
-    Returns:
-        (day, start_minutes, end_minutes) where day is 0-4 (Mon-Fri)
-    """
+    """Convert Hydrant slot to (day, start_minutes, end_minutes)."""
     day = slot // SLOTS_PER_DAY
     slot_in_day = slot % SLOTS_PER_DAY
     start_minutes = (SLOT_START_HOUR * 60) + (slot_in_day * SLOT_DURATION_MINUTES)
@@ -42,39 +33,19 @@ def slot_to_day_and_time(slot: int) -> tuple[int, int, int]:
     return day, start_minutes, end_minutes
 
 
-def get_required_slots_from_course(
-    course_data: dict[str, Any]
-) -> list[tuple[int, int, int]]:
+def get_required_slots_from_course(course_data: dict[str, Any]) -> list[tuple[int, int, int]]:
     """
-    Extract required (non-optional) time slots from Hydrant course data.
-    
+    Extract required time slots from Hydrant course data.
     A section type is required if there's only ONE section of that type.
-    Multiple sections of the same type = options (student picks one section).
-    Within a required section, ALL time slots must be attended.
-    
-    Args:
-        course_data: Hydrant course object
-        
-    Returns:
-        List of (day, start_minutes, end_minutes) for required slots only
     """
     required_slots: list[tuple[int, int, int]] = []
 
-    section_types = [
-        ("Lecture", "lectureSections"),
-        ("Recitation", "recitationSections"),
-        ("Lab", "labSections"),
-        ("Design", "designSections"),
-    ]
+    section_keys = ["lectureSections", "recitationSections", "labSections", "designSections"]
 
-    for _, key in section_types:
+    for key in section_keys:
         sections = course_data.get(key, [])
-
-        # If there's exactly ONE section of this type, all its slots are required
-        # If there are multiple sections, student picks one (optional)
         if len(sections) == 1:
             section = sections[0]
-            # section format: [[[startSlot, numSlots], ...], room]
             if section and len(section) >= 2:
                 timeslots = section[0]
                 for slot_pair in timeslots:
@@ -87,38 +58,43 @@ def get_required_slots_from_course(
     return required_slots
 
 
-def slots_overlap(slot1: tuple[int, int, int], slot2: tuple[int, int, int]) -> bool:
-    """Check if two time slots overlap (same day and overlapping time)."""
-    day1, start1, end1 = slot1
-    day2, start2, end2 = slot2
+def find_conflicting_pairs(
+    course_idx_to_slots: dict[int, list[tuple[int, int, int]]]
+) -> set[tuple[int, int]]:
+    """Find all pairs of courses with overlapping time slots using sweep line algorithm."""
+    conflicting_pairs: set[tuple[int, int]] = set()
 
-    if day1 != day2:
-        return False
+    # Group events by day
+    events_by_day: dict[int, list[tuple[int, bool, int]]] = defaultdict(list)
+    for course_idx, slots in course_idx_to_slots.items():
+        for day, start_min, end_min in slots:
+            events_by_day[day].append((start_min, True, course_idx))
+            events_by_day[day].append((end_min, False, course_idx))
 
-    return start1 < end2 and start2 < end1
+    # Sweep line per day
+    for events in events_by_day.values():
+        events.sort(key=lambda e: (e[0], e[1]))  # Sort by time, ends before starts
+        active: set[int] = set()
+        for _, is_start, course_idx in events:
+            if is_start:
+                for other_idx in active:
+                    pair = (min(course_idx, other_idx), max(course_idx, other_idx))
+                    conflicting_pairs.add(pair)
+                active.add(course_idx)
+            else:
+                active.discard(course_idx)
+
+    return conflicting_pairs
 
 
 class NoScheduleConflicts:
     """
     Hard constraint: Prevent courses with overlapping required time slots.
     
-    This uses Hydrant schedule data for accurate time slot detection.
+    When extrapolate=True, applies to all semesters using best available schedule data.
+    When extrapolate=False, only applies to semesters with real data available.
     
-    When extrapolate=True (default), applies to all semesters using the best available
-    schedule data for each (extrapolates current semester data to future semesters
-    of the same term type).
-    
-    When extrapolate=False, only applies to semesters that have real schedule data
-    available (typically just the current/upcoming semester).
-    
-    A time slot is "required" if there's no alternative on that day for that section type.
-    Multiple times on the same day = options (student picks one), so no conflict.
-    
-    Requires 'hydrant_schedule_data' in context.extra with format:
-    {
-        'semester_to_slots': dict[int, dict[str, list[tuple[int, int, int]]]]
-            # semester_idx -> (course_id -> required slots)
-    }
+    Requires 'hydrant_schedule_data' in context.extra.
     """
 
     def __init__(self, extrapolate: bool = False):
@@ -130,8 +106,6 @@ class NoScheduleConflicts:
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         context: ConstraintContext
     ) -> None:
-        """Add schedule conflict constraints to model."""
-        import time
         start = time.time()
 
         if context.extra is None:
@@ -142,80 +116,56 @@ class NoScheduleConflicts:
             return
 
         semester_to_slots: dict[int, dict[str, list[tuple[int, int, int]]]] = hydrant_data.get('semester_to_slots', {})
-
         if not semester_to_slots:
             return
 
-        print(f"[NoScheduleConflicts] semester_to_slots has {len(semester_to_slots)} semesters")
-
-        # Build course_id -> course_idx mapping
-        course_id_to_idx: dict[str, int] = {}
-        for idx in range(len(context.courses_df)):
-            subject_id = context.courses_df[idx, 'subject_id']
-            course_id_to_idx[subject_id] = idx
-
         # Group take_vars by semester
-        courses_by_semester: dict[int, list[tuple[int, cp_model.IntVar]]] = {}
+        courses_by_semester: dict[int, dict[int, cp_model.IntVar]] = defaultdict(dict)
         for (course_idx, semester), var in take_vars.items():
-            if semester not in courses_by_semester:
-                courses_by_semester[semester] = []
-            courses_by_semester[semester].append((course_idx, var))
+            courses_by_semester[semester][course_idx] = var
 
-        # For each semester, add constraints for conflicting course pairs
-        conflicts_added: set[tuple[int, int, int]] = set()
+        total_intervals = 0
+        total_nooverlap = 0
 
-        for semester, courses in courses_by_semester.items():
-            # Get the schedule data for this semester
-            course_id_to_slots = semester_to_slots.get(semester, {})
+        for semester, course_vars in courses_by_semester.items():
+            course_id_to_slots = semester_to_slots.get(semester)
             if not course_id_to_slots:
                 continue
 
-            # Build mapping from course_idx to (var, slots) for courses with schedule data
-            course_data: dict[int, tuple[cp_model.IntVar, list[tuple[int, int, int]]]] = {}
-            for course_idx, var in courses:
+            # Group intervals by day for this semester
+            # day -> list of interval variables
+            day_intervals: dict[int, list[cp_model.IntervalVar]] = defaultdict(list)
+
+            for course_idx, take_var in course_vars.items():
                 subject_id = context.courses_df[course_idx, 'subject_id']
                 slots = course_id_to_slots.get(subject_id)
-                if slots:
-                    course_data[course_idx] = (var, slots)
+                if not slots:
+                    continue
 
-            if not course_data:
-                continue
+                # Create an optional interval for each time block
+                for i, (day, start_min, end_min) in enumerate(slots):
+                    interval = model.NewOptionalFixedSizeIntervalVar(
+                        start=start_min,
+                        size=end_min - start_min,
+                        is_present=take_var,
+                        name=f"sched_s{semester}_c{course_idx}_{i}"
+                    )
+                    day_intervals[day].append(interval)
+                    total_intervals += 1
 
-            # Group time slots by day for sweep line algorithm
-            # Each event: (time, is_start, course_idx)
-            events_by_day: dict[int, list[tuple[int, bool, int]]] = defaultdict(list)
-            for course_idx, (_, slots) in course_data.items():
-                for day, start_min, end_min in slots:
-                    events_by_day[day].append((start_min, True, course_idx))
-                    events_by_day[day].append((end_min, False, course_idx))
+            # Add NoOverlap constraint for each day
+            for day, intervals in day_intervals.items():
+                if len(intervals) >= 2:
+                    model.AddNoOverlap(intervals)
+                    total_nooverlap += 1
 
-            # Sweep line: find all overlapping pairs per day
-            for day, events in events_by_day.items():
-                # Sort by time, with ends before starts at same time to avoid false overlaps
-                events.sort(key=lambda e: (e[0], e[1]))
-
-                active_courses: set[int] = set()
-                for event_time, is_start, course_idx in events:
-                    if is_start:
-                        # This course overlaps with all currently active courses
-                        for other_idx in active_courses:
-                            conflict_key = (semester, min(course_idx, other_idx), max(course_idx, other_idx))
-                            if conflict_key not in conflicts_added:
-                                var1 = course_data[course_idx][0]
-                                var2 = course_data[other_idx][0]
-                                model.Add(var1 + var2 <= 1)
-                                conflicts_added.add(conflict_key)
-                        active_courses.add(course_idx)
-                    else:
-                        active_courses.discard(course_idx)
-
-        print(f"[NoScheduleConflicts] Added {len(conflicts_added)} conflict constraints in {time.time() - start:.2f}s")
+        print(f"[NoScheduleConflicts] Added {total_intervals} intervals, {total_nooverlap} NoOverlap constraints in {time.time() - start:.2f}s")
 
     def get_name(self) -> str:
         return "No Schedule Conflicts"
 
     def get_description(self) -> str:
-        return "Hard constraint: prevents taking courses with overlapping required time slots."
+        return "Prevents taking courses with overlapping required time slots."
 
     def get_category(self) -> str:
         return "scheduling"
@@ -225,19 +175,7 @@ async def fetch_hydrant_schedule_data(
     course_ids: list[str],
     fetch_semester: str,
 ) -> dict[str, list[tuple[int, int, int]]]:
-    """
-    Fetch Hydrant schedule data for courses and return only required slots.
-    
-    A section type is required if there's only ONE section of that type.
-    Multiple sections = options (student picks one).
-    
-    Args:
-        course_ids: List of course IDs to fetch
-        fetch_semester: What to fetch - "latest" or an archived semester code (e.g., "f25")
-        
-    Returns:
-        Dict mapping course_id -> list of required slots (day, start_minutes, end_minutes)
-    """
+    """Fetch Hydrant schedule data and return only required slots."""
     from shared.services.cache import get_hydrant_semester_data
 
     try:
@@ -268,20 +206,7 @@ async def fetch_hydrant_data_for_semesters(
     max_semesters: int,
     extrapolate: bool = False,
 ) -> dict[int, dict[str, list[tuple[int, int, int]]]]:
-    """
-    Fetch Hydrant schedule data for all semesters, using fallback logic.
-    
-    Args:
-        take_vars: Course take decision variables
-        courses_df: Polars DataFrame with course data
-        planning_year_start: Start year of planning (e.g., 2025 for class of 2029)
-        max_semesters: Maximum number of semesters
-        extrapolate: If True, use fallback data for future semesters. If False, only
-                     use semesters with real data available.
-    
-    Returns:
-        Dict mapping semester_idx -> (course_id -> required slots)
-    """
+    """Fetch Hydrant schedule data for all relevant semesters."""
     from datetime import datetime
 
     from shared.services.hydrant import resolve_semester
@@ -289,14 +214,13 @@ async def fetch_hydrant_data_for_semesters(
 
     now = datetime.now()
 
-    # Pre-compute course_ids by semester for efficient lookup (single pass over take_vars)
+    # Pre-compute course_ids by semester
     semester_to_course_ids: dict[int, set[str]] = defaultdict(set)
     for (course_idx, semester) in take_vars.keys():
         if 1 <= semester <= max_semesters:
             semester_to_course_ids[semester].add(courses_df[course_idx, "subject_id"])
 
-    # Group semesters by their fetch source to avoid redundant fetches
-    # Key is (fetch_semester, data_semester) tuple
+    # Group semesters by fetch source
     fetch_source_to_semesters: dict[tuple[str, str], list[int]] = {}
 
     for semester_idx in range(1, max_semesters + 1):
@@ -306,7 +230,6 @@ async def fetch_hydrant_data_for_semesters(
         target_code = semester_idx_to_hydrant_code(semester_idx, planning_year_start)
         fetch_semester, data_semester = resolve_semester(target_code, now.year, now.month)
 
-        # When not extrapolating, skip semesters that would use fallback data
         if not extrapolate and data_semester != target_code:
             continue
 
@@ -315,19 +238,16 @@ async def fetch_hydrant_data_for_semesters(
             fetch_source_to_semesters[key] = []
         fetch_source_to_semesters[key].append(semester_idx)
 
-    # Fetch data for each unique fetch source
+    # Fetch data for each unique source
     result: dict[int, dict[str, list[tuple[int, int, int]]]] = {}
 
     for (fetch_semester, _), semester_indices in fetch_source_to_semesters.items():
-        # Collect all course IDs that have variables in any of these semesters
-        course_ids_for_source: set[str] = set()
+        course_ids: set[str] = set()
         for semester_idx in semester_indices:
-            course_ids_for_source.update(semester_to_course_ids[semester_idx])
+            course_ids.update(semester_to_course_ids[semester_idx])
 
-        # Fetch the schedule data once for this fetch source
-        slots_data = await fetch_hydrant_schedule_data(list(course_ids_for_source), fetch_semester)
+        slots_data = await fetch_hydrant_schedule_data(list(course_ids), fetch_semester)
 
-        # Apply to all semesters that use this data source
         for semester_idx in semester_indices:
             result[semester_idx] = slots_data
 

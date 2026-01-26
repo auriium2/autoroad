@@ -58,7 +58,6 @@ class ObjectiveContext:
     courses_df: pl.DataFrame
 
     # Preprocessed schedule data (populated by preprocessing step)
-    has_friday: dict[int, bool] | None = None
     time_slots: dict[int, list[tuple[str, int]]] | None = None  # (days, start_time_minutes)
 
     # Tier data for soft constraints and category rewards

@@ -11,7 +11,6 @@ from .equivalents import DiscourageEquivalentCourses
 from .scheduling import (
     AvoidIAP,
     AvoidSpecialClasses,
-    MinimizeFridayClasses,
     MinimumClassesPerSemester,
 )
 from .units import AvoidSmallClasses
@@ -93,17 +92,6 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         default_parameters={"max_finals": 2},
         parameter_types={"max_finals": int},
         category="workload",
-        default_tier=1,
-    ),
-    "minimize_friday_classes": ObjectiveMetadata(
-        key="minimize_friday_classes",
-        class_ref=MinimizeFridayClasses,
-        name="Minimize Friday Classes",
-        description="Give yourself a three day weekend",
-        has_parameters=False,
-        default_parameters={},
-        parameter_types={},
-        category="scheduling",
         default_tier=1,
     ),
     "avoid_iap": ObjectiveMetadata(

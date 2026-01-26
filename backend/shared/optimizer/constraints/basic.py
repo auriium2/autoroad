@@ -9,6 +9,7 @@ These constraints are always applied and form the foundation of the optimization
 - Lock past semesters (can't schedule courses in the past)
 """
 
+import time
 from collections.abc import Sequence
 
 import polars as pl
@@ -48,6 +49,8 @@ def create_take_vars(
         - -1: ASE (Advanced Standing Exam credit)
         - 1 to max_semesters: Regular semesters
     """
+    start = time.time()
+
     take_vars = {}
 
     # Build a set of course_ids for special semesters
@@ -82,6 +85,7 @@ def create_take_vars(
             var_name = f"take_{subject_id.replace('.', '_')}_s-2"
             take_vars[(course_idx, -2)] = model.NewBoolVar(var_name)
 
+    print(f"[create_take_vars] Created {len(take_vars)} variables in {time.time() - start:.3f}s")
     return take_vars
 
 
@@ -262,6 +266,8 @@ def add_basic_constraints(
     Returns:
         Total number of constraints added
     """
+    start = time.time()
+
     total_constraints = 0
 
     total_constraints += add_at_most_once_constraint(model, take_vars, courses_df, max_semesters)
@@ -269,6 +275,7 @@ def add_basic_constraints(
     total_constraints += add_iap_limits(model, take_vars, courses_df, max_semesters)
     total_constraints += add_hass_total_constraint(model, take_vars, courses_df)
 
+    print(f"[add_basic_constraints] Added {total_constraints} constraints in {time.time() - start:.3f}s")
     return total_constraints
 
 
@@ -294,6 +301,8 @@ def add_past_semester_constraints(
     Returns:
         Number of constraints added
     """
+    start = time.time()
+
     current_semester = get_current_semester_index(planning_year_start)
 
     if current_semester <= 0:
@@ -332,4 +341,5 @@ def add_past_semester_constraints(
                 model.Add(take_vars[(course_idx, semester)] == 0)
                 constraints_added += 1
 
+    print(f"[add_past_semester_constraints] Added {constraints_added} constraints in {time.time() - start:.3f}s")
     return constraints_added

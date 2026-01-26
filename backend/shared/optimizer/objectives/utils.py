@@ -7,38 +7,6 @@ from __future__ import annotations
 import polars as pl
 
 
-def parse_schedule_has_friday(schedule: str | None) -> bool:
-    """
-    Check if a course schedule includes Friday classes.
-
-    Args:
-        schedule: Schedule string from Fireroad API
-
-    Returns:
-        True if the course has classes on Friday
-    """
-    if schedule is None or not schedule:
-        return False
-
-    # Schedule format: "Lecture,4-237/MWF/0/1;Recitation,34-101/TR/0/1"
-    # Each section separated by semicolon, meetings separated by comma
-    # Days are in format like "MWF", "TR", etc.
-
-    sections = schedule.split(';')
-    for section in sections:
-        meetings = section.split(',')[1:]  # Skip first entry (section type)
-        for meeting in meetings:
-            if meeting == 'TBA':
-                continue
-            parts = meeting.split('/')
-            if len(parts) >= 2:
-                days = parts[1]  # e.g., "MWF", "TR"
-                if 'F' in days:
-                    return True
-
-    return False
-
-
 def parse_time_to_minutes(time_str: str, is_evening: str) -> int | None:
     """
     Convert time string to minutes since midnight.
@@ -128,19 +96,15 @@ def preprocess_schedule_data(courses_df: pl.DataFrame) -> dict[str, object]:
 
     Returns:
         Dictionary with preprocessed data:
-        - 'has_friday': dict mapping course_idx -> bool
         - 'time_slots': dict mapping course_idx -> list of (days, time) tuples
     """
-    has_friday = {}
     time_slots = {}
 
     for idx in range(len(courses_df)):
         schedule = courses_df[idx, 'schedule'] if 'schedule' in courses_df.columns else None
-        has_friday[idx] = parse_schedule_has_friday(schedule)
         time_slots[idx] = parse_schedule_time_slots(schedule)
 
     return {
-        'has_friday': has_friday,
         'time_slots': time_slots,
     }
 

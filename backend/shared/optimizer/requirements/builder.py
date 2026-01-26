@@ -51,6 +51,9 @@ def build_constraints(
     Returns:
         Tuple of (ContributionResult, Ctx)
     """
+    import time
+    start = time.time()
+    
     ctx = Ctx(model=model, take_vars=take_vars, courses_df=courses_df)
 
     # Build the root requirement (no contribution_vars needed at root level)
@@ -63,6 +66,7 @@ def build_constraints(
     elif enforce and result.sat_var is None:
         raise ValueError(f"Cannot enforce requirement: {'; '.join(result.errors)}")
 
+    print(f"[build_constraints] Built requirement '{requirement_key}' in {time.time() - start:.3f}s")
     return result, ctx
 
 
