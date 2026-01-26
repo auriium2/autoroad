@@ -57,7 +57,7 @@ def add_marker_constraints(
     """
     import time
     start = time.time()
-    
+
     constraints_added = 0
     warnings = []
     errors = []
@@ -290,7 +290,7 @@ def add_marker_constraints(
     total_time = time.time() - start
     print(f"[Markers] Added {constraints_added} constraints in {total_time:.3f}s "
           f"(build_idx={build_idx_time:.3f}s, build_hass={build_hass_time:.3f}s)")
-    
+
     return MarkerConstraintResult(
         constraints_added=constraints_added,
         warnings=warnings,

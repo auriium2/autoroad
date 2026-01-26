@@ -33,13 +33,13 @@ class BanPrefix:
         import time
         start = time.time()
         constraints_added = 0
-        
+
         for (course_idx, semester), var in take_vars.items():
             subject_id = context.courses_df[course_idx, 'subject_id']
             if subject_id.startswith(self.prefix):
                 model.Add(var == 0)
                 constraints_added += 1
-        
+
         print(f"[BanPrefix:{self.prefix}] Added {constraints_added} constraints in {time.time() - start:.3f}s")
 
     def get_name(self) -> str:
@@ -70,7 +70,7 @@ class BanIAP:
         import time
         start = time.time()
         constraints_added = 0
-        
+
         # Get course IDs that have user markers in IAP semesters
         marked_iap_course_ids = set()
         if context.markers:
@@ -97,7 +97,7 @@ class BanIAP:
                     # Hard constraint: cannot take this course in IAP
                     model.Add(var == 0)
                     constraints_added += 1
-        
+
         print(f"[BanIAP] Added {constraints_added} constraints in {time.time() - start:.3f}s")
 
     def get_name(self) -> str:
@@ -151,7 +151,7 @@ class ScheduleFreeTime:
         import time
         start = time.time()
         constraints_added = 0
-        
+
         if not self.blocked_slots:
             return
 
@@ -202,7 +202,7 @@ class ScheduleFreeTime:
                 else:
                     continue
                 break
-        
+
         print(f"[ScheduleFreeTime] Added {constraints_added} constraints in {time.time() - start:.3f}s")
 
     def get_name(self) -> str:

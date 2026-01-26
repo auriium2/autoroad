@@ -65,13 +65,6 @@ class AvoidIAP:
 
 
 class AvoidSpecialClasses:
-    """
-    Tier-based soft constraint to avoid classes with special prefixes (ES., CC., STS.).
-
-    These are typically special versions of courses (Experimental Study Group, Concourse,
-    Science, Technology, and Society) that students may want to avoid by default.
-    """
-
     SPECIAL_PREFIXES: tuple[str, ...] = ("ES.", "CC.", "STS.")
 
     def __init__(self):

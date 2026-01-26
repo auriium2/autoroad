@@ -53,7 +53,7 @@ def build_constraints(
     """
     import time
     start = time.time()
-    
+
     ctx = Ctx(model=model, take_vars=take_vars, courses_df=courses_df)
 
     # Build the root requirement (no contribution_vars needed at root level)
