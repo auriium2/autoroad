@@ -1,5 +1,6 @@
 import * as React from "react";
 import { ExternalLink } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
 import type { Section } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
@@ -9,6 +10,8 @@ import { COLUMN_WIDTH } from "@/lib/graphConstants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { MiniSchedulePreview } from "./MiniSchedulePreview";
+import { fireroadApi } from "@/services/fireroad";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface ColumnHeadersProps {
   sections: Section[];

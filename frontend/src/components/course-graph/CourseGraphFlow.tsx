@@ -11,6 +11,7 @@ import ReactFlow, {
   Handle,
   Position,
 } from 'reactflow';
+import { Home } from 'lucide-react';
 
 import 'reactflow/dist/style.css';
 import './reactflow-custom.css';
@@ -20,6 +21,7 @@ import { GraphStats } from "@/components/course-graph/GraphStats";
 import { GraphOverlay } from "@/components/course-graph/GraphOverlay";
 import { ColumnHeaders } from "@/components/course-graph/ColumnHeaders";
 import { NodeContextMenu } from "@/components/course-graph/NodeContextMenu";
+import { Button } from "@/components/ui/button";
 import { useGraphStore, CourseNode as CourseNodeType } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -325,6 +327,17 @@ function CourseGraphFlowInner({
       </ReactFlow>
 
       <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
+
+      {/* Home button to reset viewport */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute bottom-2 right-2 z-[50] opacity-60 hover:opacity-100 transition-opacity h-7 w-7"
+        onClick={() => setRFViewport({ x: 0, y: 20, zoom: 1 }, { duration: 300 })}
+        title="Reset view"
+      >
+        <Home className="h-4 w-4" />
+      </Button>
 
       <GraphStats
         viewMode={viewMode}

@@ -90,11 +90,9 @@ async def get_parsed_prerequisites_by_index(courses_df: pl.DataFrame) -> dict[in
     """
     id2prereq = await get_parsed_prerequisites()
 
-    # Build subject_id -> index mapping
     subject_ids = courses_df["subject_id"].to_list()
     id2idx = {sid: idx for idx, sid in enumerate(subject_ids)}
 
-    # Convert to index-based mapping
     idx2prereq: dict[int, PrereqNode] = {}
     for subject_id, prereq in id2prereq.items():
         if subject_id in id2idx:

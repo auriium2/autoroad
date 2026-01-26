@@ -11,6 +11,7 @@ export interface TimeBlock {
   start_hour: number; // 24-hour decimal (e.g., 15.5 for 3:30pm)
   end_hour: number;
   is_required: boolean; // true if only 1 section of this type (must attend)
+  section_index: number; // 0-indexed section option number
 }
 
 export interface ScheduleResponse {

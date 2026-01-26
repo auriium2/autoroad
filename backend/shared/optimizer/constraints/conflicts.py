@@ -58,13 +58,61 @@ def get_required_slots_from_course(course_data: dict[str, Any]) -> list[tuple[in
     return required_slots
 
 
+def get_section_type_options(course_data: dict[str, Any]) -> list[list[list[tuple[int, int, int]]]]:
+    """
+    Extract all section options grouped by section type from Hydrant course data.
+    
+    Returns a list of section types, where each section type contains a list of options,
+    and each option contains a list of time slots.
+    
+    Structure: [
+        [  # section type (e.g., recitations)
+            [(day, start, end), ...],  # option 1 slots
+            [(day, start, end), ...],  # option 2 slots
+        ],
+        [  # section type (e.g., lectures)
+            [(day, start, end), ...],  # only option
+        ],
+    ]
+    
+    This is used by ScheduleFreeTime to check if ALL options for a section type
+    conflict with blocked time (in which case the course should be banned).
+    """
+    section_types: list[list[list[tuple[int, int, int]]]] = []
+
+    section_keys = ["lectureSections", "recitationSections", "labSections", "designSections"]
+
+    for key in section_keys:
+        sections = course_data.get(key, [])
+        if not sections:
+            continue
+        
+        options: list[list[tuple[int, int, int]]] = []
+        for section in sections:
+            if section and len(section) >= 2:
+                slots: list[tuple[int, int, int]] = []
+                timeslots = section[0]
+                for slot_pair in timeslots:
+                    if len(slot_pair) >= 2:
+                        start_slot, num_slots = slot_pair[0], slot_pair[1]
+                        day, start_minutes, _ = slot_to_day_and_time(start_slot)
+                        end_minutes = start_minutes + (num_slots * SLOT_DURATION_MINUTES)
+                        slots.append((day, start_minutes, end_minutes))
+                if slots:
+                    options.append(slots)
+        
+        if options:
+            section_types.append(options)
+
+    return section_types
+
+
 def find_conflicting_pairs(
     course_idx_to_slots: dict[int, list[tuple[int, int, int]]]
 ) -> set[tuple[int, int]]:
     """Find all pairs of courses with overlapping time slots using sweep line algorithm."""
     conflicting_pairs: set[tuple[int, int]] = set()
 
-    # Group events by day
     events_by_day: dict[int, list[tuple[int, bool, int]]] = defaultdict(list)
     for course_idx, slots in course_idx_to_slots.items():
         for day, start_min, end_min in slots:
@@ -73,7 +121,7 @@ def find_conflicting_pairs(
 
     # Sweep line per day
     for events in events_by_day.values():
-        events.sort(key=lambda e: (e[0], e[1]))  # Sort by time, ends before starts
+        events.sort(key=lambda e: (e[0], e[1]))
         active: set[int] = set()
         for _, is_start, course_idx in events:
             if is_start:
@@ -119,7 +167,6 @@ class NoScheduleConflicts:
         if not semester_to_slots:
             return
 
-        # Group take_vars by semester
         courses_by_semester: dict[int, dict[int, cp_model.IntVar]] = defaultdict(dict)
         for (course_idx, semester), var in take_vars.items():
             courses_by_semester[semester][course_idx] = var
@@ -132,8 +179,6 @@ class NoScheduleConflicts:
             if not course_id_to_slots:
                 continue
 
-            # Group intervals by day for this semester
-            # day -> list of interval variables
             day_intervals: dict[int, list[cp_model.IntervalVar]] = defaultdict(list)
 
             for course_idx, take_var in course_vars.items():
@@ -171,32 +216,58 @@ class NoScheduleConflicts:
         return "scheduling"
 
 
+SectionTypeOptions = list[list[list[tuple[int, int, int]]]]
+
+
 async def fetch_hydrant_schedule_data(
     course_ids: list[str],
     fetch_semester: str,
-) -> dict[str, list[tuple[int, int, int]]]:
-    """Fetch Hydrant schedule data and return only required slots."""
+) -> tuple[dict[str, list[tuple[int, int, int]]], dict[str, SectionTypeOptions]]:
+    """
+    Fetch Hydrant schedule data.
+    
+    Returns:
+        - required_slots: dict of course_id -> list of required time slots (for NoScheduleConflicts)
+        - section_options: dict of course_id -> section type options (for ScheduleFreeTime)
+    """
     from shared.services.cache import get_hydrant_semester_data
 
     try:
         data = await get_hydrant_semester_data(fetch_semester)
     except ValueError:
-        return {}
+        return {}, {}
 
     if data is None:
-        return {}
+        return {}, {}
 
     classes = data.get("classes", {})
-    result: dict[str, list[tuple[int, int, int]]] = {}
+    required_result: dict[str, list[tuple[int, int, int]]] = {}
+    options_result: dict[str, SectionTypeOptions] = {}
 
     for course_id in course_ids:
         course_data = classes.get(course_id)
         if course_data:
             required_slots = get_required_slots_from_course(course_data)
             if required_slots:
-                result[course_id] = required_slots
+                required_result[course_id] = required_slots
+            
+            section_options = get_section_type_options(course_data)
+            if section_options:
+                options_result[course_id] = section_options
 
-    return result
+    return required_result, options_result
+
+
+class HydrantScheduleData:
+    """Container for Hydrant schedule data used by constraints."""
+    
+    def __init__(
+        self,
+        semester_to_slots: dict[int, dict[str, list[tuple[int, int, int]]]],
+        semester_to_section_options: dict[int, dict[str, SectionTypeOptions]],
+    ):
+        self.semester_to_slots = semester_to_slots
+        self.semester_to_section_options = semester_to_section_options
 
 
 async def fetch_hydrant_data_for_semesters(
@@ -205,7 +276,7 @@ async def fetch_hydrant_data_for_semesters(
     planning_year_start: int,
     max_semesters: int,
     extrapolate: bool = False,
-) -> dict[int, dict[str, list[tuple[int, int, int]]]]:
+) -> HydrantScheduleData:
     """Fetch Hydrant schedule data for all relevant semesters."""
     from datetime import datetime
 
@@ -214,13 +285,11 @@ async def fetch_hydrant_data_for_semesters(
 
     now = datetime.now()
 
-    # Pre-compute course_ids by semester
     semester_to_course_ids: dict[int, set[str]] = defaultdict(set)
     for (course_idx, semester) in take_vars.keys():
         if 1 <= semester <= max_semesters:
             semester_to_course_ids[semester].add(courses_df[course_idx, "subject_id"])
 
-    # Group semesters by fetch source
     fetch_source_to_semesters: dict[tuple[str, str], list[int]] = {}
 
     for semester_idx in range(1, max_semesters + 1):
@@ -238,17 +307,18 @@ async def fetch_hydrant_data_for_semesters(
             fetch_source_to_semesters[key] = []
         fetch_source_to_semesters[key].append(semester_idx)
 
-    # Fetch data for each unique source
-    result: dict[int, dict[str, list[tuple[int, int, int]]]] = {}
+    semester_to_slots: dict[int, dict[str, list[tuple[int, int, int]]]] = {}
+    semester_to_section_options: dict[int, dict[str, SectionTypeOptions]] = {}
 
     for (fetch_semester, _), semester_indices in fetch_source_to_semesters.items():
         course_ids: set[str] = set()
         for semester_idx in semester_indices:
             course_ids.update(semester_to_course_ids[semester_idx])
 
-        slots_data = await fetch_hydrant_schedule_data(list(course_ids), fetch_semester)
+        required_data, options_data = await fetch_hydrant_schedule_data(list(course_ids), fetch_semester)
 
         for semester_idx in semester_indices:
-            result[semester_idx] = slots_data
+            semester_to_slots[semester_idx] = required_data
+            semester_to_section_options[semester_idx] = options_data
 
-    return result
+    return HydrantScheduleData(semester_to_slots, semester_to_section_options)

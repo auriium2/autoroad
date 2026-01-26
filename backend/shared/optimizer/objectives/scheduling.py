@@ -11,26 +11,17 @@ from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext, get_tier_penalty
 
-
 class AvoidIAP:
-    """
-    Tier-based soft constraint to avoid placing classes during IAP (January term).
-
-    IAP is semester index % 3 == 2 (Freshman IAP = 2, Sophomore IAP = 5, Junior IAP = 8, Senior IAP = 11)
-    """
-
     def __init__(self):
-        """Initialize AvoidIAP."""
         pass
 
     def get_name(self) -> str:
         return "Avoid IAP Classes"
 
     def get_description(self) -> str:
-        return "Penalize placing classes during IAP (tier-based)"
+        return "Penalize placing classes during IAP"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        """No preprocessing needed for IAP constraint."""
         return {}
 
     def add_to_model(
@@ -39,18 +30,12 @@ class AvoidIAP:
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         context: ObjectiveContext
     ) -> cp_model.LinearExpr:
-        """
-        Add tier-based penalty for courses taken during IAP.
-
-        Formula: penalty = violations × TIER_BASE^tier × 1
-        """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
         if context.objective_tiers and 'avoid_iap' in context.objective_tiers:
             tier = context.objective_tiers['avoid_iap']
 
         penalty = get_tier_penalty(tier, base_cost=1)
-
         terms = []
 
         for (course_idx, semester), var in take_vars.items():
@@ -74,7 +59,7 @@ class AvoidSpecialClasses:
         return "Avoid Special Classes"
 
     def get_description(self) -> str:
-        return "Penalize classes starting with ES., CC., or STS. (tier-based)"
+        return "Penalize classes starting with ES., CC., or STS."
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         subject_ids = courses_df['subject_id'].to_list()
@@ -112,19 +97,7 @@ class AvoidSpecialClasses:
 
 
 class MinimumClassesPerSemester:
-    """
-    Tier-based soft constraint to penalize semesters with too few classes.
-
-    This prevents the optimizer from creating unrealistic schedules with single-class semesters.
-    """
-
     def __init__(self, min_classes: int = 2):
-        """
-        Initialize MinimumClassesPerSemester.
-
-        Args:
-            min_classes: Minimum number of classes per semester (default 2)
-        """
         self.min_classes: int = min_classes
 
     def get_name(self) -> str:

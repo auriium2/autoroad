@@ -67,7 +67,6 @@ class LimitClassesPerSemester:
 
         terms = []
 
-        # Group take_vars by semester (only regular semesters 1-12)
         semesters = set(semester for _, semester in take_vars.keys() if semester >= 1)
 
         for sem in semesters:
@@ -82,15 +81,12 @@ class LimitClassesPerSemester:
             if not classes_in_semester:
                 continue
 
-            # Create a variable for number of classes in this semester
             class_count_var = model.NewIntVar(0, len(classes_in_semester), f'classes_sem_{sem}')
             _ = model.Add(class_count_var == sum(classes_in_semester))
 
-            # Create a variable for excess classes (above threshold)
             excess_var = model.NewIntVar(0, len(classes_in_semester), f'excess_classes_sem_{sem}')
             _ = model.AddMaxEquality(excess_var, [class_count_var - self.max_classes, 0])
 
-            # Add tier-based penalty term (penalty per class over limit)
             terms.append(excess_var * penalty)
 
         if terms:

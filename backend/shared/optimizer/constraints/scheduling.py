@@ -80,7 +80,6 @@ class BanIAP:
                 if marker.section >= 0 and (marker.section + 1) % 3 == 2:
                     marked_iap_course_ids.add(marker.courseId)
 
-        # Build course_id -> course_idx mapping
         course_id_to_idx = {}
         for idx in range(len(context.courses_df)):
             subject_id = context.courses_df[idx, 'subject_id']
@@ -119,12 +118,50 @@ def _slots_overlap(slot1: tuple[int, int, int], slot2: tuple[int, int, int]) -> 
     return start1 < end2 and start2 < end1
 
 
+def _option_conflicts_with_blocked(
+    option_slots: list[tuple[int, int, int]],
+    blocked_slots: list[tuple[int, int, int]]
+) -> bool:
+    """Check if any slot in an option conflicts with any blocked slot."""
+    for slot in option_slots:
+        for blocked in blocked_slots:
+            if _slots_overlap(slot, blocked):
+                return True
+    return False
+
+
+def _course_has_unavoidable_conflict(
+    section_types: list[list[list[tuple[int, int, int]]]],
+    blocked_slots: list[tuple[int, int, int]]
+) -> bool:
+    """
+    Check if a course has at least one section type where ALL options conflict.
+    
+    A course should be banned if there's a section type (lecture, recitation, etc.)
+    where every available option conflicts with blocked time - meaning there's no
+    way to take the course without hitting blocked time.
+    """
+    for section_type_options in section_types:
+        # Check if ALL options for this section type conflict
+        all_options_conflict = True
+        for option_slots in section_type_options:
+            if not _option_conflicts_with_blocked(option_slots, blocked_slots):
+                all_options_conflict = False
+                break
+        
+        if all_options_conflict:
+            return True
+    
+    return False
+
+
 class ScheduleFreeTime:
     """
     Hard constraint: Block off time slots where you don't want classes.
     
-    If a course has a required section (only one option for that section type)
-    that falls entirely within blocked time, the course is banned.
+    A course is banned if it has ANY section type (lecture, recitation, lab, etc.)
+    where ALL available options conflict with blocked time. This means even if
+    there are multiple recitation options, if they ALL conflict, the course is banned.
     
     The blocked_slots parameter is a list of [day, start_hour, end_hour] where:
     - day is 0-4 (Mon-Fri)
@@ -137,7 +174,6 @@ class ScheduleFreeTime:
     """
 
     def __init__(self, blocked_slots: list[list[int]] | None = None, extrapolate: bool = False):
-        # blocked_slots format: [[day, start_hour, end_hour], ...]
         self.blocked_slots: list[list[int]] = blocked_slots or []
         self.extrapolate: bool = extrapolate
 
@@ -162,11 +198,10 @@ class ScheduleFreeTime:
         if not hydrant_data:
             return
 
-        semester_to_slots: dict[int, dict[str, list[tuple[int, int, int]]]] = hydrant_data.get('semester_to_slots', {})
-        if not semester_to_slots:
+        semester_to_section_options = hydrant_data.get('semester_to_section_options', {})
+        if not semester_to_section_options:
             return
 
-        # Convert blocked_slots from hours to minutes
         blocked_time_slots: list[tuple[int, int, int]] = []
         for slot in self.blocked_slots:
             if len(slot) >= 3:
@@ -176,32 +211,20 @@ class ScheduleFreeTime:
         if not blocked_time_slots:
             return
 
-        # Build course_id -> course_idx mapping
-        course_id_to_idx: dict[str, int] = {}
-        for idx in range(len(context.courses_df)):
-            subject_id = context.courses_df[idx, 'subject_id']
-            course_id_to_idx[subject_id] = idx
-
-        # For each course variable, check if its required slots conflict with blocked time
         for (course_idx, semester), var in take_vars.items():
-            course_id_to_slots = semester_to_slots.get(semester, {})
-            if not course_id_to_slots:
+            course_section_options = semester_to_section_options.get(semester, {})
+            if not course_section_options:
                 continue
 
             course_id = context.courses_df[course_idx, 'subject_id']
-            required_slots = course_id_to_slots.get(course_id, [])
+            section_types = course_section_options.get(course_id, [])
+            
+            if not section_types:
+                continue
 
-            # Check if any required slot overlaps with any blocked slot
-            for req_slot in required_slots:
-                for blocked_slot in blocked_time_slots:
-                    if _slots_overlap(req_slot, blocked_slot):
-                        # This course has a required time that conflicts with blocked time
-                        model.Add(var == 0)
-                        constraints_added += 1
-                        break
-                else:
-                    continue
-                break
+            if _course_has_unavoidable_conflict(section_types, blocked_time_slots):
+                model.Add(var == 0)
+                constraints_added += 1
 
         print(f"[ScheduleFreeTime] Added {constraints_added} constraints in {time.time() - start:.3f}s")
 

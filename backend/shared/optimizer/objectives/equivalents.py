@@ -50,7 +50,6 @@ class DiscourageEquivalentCourses:
         subject_ids = courses_df['subject_id'].to_list()
         equiv_subjects = courses_df['equivalent_subjects'].to_list() if 'equivalent_subjects' in courses_df.columns else None
 
-        # Build merged equivalency map: courseId -> set of equivalent courseIds
         equiv_map: dict[str, set[str]] = {}
 
         # 1. Add equivalencies from Fireroad API
@@ -70,7 +69,6 @@ class DiscourageEquivalentCourses:
                     equiv_map[course_id] = set()
                 equiv_map[course_id].update(equivalents)
 
-        # Build equivalency groups from the merged map
         equiv_groups = []
         processed = set()
         course_id_to_idx = {cid: i for i, cid in enumerate(subject_ids)}

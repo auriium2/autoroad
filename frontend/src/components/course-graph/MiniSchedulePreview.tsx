@@ -1,6 +1,7 @@
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { hydrantApi, type TimeBlock } from "@/services/hydrant";
+import { fireroadApi } from "@/services/fireroad";
 import { queryKeys } from "@/lib/queryKeys";
 import { isPastSemesterById } from "@/lib/semesterUtils";
 import { useOptimizationStore } from "@/stores/optimizationStore";
@@ -181,6 +182,41 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
     staleTime: 1000 * 60 * 60, // 1 hour
     enabled: courseIds.length > 0,
   });
+
+  // Fetch course details for stats
+  const courseQueries = useQueries({
+    queries: courseIds.map(courseId => ({
+      queryKey: queryKeys.courses.details(courseId),
+      queryFn: () => fireroadApi.getCourseDetails(courseId),
+      staleTime: 24 * 60 * 60 * 1000,
+    })),
+  });
+
+  const stats = React.useMemo(() => {
+    let totalUnits = 0;
+    let totalHours = 0;
+    let ratingSum = 0;
+    let ratingCount = 0;
+
+    for (const query of courseQueries) {
+      if (query.data) {
+        totalUnits += query.data.total_units ?? 0;
+        const inClass = query.data.in_class_hours ?? 0;
+        const outClass = query.data.out_of_class_hours ?? 0;
+        totalHours += inClass + outClass;
+        if (query.data.rating != null) {
+          ratingSum += query.data.rating;
+          ratingCount++;
+        }
+      }
+    }
+
+    return {
+      totalUnits,
+      totalHours: totalHours.toFixed(0),
+      avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
+    };
+  }, [courseQueries]);
 
   // Get blocked slots from the schedule_free_time constraint
   const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);
@@ -431,8 +467,15 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
         </div>
       </div>
 
+      {/* Stats */}
+      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
+        <span>{stats.totalUnits} units</span>
+        <span>{stats.totalHours}h</span>
+        {stats.avgRating && <span>★{stats.avgRating}</span>}
+      </div>
+
       {/* Legend */}
-      <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
+      <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
         {courseIds.map((id) => {
           const colorInfo = courseId2Color.get(id) || COURSE_COLORS[0];
           return (

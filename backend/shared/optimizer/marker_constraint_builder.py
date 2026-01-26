@@ -62,7 +62,6 @@ def add_marker_constraints(
     warnings = []
     errors = []
 
-    # Build course_id -> course_idx mapping
     t0 = time.time()
     course_id_to_idx = {}
     for idx in range(len(courses_df)):
@@ -70,7 +69,6 @@ def add_marker_constraints(
         course_id_to_idx[subject_id] = idx
     build_idx_time = time.time() - t0
 
-    # Build hass_attribute -> list of course indices mapping for virtual markers
     t0 = time.time()
     hass_attr_to_indices: dict[str, list[int]] = {
         "HASS-A": [],

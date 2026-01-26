@@ -53,9 +53,6 @@ def create_take_vars(
 
     take_vars = {}
 
-    # Build a set of course_ids for special semesters
-    # Must Take (section=-2) is handled as a requirement constraint, not a placement
-    # ASE (section=-1) creates a special semester variable
     ase_courses = set()
     must_take_courses = set()
 
@@ -308,10 +305,8 @@ def add_past_semester_constraints(
     if current_semester <= 0:
         return 0
 
-    # Build a set of (course_id, semester) tuples for pinned courses in past semesters
     pinned_past_courses = set()
     if markers:
-        # Build course_id -> course_idx mapping
         course_id_to_idx = {}
         for idx in range(len(courses_df)):
             subject_id = courses_df[idx, 'subject_id']
@@ -321,7 +316,6 @@ def add_past_semester_constraints(
             if (marker.status == "pin" or marker.status == "override") and marker.section >= 0:
                 course_idx = course_id_to_idx.get(marker.courseId)
                 if course_idx is not None:
-                    # Convert section (0-based) to semester (1-based)
                     semester = marker.section + 1
                     if semester <= current_semester:
                         pinned_past_courses.add((course_idx, semester))

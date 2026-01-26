@@ -24,6 +24,7 @@ class TimeBlock(BaseModel):
     start_hour: float  # 24-hour format decimal (e.g., 15.5 for 3:30pm)
     end_hour: float
     is_required: bool  # True if this block is required (only 1 section of this type)
+    section_index: int  # 0-indexed section option number (for optional sections)
 
 
 class ScheduleResponse(BaseModel):
@@ -43,7 +44,7 @@ def slot_to_time(slot: int) -> tuple[int, float]:
 
 
 def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlock]:
-    """Parse a Hydrant course into time blocks with is_required flag."""
+    """Parse a Hydrant course into time blocks with is_required flag and section_index."""
     blocks: list[TimeBlock] = []
 
     section_types = [
@@ -62,7 +63,7 @@ def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlo
         # Multiple sections = options (student picks one)
         is_required = len(sections) == 1
 
-        for section in sections:
+        for section_idx, section in enumerate(sections):
             # section format: [[[startSlot, numSlots], ...], room]
             timeslots, room = section
 
@@ -79,6 +80,7 @@ def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlo
                     start_hour=start_hour,
                     end_hour=end_hour,
                     is_required=is_required,
+                    section_index=section_idx,
                 ))
 
     return blocks
@@ -121,6 +123,7 @@ def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[Tim
                             start_hour=start_hour,
                             end_hour=end_hour,
                             is_required=True,
+                            section_index=0,
                         ))
 
     return required

@@ -125,15 +125,10 @@ def serialize_model(
     3. Course metadata: subject_id, title, units for each course_idx
     4. Objective components: coefficients for cost breakdown calculation
     """
-    # Serialize the model to protobuf bytes
     proto = model.Proto()
     cpmodel_proto = proto.SerializeToString()
 
-    # Build variable mapping
-    # We need to map from our take_vars to the variable indices in the proto
     variable_mapping: list[VariableInfo] = []
-
-    # Create a map from variable name to index in the proto
     var_name2idx: dict[str, int] = {}
     for idx, var in enumerate(proto.variables):
         var_name2idx[var.name] = idx
@@ -147,8 +142,6 @@ def serialize_model(
                 semester=semester,
             ))
 
-    # Build courses metadata
-    # Get unique course indices from the variable mapping
     course_indices = sorted(set(v.course_idx for v in variable_mapping))
     max_course_idx = max(course_indices) if course_indices else 0
 
@@ -392,12 +385,13 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                     (free_time_config and bool(free_time_config.parameters.get('extrapolate', False)))
                 )
 
-                semester_to_slots = await fetch_hydrant_data_for_semesters(
+                hydrant_data = await fetch_hydrant_data_for_semesters(
                     take_vars, courses_df, planning_year_start, max_semesters, extrapolate
                 )
 
                 hydrant_extra['hydrant_schedule_data'] = {
-                    'semester_to_slots': semester_to_slots,
+                    'semester_to_slots': hydrant_data.semester_to_slots,
+                    'semester_to_section_options': hydrant_data.semester_to_section_options,
                 }
 
             constraint_context = ConstraintContext(
