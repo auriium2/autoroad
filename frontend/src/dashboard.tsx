@@ -14,7 +14,6 @@ import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X, HelpCir
 import { BugReportDialog } from "@/components/BugReportDialog";
 import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
-import { DashboardAlerts } from "@/components/DashboardAlerts";
 import { RequirementPrefetcher } from "@/components/RequirementPrefetcher";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { optimizerApi } from "@/services/optimizer";
@@ -483,9 +482,6 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-
-            {/* Alerts */}
-            <DashboardAlerts />
 
             {/* CourseGraph area fills remaining space without internal scroll */}
             <div className="flex-grow relative min-h-0">
