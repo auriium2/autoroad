@@ -2,11 +2,10 @@ French#,#French#,#HASS Concentration in French#,#Concentration in French
 
 A concentration in French requires three to four subjects at semester III or above.
 
-french_lang, "French Language Subjects (Semester III+)" := 21G.303/21G.304, 21G.306/21G.307
+french_lang, "French Language Subjects (Semester III+)" := 21G.303/21G.304/21G.306/21G.307
 
-french_culture, "French Culture and Literature" := 21G.049/21G.050, 21G.051/21G.052, 21G.053/21G.054, 21G.061/21G.068
+french_culture, "French Culture and Literature" := 21G.049/21G.050/21G.051/21G.052/21G.053/21G.054/21G.061/21G.068
 
 all_french, "All French Concentration Courses" := french_lang / french_culture
 
 total, "Three to Four French Subjects" := (all_french){>=3}
-

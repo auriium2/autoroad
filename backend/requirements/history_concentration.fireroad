@@ -1,22 +1,13 @@
 History#,#History#,#HASS Concentration in History#,#Concentration in History
 
-A concentration in History requires three subjects with at least two taken at MIT. There are no distribution requirements.
+A concentration in History requires three subjects with at least two taken at MIT. At most two may be introductory level courses.
 
-intro_history, "Introductory History Courses" := 21H.000/21H.001, 21H.007/21H.009, 21H.061/21H.090, 21H.101/21H.102, 21H.106/21H.107, 21H.108/21H.109, 21H.130/21H.132, 21H.133/21H.134, 21H.135/21H.141, 21H.143/21H.144, 21H.145/21H.151, 21H.152/21H.154, 21H.155/21H.156, 21H.157/21H.160, 21H.161/21H.165, 21H.170/21H.172, 21H.173/21H.181, 21H.185/21H.186, 21H.187
+intro_history, "Introductory History Courses" := 21H.000/21H.001/21H.007/21H.009/21H.061/21H.090/21H.101/21H.102/21H.106/21H.107/21H.108/21H.109/21H.130/21H.132/21H.133/21H.134/21H.135/21H.141/21H.143/21H.144/21H.145/21H.151/21H.152/21H.154/21H.155/21H.156/21H.157/21H.160/21H.161/21H.165/21H.170/21H.172/21H.173/21H.181/21H.185/21H.186/21H.187
 
-intermediate_history, "Intermediate History Courses" := 21H.201/21H.203, 21H.211/21H.213, 21H.214/21H.217, 21H.218/21H.220, 21H.225/21H.226, 21H.227/21H.228, 21H.229/21H.230, 21H.237/21H.238, 21H.239/21H.240, 21H.241/21H.242, 21H.244/21H.245, 21H.247/21H.253, 21H.260/21H.261, 21H.262/21H.263, 21H.265/21H.266, 21H.267/21H.268, 21H.270/21H.273, 21H.274/21H.276, 21H.281/21H.282, 21H.283/21H.284, 21H.289/21H.290
+intermediate_history, "Intermediate History Courses" := 21H.201/21H.203/21H.211/21H.213/21H.214/21H.217/21H.218/21H.220/21H.225/21H.226/21H.227/21H.228/21H.229/21H.230/21H.237/21H.238/21H.239/21H.240/21H.241/21H.242/21H.244/21H.245/21H.247/21H.253/21H.260/21H.261/21H.262/21H.263/21H.265/21H.266/21H.267/21H.268/21H.270/21H.273/21H.274/21H.276/21H.281/21H.282/21H.283/21H.284/21H.289/21H.290
 
-seminars_history, "History Seminars" := 21H.315/21H.317, 21H.319/21H.320, 21H.321/21H.322, 21H.330/21H.331
+seminars_history, "History Seminars" := 21H.315/21H.317/21H.319/21H.320/21H.321/21H.322/21H.330/21H.331
 
 all_history, "All History Courses" := intro_history / intermediate_history / seminars_history
 
-mit_requirement, "MIT Courses (at least 2)" := (all_history){>=2}
-%% At least two subjects must be taken at MIT
-
-intro_limit, "Introductory Courses (at most 2)" := (intro_history){>=0, <=2}
-%% At most two introductory level courses
-
-total_requirement, "Total History Subjects" := (all_history){>=3}
-
-total, "Total Requirements" := mit_requirement, intro_limit, total_requirement
-
+total, "Total Requirements" := (all_history){>=3}, (intro_history){<=2}
