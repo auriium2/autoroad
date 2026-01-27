@@ -516,7 +516,7 @@ export const tutorialSteps: StepOptions[] = [
   // ==========================================
   {
     id: 'ready-to-optimize',
-    title: 'Ready to Optimize',
+    title: 'Optimization',
     text: `Your markers look good! Click <strong>Optimize</strong> to have Autoroad fill in the rest of your schedule.<br><br>
       <small><i>In our current configuration, Autoroad will just try to make sure you have the GIRs by the end of your 4 years. We'll explain how to ask for a degree and more in the next steps.</i></small>`,
     attachTo: { element: '[data-tutorial="optimize-button"]', on: 'bottom' },
@@ -758,7 +758,7 @@ export const tutorialSteps: StepOptions[] = [
     text: `Use the search bar to add degrees, concentrations, and objectives.<br><br>
       <span id="check-2a">☐</span> <strong>2-A</strong>: a major<br>
       <span id="check-chinese">☐</span> <strong>Chinese</strong>: a concentration<br>
-      <span id="check-finals">☐</span> <strong>Minimize Finals Load</strong>: an objective`,
+      <span id="check-finals">☐</span> <strong>Limit Finals Per Semester</strong>: an objective`,
     attachTo: { element: '[data-tutorial="parameter-search"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     modalOverlayOpeningPadding: 5000,
@@ -770,7 +770,7 @@ export const tutorialSteps: StepOptions[] = [
           const state = useOptimizationStore.getState();
           const has2a = state.selectedRequirements.some(r => r.includes('2a') || r.includes('2-A'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
-          const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
+          const hasFinals = state.selectedObjectives.some(o => o.key === 'limit_finals_per_semester');
           if (has2a && hasChinese && hasFinals) {
             return this.next();
           }
@@ -784,8 +784,8 @@ export const tutorialSteps: StepOptions[] = [
           store.addRequirement('major2a');
           store.addRequirement('chinese_concentration');
           const existingObjectives = store.selectedObjectives;
-          if (!existingObjectives.some(o => o.key === 'minimize_finals_load')) {
-            store.setObjectives([...existingObjectives, { key: 'minimize_finals_load', parameters: { max_finals: 2 } }]);
+          if (!existingObjectives.some(o => o.key === 'limit_finals_per_semester')) {
+            store.setObjectives([...existingObjectives, { key: 'limit_finals_per_semester', parameters: { max_finals: 2 } }]);
           }
           return this.next();
         },
@@ -799,7 +799,7 @@ export const tutorialSteps: StepOptions[] = [
           const state = useOptimizationStore.getState();
           const has2a = state.selectedRequirements.some(r => r.includes('2a') || r.includes('2-A'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
-          const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
+          const hasFinals = state.selectedObjectives.some(o => o.key === 'limit_finals_per_semester');
 
           const check2a = document.getElementById('check-2a');
           const checkChinese = document.getElementById('check-chinese');
@@ -898,20 +898,6 @@ export const tutorialSteps: StepOptions[] = [
     beforeShowPromise: function() {
       return waitForElement('[data-tutorial="tier-selector"]');
     },
-  },
-
-  {
-    id: 'default-objectives-warning',
-    title: 'Keep Default Objectives',
-    text: `The <strong style="color: #ef4444">default objectives</strong> (like "Minimize Units" and "Balance Workload") guide how the optimizer builds your schedule.<br><br>
-      Without them, results can look strange (e.g., cramming everything into one semester).<br><br>
-      <small>Adjust their tiers if you want, but think twice before removing them.</small>`,
-    attachTo: { element: '[data-tutorial="objective-card"]', on: 'right' },
-    scrollTo: { behavior: 'smooth', block: 'center' },
-    buttons: [
-      { text: 'Back', action: function() { return this.back(); }, secondary: true },
-      { text: 'Got it', action: function() { return this.next(); } },
-    ],
   },
 
   // ==========================================
