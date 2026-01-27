@@ -10,7 +10,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X, HelpCircle } from "lucide-react";
+import { Bug, Download, Upload, Loader2, Trash2, UserX, BrainCircuit, X, HelpCircle, Monitor } from "lucide-react";
 import { BugReportDialog } from "@/components/BugReportDialog";
 import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
@@ -339,6 +339,14 @@ export default function Dashboard() {
   return (
     <SidebarProvider defaultOpen={true}>
       <RequirementPrefetcher />
+      {/* Mobile warning overlay */}
+      <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center md:hidden">
+        <Monitor className="h-16 w-16 text-muted-foreground mb-6" />
+        <h1 className="text-2xl font-bold mb-3">Desktop Required</h1>
+        <p className="text-muted-foreground max-w-sm">
+          Autoroad requires a larger screen to work properly. Please visit on a desktop or laptop computer.
+        </p>
+      </div>
       <div className="flex w-screen h-screen">
         <AppSidebar viewMode={viewMode} />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
