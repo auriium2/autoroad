@@ -138,7 +138,7 @@ export default function Dashboard() {
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
       showToast({
         title: "Optimal solution found!",
-        description: "The schedule generated is mathematically optimal given your constraints. If it does not look how you expect, constrain it further by placing more markers or adding more objectives!",
+        description: "The schedule generated could not be improved further!",
         duration: 3000,
       });
     } else if (lastOptimizationStatus == 'FEASIBLE' && prevStatusRef.current !== 'FEASIBLE') {

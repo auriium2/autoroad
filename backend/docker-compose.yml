@@ -1,9 +1,12 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: server/Dockerfile
+    image: auriium/autoroad:latest
     ports:
       - "8080:8080"
-    env_file:
-          - .env
+    environment:
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - SOLVER_URL=${SOLVER_URL}
+      - WORKER_SECRET=${WORKER_SECRET}
+      - CPSAT_NUM_WORKERS=${CPSAT_NUM_WORKERS:-8}
+      - FASTAPI_SENTRY_DSN=${FASTAPI_SENTRY_DSN}
+      - FASTAPI_ENVIRONMENT=${FASTAPI_ENVIRONMENT:-production}

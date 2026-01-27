@@ -85,11 +85,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info("Closed shared HTTP client")
 
 
+is_production = os.environ.get("FASTAPI_ENVIRONMENT") == "production"
+
 app = FastAPI(
     title="Autoroad API",
     description="Course planning and optimization for MIT students",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -110,6 +115,17 @@ app.include_router(hydrant.router, prefix="/api", tags=["hydrant"])
 app.include_router(bug_report.router, prefix="/api", tags=["bug-report"])
 
 
+def _get_allowed_sentry_host() -> str | None:
+    dsn = os.environ.get("FASTAPI_SENTRY_DSN")
+    if not dsn:
+        return None
+    parsed = urlparse(dsn)
+    return parsed.hostname
+
+
+ALLOWED_SENTRY_HOST = _get_allowed_sentry_host()
+
+
 @app.post("/api/sentry-tunnel")
 async def sentry_tunnel(request: Request):
     body = await request.body()
@@ -127,6 +143,11 @@ async def sentry_tunnel(request: Request):
         # Extract project ID from DSN
         # DSN format: https://key@org.ingest.sentry.io/project_id
         parsed = urlparse(dsn)
+
+        # anti ssrf patch
+        if not ALLOWED_SENTRY_HOST or parsed.hostname != ALLOWED_SENTRY_HOST:
+            return Response(status_code=400)
+
         project_id = parsed.path.strip("/")
         sentry_host = f"https://{parsed.hostname}"
 
