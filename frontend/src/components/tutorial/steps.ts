@@ -420,7 +420,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'convert-to-marker',
     title: 'Keep Suggestions',
     text: `Want to keep an optimizer suggestion for next time?<br><br>
-      <strong>Right-click → "Convert to marker"</strong>`,
+      <strong>Right-click → "Convert to marker"</strong> gives you a marker node!`,
     attachTo: { element: '[data-course-id="5.111"]', on: 'left' },
     scrollTo: false,
     buttons: [
@@ -722,8 +722,10 @@ export const tutorialSteps: StepOptions[] = [
 
   {
     id: 'objectives',
-    title: 'Objectives',
-    text: `Below your degrees are <strong>objectives</strong>: goals the optimizer tries to achieve.`,
+    title: 'Constraints & Objectives',
+    text: `Below your degrees are:<br><br>
+      <strong style="color: #a78bfa">Hard Constraints</strong>: must be satisfied. The optimizer will fail if it can't meet these (e.g. blocked time slots).<br><br>
+      <strong style="color: #ef4444">Objectives</strong>: <i>soft goals</i> that shape the schedule. The optimizer tries to achieve these, but won't fail if it can't perfectly satisfy them.`,
     attachTo: { element: '[data-tutorial="objective-card"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
@@ -749,17 +751,17 @@ export const tutorialSteps: StepOptions[] = [
     title: 'Priority Tiers',
     text: `Objectives are <i>soft</i>, which means they shape what you want via penalty, but don't completely exclude bad options. In order to determine how hard the optimizer should try, we give you <strong>penalty tiers</strong> (⭐ icons) to set your priorities.<br>
       Higher tier = optimizer tries harder<br><br>
-      Tier 4: "Must have"<br>
-      Tier 3: "This is important"<br>
-      Tier 2: "Try to have this"<br>
-      Tier 1: "Nice to have"<br></br>
+      <strong style="color: rgb(239, 68, 68)">Tier 4</strong>: "Must have"<br>
+      <strong style="color: rgb(251, 191, 36)">Tier 3</strong>: "This is important"<br>
+      <strong style="color: rgb(59, 130, 246)">Tier 2</strong>: "Try to have this"<br>
+      <strong style="color: rgb(34, 197, 94)">Tier 1</strong>: "Nice to have"<br><br>
 
-      <small>Under the hood, most penalties are normalized so that for each violation, a cost of 5^tier units are applied, which is necessary because the objective function was defined in terms of units. Some objectives do not follow this pattern, since it could cause costs to balloon in certain cases. The quirks of integer programming and technical debt... Maybe someone with a gurobi license can rewrite this shitcode at a later time.</small>
+      <small>Under the hood, most penalties are normalized so that for each violation, a cost of 5^tier units are applied, which is necessary because the objective function was defined in terms of units. Some objectives do not follow this pattern, since it could cause costs to balloon in certain cases. The quirks of integer programming and technical debt...</small>
       `
     ,
-    attachTo: { element: '[data-tutorial="tier-selector"]', on: 'right' },
+    attachTo: { element: '[data-tutorial="tier-selector"]', on: 'right-start' },
     scrollTo: { behavior: 'smooth', block: 'center' },
-    modalOverlayOpeningPadding: 10,
+    modalOverlayOpeningPadding: 20,
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
       { text: 'Next', action: function() { return this.next(); } },
@@ -770,22 +772,48 @@ export const tutorialSteps: StepOptions[] = [
   },
 
   // ==========================================
-  // FINISH
+  // IMPORT/EXPORT
   // ==========================================
   {
-    id: 'finish',
-    title: 'You\'re Ready!',
-    text: `<strong>Quick reference:</strong><br><br>
-      <strong style="color: #fbbf24">Yellow ⚠️</strong> = wrong semester<br>
-      <strong style="color: #ef4444">Red border</strong> = missing prereq<br>
-      <strong style="color: #22c55e">Green border</strong> = optimal solution<br>
-      <strong style="color: #eab308">Yellow border</strong> = re-optimize needed<br><br>
-      Click <strong>Tutorial</strong> anytime to revisit.`,
+    id: 'import-export',
+    title: 'Import & Export',
+    text: `You can save and load your schedule using <strong>.road</strong> files (compatible with Courseroad).<br><br>
+      <strong>Import</strong>: Load a schedule from a .road file<br>
+      <strong>Export Markers</strong>: Save your blue markers<br>
+      <strong>Export Generated</strong>: Save the optimizer's suggestions<br><br>
+      <small>Caveat: Must Take markers do not get saved. Sorry!</small>`,
+    attachTo: { element: 'header', on: 'bottom' },
+    scrollTo: { behavior: 'smooth', block: 'start' },
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+  },
+
+  {
+    id: 'support',
+    title: 'One Last Thing...',
+    text: `Autoroad is a passion project built by one dude. If you found it useful, please consider:<br><br>
+      <a href="https://github.com/auriium2/autoroad" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: underline;">Starring the repo on GitHub (i need a job)</a><br>
+      <i>Sharing it with friends</i> who might benefit<br>
+      Send Feedback <i>(bottom left)</i> if you find bugs<br><br>
+      Thank you for using Autoroad!`,
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
       { text: 'Get Started', action: function() { restoreState(); return this.complete(); } },
     ],
   },
+  {
+    id: 'finish',
+    title: 'You\'re Ready!',
+    text: `Click <strong>Tutorial</strong> anytime to revisit.`,
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Done!', action: function() { return this.next(); } },
+    ],
+  },
+
+
 ];
 
 export { restoreState as clearDemoData };

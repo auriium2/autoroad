@@ -3,7 +3,7 @@ import * as React from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { API_BASE_URL } from "@/config/api";
 import { AppSidebar } from "@/components/app-sidebar";
-import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
+
 import {
   SidebarInset,
   SidebarProvider,
@@ -500,7 +500,7 @@ export default function Dashboard() {
             </div>
           </div>
         </SidebarInset>
-        <StarOnGithubPopup />
+
         <Toaster />
 
         {/* Bottom left buttons */}

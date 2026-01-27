@@ -60,19 +60,6 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
     tourRef.current = tour;
 
-    // Auto-start on first visit after a delay to let the app render
-    const hasCompleted = localStorage.getItem(STORAGE_KEY);
-    if (!hasCompleted) {
-      const timer = setTimeout(() => {
-        // Check if key elements exist before starting
-        const graph = document.querySelector('[data-tutorial="graph"]');
-        if (graph) {
-          tour.start();
-        }
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-
     return () => {
       if (tour.isActive()) {
         restoreState();
