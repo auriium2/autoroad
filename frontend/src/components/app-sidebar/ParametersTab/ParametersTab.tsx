@@ -68,6 +68,9 @@ export function ParametersTab({ viewMode }: ParametersTabProps) {
             disabled={isOptimizing}
           />
         </div>
+        <p className="text-[10px] text-muted-foreground/70">
+          5-year plans and MEng support coming soon.
+        </p>
       </div>
 
       {/* Unified Content */}

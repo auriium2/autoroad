@@ -777,7 +777,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'import-export',
     title: 'Import & Export',
-    text: `You can save and load your schedule using <strong>.road</strong> files (compatible with Courseroad).<br><br>
+    text: `You can save and load your schedule using <strong>.road (Courseroad)</strong> files.<br><br>
       <strong>Import</strong>: Load a schedule from a .road file<br>
       <strong>Export Markers</strong>: Save your blue markers<br>
       <strong>Export Generated</strong>: Save the optimizer's suggestions<br><br>
