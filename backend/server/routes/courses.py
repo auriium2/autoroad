@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -204,7 +204,7 @@ async def lookup_course(request: Request, course_id: str):
         if course.get("subject_id") == course_id:
             return course
 
-    return {"error": "Course not found"}, 404
+    raise HTTPException(status_code=404, detail=f"Course '{course_id}' not found")
 
 
 @router.get("/courses/dept/{dept}")

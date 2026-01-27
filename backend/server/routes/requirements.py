@@ -2,14 +2,17 @@
 Requirements API routes - provides parsed requirement trees and progress calculation.
 """
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+logger = logging.getLogger("uvicorn.error")
 
 from shared.optimizer.constraints.registry import get_all_constraints
 from shared.optimizer.objectives.registry import get_all_objectives
@@ -116,8 +119,14 @@ async def get_requirement_json(request: Request, key: str, source: str = "canoni
     try:
         data = await fetch_requirement(key, source)
         return data
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail=f"Requirement '{key}' not found")
+        logger.exception("Error fetching requirement %s: %s", key, e)
+        raise HTTPException(status_code=502, detail="Failed to fetch requirement from upstream")
     except Exception as e:
-        return {"error": str(e), "details": type(e).__name__}
+        logger.exception("Error fetching requirement %s: %s", key, e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/requirements/progress/{key}")
@@ -155,8 +164,14 @@ async def get_requirement_progress(request: Request, key: str, body: ProgressReq
         output["list-id"] = key
 
         return output
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 404:
+            raise HTTPException(status_code=404, detail=f"Requirement '{key}' not found")
+        logger.exception("Error calculating progress for %s: %s", key, e)
+        raise HTTPException(status_code=502, detail="Failed to fetch requirement from upstream")
     except Exception as e:
-        return {"error": str(e), "details": type(e).__name__}
+        logger.exception("Error calculating progress for %s: %s", key, e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/parameters/search")

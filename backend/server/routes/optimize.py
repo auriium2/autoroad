@@ -6,7 +6,7 @@ import time
 
 import polars as pl
 import sentry_sdk
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -424,4 +424,5 @@ async def get_course_categories(request: OptimizationRequest):
         return result
 
     except Exception as e:
-        return {"error": str(e), "details": type(e).__name__}
+        logger.exception("Error getting course categories: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))

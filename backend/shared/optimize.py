@@ -7,7 +7,6 @@ import base64
 import json
 import logging
 import os
-import queue
 import threading
 import time
 from collections.abc import AsyncIterator
@@ -17,6 +16,7 @@ from multiprocessing import Value
 from threading import RLock
 from typing import Any
 
+import janus
 import polars as pl
 import sentry_sdk
 from ortools.sat.python import cp_model
@@ -202,7 +202,7 @@ class StreamingCallback(cp_model.CpSolverSolutionCallback):
         self,
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         courses_df: pl.DataFrame,
-        solution_queue: queue.Queue[object],
+        solution_queue: janus.SyncQueue[object],
         builder: ObjectiveBuilder | None = None,
     ):
         super().__init__()
@@ -478,9 +478,9 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         yield {'type': 'progress', 'message': 'Solving...', 'step': 7, 'totalSteps': 10}
 
-        # Create queue and callback
-        solution_queue: queue.Queue[object] = queue.Queue()
-        callback = StreamingCallback(take_vars, courses_df, solution_queue, builder=builder)
+        # Create janus queue for thread-safe async/sync communication
+        queue: janus.Queue[object] = janus.Queue()
+        callback = StreamingCallback(take_vars, courses_df, queue.sync_q, builder=builder)
 
         # Configure solver
         solver = cp_model.CpSolver()
@@ -492,32 +492,30 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         print(f"[PYTHON SOLVER] Starting with num_workers={num_workers}")
 
         # Run solver in thread
-        solver_done = threading.Event()
         result = cp_model.MODEL_INVALID
         solve_start_time = time.time()
 
-        def run_solver():
+        def run_solver() -> None:
             nonlocal result
             result = solver.Solve(model, callback)
-            solution_queue.put({'__done__': True, 'result': result})
-            solver_done.set()
+            queue.sync_q.put({'__done__': True, 'result': result})
 
         solver_thread = threading.Thread(target=run_solver)
         solver_thread.start()
 
-        # Yield solutions as they arrive
-        while not solver_done.is_set() or not solution_queue.empty():
-            try:
-                solution = solution_queue.get(timeout=0.1)
+        # Yield solutions as they arrive using async queue (no polling needed)
+        try:
+            while True:
+                solution = await queue.async_q.get()
                 if isinstance(solution, dict) and '__done__' in solution:
                     result = solution['result']
                     break
                 if isinstance(solution, dict):
                     yield solution
-            except queue.Empty:
-                await asyncio.sleep(0.05)
-
-        solver_thread.join()
+        finally:
+            solver_thread.join()
+            queue.close()
+            await queue.wait_closed()
 
         perf_timings['solving'] = time.time() - solve_start_time
         perf_timings['total'] = time.time() - perf_start_total

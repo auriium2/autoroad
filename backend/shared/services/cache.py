@@ -3,12 +3,14 @@ Async caching for courses and requirements data using cashews.
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 import httpx
 import polars as pl
 from cashews import cache
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from shared.courses.prerequisites.types import PrereqNode
 
@@ -18,6 +20,47 @@ HYDRANT_BASE_URL = "https://hydrant.mit.edu"
 
 # Configure in-memory cache
 cache.setup("mem://")
+
+# Shared HTTP client for connection pooling
+_http_client: httpx.AsyncClient | None = None
+
+
+def get_http_client() -> httpx.AsyncClient:
+    """Get the shared HTTP client, creating it if necessary."""
+    global _http_client
+    if _http_client is None:
+        _http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(30.0, connect=10.0),
+            follow_redirects=True,
+            limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+        )
+    return _http_client
+
+
+async def close_http_client() -> None:
+    """Close the shared HTTP client. Call this on app shutdown."""
+    global _http_client
+    if _http_client is not None:
+        await _http_client.aclose()
+        _http_client = None
+
+
+@asynccontextmanager
+async def lifespan_http_client():
+    """Context manager for managing the HTTP client lifecycle."""
+    yield get_http_client()
+    await close_http_client()
+
+
+# Retry decorator for external API calls
+def with_retry():
+    """Decorator for retrying external API calls with exponential backoff."""
+    return retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError)),
+        reraise=True,
+    )
 
 
 def _calculate_imdb_rating(rating: float | None, enrollment: int | None) -> float | None:
@@ -46,6 +89,15 @@ def _parse_prerequisites(courses: list[dict[str, Any]]) -> dict[str, PrereqNode]
     return id2prereq
 
 
+@with_retry()
+async def _fetch_courses_from_fireroad() -> list[dict[str, Any]]:
+    """Fetch courses from Fireroad API with retry logic."""
+    client = get_http_client()
+    response = await client.get(f"{FIREROAD_BASE_URL}/courses/all?full=true")
+    response.raise_for_status()
+    return [c for c in response.json() if not c.get("is_historical")]
+
+
 @cache(ttl="1h", lock=True)
 async def get_courses_data() -> list[dict[str, Any]]:
     """
@@ -54,10 +106,7 @@ async def get_courses_data() -> list[dict[str, Any]]:
     Pre-computes IMDB ratings to avoid per-request calculation.
     Uses lock=True to prevent thundering herd on cache miss.
     """
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        response = await client.get(f"{FIREROAD_BASE_URL}/courses/all?full=true")
-        response.raise_for_status()
-        courses = [c for c in response.json() if not c.get("is_historical")]
+    courses = await _fetch_courses_from_fireroad()
 
     # Pre-compute IMDB ratings
     for course in courses:
@@ -118,12 +167,13 @@ def _load_local_requirement(key: str) -> dict[str, object] | None:
     return None
 
 
+@with_retry()
 async def _fetch_requirement_from_fireroad(key: str) -> dict[str, object]:
-    """Fetch a single requirement from Fireroad API."""
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        resp = await client.get(f"{FIREROAD_BASE_URL}/requirements/get_json/{key}")
-        resp.raise_for_status()
-        return resp.json()
+    """Fetch a single requirement from Fireroad API with retry logic."""
+    client = get_http_client()
+    resp = await client.get(f"{FIREROAD_BASE_URL}/requirements/get_json/{key}")
+    resp.raise_for_status()
+    return resp.json()
 
 
 @cache(ttl="1h", lock=True, key="{key}:{source}")
@@ -195,26 +245,28 @@ async def clear_cache() -> None:
     """Clear all cached data."""
     await cache.clear()
 
+@with_retry()
+async def _fetch_hydrant_data(url: str) -> dict[str, Any]:
+    """Fetch data from Hydrant API with retry logic."""
+    client = get_http_client()
+    response = await client.get(url)
+    content_type = response.headers.get("content-type", "")
+    if "text/html" in content_type or response.text.strip().startswith("<!DOCTYPE"):
+        raise ValueError(f"URL {url} returned HTML instead of JSON")
+    response.raise_for_status()
+    return response.json()
+
+
 @cache(ttl="1h", lock=True, key="hydrant:latest")
 async def _get_hydrant_latest() -> dict[str, Any]:
     """Fetch latest.json from Hydrant."""
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        response = await client.get(f"{HYDRANT_BASE_URL}/latest.json")
-        response.raise_for_status()
-        return response.json()
+    return await _fetch_hydrant_data(f"{HYDRANT_BASE_URL}/latest.json")
 
 
 @cache(ttl="1h", lock=True, key="hydrant:{semester}")
 async def get_hydrant_semester_data(semester: str) -> dict[str, Any]:
     url = f"{HYDRANT_BASE_URL}/latest.json" if semester == "latest" else f"{HYDRANT_BASE_URL}/{semester}.json"
-
-    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-        response = await client.get(url)
-        content_type = response.headers.get("content-type", "")
-        if "text/html" in content_type or response.text.strip().startswith("<!DOCTYPE"):
-            raise ValueError(f"Semester {semester} not available on Hydrant")
-        response.raise_for_status()
-        return response.json()
+    return await _fetch_hydrant_data(url)
 
 
 async def get_hydrant_courses(

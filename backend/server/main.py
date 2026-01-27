@@ -1,10 +1,11 @@
 import json
 import logging
 import os
-import httpx
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
-
+import httpx
 
 logger = logging.getLogger("uvicorn.error")
 logging.getLogger("httpx").handlers = logger.handlers
@@ -65,15 +66,30 @@ if os.environ.get("FASTAPI_SENTRY_DSN"):
     )
 
 from server.routes import bug_report, courses, hydrant, optimize, requirements
+from shared.services.cache import close_http_client, get_http_client
 
 limiter = Limiter(key_func=get_remote_address)
 
 cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Manage app lifecycle - initialize and cleanup shared resources."""
+    # Startup: initialize shared HTTP client
+    get_http_client()
+    logger.info("Initialized shared HTTP client for connection pooling")
+    yield
+    # Shutdown: close shared HTTP client
+    await close_http_client()
+    logger.info("Closed shared HTTP client")
+
+
 app = FastAPI(
     title="Autoroad API",
     description="Course planning and optimization for MIT students",
     version="1.0.0",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -128,23 +144,21 @@ async def sentry_tunnel(request: Request):
 
 @app.get("/api/health")
 async def health():
-    import httpx
-
     services: dict[str, dict[str, str]] = {
         "backend": {"status": "healthy"},
         "fireroad": {"status": "unknown"},
     }
     status = "healthy"
 
-    # Check Fireroad API
+    # Check Fireroad API using shared client
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            resp = await client.get("https://fireroad.mit.edu/courses/lookup/6.100A")
-            if resp.status_code == 200:
-                services["fireroad"] = {"status": "healthy"}
-            else:
-                services["fireroad"] = {"status": "unhealthy", "error": f"HTTP {resp.status_code}"}
-                status = "degraded"
+        client = get_http_client()
+        resp = await client.get("https://fireroad.mit.edu/courses/lookup/6.100A", timeout=5.0)
+        if resp.status_code == 200:
+            services["fireroad"] = {"status": "healthy"}
+        else:
+            services["fireroad"] = {"status": "unhealthy", "error": f"HTTP {resp.status_code}"}
+            status = "degraded"
     except Exception as e:
         services["fireroad"] = {"status": "unhealthy", "error": str(e)}
         status = "degraded"

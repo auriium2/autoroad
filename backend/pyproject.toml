@@ -13,6 +13,8 @@ dependencies = [
     "claude-agent-sdk>=0.1.10",
     "slowapi>=0.1.9",
     "sentry-sdk[fastapi]>=2.50.0",
+    "janus>=1.0.0",
+    "tenacity>=8.0.0",
 ]
 
 [project.optional-dependencies]
