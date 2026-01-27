@@ -8,6 +8,7 @@ from typing import Any
 from .base import ObjectiveComponent
 from .categories import CategoryRewards
 from .equivalents import DiscourageEquivalentCourses
+from .ratings import PenalizeLowRatings
 from .scheduling import (
     AvoidIAP,
     AvoidSpecialClasses,
@@ -28,7 +29,8 @@ class ObjectiveMetadata:
     key: str
     class_ref: type[ObjectiveComponent]
     name: str
-    description: str
+    short_description: str  # Brief description for search results
+    description: str  # Full description for the card
     has_parameters: bool
     default_parameters: dict[str, Any]
     parameter_types: dict[str, Any]
@@ -38,13 +40,12 @@ class ObjectiveMetadata:
 
 
 OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
-    # Note: minimize_units is the core objective and is NOT user-selectable
-    # It is always active and forms the base of the optimization
     "avoid_small_classes": ObjectiveMetadata(
         key="avoid_small_classes",
         class_ref=AvoidSmallClasses,
         name="Avoid Small Classes",
-        description="Penalize taking classes with very few units. This is used to stop the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements",
+        short_description="Penalize classes with very few (<3) units",
+        description="Penalize taking classes with very few units. This keeps the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements.",
         has_parameters=True,
         default_parameters={"min_units": 3},
         parameter_types={"min_units": int},
@@ -54,18 +55,20 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
     "minimize_max_semester_hours": ObjectiveMetadata(
         key="minimize_max_semester_hours",
         class_ref=MinimizeMaxSemesterHours,
-        name="Limit Semester Hours",
-        description="Penalize semesters with excessive hours per week (tier-based, per 3 hours)",
+        name="Limit Hours Per Semester",
+        short_description="Penalize semesters with too many weekly hours",
+        description="Penalize semesters exceeding a weekly hours threshold. Uses in-class + out-of-class hours from course data, or the fallback value for courses missing data.",
         has_parameters=True,
-        default_parameters={"max_hours": 60.0, "default_hours": 12.0},
-        parameter_types={"max_hours": float, "default_hours": float},
+        default_parameters={"hours_threshold": 60.0, "fallback_hours": 12.0, "penalty_interval": 3},
+        parameter_types={"hours_threshold": float, "fallback_hours": float, "penalty_interval": int},
         category="workload",
     ),
     "limit_classes_per_semester": ObjectiveMetadata(
         key="limit_classes_per_semester",
         class_ref=LimitClassesPerSemester,
         name="Limit Classes Per Semester",
-        description="Penalize semesters with too many classes. This keeps the optimizer from stacking hundreds of classes in one semester.",
+        short_description="Penalize semesters with too many classes",
+        description="Penalize semesters with too many classes. Semantically, applies tier penalty for each class taken over the threshold",
         has_parameters=True,
         default_parameters={"max_classes": 4},
         parameter_types={"max_classes": int},
@@ -76,7 +79,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="limit_units_per_semester",
         class_ref=LimitUnitsPerSemester,
         name="Limit Units Per Semester",
-        description="Penalize semesters with too many units (tier-based, per 3 units)",
+        short_description="Penalize semesters exceeding a unit threshold",
+        description="Penalize semesters with too many units. Semantically, penalizes semesters for having more units than a parameter you specify.",
         has_parameters=True,
         default_parameters={"max_units": 60},
         parameter_types={"max_units": int},
@@ -87,7 +91,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="minimize_finals_load",
         class_ref=MinimizeFinalsLoad,
         name="Minimize Finals Load",
-        description="Penalize semesters with too many finals",
+        short_description="Penalize semesters with too many finals",
+        description="Penalize semesters with too many finals. Semantically, penalizes semesters for having more finals than a parameter you specify.",
         has_parameters=True,
         default_parameters={"max_finals": 2},
         parameter_types={"max_finals": int},
@@ -98,7 +103,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="avoid_iap",
         class_ref=AvoidIAP,
         name="Avoid IAP Classes",
-        description="Penalize the optimizer placing classes during IAP. This does not penalize any classes that you place yourself inside of iap.",
+        short_description="Penalize placing classes during IAP",
+        description="Penalize the optimizer placing classes during IAP.",
         has_parameters=False,
         default_parameters={},
         parameter_types={},
@@ -109,6 +115,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="avoid_special_classes",
         class_ref=AvoidSpecialClasses,
         name="Avoid Special Classes",
+        short_description="Penalize Concourse/STS/ES classes",
         description="Penalize taking Concourse/STS/ES classes, since most students do not take these.",
         has_parameters=False,
         default_parameters={},
@@ -120,7 +127,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="minimum_classes_per_semester",
         class_ref=MinimumClassesPerSemester,
         name="Minimum Classes Per Semester",
-        description="Penalize semesters with too few classes to prevent single-class semesters (Autoroad likes producing these, and some students like having these. Remove as needed)",
+        short_description="Penalize semesters with too few classes",
+        description="Penalize semesters with too few classes to prevent single-class semesters.",
         has_parameters=True,
         default_parameters={"min_classes": 2},
         parameter_types={"min_classes": int},
@@ -131,7 +139,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="category_rewards",
         class_ref=CategoryRewards,
         name="Category Rewards",
-        description="Reward taking courses in priority categories with diminishing returns. Built in feature of autoroad/degree requirement rewards",
+        short_description="Reward courses in priority categories",
+        description="Reward taking courses in priority categories with diminishing returns. Built-in objective of autoroad for degree requirement rewards.",
         has_parameters=True,
         default_parameters={"max_courses_per_category": 20, "decay_rate": 0.70},
         parameter_types={"max_courses_per_category": int, "decay_rate": float},
@@ -143,13 +152,26 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="discourage_equivalent_courses",
         class_ref=DiscourageEquivalentCourses,
         name="Discourage Equivalent Courses",
-        description="Discourage taking multiple equivalent courses (e.g., 18.01 and ES.1801) using tier-based penalties",
+        short_description="Penalize taking multiple equivalent courses",
+        description="Discourage taking multiple equivalent courses using tier-based penalties.",
         has_parameters=True,
         default_parameters={"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}},
         parameter_types={"custom_equivalencies": dict},
         category="scheduling",
         default_tier=4,
         unremovable=True,
+    ),
+    "penalize_low_ratings": ObjectiveMetadata(
+        key="penalize_low_ratings",
+        class_ref=PenalizeLowRatings,
+        name="Penalize Low Ratings",
+        short_description="Penalize courses with low ratings",
+        description="Penalize courses with ratings below a threshold.",
+        has_parameters=True,
+        default_parameters={"threshold": 5.5, "use_imdb": False},
+        parameter_types={"threshold": float, "use_imdb": bool},
+        category="ratings",
+        default_tier=2,
     ),
 }
 

@@ -16,10 +16,12 @@ import { queryKeys } from "@/lib/queryKeys";
 interface ColumnHeadersProps {
   sections: Section[];
   viewport: { x: number; y: number; zoom: number };
+  viewMode?: string;
 }
 
-export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
+export function ColumnHeaders({ sections, viewport, viewMode = "default" }: ColumnHeadersProps) {
   const transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
+  const isNerdMode = viewMode === "nerd";
 
   const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
@@ -59,6 +61,74 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
       window.open(url, "_blank", "noopener,noreferrer");
     },
     [graduationYear, getCoursesForSection]
+  );
+
+  // Get all unique course IDs across all sections for batch fetching
+  const allCourseIds = React.useMemo(() => {
+    const ids = new Set<string>();
+    sections.forEach((section) => {
+      getCoursesForSection(section.id).forEach((id) => ids.add(id));
+    });
+    return Array.from(ids);
+  }, [sections, getCoursesForSection]);
+
+  // Batch fetch course details for stats calculation
+  const courseQueries = useQueries({
+    queries: allCourseIds.map((courseId) => ({
+      queryKey: queryKeys.courses.details(courseId),
+      queryFn: () => fireroadApi.getCourseDetails(courseId),
+      staleTime: 24 * 60 * 60 * 1000,
+      enabled: isNerdMode,
+    })),
+  });
+
+  // Build a map of courseId -> course data
+  const courseDataMap = React.useMemo(() => {
+    const map = new Map<string, { units: number; hours: number; rating: number | null }>();
+    allCourseIds.forEach((courseId, idx) => {
+      const query = courseQueries[idx];
+      if (query?.data) {
+        const inClass = query.data.in_class_hours ?? 0;
+        const outClass = query.data.out_of_class_hours ?? 0;
+        map.set(courseId, {
+          units: query.data.total_units ?? 0,
+          hours: inClass + outClass,
+          rating: query.data.rating ?? null,
+        });
+      }
+    });
+    return map;
+  }, [allCourseIds, courseQueries]);
+
+  // Calculate stats for a section
+  const getSectionStats = React.useCallback(
+    (sectionId: number) => {
+      const courses = getCoursesForSection(sectionId);
+      let totalUnits = 0;
+      let totalHours = 0;
+      let ratingSum = 0;
+      let ratingCount = 0;
+
+      for (const courseId of courses) {
+        const data = courseDataMap.get(courseId);
+        if (data) {
+          totalUnits += data.units;
+          totalHours += data.hours;
+          if (data.rating != null) {
+            ratingSum += data.rating;
+            ratingCount++;
+          }
+        }
+      }
+
+      return {
+        units: totalUnits,
+        hours: Math.round(totalHours),
+        avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
+        courseCount: courses.length,
+      };
+    },
+    [getCoursesForSection, courseDataMap]
   );
 
   return (
@@ -191,10 +261,12 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
           const courses = isRegularSemester ? getCoursesForSection(section.id) : [];
           const canInteract = isRegularSemester && hasGraduationYear;
 
+          const stats = isNerdMode && isRegularSemester ? getSectionStats(section.id) : null;
+
           return (
             <div
               key={section.id}
-              className="flex items-center justify-center px-2 py-2"
+              className="flex flex-col items-center px-2 py-2"
               style={{
                 width: `${COLUMN_WIDTH}px`,
                 pointerEvents: canInteract ? 'auto' : 'none',
@@ -237,6 +309,11 @@ export function ColumnHeaders({ sections, viewport }: ColumnHeadersProps) {
                 >
                   {section.title}
                 </span>
+              )}
+              {stats && stats.courseCount > 0 && (
+                <div className="mt-1 text-[10px] text-gray-500 whitespace-nowrap">
+                  {stats.units}u · {stats.hours}h{stats.avgRating && ` · ★${stats.avgRating}`}
+                </div>
               )}
             </div>
           );

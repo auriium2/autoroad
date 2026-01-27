@@ -3,6 +3,7 @@
  * Interface to MIT's Fireroad course catalog API
  */
 
+import { API_BASE_URL } from '@/config/api';
 import type {
   FireroadCourse,
   PaginatedCoursesResponse,
@@ -28,7 +29,7 @@ async function apiFetch<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers: {
       // Only add Accept header - don't add Content-Type for GET requests

@@ -326,7 +326,7 @@ function CourseGraphFlowInner({
         />
       </ReactFlow>
 
-      <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} />
+      <ColumnHeaders sections={ALL_SECTIONS} viewport={viewport} viewMode={viewMode} />
 
       {/* Home button to reset viewport */}
       <Button

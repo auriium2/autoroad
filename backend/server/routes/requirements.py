@@ -6,12 +6,15 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from shared.optimizer.constraints.registry import get_all_constraints
 from shared.optimizer.objectives.registry import get_all_objectives
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 REQUIREMENTS_DIR = Path(__file__).parent.parent.parent / "requirements"
@@ -54,16 +57,19 @@ def _load_local_requirements() -> dict[str, dict[str, str]]:
                             "title": title,
                             "title-no-degree": header_parts[3] if len(header_parts) > 3 else title,
                         }
+                        # Find description: first non-empty line after header that doesn't look like a requirement definition
+                        for line in lines[1:]:
+                            stripped = line.strip()
+                            if stripped and not stripped.startswith(('#', '/')) and ':=' not in stripped:
+                                local_reqs[key]["description"] = stripped
+                                break
                 except Exception as e:
                     print(f"[REQUIREMENTS] Failed to parse {path}: {e}")
     return local_reqs
 
 
-@router.get("/requirements/list")
-async def list_requirements():
-    """
-    List all available requirements, merging Fireroad's list with local beta files.
-    """
+async def _fetch_all_requirements() -> dict[str, Any]:
+    """Fetch and merge requirements from Fireroad and local files."""
     fireroad_reqs: dict[str, Any] = {}
     try:
         async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
@@ -92,8 +98,18 @@ async def list_requirements():
     return result
 
 
+@router.get("/requirements/list")
+@limiter.limit("30/minute")
+async def list_requirements(request: Request):
+    """
+    List all available requirements, merging Fireroad's list with local beta files.
+    """
+    return await _fetch_all_requirements()
+
+
 @router.get("/requirements/get/{key}")
-async def get_requirement_json(key: str, source: str = "canonical"):
+@limiter.limit("60/minute")
+async def get_requirement_json(request: Request, key: str, source: str = "canonical"):
     """Get a parsed requirement definition."""
     from shared.services.cache import fetch_requirement
 
@@ -105,7 +121,8 @@ async def get_requirement_json(key: str, source: str = "canonical"):
 
 
 @router.post("/requirements/progress/{key}")
-async def get_requirement_progress(key: str, request: ProgressRequest, source: str = "canonical"):
+@limiter.limit("30/minute")
+async def get_requirement_progress(request: Request, key: str, body: ProgressRequest, source: str = "canonical"):
     """
     Get requirement progress for a list of selected subjects.
 
@@ -125,7 +142,7 @@ async def get_requirement_progress(key: str, request: ProgressRequest, source: s
         id2course = {c["subject_id"]: c for c in courses_data}
 
         # Compute progress - extract subject_ids from the objects
-        selected_set = {s.subject_id for s in request.selectedSubjects}
+        selected_set = {s.subject_id for s in body.selectedSubjects}
         result = compute_progress(root_node, selected_set, id2course)
 
         # Convert to JSON format
@@ -143,7 +160,9 @@ async def get_requirement_progress(key: str, request: ProgressRequest, source: s
 
 
 @router.get("/parameters/search")
+@limiter.limit("60/minute")
 async def search_parameters(
+    request: Request,
     q: str = Query("", description="Search query"),
     limit: int = Query(30, ge=1, le=100),
     exclude_requirements: str = Query("", description="Comma-separated requirement keys to exclude"),
@@ -159,7 +178,7 @@ async def search_parameters(
     excluded_cons = set(exclude_constraints.split(",")) if exclude_constraints else set()
 
     # Fetch requirements list
-    all_requirements = await list_requirements()
+    all_requirements = await _fetch_all_requirements()
 
     # Get objectives and constraints
     all_objectives = get_all_objectives()
@@ -183,6 +202,7 @@ async def search_parameters(
                 "metadata": {
                     "key": obj.key,
                     "name": obj.name,
+                    "shortDescription": obj.short_description,
                     "description": obj.description,
                     "category": obj.category,
                     "hasParameters": obj.has_parameters,
@@ -205,6 +225,7 @@ async def search_parameters(
                 "metadata": {
                     "key": con.key,
                     "name": con.name,
+                    "shortDescription": con.short_description,
                     "description": con.description,
                     "category": con.category,
                 },

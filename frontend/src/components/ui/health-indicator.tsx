@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 import { queryKeys } from '@/lib/queryKeys';
 import { Server, Globe } from 'lucide-react';
 import {
@@ -24,7 +25,7 @@ export function HealthIndicator({ className }: HealthIndicatorProps) {
   const { data, isError } = useQuery({
     queryKey: queryKeys.health.backend(),
     queryFn: async (): Promise<HealthResponse> => {
-      const response = await fetch('/api/health', {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw new Error('Health check failed');

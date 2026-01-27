@@ -3,6 +3,7 @@
  * Interface for searching and managing optimization parameters
  */
 
+import { API_BASE_URL } from '@/config/api';
 import type { SearchResults } from '@/types/models/optimizer';
 
 export interface SearchParams {
@@ -33,7 +34,7 @@ export const parametersApi = {
       searchParams.append('exclude_constraints', params.excludeConstraints.join(','));
     }
 
-    const url = `/api/parameters/search?${searchParams}`;
+    const url = `${API_BASE_URL}/api/parameters/search?${searchParams}`;
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',

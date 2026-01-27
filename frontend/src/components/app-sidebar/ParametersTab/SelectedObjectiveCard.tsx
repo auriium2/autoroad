@@ -4,6 +4,7 @@ import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TierSelector } from "./TierSelector";
 import { EquivalencyManager } from "./EquivalencyManager";
 import type { ObjectiveMetadata } from "@/types/models/optimizer";
@@ -44,7 +45,7 @@ export function SelectedObjectiveCard({
     setObjectives(newObjectives);
   };
 
-  const handleParameterChange = (paramName: string, value: number | Record<string, string[]> | null) => {
+  const handleParameterChange = (paramName: string, value: number | boolean | Record<string, string[]> | null) => {
     const newObjectives = selectedObjectives.map(obj =>
       obj.key === objectiveKey
         ? { ...obj, parameters: { ...obj.parameters, [paramName]: value } }
@@ -125,6 +126,22 @@ export function SelectedObjectiveCard({
                         <EquivalencyManager
                           customEquivalencies={equivValue as Record<string, string[]>}
                           onChange={(newEquiv) => handleParameterChange(paramName, newEquiv)}
+                        />
+                      </div>
+                    );
+                  }
+
+                  // Boolean parameters render as checkbox
+                  if (typeof defaultValue === 'boolean') {
+                    const currentValue = (config.parameters[paramName] as boolean) ?? defaultValue;
+                    return (
+                      <div key={paramName} className="flex items-center gap-2 min-w-0">
+                        <Label className="text-xs text-muted-foreground capitalize shrink-0" style={{ width: '100px' }}>
+                          {paramName.replace(/_/g, ' ')}:
+                        </Label>
+                        <Checkbox
+                          checked={currentValue}
+                          onCheckedChange={(checked: boolean) => handleParameterChange(paramName, checked)}
                         />
                       </div>
                     );

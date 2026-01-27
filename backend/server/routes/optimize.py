@@ -162,8 +162,8 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                 try:
                     constraint = instantiate_constraint(constraint_key)
                     constraint.add_to_model(model, take_vars, constraint_context)
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning("Failed to instantiate constraint '%s': %s", constraint_key, e)
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
 
@@ -179,8 +179,8 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                 try:
                     obj = instantiate_objective(obj_config.key, obj_config.parameters)
                     builder.add(obj, key=obj_config.key)
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
         else:
             for key, params in get_default_objectives():
                 obj = instantiate_objective(key, params)
@@ -295,6 +295,7 @@ async def get_objectives():
         result.append({
             "key": obj.key,
             "name": obj.name,
+            "shortDescription": obj.short_description,
             "description": obj.description,
             "category": obj.category,
             "hasParameters": obj.has_parameters,
@@ -320,6 +321,7 @@ async def get_hard_constraints():
         result.append({
             "key": constraint.key,
             "name": constraint.name,
+            "shortDescription": constraint.short_description,
             "description": constraint.description,
             "category": constraint.category,
             "defaultEnabled": constraint.default_enabled,

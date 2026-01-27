@@ -2,6 +2,7 @@ import * as React from "react";
 import { Bug, Loader2, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { API_BASE_URL } from "@/config/api";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { toast } from "@/hooks/useToast";
@@ -207,7 +208,7 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch("/api/bug-report", {
+      const response = await fetch(`${API_BASE_URL}/api/bug-report`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

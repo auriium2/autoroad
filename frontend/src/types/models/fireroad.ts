@@ -73,6 +73,7 @@ export interface RequirementMetadata {
   title?: string;
   'short-title'?: string;
   'medium-title'?: string;
+  description?: string;
   source?: 'canonical' | 'beta';
   hasBothVersions?: boolean;
 }

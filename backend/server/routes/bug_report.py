@@ -8,10 +8,15 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
+
+MAX_SCREENSHOT_SIZE_BYTES = 5 * 1024 * 1024  # 5MB max for screenshots
 
 GITHUB_REPO = "auriium2/autoroad"
 GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/issues"
@@ -257,7 +262,8 @@ def build_issue_body(description: str, screenshot_url: str | None, debug_info: d
 
 
 @router.post("/bug-report", response_model=BugReportResponse)
-async def create_bug_report(request: BugReportRequest) -> BugReportResponse:
+@limiter.limit("5/minute")
+async def create_bug_report(request: Request, body: BugReportRequest) -> BugReportResponse:
     """Create a GitHub issue for a bug report."""
     token = os.environ.get("GITHUB_BUG_REPORT_TOKEN")
 
@@ -268,14 +274,25 @@ async def create_bug_report(request: BugReportRequest) -> BugReportResponse:
         )
 
     screenshot_url = None
-    if request.screenshot:
-        screenshot_url = await upload_screenshot_to_r2(request.screenshot)
+    if body.screenshot:
+        # Validate screenshot size before processing
+        screenshot_data = body.screenshot
+        if "," in screenshot_data:
+            screenshot_data = screenshot_data.split(",", 1)[1]
+        # Base64 encoding adds ~33% overhead, so check encoded length
+        estimated_size = len(screenshot_data) * 3 // 4
+        if estimated_size > MAX_SCREENSHOT_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Screenshot too large. Maximum size is {MAX_SCREENSHOT_SIZE_BYTES // (1024 * 1024)}MB."
+            )
+        screenshot_url = await upload_screenshot_to_r2(body.screenshot)
 
-    body = build_issue_body(request.description, screenshot_url, request.debug_info)
+    issue_body = build_issue_body(body.description, screenshot_url, body.debug_info)
 
     issue_data = {
-        "title": request.title,
-        "body": body[:65000],  # GitHub body limit is ~65535 chars
+        "title": body.title,
+        "body": issue_body[:65000],  # GitHub body limit is ~65535 chars
         "labels": ["generated"],
     }
 

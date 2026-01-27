@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { API_BASE_URL } from "@/config/api";
 import { AppSidebar } from "@/components/app-sidebar";
 import { StarOnGithubPopup } from "@/components/StarOnGithubPopup";
 import {
@@ -57,7 +58,7 @@ export default function Dashboard() {
   const { data: healthData, isError: backendError, isPending: healthPending } = useQuery({
     queryKey: queryKeys.health.backend(),
     queryFn: async () => {
-      const response = await fetch('/api/health', {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw new Error('Backend health check failed');

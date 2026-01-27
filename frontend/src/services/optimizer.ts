@@ -3,6 +3,7 @@
  * Interface to the backend optimization service
  */
 
+import { API_BASE_URL } from '@/config/api';
 import type { Marker, OptimizerNode } from '@/types';
 import type { ObjectivesResponse, HardConstraintsResponse, ObjectiveConfig, ConstraintConfig } from '@/types/models/optimizer';
 
@@ -10,7 +11,7 @@ async function optimizerFetch<T>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers: {
       'Accept': 'application/json',
@@ -118,7 +119,7 @@ export const optimizerApi = {
       requirementSources: requirementSources || {},
     };
 
-    const response = await fetch('/api/optimize', {
+    const response = await fetch(`${API_BASE_URL}/api/optimize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

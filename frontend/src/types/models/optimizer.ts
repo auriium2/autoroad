@@ -6,6 +6,7 @@
 export interface ObjectiveMetadata {
   key: string;
   name: string;
+  shortDescription: string;
   description: string;
   category: string;
   hasParameters: boolean;
@@ -17,7 +18,7 @@ export interface ObjectiveMetadata {
 
 export interface ObjectiveConfig {
   key: string;
-  parameters: Record<string, number | Record<string, string[]> | null>;
+  parameters: Record<string, number | boolean | Record<string, string[]> | null>;
 }
 
 export interface ObjectivesResponse {
@@ -28,6 +29,7 @@ export interface ObjectivesResponse {
 export interface HardConstraintMetadata {
   key: string;
   name: string;
+  shortDescription: string;
   description: string;
   category: string;
   hasParameters: boolean;

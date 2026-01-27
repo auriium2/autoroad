@@ -83,7 +83,7 @@ export function SelectedConstraintCard({ metadata, config }: SelectedConstraintC
                                 />
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent>Attempts to use hydrant's scheduling data for this semester for all future semesters (don't use this)</TooltipContent>
+                            <TooltipContent>Attempts to use this semester's data for all future semesters (don't use this)</TooltipContent>
                           </Tooltip>
                         ) : (
                           <Checkbox

@@ -61,24 +61,27 @@ export function ParameterSearchDropdown({
           <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-red-400 uppercase tracking-wider border-b border-gray-700/50">
             Objectives ({searchResults.totalCounts.objectives})
           </div>
-          {searchResults.objectives.map((item) => (
-            <button
-              key={`search-${item.type}-${item.key}`}
-              onClick={() => {
-                if (item.metadata && 'key' in item.metadata) {
-                  onSelectObjective(item.metadata as ObjectiveMetadata);
-                }
-              }}
-              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
-            >
-              <div className="font-medium">{item.displayName}</div>
-              {item.metadata && 'description' in item.metadata && item.metadata.description && (
-                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                  {item.metadata.description}
-                </div>
-              )}
-            </button>
-          ))}
+          {searchResults.objectives.map((item) => {
+            const meta = item.metadata as ObjectiveMetadata | undefined;
+            return (
+              <button
+                key={`search-${item.type}-${item.key}`}
+                onClick={() => {
+                  if (meta) {
+                    onSelectObjective(meta);
+                  }
+                }}
+                className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
+              >
+                <div className="font-medium">{item.displayName}</div>
+                {meta?.shortDescription && (
+                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    {meta.shortDescription}
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -87,24 +90,27 @@ export function ParameterSearchDropdown({
           <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-purple-400 uppercase tracking-wider border-b border-gray-700/50">
             Hard Constraints ({searchResults.totalCounts.constraints})
           </div>
-          {searchResults.constraints.map((item) => (
-            <button
-              key={`search-${item.type}-${item.key}`}
-              onClick={() => {
-                if (item.metadata && 'key' in item.metadata) {
-                  onSelectConstraint(item.metadata as HardConstraintMetadata);
-                }
-              }}
-              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
-            >
-              <div className="font-medium">{item.displayName}</div>
-              {item.metadata && 'description' in item.metadata && item.metadata.description && (
-                <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                  {item.metadata.description}
-                </div>
-              )}
-            </button>
-          ))}
+          {searchResults.constraints.map((item) => {
+            const meta = item.metadata as HardConstraintMetadata | undefined;
+            return (
+              <button
+                key={`search-${item.type}-${item.key}`}
+                onClick={() => {
+                  if (meta) {
+                    onSelectConstraint(meta);
+                  }
+                }}
+                className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
+              >
+                <div className="font-medium">{item.displayName}</div>
+                {meta?.shortDescription && (
+                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    {meta.shortDescription}
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -113,23 +119,27 @@ export function ParameterSearchDropdown({
           <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-cyan-400 uppercase tracking-wider border-b border-gray-700/50">
             Concentrations ({searchResults.totalCounts.concentrations})
           </div>
-          {searchResults.concentrations.map((item) => (
-            <button
-              key={`search-${item.type}-${item.key}`}
-              onClick={() => onSelectRequirement(item.key)}
-              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{item.displayName}</span>
-                <span className="px-1.5 py-0.5 text-[9px] font-medium bg-cyan-500/10 text-cyan-400/60 rounded">BETA</span>
-              </div>
-              {item.metadata && 'title_no_degree' in item.metadata && (item.metadata.title_no_degree || item.metadata.title) && (
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {item.metadata.title_no_degree || item.metadata.title}
+          {searchResults.concentrations.map((item) => {
+            const meta = item.metadata as Record<string, unknown> | undefined;
+            const description = meta?.['description'] as string | undefined;
+            const fallback = (meta?.['title-no-degree'] || meta?.['title']) as string | undefined;
+            const subtitle = description || (fallback !== item.displayName ? fallback : undefined);
+            return (
+              <button
+                key={`search-${item.type}-${item.key}`}
+                onClick={() => onSelectRequirement(item.key)}
+                className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{item.displayName}</span>
+                  <span className="px-1.5 py-0.5 text-[9px] font-medium bg-cyan-500/10 text-cyan-400/60 rounded">BETA</span>
                 </div>
-              )}
-            </button>
-          ))}
+                {subtitle && (
+                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{subtitle}</div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -138,20 +148,24 @@ export function ParameterSearchDropdown({
           <div className="sticky top-0 bg-gray-900/95 backdrop-blur-sm px-3 py-1.5 text-[10px] font-semibold text-blue-400 uppercase tracking-wider border-b border-gray-700/50">
             Degrees ({searchResults.totalCounts.degrees})
           </div>
-          {searchResults.degrees.map((item) => (
-            <button
-              key={`search-${item.type}-${item.key}`}
-              onClick={() => onSelectRequirement(item.key)}
-              className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
-            >
-              <div className="font-medium">{item.displayName}</div>
-              {item.metadata && 'title_no_degree' in item.metadata && (item.metadata.title_no_degree || item.metadata.title) && (
-                <div className="text-xs text-muted-foreground mt-0.5">
-                  {item.metadata.title_no_degree || item.metadata.title}
-                </div>
-              )}
-            </button>
-          ))}
+          {searchResults.degrees.map((item) => {
+            const meta = item.metadata as Record<string, unknown> | undefined;
+            const description = meta?.['description'] as string | undefined;
+            const fallback = (meta?.['title-no-degree'] || meta?.['title']) as string | undefined;
+            const subtitle = description || (fallback !== item.displayName ? fallback : undefined);
+            return (
+              <button
+                key={`search-${item.type}-${item.key}`}
+                onClick={() => onSelectRequirement(item.key)}
+                className="w-full px-3 py-2.5 text-left text-sm hover:bg-gray-800 transition-colors border-b border-gray-800/50 last:border-b-0"
+              >
+                <div className="font-medium">{item.displayName}</div>
+                {subtitle && (
+                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{subtitle}</div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 

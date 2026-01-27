@@ -1,9 +1,12 @@
 from typing import Any, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from shared.services.cache import get_courses_data
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 # Virtual items for generic requirement markers
@@ -105,7 +108,9 @@ def _matches_filters(
 
 
 @router.get("/courses/search")
+@limiter.limit("60/minute")
 async def search_courses(
+    request: Request,
     q: str = Query(..., description="Search query, use '*' for all courses"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=2000),
@@ -186,7 +191,8 @@ async def search_courses(
 
 
 @router.get("/courses/lookup/{course_id:path}")
-async def lookup_course(course_id: str):
+@limiter.limit("120/minute")
+async def lookup_course(request: Request, course_id: str):
     # Check virtual items first
     for item in VIRTUAL_ITEMS:
         if item["subject_id"] == course_id:
@@ -202,7 +208,9 @@ async def lookup_course(course_id: str):
 
 
 @router.get("/courses/dept/{dept}")
+@limiter.limit("60/minute")
 async def get_courses_by_department(
+    request: Request,
     dept: str,
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),

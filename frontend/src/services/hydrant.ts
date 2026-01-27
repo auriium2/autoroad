@@ -3,6 +3,8 @@
  * Fetches parsed schedule data from backend
  */
 
+import { API_BASE_URL } from '@/config/api';
+
 export interface TimeBlock {
   course_id: string;
   type: string;
@@ -35,7 +37,7 @@ export const hydrantApi = {
     }
 
     const response = await fetch(
-      `/api/hydrant/schedule/${targetSemester}?course_ids=${courseIds.join(",")}`
+      `${API_BASE_URL}/api/hydrant/schedule/${targetSemester}?course_ids=${courseIds.join(",")}`
     );
     if (!response.ok) {
       throw new Error(`Failed to fetch schedule for ${targetSemester}`);

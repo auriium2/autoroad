@@ -16,7 +16,8 @@ class ConstraintMetadata:
     key: str
     class_ref: type[HardConstraint]
     name: str
-    description: str
+    short_description: str  # Brief description for search results
+    description: str  # Full description for the card
     category: str
     default_enabled: bool = False
     has_parameters: bool = False
@@ -30,6 +31,7 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         key="ban_iap",
         class_ref=BanIAP,
         name="Ban IAP Classes",
+        short_description="Prevent classes during IAP",
         description="Hard constraint: prevents optimizer from placing any classes in IAP. Your manual markers still work.",
         category="scheduling",
         default_enabled=False,
@@ -38,6 +40,7 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         key="no_schedule_conflicts",
         class_ref=NoScheduleConflicts,
         name="No Schedule Conflicts",
+        short_description="Prevent overlapping lecture times",
         description="Hard constraint: prevents taking courses with overlapping lecture times. Uses Hydrant schedule data.",
         category="scheduling",
         default_enabled=True,
@@ -50,6 +53,7 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         key="ban_prefix",
         class_ref=BanPrefix,
         name="Ban Classes by Prefix",
+        short_description="Prevent classes with a course number prefix",
         description="Hard constraint: prevents taking any classes with a specific course number prefix.",
         category="scheduling",
         default_enabled=False,
@@ -61,6 +65,7 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         key="schedule_free_time",
         class_ref=ScheduleFreeTime,
         name="Schedule Free Time",
+        short_description="Block off time slots for no classes",
         description="Block off time slots where you don't want classes. Courses with required sections during blocked times will be excluded.",
         category="scheduling",
         default_enabled=False,

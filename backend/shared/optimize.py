@@ -5,6 +5,7 @@ Core optimization logic for the worker.
 import asyncio
 import base64
 import json
+import logging
 import os
 import queue
 import threading
@@ -40,6 +41,8 @@ from shared.services.cache import (
     get_requirements,
 )
 from shared.utils import find_current_school_year
+
+logger = logging.getLogger("uvicorn.error")
 
 # Attribute columns to include for frontend marker matching
 ATTRIBUTE_COLUMNS = ('hass_attribute', 'gir_attribute', 'communication_requirement')
@@ -405,8 +408,8 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                 try:
                     constraint = instantiate_constraint(constraint_config.key, constraint_config.parameters)
                     constraint.add_to_model(model, take_vars, constraint_context)
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning("Failed to instantiate constraint '%s': %s", constraint_config.key, e)
         perf_timings['hard_constraints'] = time.time() - perf_start
 
         yield {'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10}
@@ -423,8 +426,8 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                 try:
                     obj = instantiate_objective(obj_config.key, obj_config.parameters)
                     builder.add(obj, key=obj_config.key)
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
         else:
             for key, params in get_default_objectives():
                 obj = instantiate_objective(key, params)

@@ -228,7 +228,7 @@ export function CourseSearchTab() {
             {searchQuery === "" && selectedDepartment === "all" ? (
               <>
                 <div className="mb-2">Select a department or search for courses</div>
-                <div className="text-xs opacity-70">Tip: Try selecting &quot;6&quot; or &quot;18&quot; to browse courses</div>
+                <div className="text-xs opacity-70">Tip: Try typing &quot;6&quot; or &quot;18&quot; to browse courses</div>
               </>
             ) : (
               "No courses found"

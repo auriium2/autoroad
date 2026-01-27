@@ -13,23 +13,7 @@ from .base import ObjectiveContext, get_tier_penalty
 
 
 class LimitClassesPerSemester:
-    """
-    Tier-based soft constraint to limit the number of classes per semester.
-
-    Penalizes semesters that exceed max_classes threshold using tier-based penalties.
-
-    Tier meanings:
-        Tier 1 (3 units/violation): "Ideal preferences"
-        Tier 2 (9 units/violation): "Important preferences"
-        Tier 3 (27 units/violation): "Rarely violate"
-        Tier 4 (81 units/violation): "Never violate"
-    """
-
     def __init__(self, max_classes: int = 4):
-        """
-        Args:
-            max_classes: Maximum comfortable number of classes per semester
-        """
         self.max_classes: int = max_classes
 
     def get_name(self) -> str:
@@ -50,12 +34,6 @@ class LimitClassesPerSemester:
         take_vars: dict[tuple[int, int], cp_model.IntVar],
         context: ObjectiveContext
     ) -> cp_model.LinearExpr:
-
-        """
-        Add tier-based penalty for semesters exceeding max_classes.
-
-        Formula: penalty = violations × TIER_BASE^tier × 1
-        """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
         if context.objective_tiers and 'limit_classes_per_semester' in context.objective_tiers:
@@ -95,18 +73,7 @@ class LimitClassesPerSemester:
 
 
 class LimitUnitsPerSemester:
-    """
-    Tier-based soft constraint to limit the number of units per semester.
-
-    Penalizes semesters that exceed max_units threshold using tier-based penalties.
-    Note: Penalty is per 3 units over the limit (roughly 1 class equivalent).
-    """
-
     def __init__(self, max_units: int = 60):
-        """
-        Args:
-            max_units: Maximum comfortable number of units per semester
-        """
         self.max_units: int = max_units
 
     def get_name(self) -> str:
@@ -185,27 +152,22 @@ class LimitUnitsPerSemester:
 
 
 class MinimizeMaxSemesterHours:
-    """
-    Tier-based soft constraint to limit hours per semester.
-
-    Penalizes semesters that exceed max_hours threshold using tier-based penalties.
-    Note: Penalty is per 3 hours over the limit (roughly 1 class equivalent).
-    """
-
-    def __init__(self, max_hours: float = 60.0, default_hours: float = 12.0):
+    def __init__(self, hours_threshold: float = 60.0, fallback_hours: float = 12.0, penalty_interval: int = 3):
         """
         Args:
-            max_hours: Maximum acceptable weekly hours per semester
-            default_hours: Default weekly hours for courses with missing data
+            hours_threshold: Maximum acceptable weekly hours per semester before penalties apply
+            fallback_hours: Assumed weekly hours for courses missing in_class/out_of_class data
+            penalty_interval: Apply one tier penalty for every N hours over the threshold
         """
-        self.max_hours: float = max_hours
-        self.default_hours: float = default_hours
+        self.hours_threshold: float = hours_threshold
+        self.fallback_hours: float = fallback_hours
+        self.penalty_interval: int = penalty_interval
 
     def get_name(self) -> str:
         return "Limit Semester Hours"
 
     def get_description(self) -> str:
-        return f"Penalize semesters with more than {self.max_hours} hours/week (tier-based, per 3 hours)"
+        return f"Penalize semesters with more than {self.hours_threshold} hours/week (tier-based, per {self.penalty_interval} hours)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
@@ -252,45 +214,29 @@ class MinimizeMaxSemesterHours:
                         total_hours += float(out_of_class)  # type: ignore[arg-type]
                         has_data = True
 
-                    # If no hours data available, use default
+                    # If no hours data available, use fallback
                     if not has_data or total_hours == 0:
-                        total_hours = self.default_hours
+                        total_hours = self.fallback_hours
 
-                    # Scale by 10 to preserve 1 decimal place
-                    scaled_hours = int(total_hours * 10)
-                    hours_in_semester.append(var * scaled_hours)
+                    hours_in_semester.append(var * int(total_hours))
 
             if not hours_in_semester:
                 continue
 
             # Create variable for total hours in this semester
-            # Calculate max possible hours (handle NaN values)
-            max_possible = 0
-            if 'in_class_hours' in context.courses_df.columns:
-                for c in range(len(context.courses_df)):
-                    in_h = context.courses_df[c, 'in_class_hours']
-                    out_h = context.courses_df[c, 'out_of_class_hours'] if 'out_of_class_hours' in context.courses_df.columns else 0
-                    total = 0
-                    if in_h is not None:
-                        total += float(in_h)
-                    if out_h is not None:
-                        total += float(out_h)
-                    max_possible += int(total * 10)
-            max_possible_hours = max(max_possible, 1000)
+            # Use a reasonable upper bound (e.g., 20 courses × 20 hours each)
+            max_possible_hours = 400
 
             total_hours_var = model.NewIntVar(0, max_possible_hours, f'total_hours_sem_{sem}')
             _ = model.Add(total_hours_var == sum(hours_in_semester))
 
             # Create variable for excess hours (above threshold)
-            # max_hours is in actual hours, but we scaled by 10
-            scaled_max_hours = int(self.max_hours * 10)
             excess_var = model.NewIntVar(0, max_possible_hours, f'excess_hours_sem_{sem}')
-            _ = model.AddMaxEquality(excess_var, [total_hours_var - scaled_max_hours, 0])
+            _ = model.AddMaxEquality(excess_var, [total_hours_var - int(self.hours_threshold), 0])
 
-            # Divide by 30 to get class-equivalent violations (3 hours × 10 scaling = 30)
-            # This makes 12 excess hours ≈ 4 violations ≈ similar to 4 excess classes
-            excess_classes_equiv_var = model.NewIntVar(0, max_possible_hours // 30 + 1, f'excess_hours_equiv_sem_{sem}')
-            _ = model.AddDivisionEquality(excess_classes_equiv_var, excess_var, 30)
+            # Divide by penalty_interval to get violations
+            excess_classes_equiv_var = model.NewIntVar(0, max_possible_hours // self.penalty_interval + 1, f'excess_hours_equiv_sem_{sem}')
+            _ = model.AddDivisionEquality(excess_classes_equiv_var, excess_var, self.penalty_interval)
 
             # Add tier-based penalty term
             terms.append(excess_classes_equiv_var * penalty)
