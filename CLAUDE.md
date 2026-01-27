@@ -8,8 +8,8 @@
 
 # python specific
 - Run python with uv, and use uv for dependency management.
-- Check types with basedpyright
 - In constructors, please use type annotations for all parameters and assigments to local variables. This helps with readability and allows for better type checking.
+- All imports go at the top of the file, unless explicitly lazy-loading
 
 # web specific
 - For simple, configuration-like JSX components with static props (especially UI library components like Handle, Icon, Button, etc.), format them on a single line when:
