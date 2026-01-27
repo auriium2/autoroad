@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { createContext, useContext, useRef, useState, useEffect, type ReactNode } from 'react';
 import Shepherd from 'shepherd.js';
 import { useQueryClient } from '@tanstack/react-query';
 import 'shepherd.js/dist/css/shepherd.css';
@@ -12,21 +12,21 @@ interface TutorialContextValue {
   advanceTutorial: () => void;
 }
 
-const TutorialContext = React.createContext<TutorialContextValue | null>(null);
+const TutorialContext = createContext<TutorialContextValue | null>(null);
 
 const STORAGE_KEY = 'autoroad-tutorial-completed';
 
-export function TutorialProvider({ children }: { children: React.ReactNode }) {
-  const tourRef = React.useRef<InstanceType<typeof Shepherd.Tour> | null>(null);
-  const [isActive, setIsActive] = React.useState(false);
+export function TutorialProvider({ children }: { children: ReactNode }) {
+  const tourRef = useRef<InstanceType<typeof Shepherd.Tour> | null>(null);
+  const [isActive, setIsActive] = useState(false);
   const queryClient = useQueryClient();
 
   // Set query client reference for steps.ts to use
-  React.useEffect(() => {
+  useEffect(() => {
     setQueryClient(queryClient);
   }, [queryClient]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const tour = new Shepherd.Tour({
       useModalOverlay: true,
       defaultStepOptions: {
@@ -68,17 +68,17 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const startTutorial = React.useCallback(() => {
+  const startTutorial = () => {
     tourRef.current?.start();
-  }, []);
+  };
 
-  const getCurrentStepId = React.useCallback(() => {
+  const getCurrentStepId = () => {
     return tourRef.current?.getCurrentStep()?.id;
-  }, []);
+  };
 
-  const advanceTutorial = React.useCallback(() => {
+  const advanceTutorial = () => {
     tourRef.current?.next();
-  }, []);
+  };
 
   const value = { startTutorial, isActive, getCurrentStepId, advanceTutorial };
 
@@ -90,7 +90,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useTutorial() {
-  const ctx = React.useContext(TutorialContext);
+  const ctx = useContext(TutorialContext);
   if (!ctx) {
     throw new Error('useTutorial must be used within TutorialProvider');
   }

@@ -2,7 +2,6 @@
  * React hooks for fetching and evaluating prerequisites using TanStack Query
  */
 
-import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
 import { extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
@@ -121,10 +120,7 @@ export function usePrerequisiteString(courseId: string | null) {
 function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
   const queryClient = useQueryClient();
   
-  const courseKey = React.useMemo(
-    () => nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(','),
-    [nodes]
-  );
+  const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(',');
 
   return useQuery({
     queryKey: ['courseDetails', 'batch', courseKey],
@@ -177,10 +173,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
   const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
   
   // Include sections in cache key - edges depend on section ordering
-  const courseKey = React.useMemo(
-    () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}`).sort().join(','),
-    [nodes]
-  );
+  const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}`).sort().join(',');
 
   // Build uuid -> fresh node map (React Compiler will memoize this)
   const uuid2freshNode = new Map<string, CourseNode>();
@@ -280,10 +273,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
 export function useMissingPrerequisites(nodes: CourseNode[]) {
   const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
   
-  const courseKey = React.useMemo(
-    () => nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(','),
-    [nodes]
-  );
+  const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(',');
 
   // Build uuid -> fresh node map (React Compiler will memoize this)
   const uuid2freshNode = new Map<string, CourseNode>();

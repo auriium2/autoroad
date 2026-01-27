@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useState, useEffect, useCallback, type Dispatch, type SetStateAction, type MouseEvent } from 'react';
 import type { Node } from 'reactflow';
 
 interface ContextMenuState {
@@ -8,15 +8,15 @@ interface ContextMenuState {
 }
 
 interface UseContextMenuProps {
-  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  setNodes: Dispatch<SetStateAction<Node[]>>;
   isOptimizing: boolean;
 }
 
 export function useContextMenu({ setNodes, isOptimizing }: UseContextMenuProps) {
-  const [contextMenu, setContextMenu] = React.useState<ContextMenuState | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
-  // Handle right-click on node
-  const onNodeContextMenu = React.useCallback((event: React.MouseEvent, node: Node) => {
+  // useCallback required - this handler is passed to ReactFlow's onNodeContextMenu
+  const onNodeContextMenu = useCallback((event: MouseEvent, node: Node) => {
     event.preventDefault();
 
     // Don't show context menu during optimization
@@ -32,7 +32,7 @@ export function useContextMenu({ setNodes, isOptimizing }: UseContextMenuProps) 
   }, [isOptimizing]);
 
   // Close context menu on click outside and manage tooltip states
-  React.useEffect(() => {
+  useEffect(() => {
     if (!contextMenu) return;
 
     const handleClick = () => setContextMenu(null);

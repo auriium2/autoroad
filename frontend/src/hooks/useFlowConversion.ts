@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useMemo } from "react";
 import type { Node, Edge as FlowEdge } from "reactflow";
 import { MarkerType } from "reactflow";
 import type { CourseNode } from "@/stores/roadStore";
@@ -26,7 +26,9 @@ export function useFlowConversion(
   viewMode: string,
   isOptimizing: boolean
 ): FlowConversionResult {
-  return React.useMemo(() => {
+  // useMemo required - flowNodes/flowEdges are passed directly to ReactFlow which
+  // compares by reference. Without memoization, new arrays cause infinite loops.
+  return useMemo(() => {
     const startTime = performance.now();
 
     // === NODE CONVERSION ===

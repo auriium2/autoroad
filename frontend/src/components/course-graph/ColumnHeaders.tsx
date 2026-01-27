@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { useQueries } from "@tanstack/react-query";
 import type { Section } from "@/stores/roadStore";
@@ -24,10 +24,10 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   const isNerdMode = viewMode === "nerd";
 
   // Controlled state for tutorial to open the semester header hover card
-  const [tutorialHoverOpen, setTutorialHoverOpen] = React.useState(false);
+  const [tutorialHoverOpen, setTutorialHoverOpen] = useState(false);
 
   // Expose function for tutorial to trigger hover card
-  React.useEffect(() => {
+  useEffect(() => {
     (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard = setTutorialHoverOpen;
     return () => {
       delete (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard;
@@ -41,38 +41,32 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   const markers = useGraphStore((state) => state.markers);
   const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
 
-  const getCoursesForSection = React.useCallback(
-    (sectionId: number): string[] => {
-      const courseIds = new Set<string>();
+  const getCoursesForSection = (sectionId: number): string[] => {
+    const courseIds = new Set<string>();
 
-      markers
-        .filter((m) => m.section === sectionId && m.status !== "banish")
-        .forEach((m) => courseIds.add(m.courseId));
+    markers
+      .filter((m) => m.section === sectionId && m.status !== "banish")
+      .forEach((m) => courseIds.add(m.courseId));
 
-      optimizerNodes
-        .filter((n) => n.section === sectionId)
-        .forEach((n) => courseIds.add(n.courseId));
+    optimizerNodes
+      .filter((n) => n.section === sectionId)
+      .forEach((n) => courseIds.add(n.courseId));
 
-      return Array.from(courseIds);
-    },
-    [markers, optimizerNodes]
-  );
+    return Array.from(courseIds);
+  };
 
-  const handleOpenInHydrant = React.useCallback(
-    (sectionId: number, e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!graduationYear) return;
+  const handleOpenInHydrant = (sectionId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!graduationYear) return;
 
-      const semester = sectionIdToTargetSemester(sectionId, graduationYear);
-      if (!semester) return;
+    const semester = sectionIdToTargetSemester(sectionId, graduationYear);
+    if (!semester) return;
 
-      const courses = getCoursesForSection(sectionId);
-      const url = generateHydrantUrl(courses, semester);
+    const courses = getCoursesForSection(sectionId);
+    const url = generateHydrantUrl(courses, semester);
 
-      window.open(url, "_blank", "noopener,noreferrer");
-    },
-    [graduationYear, getCoursesForSection]
-  );
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   // Get all unique course IDs across all sections for batch fetching
   const allCourseIds = (() => {
@@ -112,35 +106,32 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   })();
 
   // Calculate stats for a section
-  const getSectionStats = React.useCallback(
-    (sectionId: number) => {
-      const courses = getCoursesForSection(sectionId);
-      let totalUnits = 0;
-      let totalHours = 0;
-      let ratingSum = 0;
-      let ratingCount = 0;
+  const getSectionStats = (sectionId: number) => {
+    const courses = getCoursesForSection(sectionId);
+    let totalUnits = 0;
+    let totalHours = 0;
+    let ratingSum = 0;
+    let ratingCount = 0;
 
-      for (const courseId of courses) {
-        const data = courseDataMap.get(courseId);
-        if (data) {
-          totalUnits += data.units;
-          totalHours += data.hours;
-          if (data.rating != null) {
-            ratingSum += data.rating;
-            ratingCount++;
-          }
+    for (const courseId of courses) {
+      const data = courseDataMap.get(courseId);
+      if (data) {
+        totalUnits += data.units;
+        totalHours += data.hours;
+        if (data.rating != null) {
+          ratingSum += data.rating;
+          ratingCount++;
         }
       }
+    }
 
-      return {
-        units: totalUnits,
-        hours: Math.round(totalHours),
-        avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
-        courseCount: courses.length,
-      };
-    },
-    [getCoursesForSection, courseDataMap]
-  );
+    return {
+      units: totalUnits,
+      hours: Math.round(totalHours),
+      avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
+      courseCount: courses.length,
+    };
+  };
 
   return (
     <>

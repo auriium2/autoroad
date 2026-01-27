@@ -16,7 +16,7 @@ interface OptimizationState {
   customEquivalencies: Record<string, string[]>;
   courseCategories: Record<string, string[]>; // Maps course ID to requirement paths it satisfies
   requirementSources: Record<string, 'canonical' | 'beta'>; // Maps requirement key to its source
-  
+
   setObjectives: (objectives: ObjectiveConfig[]) => void;
   setRequirements: (requirements: string[]) => void;
   setYear: (year?: string) => void;
@@ -24,21 +24,21 @@ interface OptimizationState {
   setHardConstraints: (constraints: ConstraintConfig[]) => void;
   toggleHardConstraint: (constraintKey: string, defaultParameters?: Record<string, unknown>) => void;
   updateConstraintParameters: (constraintKey: string, parameters: Record<string, unknown>) => void;
-  
+
   addRequirement: (requirement: string) => void;
   removeRequirement: (requirement: string) => void;
-  
+
   toggleRequirementExpanded: (requirement: string) => void;
   toggleRequirementNodeExpanded: (requirement: string, nodePath: string) => void;
-  
+
   setRequirementTier: (requirement: string, tier: number) => void;
   setObjectiveTier: (objectiveKey: string, tier: number) => void;
-  
+
   setRequirementSource: (requirement: string, source: 'canonical' | 'beta') => void;
-  
+
   addCustomEquivalency: (courseA: string, courseB: string) => void;
   removeCustomEquivalency: (courseA: string, courseB: string) => void;
-  
+
   setCourseCategories: (categories: Record<string, string[]>) => void;
   getCourseCategoryTier: (courseId: string) => number;
 }
@@ -75,7 +75,7 @@ export const useOptimizationStore = create<OptimizationState>()(
   customEquivalencies: {},
   courseCategories: {},
   requirementSources: {},
-  
+
   setObjectives: (objectives) => {
     markOptimizationAsStale();
     set({ selectedObjectives: objectives });
@@ -119,7 +119,7 @@ export const useOptimizationStore = create<OptimizationState>()(
       )
     }));
   },
-  
+
   addRequirement: (requirement) => {
     markOptimizationAsStale();
     set((state) => {
@@ -133,32 +133,30 @@ export const useOptimizationStore = create<OptimizationState>()(
       };
     });
   },
-  
+
   removeRequirement: (requirement) => {
     markOptimizationAsStale();
     set((state) => ({
       selectedRequirements: state.selectedRequirements.filter((r) => r !== requirement),
     }));
   },
-  
+
   toggleRequirementExpanded: (requirement) =>
     set((state) => ({
       expandedRequirements: state.expandedRequirements.includes(requirement)
         ? state.expandedRequirements.filter((r) => r !== requirement)
         : [...state.expandedRequirements, requirement],
     })),
-  
+
   toggleRequirementNodeExpanded: (requirement, nodePath) =>
     set((state) => {
-      const currentNodes = state.expandedRequirementNodes[requirement] || new Set();
-      const newNodes = new Set(currentNodes);
-      
-      if (newNodes.has(nodePath)) {
-        newNodes.delete(nodePath);
-      } else {
-        newNodes.add(nodePath);
-      }
-      
+      const currentNodes = state.expandedRequirementNodes[requirement] || new Set<string>();
+      const hasNode = currentNodes.has(nodePath);
+
+      const newNodes = hasNode // Create new Set immutably by spreading and filtering/adding
+        ? new Set([...currentNodes].filter(n => n !== nodePath))
+        : new Set([...currentNodes, nodePath]);
+
       return {
         expandedRequirementNodes: {
           ...state.expandedRequirementNodes,
@@ -166,7 +164,7 @@ export const useOptimizationStore = create<OptimizationState>()(
         },
       };
     }),
-  
+
   setRequirementTier: (requirement, tier) => {
     markOptimizationAsStale();
     set((state) => ({
@@ -176,7 +174,7 @@ export const useOptimizationStore = create<OptimizationState>()(
       },
     }));
   },
-  
+
   setObjectiveTier: (objectiveKey, tier) => {
     markOptimizationAsStale();
     set((state) => ({
@@ -186,7 +184,7 @@ export const useOptimizationStore = create<OptimizationState>()(
       },
     }));
   },
-  
+
   setRequirementSource: (requirement, source) => {
     markOptimizationAsStale();
     set((state) => ({
@@ -196,62 +194,62 @@ export const useOptimizationStore = create<OptimizationState>()(
       },
     }));
   },
-  
+
   addCustomEquivalency: (courseA, courseB) => {
     markOptimizationAsStale();
     set((state) => {
       const newEquivalencies = { ...state.customEquivalencies };
-      
+
       if (!newEquivalencies[courseA]) {
         newEquivalencies[courseA] = [];
       }
       if (!newEquivalencies[courseB]) {
         newEquivalencies[courseB] = [];
       }
-      
+
       if (!newEquivalencies[courseA].includes(courseB)) {
         newEquivalencies[courseA] = [...newEquivalencies[courseA], courseB];
       }
       if (!newEquivalencies[courseB].includes(courseA)) {
         newEquivalencies[courseB] = [...newEquivalencies[courseB], courseA];
       }
-      
+
       return { customEquivalencies: newEquivalencies };
     });
   },
-  
+
   removeCustomEquivalency: (courseA, courseB) => {
     markOptimizationAsStale();
     set((state) => {
       const newEquivalencies = { ...state.customEquivalencies };
-      
+
       if (newEquivalencies[courseA]) {
         newEquivalencies[courseA] = newEquivalencies[courseA].filter((c) => c !== courseB);
         if (newEquivalencies[courseA].length === 0) {
           delete newEquivalencies[courseA];
         }
       }
-      
+
       if (newEquivalencies[courseB]) {
         newEquivalencies[courseB] = newEquivalencies[courseB].filter((c) => c !== courseA);
         if (newEquivalencies[courseB].length === 0) {
           delete newEquivalencies[courseB];
         }
       }
-      
+
       return { customEquivalencies: newEquivalencies };
     });
   },
-  
+
   setCourseCategories: (categories) => {
     set({ courseCategories: categories });
   },
-  
+
   getCourseCategoryTier: (courseId) => {
     const state = useOptimizationStore.getState();
     const categories = state.courseCategories[courseId] || [];
     const requirementTiers = state.requirementTiers;
-    
+
     // Find the highest tier among all requirement categories this course belongs to
     let maxTier = 0;
     for (const reqPath of categories) {
@@ -260,7 +258,7 @@ export const useOptimizationStore = create<OptimizationState>()(
         maxTier = tier;
       }
     }
-    
+
     return maxTier;
   },
 }),

@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState, useEffect } from "react";
 
 interface TimeBlockPickerProps {
   blockedSlots: number[][]; // [[day, startHour, endHour], ...]
@@ -11,19 +11,16 @@ const END_HOUR = 22;
 const HOURS = END_HOUR - START_HOUR;
 
 export function TimeBlockPicker({ blockedSlots, onChange }: TimeBlockPickerProps) {
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [dragMode, setDragMode] = React.useState<"add" | "remove">("add");
-  const [dragStart, setDragStart] = React.useState<{ day: number; hour: number } | null>(null);
-  const [dragCurrent, setDragCurrent] = React.useState<{ day: number; hour: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragMode, setDragMode] = useState<"add" | "remove">("add");
+  const [dragStart, setDragStart] = useState<{ day: number; hour: number } | null>(null);
+  const [dragCurrent, setDragCurrent] = useState<{ day: number; hour: number } | null>(null);
 
-  const isHourBlocked = React.useCallback(
-    (day: number, hour: number): boolean => {
-      return blockedSlots.some(
-        ([d, startHour, endHour]) => d === day && hour >= startHour && hour < endHour
-      );
-    },
-    [blockedSlots]
-  );
+  const isHourBlocked = (day: number, hour: number): boolean => {
+    return blockedSlots.some(
+      ([d, startHour, endHour]) => d === day && hour >= startHour && hour < endHour
+    );
+  };
 
   const getDragSelection = (): Set<string> => {
     if (!dragStart || !dragCurrent) return new Set();
@@ -126,7 +123,7 @@ export function TimeBlockPicker({ blockedSlots, onChange }: TimeBlockPickerProps
     setDragCurrent(null);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging) {
         handleMouseUp();

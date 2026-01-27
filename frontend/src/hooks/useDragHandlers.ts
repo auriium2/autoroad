@@ -1,12 +1,12 @@
-import * as React from "react";
+import { useCallback, type DragEvent, type MouseEvent } from "react";
 import type { Node } from "reactflow";
 import type { Marker } from "@/stores/roadStore";
 import { COLUMN_WIDTH, ALL_SECTIONS, VIRTUAL_MARKER_TYPES } from "@/lib/graphConstants";
 
 export interface DragHandlersResult {
-  onDrop: (event: React.DragEvent) => void;
-  onDragOver: (event: React.DragEvent) => void;
-  onNodeDragStop: (event: React.MouseEvent, node: Node) => void;
+  onDrop: (event: DragEvent) => void;
+  onDragOver: (event: DragEvent) => void;
+  onNodeDragStop: (event: MouseEvent, node: Node) => void;
 }
 
 export function useDragHandlers(
@@ -15,7 +15,10 @@ export function useDragHandlers(
   isOptimizing: boolean,
   screenToFlowPosition: (position: { x: number; y: number }) => { x: number; y: number }
 ): DragHandlersResult {
-  const onDrop = React.useCallback(async (event: React.DragEvent) => {
+  // useCallback required here - these handlers are passed to ReactFlow which uses them
+  // as effect dependencies. Without stable references, ReactFlow's StoreUpdater
+  // enters an infinite update loop.
+  const onDrop = useCallback((event: DragEvent) => {
     event.preventDefault();
 
     try {
@@ -53,12 +56,12 @@ export function useDragHandlers(
     }
   }, [addMarker, screenToFlowPosition]);
 
-  const onDragOver = React.useCallback((event: React.DragEvent) => {
+  const onDragOver = useCallback((event: DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  const onNodeDragStop = React.useCallback((_event: React.MouseEvent, node: Node) => {
+  const onNodeDragStop = useCallback((_event: MouseEvent, node: Node) => {
     if (!node.data.userControlled || isOptimizing) return;
 
     // Determine which column the node is in based on x position

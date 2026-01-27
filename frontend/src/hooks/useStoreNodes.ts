@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useMemo } from "react";
 import type { Marker, OptimizerNode, CourseNode } from "@/stores/roadStore";
 import { VIRTUAL_MARKER_TYPES } from "@/lib/graphConstants";
 
@@ -11,24 +11,23 @@ export function useStoreNodes(
   markers: Marker[],
   optimizerNodes: OptimizerNode[]
 ): StoreNodesResult {
-  // Map (section, markerType) -> list of marker uuids for controlling virtual markers
-  const virtualMarkerLookup = React.useMemo(() => {
-    const map = new Map<string, string[]>();
+  // useMemo required - the returned objects are used by ReactFlow which compares
+  // by reference. Without memoization, new objects on every render cause infinite loops.
+  return useMemo(() => {
+    // Map (section, markerType) -> list of marker uuids for controlling virtual markers
+    const virtualMarkerLookup = new Map<string, string[]>();
     for (const marker of markers) {
       if (VIRTUAL_MARKER_TYPES.has(marker.courseId) && marker.status !== 'banish') {
         const key = `${marker.section}_${marker.courseId}`;
-        const existing = map.get(key) || [];
+        const existing = virtualMarkerLookup.get(key) || [];
         existing.push(marker.uuid);
-        map.set(key, existing);
+        virtualMarkerLookup.set(key, existing);
       }
     }
-    return map;
-  }, [markers]);
 
-  // Build map of which optimizer node satisfies which HASS marker: markerUuid -> optimizerNode
-  // Matches optimizer nodes to markers in order (first node -> first marker, etc.)
-  const hassMarkerToOptimizerNode = React.useMemo(() => {
-    const map = new Map<string, OptimizerNode>();
+    // Build map of which optimizer node satisfies which HASS marker: markerUuid -> optimizerNode
+    // Matches optimizer nodes to markers in order (first node -> first marker, etc.)
+    const hassMarkerToOptimizerNode = new Map<string, OptimizerNode>();
     // Group optimizer nodes by (section, hassAttr)
     const optimizerNodesByKey = new Map<string, OptimizerNode[]>();
     for (const on of optimizerNodes) {
@@ -44,14 +43,11 @@ export function useStoreNodes(
     for (const [key, markerUuids] of virtualMarkerLookup) {
       const nodes = optimizerNodesByKey.get(key) || [];
       for (let i = 0; i < Math.min(markerUuids.length, nodes.length); i++) {
-        map.set(markerUuids[i], nodes[i]);
+        hassMarkerToOptimizerNode.set(markerUuids[i], nodes[i]);
       }
     }
-    return map;
-  }, [optimizerNodes, virtualMarkerLookup]);
 
-  // Compute display nodes from markers + optimizer nodes
-  const storeNodes = React.useMemo(() => {
+    // Compute display nodes from markers + optimizer nodes
     const optimizerMap = new Map<string, OptimizerNode>();
     const optimizerCourseIds = new Set<string>();
     for (const on of optimizerNodes) {
@@ -124,8 +120,8 @@ export function useStoreNodes(
         units: on.units,
       }));
 
-    return [...markerNodes, ...optimizerOnlyNodes];
-  }, [markers, optimizerNodes, hassMarkerToOptimizerNode]);
+    const storeNodes = [...markerNodes, ...optimizerOnlyNodes];
 
-  return { storeNodes, hassMarkerToOptimizerNode };
+    return { storeNodes, hassMarkerToOptimizerNode };
+  }, [markers, optimizerNodes]);
 }
