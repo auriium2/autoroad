@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Bug, Loader2, Upload } from "lucide-react";
+import { Bug, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { API_BASE_URL } from "@/config/api";
@@ -53,72 +53,13 @@ interface BugReportDialogProps {
 
 export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
   const [description, setDescription] = React.useState("");
-  const [screenshot, setScreenshot] = React.useState<string | null>(null);
-  const [isCapturing, setIsCapturing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-
   React.useEffect(() => {
-    if (!open && !isCapturing) {
+    if (!open) {
       setDescription("");
-      setScreenshot(null);
     }
-  }, [open, isCapturing]);
-
-  const captureScreenshot = async () => {
-    setIsCapturing(true);
-
-    try {
-
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "browser" } as MediaTrackConstraints,
-        preferCurrentTab: true,
-      } as DisplayMediaStreamOptions);
-
-      const video = document.createElement("video");
-      video.srcObject = stream;
-      await video.play();
-
-      // Close the dialog via React state to hide it from the screen
-      onOpenChange(false);
-
-      // Wait for React to unmount the dialog and for the video to get a fresh frame
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0);
-
-      // Stop the stream
-      stream.getTracks().forEach(track => track.stop());
-
-      const dataUrl = canvas.toDataURL("image/png", 0.8);
-
-      // Reopen the dialog and set the screenshot
-      onOpenChange(true);
-      // Small delay to ensure dialog is mounted before setting state
-      await new Promise(resolve => setTimeout(resolve, 50));
-      setScreenshot(dataUrl);
-    } catch (error) {
-      console.error("Failed to capture screenshot:", error);
-      setScreenshot(null);
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setScreenshot(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
+  }, [open]);
 
   const getDebugInfo = () => {
     const graphStore = useGraphStore.getState();
@@ -214,7 +155,6 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
         body: JSON.stringify({
           title: generateTitle(description.trim()),
           description: description.trim(),
-          screenshot,
           debug_info: getDebugInfo(),
         }),
       });
@@ -256,41 +196,6 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Screenshot */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Screenshot (optional)</label>
-            <div className="border rounded-md overflow-hidden bg-muted/50">
-              {isCapturing ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-sm text-muted-foreground">Capturing...</span>
-                </div>
-              ) : screenshot ? (
-                <img src={screenshot} alt="Screenshot" className="w-full h-auto max-h-48 object-contain" />
-              ) : (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                  <span className="text-sm">No screenshot attached</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={captureScreenshot} disabled={isCapturing} className="text-xs">
-                {screenshot ? "Recapture" : "Capture screen"}
-              </Button>
-              <label>
-                <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                <Button variant="outline" size="sm" asChild className="text-xs cursor-pointer">
-                  <span><Upload className="h-3 w-3 mr-1" />Upload image</span>
-                </Button>
-              </label>
-              {screenshot && (
-                <Button variant="ghost" size="sm" onClick={() => setScreenshot(null)} className="text-xs text-muted-foreground">
-                  Remove
-                </Button>
-              )}
-            </div>
-          </div>
-
           {/* Description */}
           <div className="space-y-2">
             <label htmlFor="description" className="text-sm font-medium">
@@ -314,7 +219,7 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || isCapturing}>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

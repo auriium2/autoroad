@@ -6,8 +6,10 @@ import Dashboard from './dashboard'
 import './globals.css'
 
 if (import.meta.env.VITE_SENTRY_DSN) {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
   Sentry.init({
     dsn: import.meta.env.VITE_SENTRY_DSN,
+    tunnel: `${apiUrl}/api/sentry-tunnel`,
     environment: import.meta.env.VITE_ENVIRONMENT || 'development',
     release: import.meta.env.VITE_RELEASE_VERSION,
     integrations: [
@@ -17,8 +19,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         blockAllMedia: false,
       }),
     ],
-    tracesSampleRate: 0.2,
-    replaysSessionSampleRate: 0.1,
+    tracesSampleRate: 1.0,
+    replaysSessionSampleRate: 1.0,
     replaysOnErrorSampleRate: 1.0,
   })
 }

@@ -1,5 +1,10 @@
+import json
 import logging
 import os
+import httpx
+from urllib.parse import urlparse
+
+
 
 logger = logging.getLogger("uvicorn.error")
 logging.getLogger("httpx").handlers = logger.handlers
@@ -36,15 +41,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         return response
 
-if os.environ.get("SENTRY_DSN"):
+if os.environ.get("FASTAPI_SENTRY_DSN"):
     sentry_sdk.init(
-        dsn=os.environ["SENTRY_DSN"],
-        environment=os.environ.get("ENVIRONMENT", "development"),
-        release=os.environ.get("RELEASE_VERSION"),
-        # Capture 100% of errors, 20% of transactions for performance monitoring
-        traces_sample_rate=0.2,
-        # Capture profiles for 20% of sampled transactions
-        profiles_sample_rate=0.2,
+        dsn=os.environ["FASTAPI_SENTRY_DSN"],
+        environment=os.environ.get("FASTAPI_ENVIRONMENT", "development"),
+        release=os.environ.get("FASTAPI_RELEASE_VERSION"),
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
         # Attach request data (IPs, headers, bodies) - disable in prod if PII is a concern
         send_default_pii=True,
         # Attach all log levels as breadcrumbs, send ERROR+ as events
@@ -53,12 +56,12 @@ if os.environ.get("SENTRY_DSN"):
             StarletteIntegration(transaction_style="endpoint"),
             HttpxIntegration(),  # Auto-instrument httpx calls to Fireroad/Hydrant
             LoggingIntegration(
-                level=logging.INFO,  # Capture INFO+ as breadcrumbs
-                event_level=logging.ERROR,  # Send ERROR+ as Sentry events
+                level=logging.DEBUG,  # Capture DEBUG+ as breadcrumbs
+                event_level=None,  # Don't send log messages as events, only use for breadcrumbs
             ),
         ],
         # Filter out health check noise
-        traces_sampler=lambda ctx: 0 if ctx.get("asgi_scope", {}).get("path") == "/api/health" else 0.2,
+        traces_sampler=lambda ctx: 0 if ctx.get("asgi_scope", {}).get("path") == "/api/health" else 1.0,
     )
 
 from server.routes import bug_report, courses, hydrant, optimize, requirements
@@ -89,6 +92,38 @@ app.include_router(requirements.router, prefix="/api", tags=["requirements"])
 app.include_router(courses.router, prefix="/api", tags=["courses"])
 app.include_router(hydrant.router, prefix="/api", tags=["hydrant"])
 app.include_router(bug_report.router, prefix="/api", tags=["bug-report"])
+
+
+@app.post("/api/sentry-tunnel")
+async def sentry_tunnel(request: Request):
+    body = await request.body()
+    lines = body.split(b"\n")
+    if not lines:
+        return Response(status_code=400)
+
+    # Parse envelope header to get DSN
+    try:
+        header = json.loads(lines[0])
+        dsn = header.get("dsn")
+        if not dsn:
+            return Response(status_code=400)
+
+        # Extract project ID from DSN
+        # DSN format: https://key@org.ingest.sentry.io/project_id
+        parsed = urlparse(dsn)
+        project_id = parsed.path.strip("/")
+        sentry_host = f"https://{parsed.hostname}"
+
+        # Forward to Sentry
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{sentry_host}/api/{project_id}/envelope/",
+                content=body,
+                headers={"Content-Type": "application/x-sentry-envelope"},
+            )
+            return Response(status_code=response.status_code)
+    except Exception:
+        return Response(status_code=500)
 
 
 @app.get("/api/health")
