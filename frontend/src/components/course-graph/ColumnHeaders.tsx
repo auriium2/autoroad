@@ -23,6 +23,17 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   const transform = `translate(${viewport.x}px, 0) scale(${viewport.zoom})`;
   const isNerdMode = viewMode === "nerd";
 
+  // Controlled state for tutorial to open the semester header hover card
+  const [tutorialHoverOpen, setTutorialHoverOpen] = React.useState(false);
+
+  // Expose function for tutorial to trigger hover card
+  React.useEffect(() => {
+    (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard = setTutorialHoverOpen;
+    return () => {
+      delete (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard;
+    };
+  }, []);
+
   const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
@@ -273,11 +284,15 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
               }}
             >
               {canInteract ? (
-                <HoverCard openDelay={200} closeDelay={100}>
+                <HoverCard
+                  openDelay={200}
+                  closeDelay={100}
+                  open={section.id === 0 && tutorialHoverOpen ? true : undefined}
+                >
                   <HoverCardTrigger asChild>
                     <span
                       className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap flex items-center gap-1.5 cursor-default hover:bg-white/5 transition-colors"
-                      data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+                      data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : section.id === 0 ? 'semester-header' : undefined}
                     >
                       {section.title}
                       <Tooltip>
@@ -298,14 +313,14 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
                       </Tooltip>
                     </span>
                   </HoverCardTrigger>
-                  <HoverCardContent side="bottom" align="center" className="w-auto p-0">
+                  <HoverCardContent side="bottom" align="center" className="w-auto p-0" data-tutorial={section.id === 0 ? 'schedule-hover-card' : undefined}>
                     <MiniSchedulePreview courseIds={courses} sectionId={section.id} graduationYear={graduationYear} />
                   </HoverCardContent>
                 </HoverCard>
               ) : (
                 <span
                   className="glass-card px-3 py-1 rounded text-xs font-semibold text-gray-300 shadow-sm whitespace-nowrap flex items-center gap-1.5"
-                  data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : undefined}
+                  data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : section.id === 0 ? 'semester-header' : undefined}
                 >
                   {section.title}
                 </span>

@@ -150,16 +150,6 @@ export function MiniSchedulePreview({ courseIds, sectionId, graduationYear }: Mi
   const isPast = isPastSemesterById(sectionId, graduationYear);
   const targetSemester = sectionIdToTargetSemester(sectionId, graduationYear);
 
-  if (isPast) {
-    return (
-      <div className="p-3 max-w-[200px]">
-        <div className="text-xs text-gray-400">
-          This semester has already passed. Schedule data is not available for past semesters.
-        </div>
-      </div>
-    );
-  }
-
   if (courseIds.length === 0) {
     return (
       <div className="text-xs text-gray-500 p-2">
@@ -170,12 +160,12 @@ export function MiniSchedulePreview({ courseIds, sectionId, graduationYear }: Mi
 
   return (
     <div className="p-2">
-      <MiniScheduleGrid courseIds={courseIds} targetSemester={targetSemester} />
+      <MiniScheduleGrid courseIds={courseIds} targetSemester={targetSemester} isPast={isPast} />
     </div>
   );
 }
 
-function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; targetSemester: string }) {
+function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: string[]; targetSemester: string; isPast: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.hydrant.schedule(targetSemester, courseIds),
     queryFn: () => hydrantApi.getSchedule(targetSemester, courseIds),
@@ -315,12 +305,12 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
                 {dayBlockedSlots.map(([, startHour, endHour], idx) => {
                   const top = (startHour - START_HOUR) * 8;
                   const height = (endHour - startHour) * 8;
-                  
+
                   if (endHour <= START_HOUR || startHour >= END_HOUR) return null;
-                  
+
                   const clampedTop = Math.max(0, top);
                   const clampedHeight = Math.min(height, HOURS * 8 - clampedTop);
-                  
+
                   return (
                     <div
                       key={`blocked-${idx}`}
@@ -490,6 +480,9 @@ function MiniScheduleGrid({ courseIds, targetSemester }: { courseIds: string[]; 
       </div>
 
       {/* Warnings */}
+      {isPast && (
+        <div className="mt-1 text-[9px] text-gray-500">Past semester</div>
+      )}
       {hasConflicts && (
         <div className="mt-1 text-[9px] text-amber-400">⚠ Schedule conflicts detected</div>
       )}

@@ -137,6 +137,9 @@ export const tutorialSteps: StepOptions[] = [
       return new Promise<void>((resolve) => {
         saveCurrentState();
         loadState([], []);
+        // Switch to courses tab
+        const coursesTab = document.querySelector('[data-tab="courses"]') as HTMLElement;
+        if (coursesTab) coursesTab.click();
         setTimeout(resolve, 100);
       });
     },
@@ -428,6 +431,41 @@ export const tutorialSteps: StepOptions[] = [
   },
 
   // ==========================================
+  // SCHEDULE PREVIEW
+  // ==========================================
+  {
+    id: 'schedule-preview',
+    title: 'Weekly Schedule Preview',
+    text: `Hover over a semester header to see your weekly schedule preview.<br><br>
+      <strong>Solid blocks</strong>: required class times<br>
+      <strong>Outlined blocks</strong>: section options (you pick one)<br>
+      <strong>Striped blocks</strong>: time conflicts<br><br>
+      The letter in the top right is the block type (Lecture, Recitation, Lab (B), etc). Click the <strong>↗</strong> icon to open in Hydrant.`,
+    attachTo: { element: '[data-tutorial="schedule-hover-card"]', on: 'left' },
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    //modalOverlayOpeningPadding: 0,
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+    beforeShowPromise: async function() {
+      // Open the hover card first so the element exists
+      const openHover = (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard;
+      if (openHover) openHover(true);
+      // Wait for the hover card to render and animate in
+      await waitForElement('[data-tutorial="schedule-hover-card"]');
+      await new Promise(resolve => setTimeout(resolve, 300));
+    },
+    when: {
+      hide: function() {
+        // Close the semester header hover card
+        const openHover = (window as unknown as { openSemesterHoverCard?: (open: boolean) => void }).openSemesterHoverCard;
+        if (openHover) openHover(false);
+      },
+    },
+  },
+
+  // ==========================================
   // CLEARING
   // ==========================================
   {
@@ -529,8 +567,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'class-year',
     title: 'Class Year & Past Semesters',
-    text: `<strong>Select Class</strong>: Your graduation year. (Affects a variety of calculation)<br>
-      <strong style="color: #ef4444">Freeze Past Semesters</strong>: Don't place classes in semesters that have passed IRL<br><br>
+    text: `You can select your class year here, which affects what classes are available in which semesters.<br><br>
       Try enabling <strong style="color: #ef4444">Freeze Past Semesters</strong> to see what happens.`,
     attachTo: { element: '[data-tutorial="class-year"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
@@ -605,9 +642,9 @@ export const tutorialSteps: StepOptions[] = [
     id: 'add-degree',
     title: 'Add Requirements & Objectives',
     text: `Use the search bar to add degrees, concentrations, and objectives.<br><br>
-      <span id="check-63">☐</span> <strong>6-3 (new)</strong> - a major<br>
-      <span id="check-chinese">☐</span> <strong>Chinese concentration</strong><br>
-      <span id="check-finals">☐</span> <strong>Minimize Finals Load</strong> - an objective`,
+      <span id="check-63">☐</span> <strong>6-3</strong> (either new or original): a major<br>
+      <span id="check-chinese">☐</span> <strong>Chinese</strong>: a concentration<br>
+      <span id="check-finals">☐</span> <strong>Minimize Finals Load</strong>: an objective`,
     attachTo: { element: '[data-tutorial="parameter-search"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     modalOverlayOpeningPadding: 5000,
@@ -686,8 +723,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'objectives',
     title: 'Objectives',
-    text: `Below your degrees are <strong>objectives</strong> - goals the optimizer tries to achieve.<br><br>
-      Examples: minimize total units, avoid small classes, limit classes per semester.`,
+    text: `Below your degrees are <strong>objectives</strong>: goals the optimizer tries to achieve.`,
     attachTo: { element: '[data-tutorial="objective-card"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
@@ -710,11 +746,17 @@ export const tutorialSteps: StepOptions[] = [
 
   {
     id: 'tiers',
-    title: 'Priority Tiers (⭐)',
-    text: `Click the ⭐ icons to set priority tiers (1-4).<br><br>
-      <strong>Higher tier = optimizer tries harder</strong><br><br>
+    title: 'Priority Tiers',
+    text: `Objectives are <i>soft</i>, which means they shape what you want via penalty, but don't completely exclude bad options. In order to determine how hard the optimizer should try, we give you <strong>penalty tiers</strong> (⭐ icons) to set your priorities.<br>
+      Higher tier = optimizer tries harder<br><br>
       Tier 4: "Must have"<br>
-      Tier 1: "Nice to have"`,
+      Tier 3: "This is important"<br>
+      Tier 2: "Try to have this"<br>
+      Tier 1: "Nice to have"<br></br>
+
+      <small>Under the hood, most penalties are normalized so that for each violation, a cost of 5^tier units are applied, which is necessary because the objective function was defined in terms of units. Some objectives do not follow this pattern, since it could cause costs to balloon in certain cases. The quirks of integer programming and technical debt... Maybe someone with a gurobi license can rewrite this shitcode at a later time.</small>
+      `
+    ,
     attachTo: { element: '[data-tutorial="tier-selector"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     modalOverlayOpeningPadding: 10,

@@ -1,8 +1,9 @@
 import logging
 import os
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
+logging.getLogger("httpx").handlers = logger.handlers
+logging.getLogger("httpx").setLevel(logging.INFO)
 
 try:
     from dotenv import load_dotenv

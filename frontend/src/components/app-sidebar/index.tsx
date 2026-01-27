@@ -23,6 +23,7 @@ export function AppSidebar({ viewMode, ...props }: AppSidebarProps) {
         <div className="flex border-b border-border" data-tutorial="sidebar-tabs">
           <button
             onClick={() => setActiveTab('courses')}
+            data-tab="courses"
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
               activeTab === 'courses'
                 ? 'text-foreground border-b-2 border-primary'
