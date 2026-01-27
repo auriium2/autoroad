@@ -105,7 +105,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
   };
 
   // Get all unique pairs (to avoid showing both A→B and B→A)
-  const equivalencyPairs = React.useMemo(() => {
+  const equivalencyPairs = (() => {
     const pairs: Array<{ courseA: string; courseB: string }> = [];
     const seen = new Set<string>();
 
@@ -123,7 +123,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
     });
 
     return pairs.sort((a, b) => a.courseA.localeCompare(b.courseA));
-  }, [customEquivalencies]);
+  })();
 
   const filteredCoursesA = courseA.length > 0 ? coursesA.slice(0, 10) : [];
   const filteredCoursesB = courseB.length > 0 ? coursesB.slice(0, 10) : [];

@@ -5,6 +5,7 @@ import os
 import time
 
 import polars as pl
+import sentry_sdk
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from slowapi import Limiter
@@ -75,6 +76,15 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
     start_time = time.time()
     timings: dict[str, float] = {}
 
+    # Set Sentry context for this optimization
+    sentry_sdk.set_context("optimization_request", {
+        "requirements": request.requirements,
+        "num_markers": len(request.markers) if request.markers else 0,
+        "max_semesters": request.maxSemesters,
+        "num_objectives": len(request.objectives) if request.objectives else 0,
+        "num_hard_constraints": len(request.hardConstraints) if request.hardConstraints else 0,
+    })
+
     try:
         logger.info("Starting optimization request: requirements=%s, markers=%d",
                     request.requirements, len(request.markers) if request.markers else 0)
@@ -82,14 +92,18 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10})}\n\n"
 
         # Fetch data
-        t0 = time.time()
-        courses_data = await get_courses_data()
-        requirements_data = await get_requirements(
-            tuple(request.requirements),
-            requirement_sources=request.requirementSources
-        )
-        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-        timings["fetch_data"] = time.time() - t0
+        with sentry_sdk.start_span(op="db.query", name="fetch_courses_and_requirements") as span:
+            t0 = time.time()
+            courses_data = await get_courses_data()
+            requirements_data = await get_requirements(
+                tuple(request.requirements),
+                requirement_sources=request.requirementSources
+            )
+            courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+            timings["fetch_data"] = time.time() - t0
+            span.set_data("num_courses", len(courses_data))
+            span.set_data("num_requirements", len(requirements_data))
+            span.set_data("duration_seconds", timings["fetch_data"])
         logger.info("Fetched %d courses, %d requirements in %.2fs",
                     len(courses_data), len(requirements_data), timings["fetch_data"])
 
@@ -102,110 +116,130 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10})}\n\n"
 
         # Create model
-        t0 = time.time()
-        model = cp_model.CpModel()
-        take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
-        add_basic_constraints(model, take_vars, courses_df, max_semesters)
+        with sentry_sdk.start_span(op="optimizer", name="create_model") as span:
+            t0 = time.time()
+            model = cp_model.CpModel()
+            take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
+            add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
-        if request.lockPastSemesters:
-            add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
-        timings["create_model"] = time.time() - t0
+            if request.lockPastSemesters:
+                add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
+            timings["create_model"] = time.time() - t0
+            span.set_data("num_variables", len(take_vars))
+            span.set_data("duration_seconds", timings["create_model"])
         logger.info("Created model with %d variables in %.2fs", len(take_vars), timings["create_model"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10})}\n\n"
 
         # Add requirement constraints
-        t0 = time.time()
-        course_to_requirements: dict[int, set[str]] = {}
-        for req_key in request.requirements:
-            if req_key in requirements_data:
-                req_data = requirements_data[req_key]
-                if isinstance(req_data, dict):
-                    req_tree = parse_fireroad_response(req_data)
-                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                    if validation.pruned_tree is not None:
-                        _, _, mapping = add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, req_key, enforce=True
-                        )
-                        for course_idx, req_paths in mapping.items():
-                            if course_idx not in course_to_requirements:
-                                course_to_requirements[course_idx] = set()
-                            course_to_requirements[course_idx].update(req_paths)
-        timings["add_requirements"] = time.time() - t0
+        with sentry_sdk.start_span(op="optimizer", name="add_requirements") as span:
+            t0 = time.time()
+            course_to_requirements: dict[int, set[str]] = {}
+            for req_key in request.requirements:
+                if req_key in requirements_data:
+                    req_data = requirements_data[req_key]
+                    if isinstance(req_data, dict):
+                        req_tree = parse_fireroad_response(req_data)
+                        validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                        if validation.pruned_tree is not None:
+                            _, _, mapping = add_requirement_constraints(
+                                model, take_vars, validation.pruned_tree,
+                                courses_df, req_key, enforce=True
+                            )
+                            for course_idx, req_paths in mapping.items():
+                                if course_idx not in course_to_requirements:
+                                    course_to_requirements[course_idx] = set()
+                                course_to_requirements[course_idx].update(req_paths)
+            timings["add_requirements"] = time.time() - t0
+            span.set_data("num_requirements_processed", len(request.requirements))
+            span.set_data("duration_seconds", timings["add_requirements"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10})}\n\n"
 
         # Add prerequisite constraints
-        t0 = time.time()
-        prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
-        override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
-        add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
-        timings["add_prerequisites"] = time.time() - t0
+        with sentry_sdk.start_span(op="optimizer", name="add_prerequisites") as span:
+            t0 = time.time()
+            prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
+            override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
+            add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+            timings["add_prerequisites"] = time.time() - t0
+            span.set_data("duration_seconds", timings["add_prerequisites"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10})}\n\n"
 
         # Add marker constraints
-        t0 = time.time()
-        add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
-        timings["add_markers"] = time.time() - t0
+        with sentry_sdk.start_span(op="optimizer", name="add_markers") as span:
+            t0 = time.time()
+            add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
+            timings["add_markers"] = time.time() - t0
+            span.set_data("num_markers", len(request.markers) if request.markers else 0)
+            span.set_data("duration_seconds", timings["add_markers"])
 
         # Add hard constraints
-        if request.hardConstraints:
-            constraint_context = ConstraintContext(
-                planning_year_start=planning_year_start,
-                courses_df=courses_df,
-                max_semesters=max_semesters,
-                markers=request.markers,
-            )
-            for constraint_key in request.hardConstraints:
-                try:
-                    constraint = instantiate_constraint(constraint_key)
-                    constraint.add_to_model(model, take_vars, constraint_context)
-                except ValueError as e:
-                    logger.warning("Failed to instantiate constraint '%s': %s", constraint_key, e)
+        with sentry_sdk.start_span(op="optimizer", name="add_hard_constraints") as span:
+            if request.hardConstraints:
+                constraint_context = ConstraintContext(
+                    planning_year_start=planning_year_start,
+                    courses_df=courses_df,
+                    max_semesters=max_semesters,
+                    markers=request.markers,
+                )
+                for constraint_key in request.hardConstraints:
+                    try:
+                        constraint = instantiate_constraint(constraint_key)
+                        constraint.add_to_model(model, take_vars, constraint_context)
+                    except ValueError as e:
+                        logger.warning("Failed to instantiate constraint '%s': %s", constraint_key, e)
+            span.set_data("num_constraints", len(request.hardConstraints) if request.hardConstraints else 0)
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"
 
         # Build objective
-        t0 = time.time()
-        builder = ObjectiveBuilder()
+        with sentry_sdk.start_span(op="optimizer", name="build_objective") as span:
+            t0 = time.time()
+            builder = ObjectiveBuilder()
 
-        from shared.optimizer.objectives.units import MinimizeUnits
-        builder.add(MinimizeUnits(), key="minimize_units")
+            from shared.optimizer.objectives.units import MinimizeUnits
+            builder.add(MinimizeUnits(), key="minimize_units")
 
-        if request.objectives:
-            for obj_config in request.objectives:
-                try:
-                    obj = instantiate_objective(obj_config.key, obj_config.parameters)
-                    builder.add(obj, key=obj_config.key)
-                except ValueError as e:
-                    logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
-        else:
-            for key, params in get_default_objectives():
-                obj = instantiate_objective(key, params)
-                builder.add(obj, key=key)
+            if request.objectives:
+                for obj_config in request.objectives:
+                    try:
+                        obj = instantiate_objective(obj_config.key, obj_config.parameters)
+                        builder.add(obj, key=obj_config.key)
+                    except ValueError as e:
+                        logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
+            else:
+                for key, params in get_default_objectives():
+                    obj = instantiate_objective(key, params)
+                    builder.add(obj, key=key)
 
-        marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
+            marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
 
-        objective = builder.build(
-            model, take_vars, courses_df, planning_year_start,
-            objective_tiers=request.objectiveTiers,
-            requirement_tiers=request.requirementTiers,
-            marked_course_ids=marked_course_ids,
-            course_to_requirements=course_to_requirements
-        )
-        model.Minimize(objective)
-        timings["build_objective"] = time.time() - t0
+            objective = builder.build(
+                model, take_vars, courses_df, planning_year_start,
+                objective_tiers=request.objectiveTiers,
+                requirement_tiers=request.requirementTiers,
+                marked_course_ids=marked_course_ids,
+                course_to_requirements=course_to_requirements
+            )
+            model.Minimize(objective)
+            timings["build_objective"] = time.time() - t0
+            span.set_data("num_objectives", len(request.objectives) if request.objectives else 0)
+            span.set_data("duration_seconds", timings["build_objective"])
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Serializing model...', 'step': 7, 'totalSteps': 10})}\n\n"
 
-        t0 = time.time()
-        num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "8"))
-        serialized = serialize_model(model, take_vars, courses_df, builder, max_time_seconds=20.0, num_workers=num_workers)
-        timings["serialize"] = time.time() - t0
+        with sentry_sdk.start_span(op="optimizer", name="serialize_model") as span:
+            t0 = time.time()
+            num_workers = int(os.environ.get("CPSAT_NUM_WORKERS", "8"))
+            serialized = serialize_model(model, take_vars, courses_df, builder, max_time_seconds=20.0, num_workers=num_workers)
+            timings["serialize"] = time.time() - t0
 
-        model_size_kb = len(serialized.to_json()) / 1024
+            model_size_kb = len(serialized.to_json()) / 1024
+            span.set_data("model_size_kb", model_size_kb)
+            span.set_data("num_variables", len(take_vars))
+            span.set_data("duration_seconds", timings["serialize"])
         logger.info("Model built: %d vars, %.1f KB payload, serialized in %.2fs",
                     len(take_vars), model_size_kb, timings["serialize"])
 
@@ -216,41 +250,48 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
         t0 = time.time()
         logger.info("Connecting to C++ worker at %s", SOLVER_URL)
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
-            async with client.stream(
-                "POST",
-                f"{SOLVER_URL}/solve",
-                content=serialized.to_json(),
-                headers={"Content-Type": "application/json", "Connection": "close", "X-Worker-Secret": worker_secret}
-            ) as response:
-                timings["worker_connect"] = time.time() - t0
-                logger.info("Worker connected in %.2fs, status=%d", timings["worker_connect"], response.status_code)
+        with sentry_sdk.start_span(op="http.client", name="cpp_worker_solve") as worker_span:
+            worker_span.set_data("solver_url", SOLVER_URL)
+            async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
+                async with client.stream(
+                    "POST",
+                    f"{SOLVER_URL}/solve",
+                    content=serialized.to_json(),
+                    headers={"Content-Type": "application/json", "Connection": "close", "X-Worker-Secret": worker_secret}
+                ) as response:
+                    timings["worker_connect"] = time.time() - t0
+                    worker_span.set_data("connect_time_seconds", timings["worker_connect"])
+                    logger.info("Worker connected in %.2fs, status=%d", timings["worker_connect"], response.status_code)
 
-                if response.status_code != 200:
-                    logger.error("Worker returned error status %d", response.status_code)
-                    yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
-                    return
+                    if response.status_code != 200:
+                        logger.error("Worker returned error status %d", response.status_code)
+                        worker_span.set_status("error")
+                        yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
+                        return
 
-                solution_count = 0
-                async for line in response.aiter_lines():
-                    if line.startswith("data: "):
-                        yield f"{line}\n\n"
-                        # Count solutions for logging
-                        try:
-                            event = json.loads(line[6:])
-                            if event.get("type") == "solution":
-                                solution_count += 1
-                            elif event.get("type") == "complete":
-                                timings["solve"] = time.time() - t0 - timings["worker_connect"]
-                                total_time = time.time() - start_time
-                                logger.info(
-                                    "Optimization complete: status=%s, solutions=%d, "
-                                    "solve_time=%.2fs, total_time=%.2fs, timings=%s",
-                                    event.get("status"), solution_count,
-                                    timings.get("solve", 0), total_time, timings
-                                )
-                        except json.JSONDecodeError:
-                            pass
+                    solution_count = 0
+                    async for line in response.aiter_lines():
+                        if line.startswith("data: "):
+                            yield f"{line}\n\n"
+                            # Count solutions for logging
+                            try:
+                                event = json.loads(line[6:])
+                                if event.get("type") == "solution":
+                                    solution_count += 1
+                                elif event.get("type") == "complete":
+                                    timings["solve"] = time.time() - t0 - timings["worker_connect"]
+                                    total_time = time.time() - start_time
+                                    worker_span.set_data("solve_time_seconds", timings.get("solve", 0))
+                                    worker_span.set_data("solution_count", solution_count)
+                                    worker_span.set_data("status", event.get("status"))
+                                    logger.info(
+                                        "Optimization complete: status=%s, solutions=%d, "
+                                        "solve_time=%.2fs, total_time=%.2fs, timings=%s",
+                                        event.get("status"), solution_count,
+                                        timings.get("solve", 0), total_time, timings
+                                    )
+                            except json.JSONDecodeError:
+                                pass
 
     except httpx.ConnectError as e:
         logger.error("Failed to connect to C++ worker: %s", e)

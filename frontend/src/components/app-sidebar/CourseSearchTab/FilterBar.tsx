@@ -20,14 +20,14 @@ export function FilterBar({ activeFilters, allFilters, onAddFilter, onRemoveFilt
   const [filterQuery, setFilterQuery] = React.useState("");
   const [showDropdown, setShowDropdown] = React.useState(false);
 
-  const filterSuggestions = React.useMemo(() => {
+  const filterSuggestions = (() => {
     const query = filterQuery.toLowerCase();
     return allFilters.filter(f => !activeFilters.has(f.id) && (
       !query ||
       f.label.toLowerCase().includes(query) ||
       f.category.toLowerCase().includes(query)
     ));
-  }, [filterQuery, activeFilters, allFilters]);
+  })();
 
   const handleAddFilter = (filterId: string) => {
     onAddFilter(filterId);

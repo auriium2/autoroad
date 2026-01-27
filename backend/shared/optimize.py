@@ -18,6 +18,7 @@ from threading import RLock
 from typing import Any
 
 import polars as pl
+import sentry_sdk
 from ortools.sat.python import cp_model
 
 from shared.courses.requirements.parser import parse_fireroad_response
@@ -294,17 +295,30 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         perf_timings: dict[str, float] = {}
         perf_start_total = time.time()
 
+        # Set Sentry context for this optimization
+        sentry_sdk.set_context("optimization_request", {
+            "requirements": request.requirements,
+            "num_markers": len(request.markers) if request.markers else 0,
+            "max_semesters": request.maxSemesters,
+            "num_objectives": len(request.objectives) if request.objectives else 0,
+            "num_hard_constraints": len(request.hardConstraints) if request.hardConstraints else 0,
+        })
+
         yield {'type': 'progress', 'message': 'Initializing...', 'step': 1, 'totalSteps': 10}
 
         # Fetch data
-        perf_start = time.time()
-        courses_data = await get_courses_data()
-        requirements_data = await get_requirements(
-            tuple(request.requirements),
-            requirement_sources=request.requirementSources
-        )
-        courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
-        perf_timings['data_fetch'] = time.time() - perf_start
+        with sentry_sdk.start_span(op="db.query", name="fetch_courses_and_requirements") as span:
+            perf_start = time.time()
+            courses_data = await get_courses_data()
+            requirements_data = await get_requirements(
+                tuple(request.requirements),
+                requirement_sources=request.requirementSources
+            )
+            courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+            perf_timings['data_fetch'] = time.time() - perf_start
+            span.set_data("num_courses", len(courses_data))
+            span.set_data("num_requirements", len(requirements_data))
+            span.set_data("duration_seconds", perf_timings['data_fetch'])
 
         # Get planning year
         planning_year = request.planningYear
@@ -316,134 +330,151 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         yield {'type': 'progress', 'message': 'Creating model...', 'step': 2, 'totalSteps': 10}
 
         # Create model
-        perf_start = time.time()
-        model = cp_model.CpModel()
-        take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
-        add_basic_constraints(model, take_vars, courses_df, max_semesters)
+        with sentry_sdk.start_span(op="optimizer", name="create_model") as span:
+            perf_start = time.time()
+            model = cp_model.CpModel()
+            take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
+            add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
-        if request.lockPastSemesters:
-            add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
-        perf_timings['model_creation'] = time.time() - perf_start
+            if request.lockPastSemesters:
+                add_past_semester_constraints(model, take_vars, courses_df, planning_year_start, request.markers)
+            perf_timings['model_creation'] = time.time() - perf_start
+            span.set_data("num_variables", len(take_vars))
+            span.set_data("duration_seconds", perf_timings['model_creation'])
 
         yield {'type': 'progress', 'message': 'Adding requirements...', 'step': 3, 'totalSteps': 10}
 
         # Add requirement constraints
-        perf_start = time.time()
-        course_to_requirements: dict[int, set[str]] = {}
-        for req_key in request.requirements:
-            if req_key in requirements_data:
-                req_data = requirements_data[req_key]
-                if isinstance(req_data, dict):
-                    req_tree = parse_fireroad_response(req_data)
-                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
-                    if validation.pruned_tree is not None:
-                        _, _, mapping = add_requirement_constraints(
-                            model, take_vars, validation.pruned_tree,
-                            courses_df, req_key, enforce=True
-                        )
-                        for course_idx, req_paths in mapping.items():
-                            if course_idx not in course_to_requirements:
-                                course_to_requirements[course_idx] = set()
-                            course_to_requirements[course_idx].update(req_paths)
-        perf_timings['requirements'] = time.time() - perf_start
+        with sentry_sdk.start_span(op="optimizer", name="add_requirements") as span:
+            perf_start = time.time()
+            course_to_requirements: dict[int, set[str]] = {}
+            for req_key in request.requirements:
+                if req_key in requirements_data:
+                    req_data = requirements_data[req_key]
+                    if isinstance(req_data, dict):
+                        req_tree = parse_fireroad_response(req_data)
+                        validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                        if validation.pruned_tree is not None:
+                            _, _, mapping = add_requirement_constraints(
+                                model, take_vars, validation.pruned_tree,
+                                courses_df, req_key, enforce=True
+                            )
+                            for course_idx, req_paths in mapping.items():
+                                if course_idx not in course_to_requirements:
+                                    course_to_requirements[course_idx] = set()
+                                course_to_requirements[course_idx].update(req_paths)
+            perf_timings['requirements'] = time.time() - perf_start
+            span.set_data("num_requirements_processed", len(request.requirements))
+            span.set_data("duration_seconds", perf_timings['requirements'])
 
         yield {'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10}
 
         # Add prerequisite constraints
-        perf_start = time.time()
-        prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
-        override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
-        add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
-        perf_timings['prerequisites'] = time.time() - perf_start
+        with sentry_sdk.start_span(op="optimizer", name="add_prerequisites") as span:
+            perf_start = time.time()
+            prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
+            override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
+            add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+            perf_timings['prerequisites'] = time.time() - perf_start
+            span.set_data("duration_seconds", perf_timings['prerequisites'])
 
         yield {'type': 'progress', 'message': 'Adding markers...', 'step': 5, 'totalSteps': 10}
 
         # Add marker constraints
-        perf_start = time.time()
-        marker_result = add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
-        perf_timings['markers'] = time.time() - perf_start
+        with sentry_sdk.start_span(op="optimizer", name="add_markers") as span:
+            perf_start = time.time()
+            marker_result = add_marker_constraints(model, take_vars, request.markers, courses_df, planning_year_start)
+            perf_timings['markers'] = time.time() - perf_start
+            span.set_data("num_markers", len(request.markers) if request.markers else 0)
+            span.set_data("duration_seconds", perf_timings['markers'])
 
         # Add hard constraints
-        perf_start = time.time()
+        with sentry_sdk.start_span(op="optimizer", name="add_hard_constraints") as span:
+            perf_start = time.time()
 
-        # Use exactly what the frontend sends - no defaults
-        constraint_configs = request.hardConstraints or []
-        constraint_keys = [c.key for c in constraint_configs]
+            # Use exactly what the frontend sends - no defaults
+            constraint_configs = request.hardConstraints or []
+            constraint_keys = [c.key for c in constraint_configs]
 
-        if constraint_configs:
-            # Fetch Hydrant schedule data for constraints that need it
-            hydrant_extra: dict[str, object] = {}
-            needs_hydrant_data = 'no_schedule_conflicts' in constraint_keys or 'schedule_free_time' in constraint_keys
+            if constraint_configs:
+                # Fetch Hydrant schedule data for constraints that need it
+                hydrant_extra: dict[str, object] = {}
+                needs_hydrant_data = 'no_schedule_conflicts' in constraint_keys or 'schedule_free_time' in constraint_keys
 
-            if needs_hydrant_data:
-                from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
+                if needs_hydrant_data:
+                    from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
 
-                # Get extrapolate parameter from constraints that need hydrant data
-                conflicts_config = next((c for c in constraint_configs if c.key == 'no_schedule_conflicts'), None)
-                free_time_config = next((c for c in constraint_configs if c.key == 'schedule_free_time'), None)
+                    # Get extrapolate parameter from constraints that need hydrant data
+                    conflicts_config = next((c for c in constraint_configs if c.key == 'no_schedule_conflicts'), None)
+                    free_time_config = next((c for c in constraint_configs if c.key == 'schedule_free_time'), None)
 
-                # Use extrapolate if either constraint has it enabled
-                extrapolate = (
-                    (conflicts_config and bool(conflicts_config.parameters.get('extrapolate', False))) or
-                    (free_time_config and bool(free_time_config.parameters.get('extrapolate', False)))
+                    # Use extrapolate if either constraint has it enabled
+                    extrapolate = (
+                        (conflicts_config and bool(conflicts_config.parameters.get('extrapolate', False))) or
+                        (free_time_config and bool(free_time_config.parameters.get('extrapolate', False)))
+                    )
+
+                    hydrant_data = await fetch_hydrant_data_for_semesters(
+                        take_vars, courses_df, planning_year_start, max_semesters, extrapolate
+                    )
+
+                    hydrant_extra['hydrant_schedule_data'] = {
+                        'semester_to_slots': hydrant_data.semester_to_slots,
+                        'semester_to_section_options': hydrant_data.semester_to_section_options,
+                    }
+
+                constraint_context = ConstraintContext(
+                    planning_year_start=planning_year_start,
+                    courses_df=courses_df,
+                    max_semesters=max_semesters,
+                    markers=request.markers,
+                    extra=hydrant_extra if hydrant_extra else None,
                 )
-
-                hydrant_data = await fetch_hydrant_data_for_semesters(
-                    take_vars, courses_df, planning_year_start, max_semesters, extrapolate
-                )
-
-                hydrant_extra['hydrant_schedule_data'] = {
-                    'semester_to_slots': hydrant_data.semester_to_slots,
-                    'semester_to_section_options': hydrant_data.semester_to_section_options,
-                }
-
-            constraint_context = ConstraintContext(
-                planning_year_start=planning_year_start,
-                courses_df=courses_df,
-                max_semesters=max_semesters,
-                markers=request.markers,
-                extra=hydrant_extra if hydrant_extra else None,
-            )
-            for constraint_config in constraint_configs:
-                try:
-                    constraint = instantiate_constraint(constraint_config.key, constraint_config.parameters)
-                    constraint.add_to_model(model, take_vars, constraint_context)
-                except ValueError as e:
-                    logger.warning("Failed to instantiate constraint '%s': %s", constraint_config.key, e)
-        perf_timings['hard_constraints'] = time.time() - perf_start
+                for constraint_config in constraint_configs:
+                    try:
+                        constraint = instantiate_constraint(constraint_config.key, constraint_config.parameters)
+                        constraint.add_to_model(model, take_vars, constraint_context)
+                    except ValueError as e:
+                        logger.warning("Failed to instantiate constraint '%s': %s", constraint_config.key, e)
+            perf_timings['hard_constraints'] = time.time() - perf_start
+            span.set_data("num_constraints", len(constraint_configs))
+            span.set_data("duration_seconds", perf_timings['hard_constraints'])
 
         yield {'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10}
 
         # Build objective
-        perf_start = time.time()
-        builder = ObjectiveBuilder()
+        with sentry_sdk.start_span(op="optimizer", name="build_objective") as span:
+            perf_start = time.time()
+            builder = ObjectiveBuilder()
 
-        from shared.optimizer.objectives.units import MinimizeUnits
-        builder.add(MinimizeUnits(), key="minimize_units")
+            from shared.optimizer.objectives.units import MinimizeUnits
+            builder.add(MinimizeUnits(), key="minimize_units")
 
-        if request.objectives:
-            for obj_config in request.objectives:
-                try:
-                    obj = instantiate_objective(obj_config.key, obj_config.parameters)
-                    builder.add(obj, key=obj_config.key)
-                except ValueError as e:
-                    logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
-        else:
-            for key, params in get_default_objectives():
-                obj = instantiate_objective(key, params)
-                builder.add(obj, key=key)
+            if request.objectives:
+                for obj_config in request.objectives:
+                    try:
+                        obj = instantiate_objective(obj_config.key, obj_config.parameters)
+                        builder.add(obj, key=obj_config.key)
+                    except ValueError as e:
+                        logger.warning("Failed to instantiate objective '%s': %s", obj_config.key, e)
+            else:
+                for key, params in get_default_objectives():
+                    obj = instantiate_objective(key, params)
+                    builder.add(obj, key=key)
 
-        marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
+            marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
 
-        objective = builder.build(
-            model, take_vars, courses_df, planning_year_start,
-            objective_tiers=request.objectiveTiers,
-            requirement_tiers=request.requirementTiers,
-            marked_course_ids=marked_course_ids,
-            course_to_requirements=course_to_requirements
-        )
-        model.Minimize(objective)
-        perf_timings['objective_building'] = time.time() - perf_start
+            objective = builder.build(
+                model, take_vars, courses_df, planning_year_start,
+                objective_tiers=request.objectiveTiers,
+                requirement_tiers=request.requirementTiers,
+                marked_course_ids=marked_course_ids,
+                course_to_requirements=course_to_requirements
+            )
+            model.Minimize(objective)
+            perf_timings['objective_building'] = time.time() - perf_start
+            span.set_data("num_objectives", len(request.objectives) if request.objectives else 0)
+            span.set_data("duration_seconds", perf_timings['objective_building'])
 
         yield {'type': 'progress', 'message': 'Solving...', 'step': 7, 'totalSteps': 10}
 

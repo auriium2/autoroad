@@ -13,6 +13,10 @@ except ImportError:
     logger.info("python-dotenv not installed, using environment variables directly")
 
 import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -35,8 +39,26 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 if os.environ.get("SENTRY_DSN"):
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
-        traces_sample_rate=0.1,
         environment=os.environ.get("ENVIRONMENT", "development"),
+        release=os.environ.get("RELEASE_VERSION"),
+        # Capture 100% of errors, 20% of transactions for performance monitoring
+        traces_sample_rate=0.2,
+        # Capture profiles for 20% of sampled transactions
+        profiles_sample_rate=0.2,
+        # Attach request data (IPs, headers, bodies) - disable in prod if PII is a concern
+        send_default_pii=True,
+        # Attach all log levels as breadcrumbs, send ERROR+ as events
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            StarletteIntegration(transaction_style="endpoint"),
+            HttpxIntegration(),  # Auto-instrument httpx calls to Fireroad/Hydrant
+            LoggingIntegration(
+                level=logging.INFO,  # Capture INFO+ as breadcrumbs
+                event_level=logging.ERROR,  # Send ERROR+ as Sentry events
+            ),
+        ],
+        # Filter out health check noise
+        traces_sampler=lambda ctx: 0 if ctx.get("asgi_scope", {}).get("path") == "/api/health" else 0.2,
     )
 
 from server.routes import bug_report, courses, hydrant, optimize, requirements

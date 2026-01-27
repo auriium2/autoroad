@@ -139,10 +139,7 @@ function CourseGraphFlowInner({
   const { storeNodes } = useStoreNodes(markers, optimizerNodes);
 
   // Create stable key for storeNodes
-  const storeNodesKey = React.useMemo(
-    () => `${storeNodes.length}-${storeNodes.map(n => n.uuid).join(',')}`,
-    [storeNodes]
-  );
+  const storeNodesKey = `${storeNodes.length}-${storeNodes.map(n => n.uuid).join(',')}`;
 
   // Debounce nodes during optimization
   const [debouncedNodes, setDebouncedNodes] = React.useState<typeof storeNodes>([]);

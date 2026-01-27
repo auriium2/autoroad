@@ -5,13 +5,8 @@ services:
       dockerfile: server/Dockerfile
     ports:
       - "8080:8080"
-    environment:
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173
-      - SOLVER_URL=https://autoroad-worker.fly.dev
-      - WORKER_SECRET=your-worker-secret-here
-      - CPSAT_NUM_WORKERS=8
-      - SENTRY_DSN=
-      - ENVIRONMENT=development
+    env_file:
+          - .env
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 30s

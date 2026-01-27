@@ -18,11 +18,8 @@ export function GraphStats({
   lastCostBreakdown 
 }: GraphStatsProps) {
   // Get marker-only courses (not covered by optimizer)
-  const markerOnlyCourses = React.useMemo(() => 
-    markers.filter(m =>
-      !optimizerNodes.some(on => on.courseId === m.courseId && on.section === m.section)
-    ),
-    [markers, optimizerNodes]
+  const markerOnlyCourses = markers.filter(m =>
+    !optimizerNodes.some(on => on.courseId === m.courseId && on.section === m.section)
   );
 
   // Fetch course details for marker-only courses to get real units
@@ -34,7 +31,7 @@ export function GraphStats({
     }))
   });
 
-  const totalUnits = React.useMemo(() => {
+  const totalUnits = (() => {
     let total = 0;
 
     // Add units from optimizer nodes (they have units from backend)
@@ -52,7 +49,7 @@ export function GraphStats({
     });
 
     return total;
-  }, [optimizerNodes, markerCourseQueries]);
+  })();
 
   // Calculate total cost from cost breakdown
   const totalCost = lastCostBreakdown

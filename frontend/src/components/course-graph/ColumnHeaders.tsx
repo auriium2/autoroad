@@ -75,13 +75,13 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   );
 
   // Get all unique course IDs across all sections for batch fetching
-  const allCourseIds = React.useMemo(() => {
+  const allCourseIds = (() => {
     const ids = new Set<string>();
     sections.forEach((section) => {
       getCoursesForSection(section.id).forEach((id) => ids.add(id));
     });
     return Array.from(ids);
-  }, [sections, getCoursesForSection]);
+  })();
 
   // Batch fetch course details for stats calculation
   const courseQueries = useQueries({
@@ -94,7 +94,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   });
 
   // Build a map of courseId -> course data
-  const courseDataMap = React.useMemo(() => {
+  const courseDataMap = (() => {
     const map = new Map<string, { units: number; hours: number; rating: number | null }>();
     allCourseIds.forEach((courseId, idx) => {
       const query = courseQueries[idx];
@@ -109,7 +109,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
       }
     });
     return map;
-  }, [allCourseIds, courseQueries]);
+  })();
 
   // Calculate stats for a section
   const getSectionStats = React.useCallback(

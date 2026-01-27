@@ -80,10 +80,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     tourRef.current?.next();
   }, []);
 
-  const value = React.useMemo(
-    () => ({ startTutorial, isActive, getCurrentStepId, advanceTutorial }),
-    [startTutorial, isActive, getCurrentStepId, advanceTutorial]
-  );
+  const value = { startTutorial, isActive, getCurrentStepId, advanceTutorial };
 
   return (
     <TutorialContext.Provider value={value}>

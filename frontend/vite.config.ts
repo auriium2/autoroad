@@ -41,6 +41,7 @@ export default defineConfig({
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-popover', '@radix-ui/react-tooltip', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select'],
           'reactflow': ['reactflow'],
           'tanstack': ['@tanstack/react-query', '@tanstack/react-virtual'],
+          'sentry': ['@sentry/react'],
         },
       },
     },

@@ -182,7 +182,7 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
     })),
   });
 
-  const stats = React.useMemo(() => {
+  const stats = (() => {
     let totalUnits = 0;
     let totalHours = 0;
     let ratingSum = 0;
@@ -206,29 +206,29 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
       totalHours: totalHours.toFixed(0),
       avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
     };
-  }, [courseQueries]);
+  })();
 
   // Get blocked slots from the schedule_free_time constraint
   const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);
-  const blockedSlots = React.useMemo(() => {
+  const blockedSlots = (() => {
     const freeTimeConstraint = selectedHardConstraints.find(c => c.key === 'schedule_free_time');
     if (!freeTimeConstraint) return [];
     const slots = freeTimeConstraint.parameters.blocked_slots;
     return Array.isArray(slots) ? slots as number[][] : [];
-  }, [selectedHardConstraints]);
+  })();
 
-  const courseId2Color = React.useMemo(() => {
+  const courseId2Color = (() => {
     const map = new Map<string, { bg: string; hex: string }>();
     courseIds.forEach((id, i) => {
       map.set(id, COURSE_COLORS[i % COURSE_COLORS.length]);
     });
     return map;
-  }, [courseIds]);
+  })();
 
-  const coursesWithData = React.useMemo(() => {
+  const coursesWithData = (() => {
     if (!data?.blocks) return [];
     return [...new Set(data.blocks.map((b) => b.course_id))];
-  }, [data]);
+  })();
 
   if (courseIds.length === 0) {
     return <div className="text-xs text-gray-500">No courses in this semester</div>;

@@ -43,20 +43,20 @@ export function CourseSearchTab() {
   const [activeFilters, setActiveFilters] = React.useState<Set<string>>(new Set());
   const parentRef = React.useRef<HTMLDivElement>(null);
 
-  const selectedDepartment = React.useMemo(() => {
+  const selectedDepartment = (() => {
     const deptFilter = Array.from(activeFilters).find(f => f.startsWith("dept:"));
     if (deptFilter) return deptFilter.split(":")[1];
     if (activeFilters.size > 0) return "all";
     return "all";
-  }, [activeFilters]);
+  })();
 
-  const effectiveSearchQuery = React.useMemo(() => {
+  const effectiveSearchQuery = (() => {
     if (searchQuery) return searchQuery;
     if (activeFilters.size > 0) return "*";
     return "";
-  }, [searchQuery, activeFilters]);
+  })();
 
-  const apiFilters = React.useMemo(() => {
+  const apiFilters = (() => {
     const filters: Record<string, string> = {};
     for (const filterId of activeFilters) {
       const [category, value] = filterId.split(":");
@@ -64,7 +64,7 @@ export function CourseSearchTab() {
       filters[category] = value;
     }
     return Object.keys(filters).length > 0 ? filters : undefined;
-  }, [activeFilters]);
+  })();
 
   const {
     data,
@@ -78,10 +78,10 @@ export function CourseSearchTab() {
   const { handleDragStart, handleDragEnd } = useCourseDrag();
 
   // Flatten pages into a single array of courses
-  const courses = React.useMemo(() => {
+  const courses = (() => {
     if (!data?.pages) return [];
     return data.pages.flatMap(page => page.courses);
-  }, [data]);
+  })();
 
   const totalCount = data?.pages[0]?.total ?? 0;
 
