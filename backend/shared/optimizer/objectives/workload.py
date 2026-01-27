@@ -16,12 +16,6 @@ class LimitClassesPerSemester:
     def __init__(self, max_classes: int = 4):
         self.max_classes: int = max_classes
 
-    def get_name(self) -> str:
-        return "Limit Classes Per Semester"
-
-    def get_description(self) -> str:
-        return f"Penalize semesters with more than {self.max_classes} classes (tier-based)"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {
             '_subject_ids': courses_df['subject_id'].to_list()
@@ -75,12 +69,6 @@ class LimitClassesPerSemester:
 class LimitUnitsPerSemester:
     def __init__(self, max_units: int = 60):
         self.max_units: int = max_units
-
-    def get_name(self) -> str:
-        return "Limit Units Per Semester"
-
-    def get_description(self) -> str:
-        return f"Penalize semesters with more than {self.max_units} units (tier-based, per 3 units)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
@@ -162,12 +150,6 @@ class MinimizeMaxSemesterHours:
         self.hours_threshold: float = hours_threshold
         self.fallback_hours: float = fallback_hours
         self.penalty_interval: int = penalty_interval
-
-    def get_name(self) -> str:
-        return "Limit Semester Hours"
-
-    def get_description(self) -> str:
-        return f"Penalize semesters with more than {self.hours_threshold} hours/week (tier-based, per {self.penalty_interval} hours)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
@@ -259,12 +241,6 @@ class MinimizeFinalsLoad:
             max_finals: Maximum comfortable number of finals per semester
         """
         self.max_finals: int = max_finals
-
-    def get_name(self) -> str:
-        return "Minimize Finals Load"
-
-    def get_description(self) -> str:
-        return f"Penalize semesters with more than {self.max_finals} finals (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}

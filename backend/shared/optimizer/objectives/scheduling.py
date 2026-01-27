@@ -15,12 +15,6 @@ class AvoidIAP:
     def __init__(self):
         pass
 
-    def get_name(self) -> str:
-        return "Avoid IAP Classes"
-
-    def get_description(self) -> str:
-        return "Penalize placing classes during IAP"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}
 
@@ -54,12 +48,6 @@ class AvoidSpecialClasses:
 
     def __init__(self):
         pass
-
-    def get_name(self) -> str:
-        return "Avoid Special Classes"
-
-    def get_description(self) -> str:
-        return "Penalize classes starting with ES., CC., or STS."
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         subject_ids = courses_df['subject_id'].to_list()
@@ -100,14 +88,7 @@ class MinimumClassesPerSemester:
     def __init__(self, min_classes: int = 2):
         self.min_classes: int = min_classes
 
-    def get_name(self) -> str:
-        return f"Min {self.min_classes} Classes Per Semester"
-
-    def get_description(self) -> str:
-        return f"Penalize semesters with fewer than {self.min_classes} classes (tier-based)"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
-        """No preprocessing needed."""
         return {}
 
     def add_to_model(

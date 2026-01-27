@@ -31,12 +31,6 @@ class DiscourageEquivalentCourses:
         """
         self.custom_equivalencies: dict[str, list[str]] | None = custom_equivalencies
 
-    def get_name(self) -> str:
-        return "Discourage Equivalent Courses"
-
-    def get_description(self) -> str:
-        return "Discourage taking multiple equivalent courses (e.g., 18.01 and ES.1801) using tier-based penalties"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         """
         Build equivalency groups for efficient lookup.

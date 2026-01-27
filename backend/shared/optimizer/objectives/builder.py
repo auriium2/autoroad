@@ -109,8 +109,8 @@ class ObjectiveBuilder:
             if isinstance(expr, int) and expr == 0:
                 continue
 
-            # Use key if available, otherwise fall back to name
-            identifier = self.component_keys[i] if self.component_keys[i] else component.get_name()
+            # Use key (should always be provided)
+            identifier = self.component_keys[i] or f"objective_{i}"
 
             # Check if this is CategoryRewards with per-category breakdowns
             from .categories import CategoryRewards
@@ -128,26 +128,6 @@ class ObjectiveBuilder:
         if terms:
             return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
         return cp_model.LinearExpr.Sum([])
-
-    def get_summary(self) -> str:
-        """
-        Get a human-readable summary of the objectives.
-
-        Returns:
-            Multi-line string describing the objectives
-        """
-        if not self.components:
-            return "No objectives defined"
-
-        lines = ["Objective Function:"]
-        for component in self.components:
-            name = component.get_name()
-            desc = component.get_description()
-            lines.append(f"  - {name}")
-            if desc:
-                lines.append(f"    {desc}")
-
-        return "\n".join(lines)
 
     def clear(self) -> ObjectiveBuilder:
         """Clear all components."""

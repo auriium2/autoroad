@@ -13,32 +13,9 @@ from .base import ObjectiveContext, get_tier_penalty
 
 
 class PenalizeLowRatings:
-    """
-    Tier-based soft constraint to penalize courses with low ratings.
-
-    Penalizes each course that falls below a rating threshold. The penalty
-    scales with how far below the threshold the rating is (per 0.1 rating points).
-
-    Uses a reduced penalty scale (tier_penalty // 10) to avoid dominating
-    other objectives - each 0.1 below threshold costs ~2-3 at tier 2.
-
-    Supports two rating types:
-    - Raw rating: The raw course rating (1-7 scale)
-    - IMDB rating: Weighted rating that accounts for enrollment size
-
-    Courses without rating data are not penalized.
-    """
-
     def __init__(self, threshold: float = 5.5, use_imdb: bool = False):
         self.threshold: float = threshold
         self.use_imdb: bool = use_imdb
-
-    def get_name(self) -> str:
-        return "Penalize Low Ratings"
-
-    def get_description(self) -> str:
-        rating_label = "IMDB" if self.use_imdb else "raw"
-        return f"Penalize courses with {rating_label} rating below {self.threshold}"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         return {}

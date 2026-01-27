@@ -10,37 +10,17 @@ from typing import Any, Protocol
 import polars as pl
 from ortools.sat.python import cp_model
 
-# Global scaling factor for converting float weights to integers (DEPRECATED in tier-based system)
-OBJECTIVE_SCALE = 10000
-
 # Tier penalty multiplier
 TIER_BASE = 5
 
 def get_tier_penalty(tier: int, base_cost: int = 1) -> int:
-    """
-    Calculate penalty for a given tier.
-
-    Args:
-        tier: Tier level (1-4)
-        base_cost: Base cost per violation (default 1 unit)
-
-    Returns:
-        Penalty = base_cost × (TIER_BASE^tier)
-    """
     if tier < 1 or tier > 4:
         tier = 2  # Default to tier 2 if invalid
     return base_cost * (TIER_BASE ** tier)
 
 def get_tier_penalty_hacked(tier: int, base_cost: int = 1) -> int:
     """
-    Calculate penalty for a given tier. Hacked so that a certain equivalents constraint can use it
-
-    Args:
-        tier: Tier level (1-5)
-        base_cost: Base cost per violation (default 1 unit)
-
-    Returns:
-        Penalty = base_cost × (TIER_BASE^tier)
+    This is necessary for the equivalency constraint
     """
     if tier < 1 or tier > 5:
         tier = 2  # Default to tier 2 if invalid
@@ -98,14 +78,6 @@ class ObjectiveComponent(Protocol):
             For maximization objectives, return negative values.
             Return LinearExpr.constant(0) if this objective doesn't apply.
         """
-        ...
-
-    def get_name(self) -> str:
-        """Return a human-readable name for this objective."""
-        ...
-
-    def get_description(self) -> str:
-        """Return a description of what this objective does."""
         ...
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:

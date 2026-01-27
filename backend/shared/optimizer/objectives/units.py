@@ -21,12 +21,6 @@ class MinimizeUnits:
     Scale: Normalized to ~100 per course (typical course is 12 units, scaled by 10).
     """
 
-    def get_name(self) -> str:
-        return "Minimize Units"
-
-    def get_description(self) -> str:
-        return "Minimize the total number of units taken across all semesters"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         units_list = courses_df['total_units'].fill_null(0).to_list()
         return {'_units_list': units_list}
@@ -71,12 +65,6 @@ class AvoidSmallClasses:
             min_units: Minimum acceptable units for a class (default 3)
         """
         self.min_units: int = min_units
-
-    def get_name(self) -> str:
-        return "Avoid Small Classes"
-
-    def get_description(self) -> str:
-        return f"Penalize classes with fewer than {self.min_units} units (tier-based)"
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         if 'total_units' not in courses_df.columns:

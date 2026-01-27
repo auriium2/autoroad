@@ -48,12 +48,6 @@ class CategoryRewards:
         # Store per-category terms for cost breakdown
         self.category_terms: dict[str, list[cp_model.LinearExpr]] = {}
 
-    def get_name(self) -> str:
-        return "Category Rewards"
-
-    def get_description(self) -> str:
-        return "Reward taking courses in priority requirement categories with diminishing returns"
-
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         """Extract category information from shared.courses."""
         return {}
