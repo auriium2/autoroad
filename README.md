@@ -1,5 +1,5 @@
 # autoroad
-> fixed horizon trajectory optimization for your mit degree
+> trajectory optimization for your mit degree
 
 # TLDR
 - pick classes you *want* to take
@@ -19,6 +19,10 @@ As both a fake mechanical engineer and a fake CS major, trying to solve this con
 
 ## How does it work?
 See [TECHNICAL.md](TECHNICAL.md) for details on the optimization system.
+
+## What next?
+- Autoroad's integer programming design could be expanded to use a more generic api than fireroad, allowing other schools to integrate
+- Autoroad's remote c++ solver pool design can allow for other types of integer programming problems to be shipped off to the worker pool
 
 ## Credits
 - auriium2
