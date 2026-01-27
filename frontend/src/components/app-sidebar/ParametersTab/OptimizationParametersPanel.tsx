@@ -27,7 +27,7 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(inputValue);
-    }, 300);
+    }, 500);
     return () => clearTimeout(timer);
   }, [inputValue]);
 
