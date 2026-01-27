@@ -60,9 +60,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
     tourRef.current = tour;
 
-    // Auto-start tutorial for first-time visitors
+    // Auto-start tutorial for first-time visitors (desktop only)
     const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
-    if (!hasCompletedTutorial) {
+    const isMobile = window.innerWidth < 768;
+    if (!hasCompletedTutorial && !isMobile) {
       // Small delay to ensure the UI is fully rendered
       const timeoutId = setTimeout(() => {
         tour.start();
@@ -85,6 +86,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startTutorial = () => {
+    // Don't start tutorial on mobile
+    if (window.innerWidth < 768) return;
     tourRef.current?.start();
   };
 
