@@ -133,8 +133,6 @@ export default function Dashboard() {
   }, []); // Only run once on mount
 
   React.useEffect(() => {
-    console.log('[Dashboard] lastOptimizationStatus changed:', lastOptimizationStatus, 'prev:', prevStatusRef.current);
-
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
       showToast({
         title: "Optimal solution found!",

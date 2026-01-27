@@ -11,7 +11,6 @@ interface EquivalencyManagerProps {
 }
 
 export function EquivalencyManager({ customEquivalencies, onChange }: EquivalencyManagerProps) {
-  console.log('[DEBUG EquivalencyManager] customEquivalencies:', customEquivalencies);
   const [courseA, setCourseA] = React.useState("");
   const [courseB, setCourseB] = React.useState("");
   const [showDropdownA, setShowDropdownA] = React.useState(false);

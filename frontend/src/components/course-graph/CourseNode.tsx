@@ -60,9 +60,6 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       (semesterType === 1 && !courseDetails.offered_IAP) ||
       (semesterType === 2 && !courseDetails.offered_spring);
     
-    if (isWrongSemester) {
-      console.log(`[CourseNode] ${courseId} wrong semester - section=${section}, type=${semesterType}, fall=${courseDetails.offered_fall}, IAP=${courseDetails.offered_IAP}, spring=${courseDetails.offered_spring}`);
-    }
   }
 
   // Get node styling from shared utility

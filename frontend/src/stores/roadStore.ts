@@ -220,17 +220,15 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
 
       // Fetch course categories for displaying category tier stars
       try {
-        console.log('[Optimizer] Fetching course categories...');
         const courseCategories = await optimizerApi.getCourseCategories(
           markers,
           selectedRequirements,
           maxSemesters,
           planningYear
         );
-        console.log(`[Optimizer] Fetched categories for ${Object.keys(courseCategories).length} courses`);
         useOptimizationStore.getState().setCourseCategories(courseCategories);
-      } catch (error) {
-        console.error('[Optimizer] Failed to fetch course categories:', error);
+      } catch {
+        // Category fetching is non-critical, silently ignore failures
       }
 
       // Pass objectives as-is

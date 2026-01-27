@@ -184,12 +184,12 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                     max_semesters=max_semesters,
                     markers=request.markers,
                 )
-                for constraint_key in request.hardConstraints:
+                for constraint_config in request.hardConstraints:
                     try:
-                        constraint = instantiate_constraint(constraint_key)
+                        constraint = instantiate_constraint(constraint_config.key, constraint_config.parameters)
                         constraint.add_to_model(model, take_vars, constraint_context)
                     except ValueError as e:
-                        logger.warning("Failed to instantiate constraint '%s': %s", constraint_key, e)
+                        logger.warning("Failed to instantiate constraint '%s': %s", constraint_config.key, e)
             span.set_data("num_constraints", len(request.hardConstraints) if request.hardConstraints else 0)
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Building objective...', 'step': 6, 'totalSteps': 10})}\n\n"

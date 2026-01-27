@@ -188,8 +188,6 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
         return { edges: [], tag2courses: new Map() };
       }
 
-      console.log('[Performance] Computing prerequisite edges for', nodes.length, 'nodes');
-      const startTime = performance.now();
       const edges: Array<{ fromUuid: string; toUuid: string }> = [];
 
       // Build a map of courseId -> node for quick lookup (using fresh node data)
@@ -257,8 +255,6 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
         }
       }
 
-      const endTime = performance.now();
-      console.log(`[Performance] Computed ${edges.length} edges in ${(endTime - startTime).toFixed(2)}ms`);
       return { edges, tag2courses };
     },
     enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,
@@ -288,8 +284,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         return new Map<string, string[]>();
       }
 
-      console.log('[Performance] Computing missing prerequisites for', nodes.length, 'nodes');
-      const startTime = performance.now();
       const uuid2missingPrereqs = new Map<string, string[]>();
 
       // Use the shared fetched data, but get fresh section/status from current nodes
@@ -360,8 +354,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         }
       }
 
-      const endTime = performance.now();
-      console.log(`[Performance] Computed missing prerequisites in ${(endTime - startTime).toFixed(2)}ms`);
       return uuid2missingPrereqs;
     },
     enabled: nodes.length > 0 && courseDetailsQuery.isSuccess,

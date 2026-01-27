@@ -26,8 +26,7 @@ export function useFlowConversion(
   viewMode: string,
   isOptimizing: boolean
 ): FlowConversionResult {
-  // useMemo required - flowNodes/flowEdges are passed directly to ReactFlow which
-  // compares by reference. Without memoization, new arrays cause infinite loops.
+  // useMemo required: flowNodes/flowEdges are passed directly to ReactFlow which compares by reference. Without memoization, new arrays cause infinite loops.
   return useMemo(() => {
     const startTime = performance.now();
 
@@ -139,9 +138,6 @@ export function useFlowConversion(
         },
       };
     }).filter(Boolean) as FlowEdge[];
-
-    const endTime = performance.now();
-    console.log(`[Performance] Converted ${storeNodes.length} nodes and ${flowEdges.length} edges in ${(endTime - startTime).toFixed(2)}ms`);
 
     return { flowNodes, flowEdges };
   }, [storeNodes, storeEdges, uuid2missingPrereqs, viewMode, isOptimizing]);

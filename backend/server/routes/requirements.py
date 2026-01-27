@@ -67,7 +67,7 @@ def _load_local_requirements() -> dict[str, dict[str, str]]:
                                 local_reqs[key]["description"] = stripped
                                 break
                 except Exception as e:
-                    print(f"[REQUIREMENTS] Failed to parse {path}: {e}")
+                    logger.warning("Failed to parse %s: %s", path, e)
     return local_reqs
 
 
@@ -80,7 +80,7 @@ async def _fetch_all_requirements() -> dict[str, Any]:
             resp.raise_for_status()
             fireroad_reqs = resp.json()
     except Exception as e:
-        print(f"[REQUIREMENTS] Failed to fetch Fireroad list: {e}")
+        logger.warning("Failed to fetch Fireroad list: %s", e)
 
     local_reqs = _load_local_requirements()
 

@@ -50,7 +50,6 @@ export function useDragHandlers(
 
       // Add the marker with the correct section
       addMarker(nodeData.courseId, section.id, 'pin');
-      console.log('Marker added successfully at position:', position, 'section:', section.title);
     } catch (error) {
       console.error('Failed to add dropped node:', error);
     }

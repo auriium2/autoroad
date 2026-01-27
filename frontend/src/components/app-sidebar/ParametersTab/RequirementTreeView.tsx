@@ -39,10 +39,7 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
   const { data: requirement, isLoading, error } = useQuery({
     queryKey: queryKeys.requirements.progress(requirementKey, courseIdsKey, source),
     queryFn: async () => {
-      console.log(`[RequirementProgress] Fetching progress for ${requirementKey} (${source}) with ${allCourseIds.length} courses:`, allCourseIds);
-      const result = await fireroadApi.getRequirementProgress(requirementKey, allCourseIds, source);
-      console.log('Progress API result for', requirementKey, ':', result);
-      return result;
+      return await fireroadApi.getRequirementProgress(requirementKey, allCourseIds, source);
     },
     staleTime: 10 * 60 * 1000, // Requirement progress can change - cache for 10 minutes
     enabled: !isOptimizing,

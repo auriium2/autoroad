@@ -3,6 +3,7 @@ Async caching for courses and requirements data using cashews.
 """
 
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,8 @@ import httpx
 import polars as pl
 from cashews import cache
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+logger = logging.getLogger("uvicorn.error")
 
 from shared.courses.prerequisites.types import PrereqNode
 
@@ -163,7 +166,7 @@ def _load_local_requirement(key: str) -> dict[str, object] | None:
                 content = path.read_text()
                 return _parse_local_requirement(content)
             except Exception as e:
-                print(f"[CACHE] Error parsing local requirement {key}: {e}")
+                logger.warning("Error parsing local requirement %s: %s", key, e)
     return None
 
 
@@ -233,7 +236,7 @@ async def get_requirements(
     output: dict[str, object] = {}
     for result in results:
         if isinstance(result, BaseException):
-            print(f"[CACHE] Error fetching requirement: {result}")
+            logger.warning("Error fetching requirement: %s", result)
             continue
         key, data = result
         output[key] = data
