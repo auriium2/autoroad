@@ -5,6 +5,16 @@ import { Providers } from './components/Providers'
 import Dashboard from './dashboard'
 import './globals.css'
 
+function getOrCreateUserId(): string {
+  const STORAGE_KEY = 'autoroad_user_id';
+  let userId = localStorage.getItem(STORAGE_KEY);
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem(STORAGE_KEY, userId);
+  }
+  return userId;
+}
+
 if (import.meta.env.VITE_SENTRY_DSN) {
   const apiUrl = import.meta.env.VITE_API_URL || ''
   Sentry.init({
@@ -23,6 +33,8 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     replaysSessionSampleRate: 1.0,
     replaysOnErrorSampleRate: 1.0,
   })
+  
+  Sentry.setUser({ id: getOrCreateUserId() });
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
