@@ -233,7 +233,7 @@ async def fetch_hydrant_schedule_data(
     from shared.services.cache import get_hydrant_semester_data
 
     try:
-        data = await get_hydrant_semester_data(fetch_semester)
+        data, _ = await get_hydrant_semester_data(fetch_semester)
     except ValueError:
         return {}, {}
 

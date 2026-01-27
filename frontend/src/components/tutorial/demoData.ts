@@ -34,6 +34,15 @@ export const DEMO_MARKERS_ALL_FIXED: Marker[] = [
   { uuid: 'demo_8.01_must', courseId: '8.01', section: -2, status: 'pin' },
 ];
 
+// 6.1010 with override status (for teaching ignore prereqs)
+export const DEMO_MARKERS_OVERRIDE_FIXED: Marker[] = [
+  { uuid: 'demo_6.120A_spring', courseId: '6.120A', section: 2, status: 'pin' },
+  // 6.1010 with override - ignoring the missing prereq
+  { uuid: 'demo_6.1010_spring', courseId: '6.1010', section: 2, status: 'override' },
+  { uuid: 'demo_18.01_ase', courseId: '18.01', section: -1, status: 'pin' },
+  { uuid: 'demo_8.01_must', courseId: '8.01', section: -2, status: 'pin' },
+];
+
 export const DEMO_OPTIMIZER_NODES: OptimizerNode[] = [
   // ASE (section -1) - road semester 0
   { courseId: '18.01', section: -1, units: 12 },

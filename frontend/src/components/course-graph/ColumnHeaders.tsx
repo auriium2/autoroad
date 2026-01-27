@@ -4,7 +4,8 @@ import { useQueries } from "@tanstack/react-query";
 import type { Section } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
-import { isPastSemesterById, sectionIdToTargetSemester } from "@/lib/semesterUtils";
+import { useDragStore } from "@/stores/dragStore";
+import { isPastSemesterById, sectionIdToTargetSemester, sectionIdToAcademicYear } from "@/lib/semesterUtils";
 import { generateHydrantUrl } from "@/lib/hydrant";
 import { COLUMN_WIDTH } from "@/lib/graphConstants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -40,6 +41,49 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
 
   const markers = useGraphStore((state) => state.markers);
   const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
+
+  // Drag state for drop zone overlay
+  const isDragging = useDragStore((state) => state.isDragging);
+  const hoveredSection = useDragStore((state) => state.hoveredSection);
+  const offeredFall = useDragStore((state) => state.offeredFall);
+  const offeredSpring = useDragStore((state) => state.offeredSpring);
+  const offeredIAP = useDragStore((state) => state.offeredIAP);
+  const notOfferedYear = useDragStore((state) => state.notOfferedYear);
+
+  // Check if course is available in a given section and why not
+  const getDropZoneStatus = (sectionId: number): { canDrop: boolean; message: string } => {
+    // Special sections (Must Take, ASE) are always available
+    if (sectionId < 0) {
+      return { canDrop: true, message: 'add class' };
+    }
+    
+    // Check if semester is locked (in the past)
+    if (lockPastSemesters && graduationYear && isPastSemesterById(sectionId, graduationYear)) {
+      return { canDrop: false, message: 'semester locked' };
+    }
+    
+    // Check if course is not offered this academic year
+    if (notOfferedYear && graduationYear) {
+      const academicYear = sectionIdToAcademicYear(sectionId, graduationYear);
+      if (academicYear === notOfferedYear) {
+        return { canDrop: false, message: 'not offered this year' };
+      }
+    }
+    
+    // Determine semester type: 0=Fall, 1=IAP, 2=Spring (repeating pattern)
+    const semesterType = sectionId % 3;
+    
+    let isOffered = true;
+    if (semesterType === 0) isOffered = offeredFall;
+    else if (semesterType === 1) isOffered = offeredIAP;
+    else if (semesterType === 2) isOffered = offeredSpring;
+    
+    if (!isOffered) {
+      return { canDrop: false, message: 'not offered' };
+    }
+    
+    return { canDrop: true, message: 'add class' };
+  };
 
   const getCoursesForSection = (sectionId: number): string[] => {
     const courseIds = new Set<string>();
@@ -202,6 +246,67 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
           return null;
         })}
       </div>
+
+      {/* Drop zone overlay when dragging from sidebar */}
+      {isDragging && hoveredSection !== null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            transform,
+            transformOrigin: 'top left',
+            pointerEvents: 'none',
+            zIndex: 5,
+            width: sections.length * COLUMN_WIDTH,
+            height: '100%',
+          }}
+        >
+          {sections.map((section, index) => {
+            if (section.id !== hoveredSection) return null;
+            
+            const { canDrop, message } = getDropZoneStatus(section.id);
+            
+            return (
+              <div
+                key={`dropzone-${section.id}`}
+                style={{
+                  position: 'absolute',
+                  left: index * COLUMN_WIDTH,
+                  top: -2000,
+                  width: COLUMN_WIDTH,
+                  height: 10000,
+                  backgroundColor: canDrop 
+                    ? 'rgba(34, 197, 94, 0.08)' 
+                    : 'rgba(234, 179, 8, 0.08)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: '50%',
+                    left: `calc(${index * COLUMN_WIDTH}px * ${viewport.zoom} + ${viewport.x}px + ${COLUMN_WIDTH * viewport.zoom / 2}px)`,
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: canDrop 
+                      ? 'rgba(34, 197, 94, 0.4)' 
+                      : 'rgba(234, 179, 8, 0.4)',
+                    textAlign: 'center',
+                    pointerEvents: 'none',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {message}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Column divider lines */}
       <div

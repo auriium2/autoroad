@@ -4,6 +4,8 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
+import asyncio
+
 
 import httpx
 
@@ -75,10 +77,28 @@ cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    """Manage app lifecycle - initialize and cleanup shared resources."""
+    from shared.services.cache import get_courses_data, get_hydrant_semester_data
+    from server.routes.requirements import _fetch_all_requirements
+
     # Startup: initialize shared HTTP client
     get_http_client()
     logger.info("Initialized shared HTTP client for connection pooling")
+
+    # Prefetch commonly used data in background to warm caches
+    async def prefetch():
+        try:
+            await asyncio.gather(
+                get_courses_data(),
+                get_hydrant_semester_data("latest"),
+                _fetch_all_requirements(),
+                return_exceptions=True,
+            )
+            logger.info("Cache warmup complete")
+        except Exception as e:
+            logger.warning("Cache warmup failed: %s", e)
+
+    asyncio.create_task(prefetch())
+
     yield
     # Shutdown: close shared HTTP client
     await close_http_client()
@@ -151,7 +171,7 @@ async def sentry_tunnel(request: Request):
         project_id = parsed.path.strip("/")
         sentry_host = f"https://{parsed.hostname}"
 
-        # Forward to Sentry using shared client
+        # Forward to Sentry
         client = get_http_client()
         response = await client.post(
             f"{sentry_host}/api/{project_id}/envelope/",
@@ -163,25 +183,43 @@ async def sentry_tunnel(request: Request):
         return Response(status_code=500)
 
 
+_fireroad_health_cache: dict[str, object] = {"status": "unknown", "last_check": 0.0}
+
+
 @app.get("/api/health")
 async def health():
+    import time
     services: dict[str, dict[str, str]] = {
         "backend": {"status": "healthy"},
         "fireroad": {"status": "unknown"},
     }
     status = "healthy"
 
-    # Check Fireroad API using shared client
-    try:
-        client = get_http_client()
-        resp = await client.get("https://fireroad.mit.edu/courses/lookup/6.100A", timeout=5.0)
-        if resp.status_code == 200:
-            services["fireroad"] = {"status": "healthy"}
-        else:
-            services["fireroad"] = {"status": "unhealthy", "error": f"HTTP {resp.status_code}"}
+    # Check Fireroad API with 60-second cache to avoid slow health checks
+    now = time.time()
+    cache_age = now - _fireroad_health_cache["last_check"]  # type: ignore
+
+    if cache_age < 60 and _fireroad_health_cache["status"] != "unknown":
+        # Use cached result
+        services["fireroad"] = {"status": _fireroad_health_cache["status"]}  # type: ignore
+        if _fireroad_health_cache["status"] != "healthy":
             status = "degraded"
-    except Exception as e:
-        services["fireroad"] = {"status": "unhealthy", "error": str(e)}
-        status = "degraded"
+    else:
+        # Fresh check
+        try:
+            client = get_http_client()
+            resp = await client.get("https://fireroad.mit.edu/courses/lookup/6.100A", timeout=5.0)
+            if resp.status_code == 200:
+                services["fireroad"] = {"status": "healthy"}
+                _fireroad_health_cache["status"] = "healthy"
+            else:
+                services["fireroad"] = {"status": "unhealthy", "error": f"HTTP {resp.status_code}"}
+                _fireroad_health_cache["status"] = "unhealthy"
+                status = "degraded"
+        except Exception as e:
+            services["fireroad"] = {"status": "unhealthy", "error": str(e)}
+            _fireroad_health_cache["status"] = "unhealthy"
+            status = "degraded"
+        _fireroad_health_cache["last_check"] = now
 
     return {"status": status, "services": services}

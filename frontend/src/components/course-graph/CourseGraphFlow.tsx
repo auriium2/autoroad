@@ -228,7 +228,7 @@ function CourseGraphFlowInner({
   };
 
   // Drag handlers
-  const { onDrop, onDragOver, onNodeDragStop } = useDragHandlers(
+  const { onDrop, onDragOver, onDragLeave, onNodeDragStart, onNodeDrag, onNodeDragStop } = useDragHandlers(
     addMarker,
     updateMarker,
     isOptimizing,
@@ -285,12 +285,15 @@ function CourseGraphFlowInner({
       className={`h-full w-full rounded-md ${borderClass} bg-muted/30 relative`}
       style={{ overflow: 'hidden' }}
       data-tutorial="graph"
+      onDragLeave={onDragLeave}
     >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStart={onNodeDragStart}
+        onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onNodeContextMenu={onNodeContextMenu}
         onDrop={onDrop}

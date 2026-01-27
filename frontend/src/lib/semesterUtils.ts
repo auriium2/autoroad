@@ -1,10 +1,22 @@
 /**
+ * Gets the academic year string for a section (e.g., "2024-2025").
+ * Returns null for special sections (Must Take, ASE).
+ */
+export function sectionIdToAcademicYear(
+  sectionId: number,
+  graduationYear: number
+): string | null {
+  if (sectionId < 0 || sectionId > 11) return null;
+  
+  const yearLevel = Math.floor(sectionId / 3);
+  const academicYearStart = graduationYear - 4 + yearLevel;
+  
+  return `${academicYearStart}-${academicYearStart + 1}`;
+}
+
+/**
  * Determines if a semester has already passed based on section ID and graduation year.
  * Works with section IDs (0-11) instead of parsing semester labels.
- * 
- * @param sectionId - Section ID (0-11 for regular semesters)
- * @param graduationYear - Year of graduation
- * @returns true if the semester has passed, false otherwise
  */
 export function isPastSemesterById(
   sectionId: number,
@@ -20,13 +32,12 @@ export function isPastSemesterById(
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth(); // 0-11
   
-  // Calculate which year this section belongs to (0-3 for Freshman-Senior)
-  const yearLevel = Math.floor(sectionId / 3);
-  
   // Calculate which term within the year (0=Fall, 1=IAP, 2=Spring)
   const termInYear = sectionId % 3;
   
-  const academicYear = graduationYear - 4 + yearLevel;
+  // Get the academic year start from the shared utility
+  const academicYearStr = sectionIdToAcademicYear(sectionId, graduationYear);
+  const academicYear = academicYearStr ? parseInt(academicYearStr.split('-')[0]) : 0;
   
   // Determine the actual calendar year and month for this semester
   let semesterYear: number;

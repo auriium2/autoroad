@@ -10,10 +10,21 @@ import { useCourseDetails } from "@/hooks/useCourseData";
 import { getTermsOffered } from "@/lib/fireroadUtils";
 import { Loader2, Users, TicketPercent } from "lucide-react";
 
-export function CourseTooltip({ courseId, children, disabled = false }: { courseId: string; children: React.ReactNode; disabled?: boolean }) {
+export function CourseTooltip({ courseId, children, disabled = false, tutorialId }: { courseId: string; children: React.ReactNode; disabled?: boolean; tutorialId?: string }) {
   const [isOpen, setIsOpen] = React.useState(false);
+  const [tutorialForceOpen, setTutorialForceOpen] = React.useState(false);
   const [showFullDescription, setShowFullDescription] = React.useState(false);
-  const { data: courseDetails, isLoading, isError } = useCourseDetails(isOpen ? courseId : null);
+  const { data: courseDetails, isLoading, isError } = useCourseDetails((isOpen || tutorialForceOpen) ? courseId : null);
+
+  React.useEffect(() => {
+    if (tutorialId) {
+      const key = `openCourseTooltip_${tutorialId}` as keyof Window;
+      (window as unknown as Record<string, (open: boolean) => void>)[key] = setTutorialForceOpen;
+      return () => {
+        delete (window as unknown as Record<string, unknown>)[key];
+      };
+    }
+  }, [tutorialId]);
 
   // Close tooltip if disabled prop changes to true
   React.useEffect(() => {
@@ -24,14 +35,14 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
 
   // Reset description expansion when tooltip closes
   React.useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen && !tutorialForceOpen) {
       setShowFullDescription(false);
     }
-  }, [isOpen]);
+  }, [isOpen, tutorialForceOpen]);
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Tooltip open={isOpen && !disabled} onOpenChange={(open: boolean) => !disabled && setIsOpen(open)}>
+      <Tooltip open={(isOpen || tutorialForceOpen) && !disabled} onOpenChange={(open: boolean) => !disabled && setIsOpen(open)}>
         <TooltipTrigger asChild>
           {children}
         </TooltipTrigger>
@@ -72,6 +83,13 @@ export function CourseTooltip({ courseId, children, disabled = false }: { course
                   </>
                 )}
               </div>
+
+              {/* Not offered year warning */}
+              {courseDetails.not_offered_year && (
+                <div className="text-[11px] text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded">
+                  Not offered {courseDetails.not_offered_year}
+                </div>
+              )}
 
               {/* Course metrics */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">

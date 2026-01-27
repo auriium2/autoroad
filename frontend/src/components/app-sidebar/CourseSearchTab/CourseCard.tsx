@@ -19,7 +19,12 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
 
   if (course.virtual) {
     return (
-      <div className="relative p-4 pb-3 border border-amber-600/30 rounded-lg transition-colors overflow-hidden min-h-[80px] bg-gradient-to-br from-amber-900/20 to-amber-800/10">
+      <div 
+        draggable
+        onDragStart={(e) => onDragStart(e, course)}
+        onDragEnd={onDragEnd}
+        className="relative p-4 pb-3 border border-amber-600/30 rounded-lg transition-colors overflow-hidden min-h-[80px] bg-gradient-to-br from-amber-900/20 to-amber-800/10 cursor-move hover:border-amber-500/50"
+      >
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="font-medium text-sm mb-0.5 text-white">{course.subject_id}</div>
@@ -30,13 +35,8 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
               Generic requirement placeholder
             </div>
           </div>
-          <div
-            draggable
-            onDragStart={(e) => onDragStart(e, course)}
-            onDragEnd={onDragEnd}
-            className="relative w-9 h-9 rounded-full flex-shrink-0 cursor-move transition-all duration-200"
-          >
-            <div className="absolute inset-0 rounded-full border-2 border-amber-600/50 bg-amber-900/20 hover:border-amber-500/60 hover:bg-amber-800/30 hover:shadow-md flex items-center justify-center">
+          <div className="relative w-9 h-9 rounded-full flex-shrink-0 transition-all duration-200">
+            <div className="absolute inset-0 rounded-full border-2 border-amber-600/50 bg-amber-900/20 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-amber-200/80" />
             </div>
           </div>
@@ -67,90 +67,97 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
   const isGraduate = course.level === 'G';
 
   return (
-    <div className="relative p-4 pb-2.5 border border-border rounded-lg transition-colors overflow-hidden min-h-[100px]">
-      {isGraduate && (
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-purple-500/8" />
-      )}
+    <CourseTooltip courseId={course.subject_id}>
+      <div 
+        draggable
+        onDragStart={(e) => onDragStart(e, course)}
+        onDragEnd={onDragEnd}
+        className="relative p-4 pb-2.5 border border-border rounded-lg transition-colors overflow-hidden min-h-[100px] cursor-move hover:border-primary/50"
+      >
+        {isGraduate && (
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent to-purple-500/8" />
+        )}
 
-      {currentInstructor && (
-        <div className="absolute left-0 right-0 bottom-2 flex items-center pointer-events-none overflow-hidden">
-          <div className="animate-marquee whitespace-nowrap">
-            <span className="text-3xl font-bold text-muted-foreground/[0.15] select-none mx-8">
-              {currentInstructor}
-            </span>
-            <span className="text-3xl font-bold text-muted-foreground/[0.15] select-none mx-8">
-              {currentInstructor}
-            </span>
+        {currentInstructor && (
+          <div className="absolute left-0 right-0 bottom-2 flex items-center pointer-events-none overflow-hidden">
+            <div className="animate-marquee whitespace-nowrap">
+              <span className="text-3xl font-bold text-muted-foreground/[0.15] select-none mx-8">
+                {currentInstructor}
+              </span>
+              <span className="text-3xl font-bold text-muted-foreground/[0.15] select-none mx-8">
+                {currentInstructor}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0 flex flex-col">
-          <div className="font-medium text-sm mb-0.5">
-            {course.has_final ? (
-              <span className="bg-yellow-500/30 px-1 -mx-1 rounded-sm">{course.subject_id}</span>
-            ) : (
-              course.subject_id
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground line-clamp-2 mb-2">
-            {course.title}
-          </div>
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="font-medium text-sm mb-0.5">
+              {course.has_final ? (
+                <span className="bg-yellow-500/30 px-1 -mx-1 rounded-sm">{course.subject_id}</span>
+              ) : (
+                course.subject_id
+              )}
+            </div>
+            <div className="text-xs text-muted-foreground line-clamp-2 mb-2">
+              {course.title}
+            </div>
 
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80 mt-auto">
-            {(course.in_class_hours !== undefined && course.in_class_hours !== null &&
-              course.out_of_class_hours !== undefined && course.out_of_class_hours !== null) ? (
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <span className="font-semibold">{(course.in_class_hours + course.out_of_class_hours).toFixed(1)}h</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground/40">
-                <span className="font-semibold">—</span>
-              </span>
-            )}
-            {enrollment ? (
-              <span className="flex items-center gap-0.5 whitespace-nowrap">
-                <Users className="w-3 h-3 opacity-60" />
-                <span className="font-semibold">{enrollment}</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
-                <Users className="w-3 h-3 opacity-60" />
-                <span className="font-semibold">—</span>
-              </span>
-            )}
-            {rating ? (
-              <span className="flex items-center gap-0.5 whitespace-nowrap">
-                <span className="font-semibold">★{rating}</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
-                <span className="font-semibold">★—</span>
-              </span>
-            )}
-            {course.imdb_rating !== undefined && course.imdb_rating !== null ? (
-              <span className="flex items-center gap-0.5 whitespace-nowrap">
-                <TicketPercent className="w-3 h-3 opacity-60" />
-                <span className="font-semibold">{course.imdb_rating}</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-0.5 text-muted-foreground/40 whitespace-nowrap">
-                <TicketPercent className="w-3 h-3 opacity-60" />
-                <span className="font-semibold">—</span>
-              </span>
-            )}
+            <div className="flex items-center gap-x-2 text-[11px] text-muted-foreground/80 mt-auto overflow-hidden">
+              {(course.in_class_hours !== undefined && course.in_class_hours !== null &&
+                course.out_of_class_hours !== undefined && course.out_of_class_hours !== null) ? (
+                <span className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="font-semibold">{(course.in_class_hours + course.out_of_class_hours).toFixed(1)}h</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 whitespace-nowrap text-muted-foreground/40">
+                  <span className="font-semibold">—</span>
+                </span>
+              )}
+              {enrollment ? (
+                <span className="flex items-center gap-0.5 whitespace-nowrap">
+                  <Users className="w-3 h-3 opacity-60" />
+                  <span className="font-semibold">{enrollment}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
+                  <Users className="w-3 h-3 opacity-60" />
+                  <span className="font-semibold">—</span>
+                </span>
+              )}
+              {rating ? (
+                <span className="flex items-center gap-0.5 whitespace-nowrap">
+                  <span className="font-semibold">★{rating}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 whitespace-nowrap text-muted-foreground/40">
+                  <span className="font-semibold">★—</span>
+                </span>
+              )}
+              {course.imdb_rating !== undefined && course.imdb_rating !== null ? (
+                <span className="flex items-center gap-0.5 whitespace-nowrap">
+                  <TicketPercent className="w-3 h-3 opacity-60" />
+                  <span className="font-semibold">{course.imdb_rating}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-muted-foreground/40 whitespace-nowrap">
+                  <TicketPercent className="w-3 h-3 opacity-60" />
+                  <span className="font-semibold">—</span>
+                </span>
+              )}
+              {course.not_offered_year && (
+                <span className="text-[10px] text-yellow-500/80 whitespace-nowrap" title={`Not offered ${course.not_offered_year}`}>
+                  ⚠'{course.not_offered_year.split('-')[0].slice(-2)}-'{course.not_offered_year.split('-')[1].slice(-2)}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-        <CourseTooltip courseId={course.subject_id}>
           <div
-            draggable
-            onDragStart={(e) => onDragStart(e, course)}
-            onDragEnd={onDragEnd}
-            className="relative w-9 h-9 rounded-full flex-shrink-0 cursor-move transition-all duration-200"
+            className="relative w-9 h-9 rounded-full flex-shrink-0 transition-all duration-200"
             data-tutorial="course-drag-handle"
           >
-            <div className="absolute inset-0 rounded-full border-2 border-border bg-card hover:border-primary hover:bg-primary/10 hover:shadow-md flex items-center justify-center text-xs font-bold">
+            <div className="absolute inset-0 rounded-full border-2 border-border bg-card flex items-center justify-center text-xs font-bold">
               {course.total_units ?? 12}
             </div>
             {termHighlight && (
@@ -174,8 +181,8 @@ export function CourseCard({ course, onDragStart, onDragEnd }: CourseCardProps) 
               </svg>
             )}
           </div>
-        </CourseTooltip>
+        </div>
       </div>
-    </div>
+    </CourseTooltip>
   );
 }

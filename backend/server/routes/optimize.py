@@ -326,9 +326,16 @@ async def optimize(request: Request, opt_request: OptimizationRequest):
     )
 
 
+_objectives_cache: dict | None = None
+
+
 @router.get("/optimize/objectives")
 async def get_objectives():
     """Get all available optimization objectives with metadata."""
+    global _objectives_cache
+    if _objectives_cache is not None:
+        return _objectives_cache
+
     objectives = get_all_objectives()
 
     result = []
@@ -349,12 +356,20 @@ async def get_objectives():
     defaults = get_default_objectives()
     default_config = [{"key": key, "parameters": params} for key, params in defaults]
 
-    return {"objectives": result, "defaultConfiguration": default_config}
+    _objectives_cache = {"objectives": result, "defaultConfiguration": default_config}
+    return _objectives_cache
+
+
+_constraints_cache: dict | None = None
 
 
 @router.get("/optimize/constraints")
 async def get_hard_constraints():
     """Get all available hard constraints."""
+    global _constraints_cache
+    if _constraints_cache is not None:
+        return _constraints_cache
+
     constraints = get_all_constraints()
 
     result = []
@@ -372,7 +387,8 @@ async def get_hard_constraints():
             "beta": constraint.beta,
         })
 
-    return {"constraints": result}
+    _constraints_cache = {"constraints": result}
+    return _constraints_cache
 
 
 @router.post("/optimize/course-categories")

@@ -39,6 +39,9 @@ import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { DEMO_MARKERS_ALL_FIXED, DEMO_OPTIMIZER_NODES, DEMO_COST_BREAKDOWN } from "@/components/tutorial/demoData";
 import { fireroadApi } from "@/services/fireroad";
 import { prefetchCourses, prefetchStaticData } from "@/lib/cache";
+import { useStoreNodes } from "@/hooks/useStoreNodes";
+import { useMissingPrerequisites } from "@/hooks/usePrerequisites";
+import { useBlockingErrors } from "@/hooks/useBlockingErrors";
 
 export default function Dashboard() {
   const [isExportingMarkers, setIsExportingMarkers] = React.useState(false);
@@ -48,6 +51,19 @@ export default function Dashboard() {
   const [showBugReport, setShowBugReport] = React.useState(false);
   const [optimizationStartTime, setOptimizationStartTime] = React.useState<number | null>(null);
   const timeoutCircleRef = React.useRef<SVGCircleElement>(null);
+  const [isMobile, setIsMobile] = React.useState(() => {
+    // Initialize based on actual window width to avoid flash
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const queryClient = useQueryClient();
   const selectedRequirements = useOptimizationStore((state) => state.selectedRequirements);
@@ -88,6 +104,27 @@ export default function Dashboard() {
   const loadRoadData = useGraphStore(state => state.loadRoadData);
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
+
+  // Check for blocking errors (red nodes = missing prereqs, yellow nodes = wrong semester)
+  const { storeNodes } = useStoreNodes(markers, []);
+  const { data: uuid2missingPrereqs } = useMissingPrerequisites(storeNodes);
+  const { hasWrongSemester } = useBlockingErrors(markers);
+
+  const hasBlockingPrereqErrors = React.useMemo(() => {
+    if (!uuid2missingPrereqs || !(uuid2missingPrereqs instanceof Map)) return false;
+    for (const [uuid, missingPrereqs] of uuid2missingPrereqs) {
+      if (missingPrereqs.length > 0) {
+        // Check if this marker is NOT overridden (override nodes don't block)
+        const marker = markers.find(m => m.uuid === uuid);
+        if (marker && marker.status !== 'override') {
+          return true;
+        }
+      }
+    }
+    return false;
+  }, [uuid2missingPrereqs, markers]);
+
+  const hasBlockingErrors = hasBlockingPrereqErrors || hasWrongSemester;
 
   const prevStatusRef = React.useRef<string | null>(null);
 
@@ -336,17 +373,22 @@ export default function Dashboard() {
       });
     }
   };
-  return (
-    <SidebarProvider defaultOpen={true}>
-      <RequirementPrefetcher />
-      {/* Mobile warning overlay */}
-      <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center md:hidden">
+  // Show mobile warning before anything else renders
+  if (isMobile) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-background flex flex-col items-center justify-center p-8 text-center">
         <Monitor className="h-16 w-16 text-muted-foreground mb-6" />
         <h1 className="text-2xl font-bold mb-3">Desktop Required</h1>
         <p className="text-muted-foreground max-w-sm">
           Autoroad requires a larger screen to work properly. Please visit on a desktop or laptop computer.
         </p>
       </div>
+    );
+  }
+
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <RequirementPrefetcher />
       <div className="flex w-screen h-screen">
         <AppSidebar viewMode={viewMode} />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">
@@ -412,73 +454,89 @@ export default function Dashboard() {
                 </div>
 
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleOptimize}
-                  disabled={isOptimizing}
-                  className="relative"
-                  data-tutorial="optimize-button"
-                >
-                  {isOptimizing ? (
-                    <>
-                      {optimizationProgress?.solutionNumber ? (
-                        <div className="relative inline-flex items-center mr-2">
-                          <svg className="h-4 w-4 -rotate-90">
-                            {/* Background circle */}
-                            <circle
-                              cx="8"
-                              cy="8"
-                              r="6"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              className="opacity-25"
-                            />
-                            {/* Solution progress */}
-                            <circle
-                              cx="8"
-                              cy="8"
-                              r="6"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 6}`}
-                              strokeDashoffset={`${2 * Math.PI * 6 * (1 - Math.min(optimizationProgress.solutionNumber / 30, 1))}`}
-                              className="transition-all duration-300"
-                            />
-                            {/* Timeout progress*/}
-                            <circle
-                              ref={timeoutCircleRef}
-                              cx="8"
-                              cy="8"
-                              r="4"
-                              stroke="rgb(34, 211, 238)"
-                              strokeWidth="2"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 4}`}
-                              strokeDashoffset={`${2 * Math.PI * 4}`}
-                            />
-                          </svg>
-                        </div>
-                      ) : optimizationProgress?.queuePosition && optimizationProgress.queuePosition > 1 ? (
-                        <span className="mr-2 text-xs font-medium bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
-                          #{optimizationProgress.queuePosition}
-                        </span>
-                      ) : (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      )}
-                      {optimizationProgress?.message || "Optimizing..."}
-                      {optimizationProgress?.solutionNumber && (
-                        <span className="ml-1.5 text-xs text-muted-foreground">
-                          (#{optimizationProgress.solutionNumber})
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    "Optimize!"
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block" data-tutorial="optimize-button">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleOptimize}
+                        disabled={isOptimizing || hasBlockingErrors}
+                        className={`relative ${hasBlockingErrors ? 'border-red-500 border-2 text-red-500 hover:text-red-500' : ''}`}
+                      >
+                        {isOptimizing ? (
+                          <>
+                            {optimizationProgress?.solutionNumber ? (
+                              <div className="relative inline-flex items-center mr-2">
+                                <svg className="h-4 w-4 -rotate-90">
+                                  {/* Background circle */}
+                                  <circle
+                                    cx="8"
+                                    cy="8"
+                                    r="6"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    fill="none"
+                                    className="opacity-25"
+                                  />
+                                  {/* Solution progress */}
+                                  <circle
+                                    cx="8"
+                                    cy="8"
+                                    r="6"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    fill="none"
+                                    strokeDasharray={`${2 * Math.PI * 6}`}
+                                    strokeDashoffset={`${2 * Math.PI * 6 * (1 - Math.min(optimizationProgress.solutionNumber / 30, 1))}`}
+                                    className="transition-all duration-300"
+                                  />
+                                  {/* Timeout progress*/}
+                                  <circle
+                                    ref={timeoutCircleRef}
+                                    cx="8"
+                                    cy="8"
+                                    r="4"
+                                    stroke="rgb(34, 211, 238)"
+                                    strokeWidth="2"
+                                    fill="none"
+                                    strokeDasharray={`${2 * Math.PI * 4}`}
+                                    strokeDashoffset={`${2 * Math.PI * 4}`}
+                                  />
+                                </svg>
+                              </div>
+                            ) : optimizationProgress?.queuePosition && optimizationProgress.queuePosition > 1 ? (
+                              <span className="mr-2 text-xs font-medium bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">
+                                #{optimizationProgress.queuePosition}
+                              </span>
+                            ) : (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            )}
+                            {optimizationProgress?.message || "Optimizing..."}
+                            {optimizationProgress?.solutionNumber && (
+                              <span className="ml-1.5 text-xs text-muted-foreground">
+                                (#{optimizationProgress.solutionNumber})
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          "Optimize!"
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {hasBlockingErrors && (
+                    <TooltipContent>
+                      <p>
+                        {hasBlockingPrereqErrors && hasWrongSemester
+                          ? "Fix missing prerequisites (red) and wrong semester placements (yellow)"
+                          : hasBlockingPrereqErrors
+                          ? "Fix missing prerequisites (red) before optimizing"
+                          : "Fix wrong semester placements (yellow) before optimizing"}
+                      </p>
+                    </TooltipContent>
                   )}
-                </Button>
+                </Tooltip>
 
                 {isOptimizing && (
                   <Button

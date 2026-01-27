@@ -5,6 +5,7 @@ import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
 import { useCourseDetails } from "@/hooks/useCourseData";
 import { useOptimizationStore } from "@/stores/optimizationStore";
+import { sectionIdToAcademicYear } from "@/lib/semesterUtils";
 import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
 import { Sparkles, Users } from "lucide-react";
 
@@ -35,7 +36,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const hasUnsatisfiedPrereqs = missingPrereqs.length > 0;
 
   const getCourseCategoryTier = useOptimizationStore((state) => state.getCourseCategoryTier);
+  const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const categoryTier = getCourseCategoryTier(courseId);
+  const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
 
   // Check if this is a virtual/generic marker (HASS-A, etc.)
   const isVirtual = courseId.startsWith('HASS-');
@@ -48,18 +51,26 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Combine explicit optimizerAgreed prop with HASS marker satisfaction (but use different styling)
   const optimizerAgreed = node.optimizerAgreed;
 
-  // Check if course is placed in wrong semester
+  // Check if course is placed in wrong semester or wrong year
   // Special semesters (-2 for Must Take, -1 for ASE) are always valid
   // Regular semesters: 0,3,6,9 = Fall; 1,4,7,10 = IAP; 2,5,8,11 = Spring
   let isWrongSemester = false;
   if (section >= 0 && courseDetails) {
     const semesterType = section % 3; // 0=Fall, 1=IAP, 2=Spring
     
-    isWrongSemester = 
+    const isWrongTerm = 
       (semesterType === 0 && !courseDetails.offered_fall) ||
       (semesterType === 1 && !courseDetails.offered_IAP) ||
       (semesterType === 2 && !courseDetails.offered_spring);
     
+    // Check if course is not offered in this academic year
+    let isWrongYear = false;
+    if (courseDetails.not_offered_year && graduationYear) {
+      const academicYear = sectionIdToAcademicYear(section, graduationYear);
+      isWrongYear = academicYear === courseDetails.not_offered_year;
+    }
+    
+    isWrongSemester = isWrongTerm || isWrongYear;
   }
 
   // Get node styling from shared utility
@@ -159,7 +170,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
       )}
 
       {/* Circle node */}
-      <CourseTooltip courseId={courseId} disabled={disableTooltip}>
+      <CourseTooltip courseId={courseId} disabled={disableTooltip} tutorialId={courseId === "18.01" ? "18.01" : undefined}>
         <div
           data-node-circle={node.uuid}
           data-course-id={courseId}

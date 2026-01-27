@@ -16,6 +16,7 @@ export interface FireroadCourse {
   offered_spring?: boolean;
   offered_IAP?: boolean;
   offered_summer?: boolean;
+  not_offered_year?: string | null;
   public?: boolean;
   level?: string;
   lecture_units?: number;

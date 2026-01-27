@@ -6,6 +6,7 @@ import {
   DEMO_MARKERS_WITH_PROBLEMS,
   DEMO_MARKERS_FIXED_SEMESTER,
   DEMO_MARKERS_ALL_FIXED,
+  DEMO_MARKERS_OVERRIDE_FIXED,
   DEMO_OPTIMIZER_NODES,
   DEMO_COST_BREAKDOWN,
   DEMO_SIMPLE_MARKERS,
@@ -121,6 +122,13 @@ function is61010PrereqFixed(): boolean {
   return marker6100.section < marker61010.section;
 }
 
+// Check if 6.1010 has override status
+function is61010Override(): boolean {
+  const markers = useGraphStore.getState().markers;
+  const marker61010 = markers.find(m => m.courseId === '6.1010');
+  return marker61010?.status === 'override';
+}
+
 export const tutorialSteps: StepOptions[] = [
   // ==========================================
   // WELCOME
@@ -172,15 +180,29 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'hover-node',
     title: 'Course Markers',
-    text: `Courses in a normal state are <strong style="color: #93c5fd">blue</strong>.<br><br>
-      Try hovering over this node to see more details.`,
-    attachTo: { element: '[data-course-id="18.01"]', on: 'right' },
+    text: `Courses in a normal state are represented with <strong style="color: #93c5fd">blue</strong> nodes. The number inside is the units the class is worth.<br><br>
+      Hover over nodes to see course details like prerequisites, hours, and ratings.`,
+    attachTo: { element: '[data-course-id="18.01"]', on: 'left' },
     scrollTo: false,
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
       { text: 'Next', action: function() { return this.next(); } },
     ],
-    beforeShowPromise: () => panToCourse('18.01'),
+    beforeShowPromise: async function() {
+      await panToCourse('18.01');
+      // Open the course tooltip
+      const openTooltip = (window as unknown as Record<string, (open: boolean) => void>)['openCourseTooltip_18.01'];
+      if (openTooltip) openTooltip(true);
+      // Wait for tooltip to render
+      await new Promise(resolve => setTimeout(resolve, 300));
+    },
+    when: {
+      hide: function() {
+        // Close the course tooltip
+        const openTooltip = (window as unknown as Record<string, (open: boolean) => void>)['openCourseTooltip_18.01'];
+        if (openTooltip) openTooltip(false);
+      },
+    },
   },
 
   // ==========================================
@@ -236,7 +258,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'fix-semester',
     title: 'Fix: Move to Spring',
-    text: `Drag <strong>6.120A</strong> from IAP to Freshman Spring.`,
+    text: `Drag the node with <strong>6.120A</strong> underneath it from the section labeled IAP to the section labeled Freshman Spring.`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
@@ -292,12 +314,12 @@ export const tutorialSteps: StepOptions[] = [
     id: 'missing-prereq',
     title: 'Missing Prerequisite',
     text: `Now look at 6.1010: it has a <strong style="color: #ef4444">red border</strong> and shows <strong style="color: #ef4444">6.1000</strong> floating above it.
-      This means 6.1010 requires 6.1000, which isn't in your schedule yet!<br><br><i><small>More specifically, the classes shown above a missing prerequisite marker are the minimum required set to complete that class. If you hover over 6.1010, you'll see it can also be completed by taking 6.100a AND 6.100b, which would take too long.</small></i>`,
+      This means 6.1010 requires 6.1000, which isn't in your schedule yet!`,
     attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
     scrollTo: false,
     buttons: [
       { text: 'Back', action: function() { loadState(DEMO_MARKERS_WITH_PROBLEMS); return this.back(); }, secondary: true },
-      { text: 'Let\'s Add It', action: function() { return this.next(); } },
+      { text: 'Next', action: function() { return this.next(); } },
     ],
     beforeShowPromise: async function() {
       loadState(DEMO_MARKERS_FIXED_SEMESTER);
@@ -307,12 +329,26 @@ export const tutorialSteps: StepOptions[] = [
   },
 
   {
+    id: 'red-blocks-optimizer',
+    title: 'Red Nodes Block Optimization',
+    text: `<strong style="color: #ef4444">Red nodes</strong> have missing prerequisites. The optimizer won't run until you fix them.<br><br>
+      Let's learn two ways to fix this.`,
+    attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
+    scrollTo: false,
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+  },
+
+  {
     id: 'fix-prereq',
-    title: 'Fix: Add 6.1000',
-    text: `Search for <strong>6.1000</strong> in the Courses tab and drag it to a semester before 6.1010.`,
+    title: 'Fix #1: Add the Prereq',
+    text: `The most common fix is adding the missing course.<br><br>
+      Search for <strong>6.1000</strong> in the Courses tab and drag it to a semester before 6.1010.`,
     attachTo: { element: '[data-tutorial="course-search"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
-    modalOverlayOpeningPadding: 5000, // Large padding to allow interaction with entire page
+    modalOverlayOpeningPadding: 5000,
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
       {
@@ -338,7 +374,6 @@ export const tutorialSteps: StepOptions[] = [
         const step = this;
         const checkInterval = setInterval(() => {
           if (is61010PrereqFixed()) {
-            // Enable the Next button
             const nextBtn = step.el?.querySelector('.shepherd-button:not(.shepherd-button-secondary)') as HTMLButtonElement;
             if (nextBtn) {
               nextBtn.disabled = false;
@@ -358,16 +393,112 @@ export const tutorialSteps: StepOptions[] = [
     },
   },
 
+  {
+    id: 'prereq-fixed',
+    title: 'Prereq Added',
+    text: `The red border is gone because 6.1010 now has its prerequisite.<br><br>
+      But what if you've already learned the material or have a petition? There's another way.`,
+    attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
+    scrollTo: false,
+    buttons: [
+      { text: 'Back', action: function() { loadState(DEMO_MARKERS_FIXED_SEMESTER); return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+    beforeShowPromise: async function() {
+      loadState(DEMO_MARKERS_ALL_FIXED);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      await panToCourse('6.1010');
+    },
+  },
+
+  // ==========================================
+  // OVERRIDE PREREQ
+  // ==========================================
+  {
+    id: 'override-prereq',
+    title: 'Fix #2: Override',
+    text: `Let's reset and try the other method.<br><br>
+      <strong>Right-click</strong> on 6.1010 and select <strong>Ignore Prerequisites</strong> to skip the prereq check.`,
+    attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
+    scrollTo: false,
+    modalOverlayOpeningPadding: 5000,
+    buttons: [
+      { text: 'Back', action: function() { loadState(DEMO_MARKERS_ALL_FIXED); return this.back(); }, secondary: true },
+      {
+        text: 'Next',
+        action: function() {
+          if (is61010Override()) {
+            return this.next();
+          }
+        },
+        disabled: true,
+      },
+      {
+        text: 'Solution',
+        action: function() {
+          loadState(DEMO_MARKERS_OVERRIDE_FIXED);
+          return this.next();
+        },
+        secondary: true,
+      },
+    ],
+    beforeShowPromise: async function() {
+      // Reset to state without 6.1000, so 6.1010 is red again
+      loadState(DEMO_MARKERS_FIXED_SEMESTER);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      await panToCourse('6.1010');
+    },
+    when: {
+      show: function() {
+        const step = this;
+        const checkInterval = setInterval(() => {
+          if (is61010Override()) {
+            const nextBtn = step.el?.querySelector('.shepherd-button:not(.shepherd-button-secondary)') as HTMLButtonElement;
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.classList.remove('shepherd-button-disabled');
+            }
+            clearInterval(checkInterval);
+          }
+        }, 500);
+        (step as unknown as { _checkInterval: ReturnType<typeof setInterval> })._checkInterval = checkInterval;
+      },
+      hide: function() {
+        const step = this as unknown as { _checkInterval?: ReturnType<typeof setInterval> };
+        if (step._checkInterval) {
+          clearInterval(step._checkInterval);
+        }
+      },
+    },
+  },
+
+  {
+    id: 'override-result',
+    title: 'Override Applied',
+    text: `The red border is gone and the optimizer will accept it.`,
+    attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
+    scrollTo: false,
+    buttons: [
+      { text: 'Back', action: function() { loadState(DEMO_MARKERS_FIXED_SEMESTER); return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+    beforeShowPromise: async function() {
+      loadState(DEMO_MARKERS_OVERRIDE_FIXED);
+      await new Promise(resolve => setTimeout(resolve, 400));
+      await panToCourse('6.1010');
+    },
+  },
+
   // ==========================================
   // ALL FIXED
   // ==========================================
   {
     id: 'all-fixed',
-    title: 'All Fixed!',
-    text: `Now 6.1000 satisfies 6.1010's prerequisite. The arrows show the prerequisite relationship. No more red borders!`,
+    title: 'Ready to Optimize!',
+    text: `Now you know both ways to fix red nodes.
+      The key is: <strong style="color: #ef4444">no red</strong> or <strong style="color: #eab308">yellow</strong> nodes must be present for the optimizer to work.`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
-    modalOverlayOpeningPadding: 5000, // Large padding to allow interaction with entire page
     buttons: [
       { text: 'Back', action: function() { loadState(DEMO_MARKERS_FIXED_SEMESTER); return this.back(); }, secondary: true },
       { text: 'Next', action: function() { return this.next(); } },
@@ -522,24 +653,7 @@ export const tutorialSteps: StepOptions[] = [
     },
   },
 
-  // ==========================================
-  // RIGHT-CLICK MENU
-  // ==========================================
-  {
-    id: 'right-click',
-    title: 'Right-Click Options',
-    text: `Right-click any marker for more options:<br><br>
-      <strong>Pin</strong>: the normal functionality<br>
-      <strong>Override</strong>: ignore prerequisites (for petitions)<br>
-      <strong style="color: #ef4444">Banish</strong>: never take this course in this semester`,
-    attachTo: { element: '[data-course-id="6.120A"]', on: 'left' },
-    scrollTo: false,
-    buttons: [
-      { text: 'Back', action: function() { return this.back(); }, secondary: true },
-      { text: 'Next', action: function() { return this.next(); } },
-    ],
-    beforeShowPromise: () => panToCourse('6.120A'),
-  },
+
 
   // ==========================================
   // OBJECTIVES TAB
@@ -642,7 +756,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'add-degree',
     title: 'Add Requirements & Objectives',
     text: `Use the search bar to add degrees, concentrations, and objectives.<br><br>
-      <span id="check-63">☐</span> <strong>6-3</strong> (either new or original): a major<br>
+      <span id="check-2a6">☐</span> <strong>2-A6</strong>: a major<br>
       <span id="check-chinese">☐</span> <strong>Chinese</strong>: a concentration<br>
       <span id="check-finals">☐</span> <strong>Minimize Finals Load</strong>: an objective`,
     attachTo: { element: '[data-tutorial="parameter-search"]', on: 'right' },
@@ -654,10 +768,10 @@ export const tutorialSteps: StepOptions[] = [
         text: 'Next',
         action: function() {
           const state = useOptimizationStore.getState();
-          const has63 = state.selectedRequirements.some(r => r.includes('6-3new'));
+          const has2a6 = state.selectedRequirements.some(r => r.includes('2-A') && r.includes('6'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
           const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
-          if (has63 && hasChinese && hasFinals) {
+          if (has2a6 && hasChinese && hasFinals) {
             return this.next();
           }
         },
@@ -667,7 +781,7 @@ export const tutorialSteps: StepOptions[] = [
         text: 'Solution',
         action: function() {
           const store = useOptimizationStore.getState();
-          store.addRequirement('major6-3new');
+          store.addRequirement('major2-A6');
           store.addRequirement('chinese_concentration');
           const existingObjectives = store.selectedObjectives;
           if (!existingObjectives.some(o => o.key === 'minimize_finals_load')) {
@@ -683,21 +797,21 @@ export const tutorialSteps: StepOptions[] = [
         const step = this;
         const updateCheckboxes = () => {
           const state = useOptimizationStore.getState();
-          const has63 = state.selectedRequirements.some(r => r.includes('6-3'));
+          const has2a6 = state.selectedRequirements.some(r => r.includes('2-A') && r.includes('6'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
           const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
 
-          const check63 = document.getElementById('check-63');
+          const check2a6 = document.getElementById('check-2a6');
           const checkChinese = document.getElementById('check-chinese');
           const checkFinals = document.getElementById('check-finals');
 
-          if (check63) check63.textContent = has63 ? '☑' : '☐';
+          if (check2a6) check2a6.textContent = has2a6 ? '☑' : '☐';
           if (checkChinese) checkChinese.textContent = hasChinese ? '☑' : '☐';
           if (checkFinals) checkFinals.textContent = hasFinals ? '☑' : '☐';
 
           const nextBtn = step.el?.querySelector('.shepherd-button:not(.shepherd-button-secondary)') as HTMLButtonElement;
           if (nextBtn) {
-            if (has63 && hasChinese && hasFinals) {
+            if (has2a6 && hasChinese && hasFinals) {
               nextBtn.disabled = false;
               nextBtn.classList.remove('shepherd-button-disabled');
             } else {
@@ -718,6 +832,21 @@ export const tutorialSteps: StepOptions[] = [
         }
       },
     },
+  },
+
+  {
+    id: 'beta-mode',
+    title: 'Beta Requirements',
+    text: `Some degrees have a <strong style="color: #22d3ee">BETA</strong> version. Look for the <strong style="color: #22d3ee">→β</strong> button on 2-A6.<br><br>
+      <strong style="color: #22d3ee">Beta</strong>: autoroad-updated requirements. Almost always more accurate and override courseroad's vague manual degree requirements<br>
+      <strong>Canonical</strong>: official Fireroad version, stable but may be outdated<br><br>
+      <small>Beta may have some incorrectness in edge cases. Switch back anytime with <strong>→C</strong>.</small>`,
+    attachTo: { element: '[data-tutorial="requirement-card"]', on: 'right' },
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
   },
 
   {
@@ -769,6 +898,20 @@ export const tutorialSteps: StepOptions[] = [
     beforeShowPromise: function() {
       return waitForElement('[data-tutorial="tier-selector"]');
     },
+  },
+
+  {
+    id: 'default-objectives-warning',
+    title: 'Keep Default Objectives',
+    text: `The <strong style="color: #ef4444">default objectives</strong> (like "Minimize Units" and "Balance Workload") guide how the optimizer builds your schedule.<br><br>
+      Without them, results can look strange (e.g., cramming everything into one semester).<br><br>
+      <small>Adjust their tiers if you want, but think twice before removing them.</small>`,
+    attachTo: { element: '[data-tutorial="objective-card"]', on: 'right' },
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Got it', action: function() { return this.next(); } },
+    ],
   },
 
   // ==========================================

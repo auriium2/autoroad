@@ -1,9 +1,21 @@
 import * as React from "react";
+import { useDragStore } from "@/stores/dragStore";
+
+interface CourseData {
+  subject_id: string;
+  virtual?: boolean;
+  offered_fall?: boolean;
+  offered_spring?: boolean;
+  offered_IAP?: boolean;
+  not_offered_year?: string | null;
+}
 
 export function useCourseDrag() {
   const [draggedCourseId, setDraggedCourseId] = React.useState<string | null>(null);
+  const startDrag = useDragStore((state) => state.startDrag);
+  const endDrag = useDragStore((state) => state.endDrag);
 
-  const handleDragStart = (e: React.DragEvent, courseData: { subject_id: string; virtual?: boolean }) => {
+  const handleDragStart = (e: React.DragEvent, courseData: CourseData) => {
     // Virtual markers (HASS-A, etc.) cannot go in Must Take, default to first semester
     const defaultSection = courseData.virtual ? 0 : -2;
 
@@ -19,10 +31,18 @@ export function useCourseDrag() {
     e.dataTransfer.effectAllowed = 'move';
     
     setDraggedCourseId(courseData.subject_id);
+    
+    startDrag(courseData.subject_id, {
+      fall: courseData.offered_fall ?? true,
+      spring: courseData.offered_spring ?? true,
+      iap: courseData.offered_IAP ?? false,
+      notOfferedYear: courseData.not_offered_year ?? null,
+    });
   };
 
   const handleDragEnd = () => {
     setDraggedCourseId(null);
+    endDrag();
   };
 
   return {

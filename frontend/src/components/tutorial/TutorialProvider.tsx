@@ -60,6 +60,22 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
     tourRef.current = tour;
 
+    // Auto-start tutorial for first-time visitors
+    const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
+    if (!hasCompletedTutorial) {
+      // Small delay to ensure the UI is fully rendered
+      const timeoutId = setTimeout(() => {
+        tour.start();
+      }, 500);
+      return () => {
+        clearTimeout(timeoutId);
+        if (tour.isActive()) {
+          restoreState();
+        }
+        tour.complete();
+      };
+    }
+
     return () => {
       if (tour.isActive()) {
         restoreState();
