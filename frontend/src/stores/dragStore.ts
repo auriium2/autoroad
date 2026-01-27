@@ -1,5 +1,12 @@
 import { create } from "zustand";
 
+export interface CourseOfferings {
+  fall: boolean;
+  spring: boolean;
+  iap: boolean;
+  notOfferedYear: string | null;
+}
+
 interface DragState {
   isDragging: boolean;
   courseId: string | null;
@@ -9,7 +16,7 @@ interface DragState {
   notOfferedYear: string | null;
   hoveredSection: number | null;
   
-  startDrag: (courseId: string, offered: { fall: boolean; spring: boolean; iap: boolean; notOfferedYear: string | null }) => void;
+  startDrag: (courseId: string, offered: CourseOfferings) => void;
   endDrag: () => void;
   setHoveredSection: (section: number | null) => void;
 }
@@ -45,3 +52,21 @@ export const useDragStore = create<DragState>((set) => ({
   
   setHoveredSection: (section) => set({ hoveredSection: section }),
 }));
+
+/**
+ * Extract course offerings from any object with offering fields.
+ * Works with FireroadCourse or partial course data.
+ */
+export function extractCourseOfferings(course: {
+  offered_fall?: boolean;
+  offered_spring?: boolean;
+  offered_IAP?: boolean;
+  not_offered_year?: string | null;
+} | null | undefined): CourseOfferings {
+  return {
+    fall: course?.offered_fall ?? true,
+    spring: course?.offered_spring ?? true,
+    iap: course?.offered_IAP ?? false,
+    notOfferedYear: course?.not_offered_year ?? null,
+  };
+}

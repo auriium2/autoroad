@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useDragStore } from "@/stores/dragStore";
+import { useDragStore, extractCourseOfferings } from "@/stores/dragStore";
 
 interface CourseData {
   subject_id: string;
@@ -31,13 +31,7 @@ export function useCourseDrag() {
     e.dataTransfer.effectAllowed = 'move';
     
     setDraggedCourseId(courseData.subject_id);
-    
-    startDrag(courseData.subject_id, {
-      fall: courseData.offered_fall ?? true,
-      spring: courseData.offered_spring ?? true,
-      iap: courseData.offered_IAP ?? false,
-      notOfferedYear: courseData.not_offered_year ?? null,
-    });
+    startDrag(courseData.subject_id, extractCourseOfferings(courseData));
   };
 
   const handleDragEnd = () => {

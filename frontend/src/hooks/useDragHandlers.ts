@@ -1,7 +1,7 @@
 import { useCallback, type DragEvent, type MouseEvent } from "react";
 import type { Node } from "reactflow";
 import type { Marker } from "@/stores/roadStore";
-import { useDragStore } from "@/stores/dragStore";
+import { useDragStore, extractCourseOfferings } from "@/stores/dragStore";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/queryKeys";
 import type { FireroadCourse } from "@/types/models/fireroad";
@@ -104,12 +104,7 @@ export function useDragHandlers(
       queryKeys.courses.details(courseId)
     );
     
-    startDrag(courseId, {
-      fall: courseData?.offered_fall ?? true,
-      spring: courseData?.offered_spring ?? true,
-      iap: courseData?.offered_IAP ?? false,
-      notOfferedYear: courseData?.not_offered_year ?? null,
-    });
+    startDrag(courseId, extractCourseOfferings(courseData));
   }, [isOptimizing, queryClient, startDrag]);
 
   const onNodeDrag = useCallback((_event: MouseEvent, node: Node) => {
