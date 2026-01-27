@@ -260,7 +260,7 @@ describe('OptimizationStore', () => {
       toggleHardConstraint('no_fall_sixth_semester');
       
       const state = useOptimizationStore.getState();
-      expect(state.selectedHardConstraints).toContain('no_fall_sixth_semester');
+      expect(state.selectedHardConstraints.some(c => c.key === 'no_fall_sixth_semester')).toBe(true);
     });
 
     it('should toggle hard constraint off', () => {
@@ -270,7 +270,7 @@ describe('OptimizationStore', () => {
       toggleHardConstraint('no_fall_sixth_semester');
       
       const state = useOptimizationStore.getState();
-      expect(state.selectedHardConstraints).not.toContain('no_fall_sixth_semester');
+      expect(state.selectedHardConstraints.some(c => c.key === 'no_fall_sixth_semester')).toBe(false);
     });
   });
 });
