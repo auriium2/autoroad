@@ -1,10 +1,12 @@
 
 import * as React from "react";
-import { X, ChevronDown, ChevronRight } from "lucide-react";
+import { X, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { TierSelector } from "./TierSelector";
 import { EquivalencyManager } from "./EquivalencyManager";
 import type { ObjectiveMetadata } from "@/types/models/optimizer";
@@ -32,6 +34,8 @@ export function SelectedObjectiveCard({
   const setObjectiveTier = useOptimizationStore((state) => state.setObjectiveTier);
   const lastCostBreakdown = useGraphStore((state) => state.lastCostBreakdown);
 
+  const [showRemoveWarning, setShowRemoveWarning] = React.useState(false);
+
   const config = selectedObjectives.find(o => o.key === objectiveKey);
   if (!config) return null;
 
@@ -40,9 +44,18 @@ export function SelectedObjectiveCard({
   const tier = objectiveTiers[objectiveKey] ?? objective.defaultTier;
   const costBreakdown = lastCostBreakdown?.[objectiveKey];
 
-  const handleRemove = () => {
+  const handleRemoveClick = () => {
+    if (isRecommended) {
+      setShowRemoveWarning(true);
+    } else {
+      performRemove();
+    }
+  };
+
+  const performRemove = () => {
     const newObjectives = selectedObjectives.filter(o => o.key !== objectiveKey);
     setObjectives(newObjectives);
+    setShowRemoveWarning(false);
   };
 
   const handleParameterChange = (paramName: string, value: number | boolean | Record<string, string[]> | null) => {
@@ -67,7 +80,7 @@ export function SelectedObjectiveCard({
       {isRecommended && !isCategoryRewards && isExpanded && objective.hasParameters && (
         <div className="absolute right-3 bottom-1.5 pointer-events-none">
           <span className="text-xs font-medium text-red-400/30 select-none tracking-wide uppercase">
-            suggested
+            built-in
           </span>
         </div>
       )}
@@ -96,7 +109,7 @@ export function SelectedObjectiveCard({
             )}
             {!isUnremovable && (
               <button
-                onClick={handleRemove}
+                onClick={handleRemoveClick}
                 className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
               >
                 <X className="h-4 w-4" />
@@ -110,7 +123,7 @@ export function SelectedObjectiveCard({
               <p className="text-xs text-muted-foreground">{objective.description}</p>
               {isRecommended && !isCategoryRewards && !objective.hasParameters && (
                 <p className="text-xs font-medium text-red-400/30 text-right tracking-wide uppercase">
-                  suggested
+                  built-in
                 </p>
               )}
             </div>
@@ -173,6 +186,36 @@ export function SelectedObjectiveCard({
           </>
         )}
       </div>
+
+      {/* Warning dialog for removing recommended objectives */}
+      <Dialog open={showRemoveWarning} onOpenChange={setShowRemoveWarning}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Remove Built-in Objective?
+            </DialogTitle>
+            <DialogDescription>
+              "{objective.name}" is a built-in objective that helps produce better schedules.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Removing it may lead to unexpected or suboptimal results. Only remove this if you have a specific reason to do so.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRemoveWarning(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={performRemove}>
+              Remove Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
