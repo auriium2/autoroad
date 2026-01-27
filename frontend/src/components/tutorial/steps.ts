@@ -756,7 +756,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'add-degree',
     title: 'Add Requirements & Objectives',
     text: `Use the search bar to add degrees, concentrations, and objectives.<br><br>
-      <span id="check-2a6">☐</span> <strong>2-A6</strong>: a major<br>
+      <span id="check-2a">☐</span> <strong>2-A</strong>: a major<br>
       <span id="check-chinese">☐</span> <strong>Chinese</strong>: a concentration<br>
       <span id="check-finals">☐</span> <strong>Minimize Finals Load</strong>: an objective`,
     attachTo: { element: '[data-tutorial="parameter-search"]', on: 'right' },
@@ -768,10 +768,10 @@ export const tutorialSteps: StepOptions[] = [
         text: 'Next',
         action: function() {
           const state = useOptimizationStore.getState();
-          const has2a6 = state.selectedRequirements.some(r => r.includes('2-A') && r.includes('6'));
+          const has2a = state.selectedRequirements.some(r => r.includes('2a') || r.includes('2-A'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
           const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
-          if (has2a6 && hasChinese && hasFinals) {
+          if (has2a && hasChinese && hasFinals) {
             return this.next();
           }
         },
@@ -781,7 +781,7 @@ export const tutorialSteps: StepOptions[] = [
         text: 'Solution',
         action: function() {
           const store = useOptimizationStore.getState();
-          store.addRequirement('major2-A6');
+          store.addRequirement('major2a');
           store.addRequirement('chinese_concentration');
           const existingObjectives = store.selectedObjectives;
           if (!existingObjectives.some(o => o.key === 'minimize_finals_load')) {
@@ -797,21 +797,21 @@ export const tutorialSteps: StepOptions[] = [
         const step = this;
         const updateCheckboxes = () => {
           const state = useOptimizationStore.getState();
-          const has2a6 = state.selectedRequirements.some(r => r.includes('2-A') && r.includes('6'));
+          const has2a = state.selectedRequirements.some(r => r.includes('2a') || r.includes('2-A'));
           const hasChinese = state.selectedRequirements.some(r => r.includes('chinese'));
           const hasFinals = state.selectedObjectives.some(o => o.key === 'minimize_finals_load');
 
-          const check2a6 = document.getElementById('check-2a6');
+          const check2a = document.getElementById('check-2a');
           const checkChinese = document.getElementById('check-chinese');
           const checkFinals = document.getElementById('check-finals');
 
-          if (check2a6) check2a6.textContent = has2a6 ? '☑' : '☐';
+          if (check2a) check2a.textContent = has2a ? '☑' : '☐';
           if (checkChinese) checkChinese.textContent = hasChinese ? '☑' : '☐';
           if (checkFinals) checkFinals.textContent = hasFinals ? '☑' : '☐';
 
           const nextBtn = step.el?.querySelector('.shepherd-button:not(.shepherd-button-secondary)') as HTMLButtonElement;
           if (nextBtn) {
-            if (has2a6 && hasChinese && hasFinals) {
+            if (has2a && hasChinese && hasFinals) {
               nextBtn.disabled = false;
               nextBtn.classList.remove('shepherd-button-disabled');
             } else {
@@ -837,7 +837,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'beta-mode',
     title: 'Beta Requirements',
-    text: `Some degrees have a <strong style="color: #22d3ee">BETA</strong> version. Look for the <strong style="color: #22d3ee">→β</strong> button on 2-A6.<br><br>
+    text: `Some degrees have a <strong style="color: #22d3ee">BETA</strong> version. Look for the <strong style="color: #22d3ee">→β</strong> button on 2-A.<br><br>
       <strong style="color: #22d3ee">Beta</strong>: autoroad-updated requirements. Almost always more accurate and override courseroad's vague manual degree requirements<br>
       <strong>Canonical</strong>: official Fireroad version, stable but may be outdated<br><br>
       <small>Beta may have some incorrectness in edge cases. Switch back anytime with <strong>→C</strong>.</small>`,
