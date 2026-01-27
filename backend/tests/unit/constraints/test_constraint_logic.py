@@ -111,8 +111,8 @@ class TestSemesterDetection:
         - AvoidIAP (using semester >= 1 and semester % 3 == 2)
         - MinimumClassesPerSemester (using semester >= 1 and semester % 3 == 2, or semester < 1)
         - banIAP hard constraint (using semester >= 1 and semester % 3 == 2)
-        - MinimizeMaxSemesterHours (using semester >= 1)
-        - MinimizeFinalsLoad (using semester >= 1)
+        - LimitHoursPerSemester (using semester >= 1)
+        - LimitFinalsPerSemester (using semester >= 1)
         """
         ase_semester = -1
 

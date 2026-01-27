@@ -8,7 +8,7 @@ from typing import Any
 from .base import ObjectiveComponent
 from .categories import CategoryRewards
 from .equivalents import DiscourageEquivalentCourses
-from .ratings import PenalizeLowRatings
+from .ratings import AvoidLowRatings
 from .scheduling import (
     AvoidIAP,
     AvoidSpecialClasses,
@@ -17,9 +17,9 @@ from .scheduling import (
 from .units import AvoidSmallClasses
 from .workload import (
     LimitClassesPerSemester,
+    LimitFinalsPerSemester,
+    LimitHoursPerSemester,
     LimitUnitsPerSemester,
-    MinimizeFinalsLoad,
-    MinimizeMaxSemesterHours,
 )
 
 
@@ -52,9 +52,9 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         category="units",
         default_tier=4,
     ),
-    "minimize_max_semester_hours": ObjectiveMetadata(
-        key="minimize_max_semester_hours",
-        class_ref=MinimizeMaxSemesterHours,
+    "limit_hours_per_semester": ObjectiveMetadata(
+        key="limit_hours_per_semester",
+        class_ref=LimitHoursPerSemester,
         name="Limit Hours Per Semester",
         short_description="Penalize semesters with too many weekly hours",
         description="Penalize semesters exceeding a weekly hours threshold. Uses in-class + out-of-class hours from course data, or the fallback value for courses missing data.",
@@ -87,9 +87,9 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         category="workload",
         default_tier=3,
     ),
-    "minimize_finals_load": ObjectiveMetadata(
-        key="minimize_finals_load",
-        class_ref=MinimizeFinalsLoad,
+    "limit_finals_per_semester": ObjectiveMetadata(
+        key="limit_finals_per_semester",
+        class_ref=LimitFinalsPerSemester,
         name="Limit Finals Per Semester",
         short_description="Penalize semesters with too many finals",
         description="Penalize semesters with too many finals. Semantically, penalizes semesters for having more finals than a parameter you specify.",
@@ -161,12 +161,12 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         default_tier=4,
         unremovable=True,
     ),
-    "penalize_low_ratings": ObjectiveMetadata(
-        key="penalize_low_ratings",
-        class_ref=PenalizeLowRatings,
-        name="Penalize Low Ratings",
+    "avoid_low_ratings": ObjectiveMetadata(
+        key="avoid_low_ratings",
+        class_ref=AvoidLowRatings,
+        name="Avoid Low Ratings",
         short_description="Penalize courses with low ratings",
-        description="Penalize courses with ratings below a threshold.",
+        description="Penalize courses with ratings below a threshold. Semantically, assigns a non-standard tier penalty for every 0.1 rating below the threshold you specify. IMDB mode (look up IMDB rating system) weights the ratings by users taking them before applying penalties.",
         has_parameters=True,
         default_parameters={"threshold": 5.5, "use_imdb": False},
         parameter_types={"threshold": float, "use_imdb": bool},

@@ -139,7 +139,7 @@ class LimitUnitsPerSemester:
         return cp_model.LinearExpr.Sum([])
 
 
-class MinimizeMaxSemesterHours:
+class LimitHoursPerSemester:
     def __init__(self, hours_threshold: float = 60.0, fallback_hours: float = 12.0, penalty_interval: int = 3):
         """
         Args:
@@ -168,8 +168,8 @@ class MinimizeMaxSemesterHours:
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
-        if context.objective_tiers and 'minimize_max_semester_hours' in context.objective_tiers:
-            tier = context.objective_tiers['minimize_max_semester_hours']
+        if context.objective_tiers and 'limit_hours_per_semester' in context.objective_tiers:
+            tier = context.objective_tiers['limit_hours_per_semester']
 
         penalty = get_tier_penalty(tier, base_cost=1)
 
@@ -228,7 +228,7 @@ class MinimizeMaxSemesterHours:
         return cp_model.LinearExpr.Sum([])
 
 
-class MinimizeFinalsLoad:
+class LimitFinalsPerSemester:
     """
     Tier-based soft constraint to limit the number of finals in any semester.
 
@@ -258,8 +258,8 @@ class MinimizeFinalsLoad:
         """
         # Get tier for this objective (default tier 2 if not set)
         tier = 2
-        if context.objective_tiers and 'minimize_finals_load' in context.objective_tiers:
-            tier = context.objective_tiers['minimize_finals_load']
+        if context.objective_tiers and 'limit_finals_per_semester' in context.objective_tiers:
+            tier = context.objective_tiers['limit_finals_per_semester']
 
         penalty = get_tier_penalty(tier, base_cost=1)
 

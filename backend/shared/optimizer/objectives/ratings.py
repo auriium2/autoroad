@@ -12,7 +12,7 @@ from ortools.sat.python import cp_model
 from .base import ObjectiveContext, get_tier_penalty
 
 
-class PenalizeLowRatings:
+class AvoidLowRatings:
     def __init__(self, threshold: float = 5.5, use_imdb: bool = False):
         self.threshold: float = threshold
         self.use_imdb: bool = use_imdb
@@ -38,8 +38,8 @@ class PenalizeLowRatings:
             - Rating 4.0 with threshold 5.5: 15 ticks * 2 = 30 cost
         """
         tier = 2
-        if context.objective_tiers and 'penalize_low_ratings' in context.objective_tiers:
-            tier = context.objective_tiers['penalize_low_ratings']
+        if context.objective_tiers and 'avoid_low_ratings' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_low_ratings']
 
         base_penalty = get_tier_penalty(tier, base_cost=1)
         # Scale down to avoid dominating other objectives
