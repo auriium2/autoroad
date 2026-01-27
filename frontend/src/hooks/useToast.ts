@@ -192,4 +192,4 @@ function useToast() {
   }
 }
 
-export { useToast, toast, dismissToast }
+export { useToast, toast }
