@@ -50,8 +50,14 @@ async def create_bug_report(request: Request, body: BugReportRequest) -> BugRepo
             # Markers and objectives as contexts
             if body.debug_info.get("markers"):
                 scope.set_context("markers", {"data": body.debug_info["markers"]})
+            if body.debug_info.get("optimizerNodes"):
+                scope.set_context("optimizer_nodes", {"data": body.debug_info["optimizerNodes"]})
             if body.debug_info.get("objectives"):
                 scope.set_context("objectives", {"data": body.debug_info["objectives"]})
+            if body.debug_info.get("hardConstraints"):
+                scope.set_context("hard_constraints", {"data": body.debug_info["hardConstraints"]})
+            if body.debug_info.get("customEquivalencies"):
+                scope.set_context("custom_equivalencies", {"data": body.debug_info["customEquivalencies"]})
 
             # Console logs as breadcrumbs
             if body.debug_info.get("consoleLogs"):

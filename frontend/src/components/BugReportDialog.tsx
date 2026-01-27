@@ -111,6 +111,8 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
       requirements: optimizationStore.selectedRequirements,
       requirementTiers: optimizationStore.requirementTiers,
       requirementSources: optimizationStore.requirementSources,
+      hardConstraints: optimizationStore.selectedHardConstraints,
+      customEquivalencies: optimizationStore.customEquivalencies,
       selectedYear: optimizationStore.selectedYear,
       lockPastSemesters: optimizationStore.lockPastSemesters,
       lastOptimizationStatus: graphStore.lastOptimizationStatus,
