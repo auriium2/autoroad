@@ -6,6 +6,7 @@
 import QuickLRU from 'quick-lru';
 import { QueryClient } from "@tanstack/react-query";
 import { fireroadApi, type RequirementTree, type RequirementNode } from "@/services/fireroad";
+import { optimizerApi } from "@/services/optimizer";
 import { queryKeys } from "@/lib/queryKeys";
 import { parseFireroad, type PrereqNode } from './prerequisites';
 
@@ -72,6 +73,30 @@ export async function prefetchCourses(
       })
     )
   );
+}
+
+/**
+ * Prefetch static configuration data (requirements list, objectives, constraints).
+ * Call this on app mount to warm the cache.
+ */
+export function prefetchStaticData(queryClient: QueryClient): void {
+  queryClient.prefetchQuery({
+    queryKey: queryKeys.requirements.list(),
+    queryFn: () => fireroadApi.getRequirementsList(),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  queryClient.prefetchQuery({
+    queryKey: queryKeys.objectives.list(),
+    queryFn: () => optimizerApi.getObjectives(),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+
+  queryClient.prefetchQuery({
+    queryKey: queryKeys.constraints.hard(),
+    queryFn: () => optimizerApi.getHardConstraints(),
+    staleTime: 24 * 60 * 60 * 1000,
+  });
 }
 
 export async function extractCoursesFromRequirement(

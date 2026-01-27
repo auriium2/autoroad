@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from cashews import cache
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 from slowapi import Limiter
@@ -16,6 +17,7 @@ logger = logging.getLogger("uvicorn.error")
 
 from shared.optimizer.constraints.registry import get_all_constraints
 from shared.optimizer.objectives.registry import get_all_objectives
+from shared.services.cache import get_http_client
 
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
@@ -71,14 +73,15 @@ def _load_local_requirements() -> dict[str, dict[str, str]]:
     return local_reqs
 
 
+@cache(ttl="1h", lock=True)
 async def _fetch_all_requirements() -> dict[str, Any]:
     """Fetch and merge requirements from Fireroad and local files."""
     fireroad_reqs: dict[str, Any] = {}
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            resp = await client.get(f"{FIREROAD_BASE_URL}/requirements/list_reqs")
-            resp.raise_for_status()
-            fireroad_reqs = resp.json()
+        client = get_http_client()
+        resp = await client.get(f"{FIREROAD_BASE_URL}/requirements/list_reqs", timeout=10.0)
+        resp.raise_for_status()
+        fireroad_reqs = resp.json()
     except Exception as e:
         logger.warning("Failed to fetch Fireroad list: %s", e)
 

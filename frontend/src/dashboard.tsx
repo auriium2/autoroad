@@ -38,7 +38,7 @@ import { exportToRoadFormat, importFromRoadFormat, downloadRoadFile, uploadRoadF
 import { useTutorial } from "@/components/tutorial/TutorialProvider";
 import { DEMO_MARKERS_ALL_FIXED, DEMO_OPTIMIZER_NODES, DEMO_COST_BREAKDOWN } from "@/components/tutorial/demoData";
 import { fireroadApi } from "@/services/fireroad";
-import { prefetchCourses } from "@/lib/cache";
+import { prefetchCourses, prefetchStaticData } from "@/lib/cache";
 
 export default function Dashboard() {
   const [isExportingMarkers, setIsExportingMarkers] = React.useState(false);
@@ -119,8 +119,12 @@ export default function Dashboard() {
     return () => cancelAnimationFrame(rafId);
   }, [isOptimizing, optimizationStartTime]);
 
-  // Prefetch courses from user's schedule on app load
+
   React.useEffect(() => {
+    // Prefetch requirements list, objectives, and constraints
+    prefetchStaticData(queryClient);
+
+    // Prefetch course details for user's existing schedule
     const courseIds = [
       ...markers.map(m => m.courseId),
       ...optimizerNodes.map(n => n.courseId)

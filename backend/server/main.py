@@ -151,14 +151,14 @@ async def sentry_tunnel(request: Request):
         project_id = parsed.path.strip("/")
         sentry_host = f"https://{parsed.hostname}"
 
-        # Forward to Sentry
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{sentry_host}/api/{project_id}/envelope/",
-                content=body,
-                headers={"Content-Type": "application/x-sentry-envelope"},
-            )
-            return Response(status_code=response.status_code)
+        # Forward to Sentry using shared client
+        client = get_http_client()
+        response = await client.post(
+            f"{sentry_host}/api/{project_id}/envelope/",
+            content=body,
+            headers={"Content-Type": "application/x-sentry-envelope"},
+        )
+        return Response(status_code=response.status_code)
     except Exception:
         return Response(status_code=500)
 
