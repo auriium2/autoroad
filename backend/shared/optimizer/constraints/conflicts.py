@@ -61,10 +61,10 @@ def get_required_slots_from_course(course_data: dict[str, Any]) -> list[tuple[in
 def get_section_type_options(course_data: dict[str, Any]) -> list[list[list[tuple[int, int, int]]]]:
     """
     Extract all section options grouped by section type from Hydrant course data.
-    
+
     Returns a list of section types, where each section type contains a list of options,
     and each option contains a list of time slots.
-    
+
     Structure: [
         [  # section type (e.g., recitations)
             [(day, start, end), ...],  # option 1 slots
@@ -74,7 +74,7 @@ def get_section_type_options(course_data: dict[str, Any]) -> list[list[list[tupl
             [(day, start, end), ...],  # only option
         ],
     ]
-    
+
     This is used by ScheduleFreeTime to check if ALL options for a section type
     conflict with blocked time (in which case the course should be banned).
     """
@@ -138,10 +138,10 @@ def find_conflicting_pairs(
 class NoScheduleConflicts:
     """
     Hard constraint: Prevent courses with overlapping required time slots.
-    
+
     When extrapolate=True, applies to all semesters using best available schedule data.
     When extrapolate=False, only applies to semesters with real data available.
-    
+
     Requires 'hydrant_schedule_data' in context.extra.
     """
 
@@ -225,7 +225,7 @@ async def fetch_hydrant_schedule_data(
 ) -> tuple[dict[str, list[tuple[int, int, int]]], dict[str, SectionTypeOptions]]:
     """
     Fetch Hydrant schedule data.
-    
+
     Returns:
         - required_slots: dict of course_id -> list of required time slots (for NoScheduleConflicts)
         - section_options: dict of course_id -> section type options (for ScheduleFreeTime)

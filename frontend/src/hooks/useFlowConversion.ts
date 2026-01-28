@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Node, Edge as FlowEdge } from "reactflow";
 import { MarkerType } from "reactflow";
 import type { CourseNode } from "@/stores/roadStore";
+import type { FireroadCourse } from "@/services/fireroad";
 import {
   COLUMN_WIDTH,
   NODE_SPACING,
@@ -24,7 +25,8 @@ export function useFlowConversion(
   storeEdges: PrerequisiteEdge[],
   uuid2missingPrereqs: Map<string, string[]> | undefined,
   viewMode: string,
-  isOptimizing: boolean
+  isOptimizing: boolean,
+  courseId2details: Record<string, FireroadCourse> = {}
 ): FlowConversionResult {
   // useMemo required: flowNodes/flowEdges are passed directly to ReactFlow which compares by reference. Without memoization, new arrays cause infinite loops.
   return useMemo(() => {
@@ -70,6 +72,7 @@ export function useFlowConversion(
           viewMode,
           isOptimizing,
           satisfiesHassMarker: (node as CourseNode & { satisfiesHassMarker?: boolean }).satisfiesHassMarker,
+          courseDetails: courseId2details[node.courseId],
         },
         draggable: !isOptimizing && node.userControlled,
       };
@@ -140,5 +143,5 @@ export function useFlowConversion(
     }).filter(Boolean) as FlowEdge[];
 
     return { flowNodes, flowEdges };
-  }, [storeNodes, storeEdges, uuid2missingPrereqs, viewMode, isOptimizing]);
+  }, [storeNodes, storeEdges, uuid2missingPrereqs, viewMode, isOptimizing, courseId2details]);
 }

@@ -13,6 +13,10 @@ from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from shared.courses.requirements.parser import parse_fireroad_response
+from shared.courses.requirements.progress import compute_progress, progress_to_json
+from shared.services.cache import fetch_requirement, get_courses_data
+
 logger = logging.getLogger("uvicorn.error")
 
 from shared.optimizer.constraints.registry import get_all_constraints
@@ -37,6 +41,16 @@ class ProgressRequest(BaseModel):
     selectedSubjects: list[SelectedSubject] = []
     coursesOfStudy: list[str] = []
     progressAssertions: dict[str, object] = {}
+
+
+class RequirementSource(BaseModel):
+    key: str
+    source: str = "canonical"  # "canonical" or "beta"
+
+
+class BatchProgressRequest(BaseModel):
+    requirements: list[RequirementSource]
+    courseIds: list[str] = []
 
 
 def _load_local_requirements() -> dict[str, dict[str, str]]:
@@ -175,6 +189,46 @@ async def get_requirement_progress(request: Request, key: str, body: ProgressReq
     except Exception as e:
         logger.exception("Error calculating progress for %s: %s", key, e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/requirements/batch-progress")
+@limiter.limit("20/minute")
+async def get_requirement_progress_batch(request: Request, body: BatchProgressRequest):
+
+    if len(body.requirements) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 requirements per batch request")
+
+    courses_data = await get_courses_data()
+    id2course = {c["subject_id"]: c for c in courses_data}
+    selected_set = set(body.courseIds)
+
+    results: dict[str, Any] = {}
+
+    for req in body.requirements:
+        try:
+            req_data = await fetch_requirement(req.key, req.source)
+            root_node = parse_fireroad_response(req_data)
+
+            result = compute_progress(root_node, selected_set, id2course)
+            output = progress_to_json(result, root_node)
+
+            for field in ["title", "medium-title", "short-title", "title-no-degree", "description"]:
+                if field in req_data:
+                    output[field] = req_data[field]
+            output["list-id"] = req.key
+
+            results[req.key] = output
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                results[req.key] = {"error": f"Requirement '{req.key}' not found"}
+            else:
+                logger.exception("Error calculating progress for %s: %s", req.key, e)
+                results[req.key] = {"error": "Failed to fetch requirement"}
+        except Exception as e:
+            logger.exception("Error calculating progress for %s: %s", req.key, e)
+            results[req.key] = {"error": str(e)}
+
+    return results
 
 
 @router.get("/parameters/search")

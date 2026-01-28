@@ -1,10 +1,10 @@
 
 import * as React from "react";
 import type { CourseNode } from "@/stores/roadStore";
+import type { FireroadCourse } from "@/services/fireroad";
 import { useGraphStore } from "@/stores/roadStore";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
-import { useCourseDetails } from "@/hooks/useCourseData";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { sectionIdToAcademicYear } from "@/lib/semesterUtils";
 import { TierSelector } from "@/components/app-sidebar/ParametersTab/TierSelector";
@@ -15,6 +15,7 @@ type CourseNodeComponentProps = {
     optimizerAgreed?: boolean; 
     missingPrereqs?: string[];
     satisfiesHassMarker?: boolean;
+    courseDetails?: FireroadCourse;
   };
   disableTooltip?: boolean;
   viewMode?: string;
@@ -52,8 +53,8 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Check if this is a virtual/generic marker (HASS-A, etc.)
   const isVirtual = courseId.startsWith('HASS-');
 
-  // Fetch course details to get units and term availability
-  const { data: courseDetails } = useCourseDetails(courseId);
+  // Course details passed from parent (batch-fetched)
+  const courseDetails = node.courseDetails;
   const units = courseDetails?.total_units || 12; // Default to 12 if not available
   const hasFinal = courseDetails?.has_final ?? false;
 

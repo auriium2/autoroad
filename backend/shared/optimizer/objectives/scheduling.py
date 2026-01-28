@@ -47,7 +47,7 @@ class AvoidIAP:
 class AvoidSpecialClasses:
     """
     Penalize special classes that most students don't take.
-    
+
     Includes:
     - ES. (Experimental Study Group)
     - CC. (Concourse)
@@ -143,7 +143,7 @@ class AvoidClassesWithPrefix:
 class AvoidHASSClasses:
     """
     Penalize HASS classes to prefer technical courses when possible.
-    
+
     Useful for students who want to minimize humanities/arts/social science
     courses and focus on technical requirements.
     """
@@ -189,7 +189,7 @@ class AvoidHASSClasses:
 class AvoidSpecialTopics:
     """
     Penalize special topics courses (X.SYYY pattern like 6.S040, 18.S097).
-    
+
     These are typically one-off experimental courses that may not be offered
     regularly. Not enabled by default since some students specifically want
     to take these courses.

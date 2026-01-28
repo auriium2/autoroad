@@ -1,8 +1,6 @@
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { fireroadApi, type RequirementNode } from "@/services/fireroad";
-import { queryKeys } from "@/lib/queryKeys";
+import { type RequirementNode, type RequirementTree } from "@/services/fireroad";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { Progress } from "@/components/ui/progress";
@@ -14,36 +12,24 @@ import { CourseTooltip } from "@/components/CourseTooltip";
 interface RequirementTreeViewProps {
   requirementKey: string;
   viewMode?: string;
+  requirement?: RequirementTree;
+  isLoading?: boolean;
+  validCourseIds?: Set<string>;
 }
 
-export function RequirementTreeView({ requirementKey, viewMode = "default" }: RequirementTreeViewProps) {
-  const markers = useGraphStore((state) => state.markers);
-  const optimizerNodes = useGraphStore((state) => state.optimizerNodes);
+export function RequirementTreeView({
+  requirementKey,
+  viewMode = "default",
+  requirement,
+  isLoading = false,
+  validCourseIds,
+}: RequirementTreeViewProps) {
   const isOptimizing = useGraphStore((state) => state.isOptimizing);
   const lastCostBreakdown = useGraphStore((state) => state.lastCostBreakdown);
 
   const expandedNodesRecord = useOptimizationStore((state) => state.expandedRequirementNodes);
   const expandedNodes = expandedNodesRecord[requirementKey] || new Set();
   const toggleNodeExpanded = useOptimizationStore((state) => state.toggleRequirementNodeExpanded);
-  const requirementSources = useOptimizationStore((state) => state.requirementSources);
-
-  const ids = new Set([
-    ...markers.map(m => m.courseId),
-    ...optimizerNodes.map(n => n.courseId)
-  ]);
-  const allCourseIds = Array.from(ids);
-
-  const courseIdsKey = allCourseIds.sort().join(',');
-  const source = requirementSources[requirementKey] || 'canonical';
-
-  const { data: requirement, isLoading, error } = useQuery({
-    queryKey: queryKeys.requirements.progress(requirementKey, courseIdsKey, source),
-    queryFn: async () => {
-      return await fireroadApi.getRequirementProgress(requirementKey, allCourseIds, source);
-    },
-    staleTime: 10 * 60 * 1000, // Requirement progress can change - cache for 10 minutes
-    enabled: !isOptimizing,
-  });
 
   const toggleNode = (path: string) => {
     toggleNodeExpanded(requirementKey, path);
@@ -133,11 +119,26 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
             {!hasChildren && <div className="w-3" />}
 
             {req.req ? (
-              <CourseTooltip courseId={req.req}>
-                <span className="text-xs truncate font-mono">
-                  {title}
-                </span>
-              </CourseTooltip>
+              (() => {
+                // Virtual/placeholder IDs are always valid (they're not real courses)
+                const isPlaceholder = req.req.startsWith('GIR:') || req.req.startsWith('HASS-') || req.req.startsWith('CI-');
+                // Mark as invalid only if it's a real course ID, validCourseIds has data, and this course isn't in it
+                const isInvalidCourse = !isPlaceholder && validCourseIds && validCourseIds.size > 0 && !validCourseIds.has(req.req);
+                if (isInvalidCourse) {
+                  return (
+                    <span className="text-xs truncate font-mono text-red-400/60 line-through decoration-red-500">
+                      {title}
+                    </span>
+                  );
+                }
+                return (
+                  <CourseTooltip courseId={req.req}>
+                    <span className="text-xs truncate font-mono">
+                      {title}
+                    </span>
+                  </CourseTooltip>
+                );
+              })()
             ) : (
               <span className="text-xs truncate">
                 {title}
@@ -221,7 +222,6 @@ export function RequirementTreeView({ requirementKey, viewMode = "default" }: Re
     return (
       <div className="text-xs text-red-400">
         Failed to load requirement
-        {error && <div className="text-xs mt-1">{String(error)}</div>}
       </div>
     );
   }

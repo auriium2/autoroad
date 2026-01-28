@@ -32,6 +32,8 @@ export const queryKeys = {
     list: () => ['requirements', 'list'] as const,
     progress: (requirementKey: string, courseIdsKey: string, source: 'canonical' | 'beta' = 'canonical') => 
       ['requirements', 'progress', requirementKey, courseIdsKey, source] as const,
+    batchProgress: (requirementsKey: string, courseIdsKey: string) =>
+      ['requirements', 'batchProgress', requirementsKey, courseIdsKey] as const,
   },
 
   objectives: {

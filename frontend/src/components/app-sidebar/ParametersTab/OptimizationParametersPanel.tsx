@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { optimizerApi } from "@/services/optimizer";
-import { fireroadApi } from "@/services/fireroad";
+import { fireroadApi, type RequirementNode } from "@/services/fireroad";
 import { parametersApi } from "@/services/parameters";
 import { queryKeys } from "@/lib/queryKeys";
 import { Search } from "lucide-react";
@@ -13,6 +13,8 @@ import { ParameterSearchDropdown } from "./ParameterSearchDropdown";
 import { SelectedRequirementCard } from "./SelectedRequirementCard";
 import { SelectedObjectiveCard } from "./SelectedObjectiveCard";
 import { SelectedConstraintCard } from "./SelectedConstraintCard";
+import { useRequirementProgressBatch } from "@/hooks/useRequirementProgress";
+import { useCourseDetailsBatch } from "@/hooks/useCourseData";
 
 interface OptimizationParametersPanelProps {
   viewMode?: string;
@@ -70,6 +72,28 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
     enabled: showSearchResults,
     staleTime: 5000,
   });
+
+  // Batch fetch requirement progress for all selected requirements
+  const { data: requirementProgressMap, isLoading: progressLoading } = useRequirementProgressBatch(selectedRequirements);
+
+  // Extract all course IDs from requirement trees and batch fetch to determine valid ones
+  const allRequirementCourseIds: string[] = [];
+  const traverse = (node: RequirementNode) => {
+    if (node.req) allRequirementCourseIds.push(node.req);
+    if (node.reqs) node.reqs.forEach(traverse);
+  };
+  Object.values(requirementProgressMap).forEach(tree => {
+    traverse(tree as RequirementNode);
+  });
+  const uniqueCourseIds = [...new Set(allRequirementCourseIds)];
+
+  const { data: courseDetailsMap } = useCourseDetailsBatch(uniqueCourseIds);
+  const validCourseIds = new Set(Object.keys(courseDetailsMap));
+  
+  // Debug: log what we're getting
+  console.log('uniqueCourseIds count:', uniqueCourseIds.length, 'validCourseIds count:', validCourseIds.size);
+  console.log('6.7201 in uniqueCourseIds:', uniqueCourseIds.includes('6.7201'));
+  console.log('6.7201 in validCourseIds:', validCourseIds.has('6.7201'));
 
   React.useEffect(() => {
     if (requirementsList && selectedRequirements.length === 0) {
@@ -191,6 +215,9 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
                   requirementKey={item.key}
                   metadata={requirementsList?.[item.key]}
                   viewMode={viewMode}
+                  requirementProgress={requirementProgressMap[item.key]}
+                  isProgressLoading={progressLoading}
+                  validCourseIds={validCourseIds}
                 />
               );
             } else if (item.type === 'objective') {

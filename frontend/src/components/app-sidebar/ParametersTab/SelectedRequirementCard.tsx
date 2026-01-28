@@ -3,18 +3,24 @@ import * as React from "react";
 import { X, ChevronDown, ChevronRight } from "lucide-react";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { RequirementTreeView } from "./RequirementTreeView";
-import type { RequirementMetadata } from "@/services/fireroad";
+import type { RequirementMetadata, RequirementTree } from "@/services/fireroad";
 
 interface SelectedRequirementCardProps {
   requirementKey: string;
   metadata?: RequirementMetadata;
   viewMode?: string;
+  requirementProgress?: RequirementTree;
+  isProgressLoading?: boolean;
+  validCourseIds?: Set<string>;
 }
 
 export function SelectedRequirementCard({
   requirementKey,
   metadata,
   viewMode,
+  requirementProgress,
+  isProgressLoading,
+  validCourseIds,
 }: SelectedRequirementCardProps) {
   const expandedRequirements = useOptimizationStore((state) => state.expandedRequirements);
   const toggleRequirementExpanded = useOptimizationStore((state) => state.toggleRequirementExpanded);
@@ -70,7 +76,13 @@ export function SelectedRequirementCard({
 
         {isExpanded && (
           <div className="pt-2">
-            <RequirementTreeView requirementKey={requirementKey} viewMode={viewMode} />
+            <RequirementTreeView
+              requirementKey={requirementKey}
+              viewMode={viewMode}
+              requirement={requirementProgress}
+              isLoading={isProgressLoading}
+              validCourseIds={validCourseIds}
+            />
           </div>
         )}
       </div>

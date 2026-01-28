@@ -30,6 +30,7 @@ import { useContextMenu } from "@/hooks/useContextMenu";
 import { useStoreNodes } from "@/hooks/useStoreNodes";
 import { useFlowConversion } from "@/hooks/useFlowConversion";
 import { useDragHandlers } from "@/hooks/useDragHandlers";
+import { useCourseDetailsBatch } from "@/hooks/useCourseData";
 import { toast as showToast } from "@/hooks/useToast";
 import { ALL_SECTIONS, COLUMN_WIDTH } from "@/lib/graphConstants";
 
@@ -174,13 +175,18 @@ function CourseGraphFlowInner({
   const nodesToValidate = isOptimizing ? [] : debouncedNodes;
   const { edges: storeEdges, missing: uuid2missingPrereqs } = usePrerequisiteValidation(nodesToValidate);
 
+  // Batch fetch course details for all nodes
+  const courseIds = storeNodes.map(n => n.courseId);
+  const { data: courseId2details } = useCourseDetailsBatch(courseIds);
+
   // Convert to React Flow format
   const { flowNodes, flowEdges } = useFlowConversion(
     storeNodes,
     storeEdges,
     uuid2missingPrereqs,
     viewMode,
-    isOptimizing
+    isOptimizing,
+    courseId2details
   );
 
   // Update React Flow state when conversion results change

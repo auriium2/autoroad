@@ -89,7 +89,7 @@ def parse_hydrant_course(course_id: str, course: dict[str, Any]) -> list[TimeBlo
 def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[TimeBlock]:
     """
     Get only the required (non-optional) time blocks for a course.
-    
+
     A section type is required if there's only ONE section of that type.
     Multiple sections of the same type = options (student picks one).
     """
@@ -132,10 +132,10 @@ def get_required_blocks(course_id: str, course_data: dict[str, Any]) -> list[Tim
 def detect_conflicts_from_courses(courses: dict[str, dict[str, Any]]) -> bool:
     """
     Check if any required time blocks overlap across courses.
-    
+
     Args:
         courses: Dict mapping course_id -> raw Hydrant course data
-    
+
     Returns:
         True if there are unavoidable conflicts
     """
@@ -165,11 +165,11 @@ def resolve_semester(
 ) -> tuple[str, str]:
     """
     Resolve which semester to fetch given a target and current date.
-    
+
     Returns (fetch_semester, data_semester) where:
     - fetch_semester: "latest" or an archived semester code to fetch
     - data_semester: the actual semester code the data represents
-    
+
     Logic:
     - Jan-May: latest contains spring of current year
     - Jun-Dec: latest contains fall of current year
@@ -230,7 +230,7 @@ async def get_schedule_blocks(
 ) -> ScheduleResponse:
     """
     Get parsed schedule blocks for courses in a semester.
-    
+
     Tries: 1) target directly, 2) fallback by term type
     """
     from datetime import datetime

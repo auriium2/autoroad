@@ -21,7 +21,7 @@ async def get_schedule(
 ):
     """
     Get parsed schedule blocks for courses in a semester.
-    
+
     Returns data_semester (actual source) and target_semester so frontend
     can show a warning when they differ.
     """

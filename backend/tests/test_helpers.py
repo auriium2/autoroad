@@ -626,7 +626,7 @@ def _build_equivalency_mapping(
 ) -> dict[str, set[str]]:
     """
     Build equivalency mapping from Fireroad data and custom equivalencies.
-    
+
     Returns a dict mapping course_id -> set of equivalent course_ids (including itself).
     This mirrors the logic in CourseSchedule from prerequisite_constraint_builder.py.
     """

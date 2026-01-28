@@ -39,7 +39,7 @@ def _course_has_unavoidable_conflict(
 ) -> bool:
     """
     Check if a course has at least one section type where ALL options conflict.
-    
+
     A course should be banned if there's a section type (lecture, recitation, etc.)
     where every available option conflicts with blocked time - meaning there's no
     way to take the course without hitting blocked time.
@@ -61,18 +61,18 @@ def _course_has_unavoidable_conflict(
 class ScheduleFreeTime:
     """
     Hard constraint: Block off time slots where you don't want classes.
-    
+
     A course is banned if it has ANY section type (lecture, recitation, lab, etc.)
     where ALL available options conflict with blocked time. This means even if
     there are multiple recitation options, if they ALL conflict, the course is banned.
-    
+
     The blocked_slots parameter is a list of [day, start_hour, end_hour] where:
     - day is 0-4 (Mon-Fri)
     - start_hour and end_hour are in 24-hour format (e.g., 8 for 8am, 17 for 5pm)
-    
+
     The extrapolate parameter controls whether to apply this constraint to future
     semesters using fallback schedule data.
-    
+
     Requires 'hydrant_schedule_data' in context.extra.
     """
 

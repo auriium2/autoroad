@@ -27,17 +27,17 @@ export async function prefetchCourses(
 ): Promise<void> {
   const uniqueCourseIds = Array.from(new Set(courseIds)).filter(isActualCourse);
   
-  await Promise.all(
-    uniqueCourseIds.map(courseId =>
-      queryClient.prefetchQuery({
-        queryKey: queryKeys.courses.details(courseId),
-        queryFn: () => fireroadApi.getCourseDetails(courseId),
-        staleTime: 24 * 60 * 60 * 1000,
-      }).catch(() => {
-        // Silently ignore prefetch failures
-      })
-    )
-  );
+  if (uniqueCourseIds.length === 0) return;
+  
+  try {
+    const courseId2details = await fireroadApi.getCourseDetailsBatch(uniqueCourseIds);
+    
+    // Populate the individual query cache entries for each course
+    for (const [courseId, details] of Object.entries(courseId2details)) {
+      queryClient.setQueryData(queryKeys.courses.details(courseId), details);
+    }
+  } catch {
+  }
 }
 
 /**

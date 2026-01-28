@@ -32,7 +32,6 @@ class LimitClassesPerSemester:
         tier = 2
         if context.objective_tiers and 'limit_classes_per_semester' in context.objective_tiers:
             tier = context.objective_tiers['limit_classes_per_semester']
-        marked_course_ids = context.marked_course_ids or set()
         subject_ids = (context.extra.get('_subject_ids') if context.extra else None) or context.courses_df['subject_id'].to_list()
 
         penalty = get_tier_penalty(tier, base_cost=1)
@@ -45,7 +44,7 @@ class LimitClassesPerSemester:
             # Count classes in this semester
             classes_in_semester = []
             for (course_idx, semester), var in take_vars.items():
-                course_id = subject_ids[course_idx]
+                subject_ids[course_idx]
 
                 if semester == sem:
                     classes_in_semester.append(var)

@@ -98,7 +98,7 @@ def _build_equivalency_map(courses: list[dict[str, Any]]) -> dict[str, list[str]
 def _inject_equivalencies(node: PrereqNode, equivalencies: dict[str, list[str]]) -> PrereqNode:
     """
     Recursively inject equivalent courses into a prereq tree.
-    
+
     Transforms PrereqCourse("18.06") into PrereqGroup(threshold=1, items=(PrereqCourse("18.06"), PrereqCourse("18.C06")))
     when 18.06 has equivalents.
     """

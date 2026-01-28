@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { fireroadApi } from '@/services/fireroad';
+import { fireroadApi, FireroadCourse } from '@/services/fireroad';
 import { queryKeys } from '@/lib/queryKeys';
 
 export interface CourseFilters {
@@ -63,4 +63,40 @@ export function useCourseDetails(courseId: string | null) {
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+}
+
+export interface CourseDetailsBatchResult {
+  data: Record<string, FireroadCourse>;
+  isLoading: boolean;
+}
+
+export function useCourseDetailsBatch(courseIds: string[]): CourseDetailsBatchResult {
+  const realCourseIds = courseIds.filter(id =>   // Filter out virtual/placeholder course IDs that don't exist in the course database
+    !id.startsWith('HASS-') && 
+    !id.startsWith('GIR:') &&
+    !id.startsWith('CI-')
+  );
+  const courseIdsKey = realCourseIds.slice().sort().join(',');
+
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.courses.batch(courseIdsKey),
+    queryFn: async () => {
+      const CHUNK_SIZE = 200;
+      if (realCourseIds.length <= CHUNK_SIZE) {
+        return fireroadApi.getCourseDetailsBatch(realCourseIds);
+      }
+      
+      const results: Record<string, FireroadCourse> = {};
+      for (let i = 0; i < realCourseIds.length; i += CHUNK_SIZE) {
+        const chunk = realCourseIds.slice(i, i + CHUNK_SIZE);
+        const chunkResults = await fireroadApi.getCourseDetailsBatch(chunk);
+        Object.assign(results, chunkResults);
+      }
+      return results;
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: realCourseIds.length > 0,
+  });
+
+  return { data: data || {}, isLoading };
 }

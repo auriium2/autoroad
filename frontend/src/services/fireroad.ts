@@ -103,6 +103,22 @@ export const fireroadApi = {
     );
   },
 
+  async getRequirementProgressBatch(
+    requirements: Array<{ key: string; source: 'canonical' | 'beta' }>,
+    courseIds: string[]
+  ): Promise<Record<string, RequirementTree>> {
+    if (requirements.length === 0) return {};
+
+    return apiFetch<Record<string, RequirementTree>>(
+      '/api/requirements/batch-progress',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requirements, courseIds }),
+      }
+    );
+  },
+
   async searchCourses(
     query: string,
     params?: FireroadSearchParams

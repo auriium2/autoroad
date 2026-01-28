@@ -270,7 +270,7 @@ def _check_group_feasibility(
 def _count_valid_courses(children: tuple[Node, ...]) -> int | None:
     """
     Count valid (non-pruned) courses in a subtree.
-    
+
     Returns None for attribute-based nodes (GIR, HASS, CI) since
     they can match arbitrarily many courses.
     """
@@ -294,7 +294,7 @@ def _count_valid_courses(children: tuple[Node, ...]) -> int | None:
 def _count_available_units(children: tuple[Node, ...], courses_df: Any) -> int | None:
     """
     Count available units from valid courses in a subtree.
-    
+
     Returns None for attribute-based nodes (GIR, HASS, CI) since
     they can match arbitrarily many courses.
     """
