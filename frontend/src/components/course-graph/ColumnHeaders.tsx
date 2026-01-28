@@ -5,7 +5,7 @@ import type { Section } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useDragStore } from "@/stores/dragStore";
-import { isPastSemesterById, sectionIdToTargetSemester, sectionIdToCalendarYear } from "@/lib/semesterUtils";
+import { isPastSemesterById, sectionIdToTargetSemester, sectionIdToCalendarYear, sectionIdToAcademicYear } from "@/lib/semesterUtils";
 import { generateHydrantUrl } from "@/lib/hydrant";
 import { COLUMN_WIDTH } from "@/lib/graphConstants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

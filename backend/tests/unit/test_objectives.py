@@ -202,7 +202,7 @@ class TestMinimizeUnits:
         assert solver.ObjectiveValue() == 18
 
     def test_handles_nan_units(self):
-        """Should skip courses with NaN units."""
+        """Courses with None units should default to 12 units."""
         courses_df = pl.DataFrame({
             'subject_id': ['6.100A', '6.9020'],
             'total_units': [12, None],  # Polars uses None instead of NaN
@@ -231,8 +231,8 @@ class TestMinimizeUnits:
         status = solver.Solve(model)
 
         assert status == cp_model.OPTIMAL
-        # Only first course counted: 12 (no scaling)
-        assert solver.ObjectiveValue() == 12
+        # Both courses counted: 12 + 12 (None defaults to 12)
+        assert solver.ObjectiveValue() == 24
 
 
 
