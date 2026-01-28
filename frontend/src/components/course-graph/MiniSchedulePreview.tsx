@@ -174,7 +174,7 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
   });
 
   // Batch fetch course details for stats
-  const sortedCourseIds = React.useMemo(() => [...courseIds].sort(), [courseIds]);
+  const sortedCourseIds = [...courseIds].sort();
   const courseIdsKey = sortedCourseIds.join(',');
   
   const { data: courseDetailsMap } = useQuery({
@@ -184,34 +184,32 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
     enabled: courseIds.length > 0,
   });
 
-  const stats = React.useMemo(() => {
-    let totalUnits = 0;
-    let totalHours = 0;
-    let ratingSum = 0;
-    let ratingCount = 0;
+  let totalUnits = 0;
+  let totalHours = 0;
+  let ratingSum = 0;
+  let ratingCount = 0;
 
-    if (courseDetailsMap) {
-      for (const courseId of courseIds) {
-        const courseData = courseDetailsMap[courseId];
-        if (courseData) {
-          totalUnits += courseData.total_units ?? 0;
-          const inClass = courseData.in_class_hours ?? 0;
-          const outClass = courseData.out_of_class_hours ?? 0;
-          totalHours += inClass + outClass;
-          if (courseData.rating != null) {
-            ratingSum += courseData.rating;
-            ratingCount++;
-          }
+  if (courseDetailsMap) {
+    for (const courseId of courseIds) {
+      const courseData = courseDetailsMap[courseId];
+      if (courseData) {
+        totalUnits += courseData.total_units ?? 0;
+        const inClass = courseData.in_class_hours ?? 0;
+        const outClass = courseData.out_of_class_hours ?? 0;
+        totalHours += inClass + outClass;
+        if (courseData.rating != null) {
+          ratingSum += courseData.rating;
+          ratingCount++;
         }
       }
     }
+  }
 
-    return {
-      totalUnits,
-      totalHours: totalHours.toFixed(0),
-      avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
-    };
-  }, [courseIds, courseDetailsMap]);
+  const stats = {
+    totalUnits,
+    totalHours: totalHours.toFixed(0),
+    avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
+  };
 
   // Get blocked slots from the schedule_free_time constraint
   const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Section } from "@/stores/roadStore";
@@ -108,14 +108,13 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   };
 
   // Get all unique course IDs across all sections for batch fetching
-  const allCourseIds = useMemo(() => {
-    const ids = new Set<string>();
-    sections.forEach((section) => {
-      getCoursesForSection(section.id).forEach((id) => ids.add(id));
-    });
-    return Array.from(ids).sort();
-  }, [sections, getCoursesForSection]);
-
+  const allCourseIdSet = new Set<string>();
+  for (const section of sections) {
+    for (const id of getCoursesForSection(section.id)) {
+      allCourseIdSet.add(id);
+    }
+  }
+  const allCourseIds = Array.from(allCourseIdSet).sort();
   const courseIdsKey = allCourseIds.join(',');
 
   // Batch fetch course details for stats calculation
@@ -127,24 +126,21 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   });
 
   // Build a map of courseId -> course data
-  const courseDataMap = useMemo(() => {
-    const map = new Map<string, { units: number; hours: number; rating: number | null }>();
-    if (courseDetailsMap) {
-      for (const courseId of allCourseIds) {
-        const data = courseDetailsMap[courseId];
-        if (data) {
-          const inClass = data.in_class_hours ?? 0;
-          const outClass = data.out_of_class_hours ?? 0;
-          map.set(courseId, {
-            units: data.total_units ?? 0,
-            hours: inClass + outClass,
-            rating: data.rating ?? null,
-          });
-        }
+  const courseDataMap = new Map<string, { units: number; hours: number; rating: number | null }>();
+  if (courseDetailsMap) {
+    for (const courseId of allCourseIds) {
+      const data = courseDetailsMap[courseId];
+      if (data) {
+        const inClass = data.in_class_hours ?? 0;
+        const outClass = data.out_of_class_hours ?? 0;
+        courseDataMap.set(courseId, {
+          units: data.total_units ?? 0,
+          hours: inClass + outClass,
+          rating: data.rating ?? null,
+        });
       }
     }
-    return map;
-  }, [allCourseIds, courseDetailsMap]);
+  }
 
   // Calculate stats for a section
   const getSectionStats = (sectionId: number) => {
