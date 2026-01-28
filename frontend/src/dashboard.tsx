@@ -115,8 +115,12 @@ export default function Dashboard() {
           <div className="flex flex-col p-4 gap-4 flex-grow min-h-0 relative z-0">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight">Autoroad</h1>
-
+                <h1 className="text-3xl font-bold tracking-tight">
+                  Autoroad
+                  <sub className="ml-1 text-xs font-normal text-muted-foreground align-baseline">
+                    <span className="font-serif italic">Alfa</span> {__APP_VERSION__}
+                  </sub>
+                </h1>
               </div>
               <div className="flex items-center gap-2">
                 <ViewModeSelector value={viewMode} onChange={setViewMode} />

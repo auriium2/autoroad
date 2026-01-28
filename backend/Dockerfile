@@ -24,6 +24,9 @@ COPY shared/ ./shared/
 COPY server/ ./server/
 COPY requirements/ ./requirements/
 
+ARG APP_VERSION=v0.0.0+unknown
+ENV APP_VERSION=$APP_VERSION
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/app/.venv/bin:$PATH"

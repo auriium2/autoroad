@@ -4,10 +4,30 @@ import tailwindcss from '@tailwindcss/vite'
 import { compression } from 'vite-plugin-compression2'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { execSync } from 'child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+function getGitVersion(): string {
+  try {
+    const describe = execSync('git describe --tags --always', { encoding: 'utf-8' }).trim()
+    if (describe.includes('-')) {
+      // v0.1.0-15-gabcdef -> v0.1.0+15
+      return describe.replace(/-(\d+)-g.*/, '+$1')
+    }
+    return describe.startsWith('v') ? describe : `v0.0.0+${describe}`
+  } catch {
+    // Fallback for Cloudflare Pages (shallow clone) - use commit hash from env
+    const cfCommit = process.env.CF_PAGES_COMMIT_SHA?.slice(0, 7)
+    if (cfCommit) return `v0.0.0+${cfCommit}`
+    return 'v0.0.0+dev'
+  }
+}
+
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(getGitVersion()),
+  },
   plugins: [
     react({
       babel: {

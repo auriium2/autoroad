@@ -1,10 +1,29 @@
 import json
 import logging
 import os
+import subprocess
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 import asyncio
+import time
+
+# local dev stuff
+def get_git_version() -> str:
+    try:
+        result = subprocess.run(
+            ["git", "describe", "--tags", "--always"],
+            capture_output=True, text=True, timeout=5
+        )
+        describe = result.stdout.strip()
+        if "-" in describe:
+            # v0.1.0-15-gabcdef -> v0.1.0+15
+            import re
+            return re.sub(r"-(\d+)-g.*", r"+\1", describe)
+        return describe if describe.startswith("v") else f"v0.0.0+{describe}"
+    except Exception:
+        return "v0.0.0+unknown"
+
 
 
 import httpx
@@ -48,7 +67,7 @@ if os.environ.get("FASTAPI_SENTRY_DSN"):
     sentry_sdk.init(
         dsn=os.environ["FASTAPI_SENTRY_DSN"],
         environment=os.environ.get("FASTAPI_ENVIRONMENT", "development"),
-        release=os.environ.get("FASTAPI_RELEASE_VERSION"),
+        release=os.environ.get("APP_VERSION") or get_git_version(),
         traces_sample_rate=1.0,
         profiles_sample_rate=1.0,
         # Attach request data (IPs, headers, bodies) - disable in prod if PII is a concern
@@ -125,7 +144,7 @@ app.add_middleware(
     allow_origins=cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "Authorization"],
+    allow_headers=["Content-Type", "Accept", "Authorization", "sentry-trace", "baggage"],
 )
 
 app.include_router(optimize.router, prefix="/api", tags=["optimization"])
@@ -188,14 +207,12 @@ _fireroad_health_cache: dict[str, object] = {"status": "unknown", "last_check": 
 
 @app.get("/api/health")
 async def health():
-    import time
     services: dict[str, dict[str, str]] = {
         "backend": {"status": "healthy"},
         "fireroad": {"status": "unknown"},
     }
     status = "healthy"
 
-    # Check Fireroad API with 60-second cache to avoid slow health checks
     now = time.time()
     cache_age = now - _fireroad_health_cache["last_check"]  # type: ignore
 

@@ -21,17 +21,20 @@ if (import.meta.env.VITE_SENTRY_DSN) {
     dsn: import.meta.env.VITE_SENTRY_DSN,
     tunnel: `${apiUrl}/api/sentry-tunnel`,
     environment: import.meta.env.VITE_ENVIRONMENT || 'development',
-    release: import.meta.env.VITE_RELEASE_VERSION,
+    release: __APP_VERSION__,
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
         maskAllText: false,
         blockAllMedia: false,
+        networkDetailAllowUrls: [/\/api\//],
       }),
     ],
     tracesSampleRate: 1.0,
     replaysSessionSampleRate: 1.0,
     replaysOnErrorSampleRate: 1.0,
+    // Propagate trace headers to the backend API for distributed tracing
+    tracePropagationTargets: ['localhost', /^\//,  /autoroad/, /api/],
   })
   
   Sentry.setUser({ id: getOrCreateUserId() });
