@@ -42,9 +42,9 @@ class MinimizeUnits:
 
         for (course_idx, semester), var in take_vars.items():
             units = units_list[course_idx]
-            if units is not None:
-                # Direct unit cost (no scaling in tier-based system)
-                terms.append(var * int(units))
+            if units is None or units == 0: # 0 unit classes are never free lol
+                units = 12
+            terms.append(var * int(units))
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)
