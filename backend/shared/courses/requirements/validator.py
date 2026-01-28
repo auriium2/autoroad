@@ -11,15 +11,15 @@ from typing import Any
 
 from shared.courses.requirements.types import (
     CI,
-    CIThreshold,
     GIR,
-    GIRThreshold,
     HASS,
-    HASSThreshold,
     AllGroup,
     AnyGroup,
+    CIThreshold,
     Course,
+    GIRThreshold,
     Group,
+    HASSThreshold,
     Node,
     PlainString,
     SubjectThresholdGroup,

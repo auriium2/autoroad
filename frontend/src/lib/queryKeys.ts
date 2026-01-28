@@ -8,6 +8,7 @@ export const queryKeys = {
   courses: {
     all: ['courses'] as const,
     details: (courseId: string) => ['courses', 'details', courseId] as const,
+    batch: (courseIdsKey: string) => ['courses', 'batch', courseIdsKey] as const,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     search: (query: string, department?: string, filters?: any) => 
       ['courses', 'search', query, department, filters] as const,
@@ -22,6 +23,7 @@ export const queryKeys = {
       ['prerequisites', 'check', courseId, section, takenCourseIds.sort()] as const,
     edges: (courseKey: string) => ['prerequisites', 'edges', courseKey] as const,
     missing: (courseKey: string) => ['prerequisites', 'missing', courseKey] as const,
+    validate: (placementsKey: string) => ['prerequisites', 'validate', placementsKey] as const,
   },
 
   // Requirements and optimization

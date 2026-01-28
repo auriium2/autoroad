@@ -1,6 +1,7 @@
 from typing import Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request
+from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -225,6 +226,236 @@ async def lookup_course(request: Request, course_id: str):
             return result
 
     raise HTTPException(status_code=404, detail=f"Course '{course_id}' not found")
+
+
+@router.get("/courses/batch-lookup")
+@limiter.limit("30/minute")
+async def batch_lookup_courses(
+    request: Request,
+    ids: str = Query(..., description="Comma-separated course IDs"),
+):
+    """Batch lookup multiple courses by ID. Returns a dict mapping course_id -> course data."""
+    course_ids = [cid.strip() for cid in ids.split(",") if cid.strip()]
+
+    if len(course_ids) > 200:
+        raise HTTPException(status_code=400, detail="Maximum 200 courses per batch request")
+
+    all_courses = await get_courses_data()
+    parsed_prereqs = await get_parsed_prerequisites()
+
+    course_map = {c.get("subject_id"): c for c in all_courses}
+
+    virtual_map = {item["subject_id"]: item for item in VIRTUAL_ITEMS}
+
+    results: dict[str, dict[str, Any]] = {}
+    for course_id in course_ids:
+        # Check virtual items first
+        if course_id in virtual_map:
+            results[course_id] = virtual_map[course_id]
+            continue
+
+        course = course_map.get(course_id)
+        if course:
+            result = dict(course)
+            prereq_tree = parsed_prereqs.get(course_id)
+            if prereq_tree:
+                result["prereqTree"] = _prereq_to_dict(prereq_tree)
+            results[course_id] = result
+
+    return results
+
+
+class CoursePlacement(BaseModel):
+    courseId: str
+    section: int
+    status: str | None = None  # "pin", "override", etc.
+
+
+class ValidatePrerequisitesRequest(BaseModel):
+    placements: list[CoursePlacement]
+
+
+class PrereqEdge(BaseModel):
+    fromCourseId: str
+    toCourseId: str
+
+
+class ValidatePrerequisitesResponse(BaseModel):
+    missing: dict[str, list[str]]  # courseId -> list of missing prereq course IDs
+    edges: list[PrereqEdge]  # prerequisite edges for drawing arrows
+    tags: dict[str, list[str]]  # courseId -> list of tags like ["GIR:CAL1", "HASS:A"]
+
+
+def _evaluate_prereq(
+    node: PrereqNode,
+    available_courses: set[str],
+    course_tags: dict[str, list[str]],
+    allow_reuse: bool = True,
+    minimal: bool = True,
+    used_courses: set[str] | None = None
+) -> tuple[bool, list[str], list[str]]:
+    """
+    Evaluate a prerequisite tree against available courses.
+    Returns (satisfied, unsatisfied_reasons, matched_courses)
+    """
+    if used_courses is None:
+        used_courses = set()
+
+    if isinstance(node, PrereqCourse):
+        course_id = node.course_id
+
+        # Check if this is a tag requirement (GIR:XXX or HASS:XXX)
+        if course_id.startswith("GIR:") or course_id.startswith("HASS:"):
+            for available_course in available_courses:
+                tags = course_tags.get(available_course, [])
+                can_use = allow_reuse or available_course not in used_courses
+                if course_id in tags and can_use:
+                    used_courses.add(available_course)
+                    return (True, [], [available_course])
+            return (False, [course_id], [])
+
+        can_use = allow_reuse or course_id not in used_courses
+        if course_id in available_courses and can_use:
+            used_courses.add(course_id)
+            return (True, [], [course_id])
+
+        return (False, [course_id], [])
+
+    elif isinstance(node, PrereqGroup):
+        if not node.items:
+            return (True, [], [])
+
+        satisfied_count = 0
+        all_matched: list[str] = []
+        item_results: list[tuple[bool, list[str], list[str]]] = []
+
+        for item in node.items:
+            result = _evaluate_prereq(item, available_courses, course_tags, allow_reuse, minimal, used_courses)
+            item_results.append(result)
+            all_matched.extend(result[2])
+
+            if result[0]:  # satisfied
+                satisfied_count += 1
+
+            if satisfied_count >= node.threshold:
+                return (True, [], all_matched)
+
+        if satisfied_count >= node.threshold:
+            return (True, [], all_matched)
+
+        # Not satisfied - collect unsatisfied reasons
+        if minimal:
+            if node.threshold == 1:
+                # OR group: return the option with fewest missing prerequisites
+                unsatisfied_results = [r for r in item_results if not r[0]]
+                if not unsatisfied_results:
+                    return (False, [], all_matched)
+                minimal_option = min(unsatisfied_results, key=lambda r: len(r[1]))
+                return (False, minimal_option[1], all_matched)
+            elif node.threshold == len(node.items):
+                # AND group: return all unsatisfied
+                all_unsatisfied: list[str] = []
+                for result in item_results:
+                    if not result[0]:
+                        all_unsatisfied.extend(result[1])
+                return (False, all_unsatisfied, all_matched)
+            else:
+                # k-of-n group
+                unsatisfied_results = [r for r in item_results if not r[0]]
+                needed = node.threshold - satisfied_count
+                sorted_unsatisfied = sorted(unsatisfied_results, key=lambda r: len(r[1]))
+                minimal_options = sorted_unsatisfied[:needed]
+                all_unsatisfied = []
+                for result in minimal_options:
+                    all_unsatisfied.extend(result[1])
+                return (False, all_unsatisfied, all_matched)
+        else:
+            # Complete mode: return all unsatisfied reasons
+            all_unsatisfied = []
+            for result in item_results:
+                if not result[0]:
+                    all_unsatisfied.extend(result[1])
+            return (False, all_unsatisfied, all_matched)
+
+    return (False, [], [])
+
+
+@router.post("/prerequisites/validate")
+@limiter.limit("60/minute")
+async def validate_prerequisites(
+    request: Request,
+    body: ValidatePrerequisitesRequest,
+) -> ValidatePrerequisitesResponse:
+    """
+    Validate prerequisites for a set of course placements.
+    Returns missing prerequisites, edges for drawing arrows, and course tags.
+    """
+    if len(body.placements) > 500:
+        raise HTTPException(status_code=400, detail="Maximum 500 placements per request")
+
+    all_courses = await get_courses_data()
+    parsed_prereqs = await get_parsed_prerequisites()
+
+    course_map = {c.get("subject_id"): c for c in all_courses}
+
+    tags: dict[str, list[str]] = {}
+    for placement in body.placements:
+        course = course_map.get(placement.courseId)
+        if course:
+            course_tags: list[str] = []
+            if gir := course.get("gir_attribute"):
+                course_tags.append(f"GIR:{gir}")
+            if hass := course.get("hass_attribute"):
+                course_tags.append(f"HASS:{hass}")
+            if course_tags:
+                tags[placement.courseId] = course_tags
+
+    # Group placements by section for efficient lookup
+    section2courses: dict[int, set[str]] = {}
+    for placement in body.placements:
+        if placement.section not in section2courses:
+            section2courses[placement.section] = set()
+        section2courses[placement.section].add(placement.courseId)
+
+    # Compute courses available before each section
+    all_sections = sorted(section2courses.keys())
+    courses_before_section: dict[int, set[str]] = {}
+    cumulative: set[str] = set()
+    for section in all_sections:
+        courses_before_section[section] = cumulative.copy()
+        cumulative.update(section2courses[section])
+
+    # Evaluate prerequisites and build edges
+    missing: dict[str, list[str]] = {}
+    edges: list[PrereqEdge] = []
+
+    for placement in body.placements:
+        # Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
+        if placement.section == -2 or placement.section == -1 or placement.status == "override":
+            missing[placement.courseId] = []
+            continue
+
+        prereq_tree = parsed_prereqs.get(placement.courseId)
+        if not prereq_tree:
+            missing[placement.courseId] = []
+            continue
+
+        available = courses_before_section.get(placement.section, set())
+        satisfied, unsatisfied_reasons, matched_courses = _evaluate_prereq(
+            prereq_tree, available, tags, allow_reuse=True, minimal=True
+        )
+
+        if satisfied:
+            missing[placement.courseId] = []
+        else:
+            missing[placement.courseId] = list(set(unsatisfied_reasons))
+
+        # Add edges for matched prerequisites
+        for matched_course in matched_courses:
+            if matched_course in available:
+                edges.append(PrereqEdge(fromCourseId=matched_course, toCourseId=placement.courseId))
+
+    return ValidatePrerequisitesResponse(missing=missing, edges=edges, tags=tags)
 
 
 @router.get("/courses/dept/{dept}")

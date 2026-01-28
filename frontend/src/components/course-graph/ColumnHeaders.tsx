@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ExternalLink } from "lucide-react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { Section } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
@@ -108,41 +108,43 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
   };
 
   // Get all unique course IDs across all sections for batch fetching
-  const allCourseIds = (() => {
+  const allCourseIds = useMemo(() => {
     const ids = new Set<string>();
     sections.forEach((section) => {
       getCoursesForSection(section.id).forEach((id) => ids.add(id));
     });
-    return Array.from(ids);
-  })();
+    return Array.from(ids).sort();
+  }, [sections, getCoursesForSection]);
+
+  const courseIdsKey = allCourseIds.join(',');
 
   // Batch fetch course details for stats calculation
-  const courseQueries = useQueries({
-    queries: allCourseIds.map((courseId) => ({
-      queryKey: queryKeys.courses.details(courseId),
-      queryFn: () => fireroadApi.getCourseDetails(courseId),
-      staleTime: 24 * 60 * 60 * 1000,
-      enabled: isNerdMode,
-    })),
+  const { data: courseDetailsMap } = useQuery({
+    queryKey: queryKeys.courses.batch(courseIdsKey),
+    queryFn: () => fireroadApi.getCourseDetailsBatch(allCourseIds),
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: isNerdMode && allCourseIds.length > 0,
   });
 
   // Build a map of courseId -> course data
-  const courseDataMap = (() => {
+  const courseDataMap = useMemo(() => {
     const map = new Map<string, { units: number; hours: number; rating: number | null }>();
-    allCourseIds.forEach((courseId, idx) => {
-      const query = courseQueries[idx];
-      if (query?.data) {
-        const inClass = query.data.in_class_hours ?? 0;
-        const outClass = query.data.out_of_class_hours ?? 0;
-        map.set(courseId, {
-          units: query.data.total_units ?? 0,
-          hours: inClass + outClass,
-          rating: query.data.rating ?? null,
-        });
+    if (courseDetailsMap) {
+      for (const courseId of allCourseIds) {
+        const data = courseDetailsMap[courseId];
+        if (data) {
+          const inClass = data.in_class_hours ?? 0;
+          const outClass = data.out_of_class_hours ?? 0;
+          map.set(courseId, {
+            units: data.total_units ?? 0,
+            hours: inClass + outClass,
+            rating: data.rating ?? null,
+          });
+        }
       }
-    });
+    }
     return map;
-  })();
+  }, [allCourseIds, courseDetailsMap]);
 
   // Calculate stats for a section
   const getSectionStats = (sectionId: number) => {

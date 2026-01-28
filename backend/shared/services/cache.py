@@ -78,7 +78,7 @@ def _calculate_imdb_rating(rating: float | None, enrollment: int | None) -> floa
 def _build_equivalency_map(courses: list[dict[str, Any]]) -> dict[str, list[str]]:
     """Build a symmetric equivalency map from course data."""
     equivalencies: dict[str, set[str]] = {}
-    
+
     for course in courses:
         course_id = course.get("subject_id")
         equiv_list = course.get("equivalent_subjects")
@@ -91,7 +91,7 @@ def _build_equivalency_map(courses: list[dict[str, Any]]) -> dict[str, list[str]
                 if equiv_id not in equivalencies:
                     equivalencies[equiv_id] = set()
                 equivalencies[equiv_id].add(course_id)
-    
+
     return {k: list(v) for k, v in equivalencies.items()}
 
 
@@ -103,7 +103,7 @@ def _inject_equivalencies(node: PrereqNode, equivalencies: dict[str, list[str]])
     when 18.06 has equivalents.
     """
     from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
-    
+
     if isinstance(node, PrereqCourse):
         equiv_list = equivalencies.get(node.course_id)
         if equiv_list:
@@ -111,12 +111,12 @@ def _inject_equivalencies(node: PrereqNode, equivalencies: dict[str, list[str]])
             items = [node] + [PrereqCourse(course_id=equiv_id) for equiv_id in equiv_list]
             return PrereqGroup(threshold=1, items=tuple(items))
         return node
-    
+
     elif isinstance(node, PrereqGroup):
         # Recursively process children
         new_items = tuple(_inject_equivalencies(item, equivalencies) for item in node.items)
         return PrereqGroup(threshold=node.threshold, items=new_items, was_pruned=node.was_pruned)
-    
+
     return node
 
 

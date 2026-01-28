@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fireroadApi } from "@/services/fireroad";
 import { queryKeys } from "@/lib/queryKeys";
 import type { Marker, OptimizerNode } from "@/stores/roadStore";
@@ -22,34 +22,26 @@ export function GraphStats({
     !optimizerNodes.some(on => on.courseId === m.courseId && on.section === m.section)
   );
 
-  // Fetch course details for marker-only courses to get real units
-  const markerCourseQueries = useQueries({
-    queries: markerOnlyCourses.map(marker => ({
-      queryKey: queryKeys.courses.details(marker.courseId),
-      queryFn: () => fireroadApi.getCourseDetails(marker.courseId),
-      staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
-    }))
+  // Get unique course IDs for batch fetch
+  const courseIds = Array.from(new Set(markerOnlyCourses.map(m => m.courseId))).sort();
+  const courseIdsKey = courseIds.join(',');
+
+  // Batch fetch course details for marker-only courses
+  const { data: courseDetailsMap } = useQuery({
+    queryKey: queryKeys.courses.batch(courseIdsKey),
+    queryFn: () => fireroadApi.getCourseDetailsBatch(courseIds),
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: courseIds.length > 0,
   });
 
-  const totalUnits = (() => {
-    let total = 0;
-
-    // Add units from optimizer nodes (they have units from backend)
-    optimizerNodes.forEach(node => {
-      total += node.units || 0;
-    });
-
-    // Add units from marker-only courses using fetched data
-    markerCourseQueries.forEach(query => {
-      if (query.data) {
-        total += query.data.total_units || 12; // Fallback to 12 if units missing
-      } else {
-        total += 12; // Default while loading
-      }
-    });
-
-    return total;
-  })();
+  let totalUnits = 0;
+  for (const node of optimizerNodes) {
+    totalUnits += node.units || 0;
+  }
+  for (const marker of markerOnlyCourses) {
+    const courseDetails = courseDetailsMap?.[marker.courseId];
+    totalUnits += courseDetails?.total_units || 12; // Fallback to 12 if units missing or loading
+  }
 
   // Calculate total cost from cost breakdown
   const totalCost = lastCostBreakdown

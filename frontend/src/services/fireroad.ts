@@ -134,4 +134,38 @@ export const fireroadApi = {
   async getCourseDetails(subjectId: string): Promise<FireroadCourse> {
     return apiFetch<FireroadCourse>(`/api/courses/lookup/${encodeURIComponent(subjectId)}`);
   },
+
+  async getCourseDetailsBatch(courseIds: string[]): Promise<Record<string, FireroadCourse>> {
+    if (courseIds.length === 0) return {};
+    const ids = courseIds.map(id => encodeURIComponent(id)).join(',');
+    return apiFetch<Record<string, FireroadCourse>>(`/api/courses/batch-lookup?ids=${ids}`);
+  },
+
+  async validatePrerequisites(placements: CoursePlacement[]): Promise<PrerequisiteValidationResponse> {
+    if (placements.length === 0) {
+      return { missing: {}, edges: [], tags: {} };
+    }
+    return apiFetch<PrerequisiteValidationResponse>('/api/prerequisites/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placements }),
+    });
+  },
 };
+
+export interface CoursePlacement {
+  courseId: string;
+  section: number;
+  status?: string;
+}
+
+export interface PrereqEdge {
+  fromCourseId: string;
+  toCourseId: string;
+}
+
+export interface PrerequisiteValidationResponse {
+  missing: Record<string, string[]>;
+  edges: PrereqEdge[];
+  tags: Record<string, string[]>;
+}

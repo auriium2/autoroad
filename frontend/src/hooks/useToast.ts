@@ -1,5 +1,6 @@
 
 import * as React from "react"
+import * as Sentry from "@sentry/react"
 
 import type { ToastProps } from "@radix-ui/react-toast"
 
@@ -134,11 +135,26 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+type Toast = Omit<ToasterToast, "id"> & {
+  skipSentry?: boolean
+}
 
-function toast({ ...props }: Toast) {
+function toast({ skipSentry, ...props }: Toast) {
   const id = genId()
   const onOpenChange = props.onOpenChange
+
+  // Report destructive toasts to Sentry as errors
+  if (props.variant === "destructive" && !skipSentry) {
+    const errorMessage = [props.title, props.description]
+      .filter(Boolean)
+      .map(v => (typeof v === "string" ? v : String(v)))
+      .join(": ");
+    
+    Sentry.captureMessage(errorMessage || "Unknown error", {
+      level: "error",
+      tags: { source: "toast" },
+    });
+  }
 
   const update = (props: ToasterToast) =>
     dispatch({

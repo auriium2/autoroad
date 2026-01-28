@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useStoreNodes } from "@/hooks/useStoreNodes";
-import { useMissingPrerequisites } from "@/hooks/usePrerequisites";
+import { usePrerequisiteValidation } from "@/hooks/usePrerequisiteValidation";
 import { useBlockingErrors } from "@/hooks/useBlockingErrors";
 import { toast as showToast } from "@/hooks/useToast";
 
@@ -24,7 +24,7 @@ export function OptimizeButton() {
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
 
   const { storeNodes } = useStoreNodes(markers, optimizerNodes);
-  const { data: uuid2missingPrereqs } = useMissingPrerequisites(storeNodes);
+  const { missing: uuid2missingPrereqs } = usePrerequisiteValidation(storeNodes);
   const { hasWrongSemester, hasDuplicateCourses, duplicateCourseIds, hasFreshmanFallOverload, freshmanFallUnits } = useBlockingErrors(markers);
 
   const hasBlockingPrereqErrors = React.useMemo(() => {

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { hydrantApi, type TimeBlock } from "@/services/hydrant";
 import { fireroadApi } from "@/services/fireroad";
 import { queryKeys } from "@/lib/queryKeys";
@@ -173,30 +173,35 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
     enabled: courseIds.length > 0,
   });
 
-  // Fetch course details for stats
-  const courseQueries = useQueries({
-    queries: courseIds.map(courseId => ({
-      queryKey: queryKeys.courses.details(courseId),
-      queryFn: () => fireroadApi.getCourseDetails(courseId),
-      staleTime: 24 * 60 * 60 * 1000,
-    })),
+  // Batch fetch course details for stats
+  const sortedCourseIds = React.useMemo(() => [...courseIds].sort(), [courseIds]);
+  const courseIdsKey = sortedCourseIds.join(',');
+  
+  const { data: courseDetailsMap } = useQuery({
+    queryKey: queryKeys.courses.batch(courseIdsKey),
+    queryFn: () => fireroadApi.getCourseDetailsBatch(sortedCourseIds),
+    staleTime: 24 * 60 * 60 * 1000,
+    enabled: courseIds.length > 0,
   });
 
-  const stats = (() => {
+  const stats = React.useMemo(() => {
     let totalUnits = 0;
     let totalHours = 0;
     let ratingSum = 0;
     let ratingCount = 0;
 
-    for (const query of courseQueries) {
-      if (query.data) {
-        totalUnits += query.data.total_units ?? 0;
-        const inClass = query.data.in_class_hours ?? 0;
-        const outClass = query.data.out_of_class_hours ?? 0;
-        totalHours += inClass + outClass;
-        if (query.data.rating != null) {
-          ratingSum += query.data.rating;
-          ratingCount++;
+    if (courseDetailsMap) {
+      for (const courseId of courseIds) {
+        const courseData = courseDetailsMap[courseId];
+        if (courseData) {
+          totalUnits += courseData.total_units ?? 0;
+          const inClass = courseData.in_class_hours ?? 0;
+          const outClass = courseData.out_of_class_hours ?? 0;
+          totalHours += inClass + outClass;
+          if (courseData.rating != null) {
+            ratingSum += courseData.rating;
+            ratingCount++;
+          }
         }
       }
     }
@@ -206,7 +211,7 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
       totalHours: totalHours.toFixed(0),
       avgRating: ratingCount > 0 ? (ratingSum / ratingCount).toFixed(1) : null,
     };
-  })();
+  }, [courseIds, courseDetailsMap]);
 
   // Get blocked slots from the schedule_free_time constraint
   const selectedHardConstraints = useOptimizationStore((state) => state.selectedHardConstraints);

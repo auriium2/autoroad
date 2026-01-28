@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { useGraphStore, CourseNode as CourseNodeType } from "@/stores/roadStore";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
-import { usePrerequisiteEdges, useMissingPrerequisites } from "@/hooks/usePrerequisites";
+import { usePrerequisiteValidation } from "@/hooks/usePrerequisiteValidation";
 import { useContextMenu } from "@/hooks/useContextMenu";
 import { useStoreNodes } from "@/hooks/useStoreNodes";
 import { useFlowConversion } from "@/hooks/useFlowConversion";
@@ -170,18 +170,15 @@ function CourseGraphFlowInner({
     }
   }, [storeNodes, isOptimizing, markersChangedSinceOptimization, hasShownStaleWarning]);
 
-  // Fetch prerequisite data
-  const { data: prerequisiteData } = usePrerequisiteEdges(debouncedNodes);
-  const storeEdges = prerequisiteData?.edges ?? [];
-
-  const nodesToCheck = isOptimizing ? [] : storeNodes;
-  const { data: uuid2missingPrereqs } = useMissingPrerequisites(nodesToCheck);
+  // Fetch prerequisite data from backend
+  const nodesToValidate = isOptimizing ? [] : debouncedNodes;
+  const { edges: storeEdges, missing: uuid2missingPrereqs } = usePrerequisiteValidation(nodesToValidate);
 
   // Convert to React Flow format
   const { flowNodes, flowEdges } = useFlowConversion(
     storeNodes,
     storeEdges,
-    uuid2missingPrereqs instanceof Map ? uuid2missingPrereqs : undefined,
+    uuid2missingPrereqs,
     viewMode,
     isOptimizing
   );

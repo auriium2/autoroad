@@ -136,7 +136,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'welcome',
     title: 'Welcome to Autoroad',
-    text: `Autoroad helps you complete your degree by picking the easiest classes that satisfies it.</br></br>Let's learn how to use it!`,
+    text: `Autoroad helps you complete your degree by picking the easiest classes that satisfies it.</br></br>Let's learn how to use it! Most of the interesting stuff is towards the end of the tutorial, so please be patient :)`,
     buttons: [
       { text: 'Skip', action: function() { restoreState(); return this.complete(); }, secondary: true },
       { text: 'Start', action: function() { return this.next(); } },
@@ -551,7 +551,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'convert-to-marker',
     title: 'Keep Suggestions',
     text: `Want to keep an optimizer suggestion for next time?<br><br>
-    <strong>Right-click → "Convert to marker"</strong> gives you a marker node!`,
+    Right-click on <strong>5.111</strong> → "Convert to marker" gives you a marker node!`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     modalOverlayOpeningPadding: 5000,
@@ -795,7 +795,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'freeze-effect',
     title: 'Frozen Semesters',
-    text: `See the <strong style="color: #ef4444">red overlay</strong> on past semesters? That overlay represents semesters that have passed (based on your year) and means the optimizer will not place any courses there.<br><br>
+    text: `See the <strong style="color: #ef4444">red overlay</strong> on past semesters? That overlay represents semesters that have passed <strong style="color: #ef4444">(based on your year)</strong> and means the optimizer will not place any courses there.<br><br>
       For this to work correctly, you <strong style="color: #ef4444">must place the courses you've already taken</strong> in these semesters`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
