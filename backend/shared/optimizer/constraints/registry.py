@@ -7,7 +7,7 @@ from typing import Any
 
 from .base import HardConstraint
 from .conflicts import NoScheduleConflicts
-from .scheduling import BanIAP, ScheduleFreeTime
+from .scheduling import ScheduleFreeTime
 
 
 @dataclass
@@ -27,15 +27,6 @@ class ConstraintMetadata:
 
 
 CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
-    "ban_iap": ConstraintMetadata(
-        key="ban_iap",
-        class_ref=BanIAP,
-        name="Ban IAP Classes",
-        short_description="Prevent classes during IAP",
-        description="Hard constraint: prevents optimizer from placing any classes in IAP. Your manual markers still work.",
-        category="scheduling",
-        default_enabled=False,
-    ),
     "no_schedule_conflicts": ConstraintMetadata(
         key="no_schedule_conflicts",
         class_ref=NoScheduleConflicts,

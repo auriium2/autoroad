@@ -177,36 +177,6 @@ class TestConstraintBehavior:
             assert should_penalize == is_iap, \
                 f"Semester {semester}: IAP detection mismatch"
 
-    def test_ban_iap_hard_constraint_logic(self):
-        """
-        Test the logic for banIAP hard constraint.
-
-        The constraint should:
-        1. Identify IAP semesters using semester % 3 == 2
-        2. Allow user markers in IAP (marked_iap_course_ids exception)
-        3. Block optimizer from placing non-marked courses in IAP
-        """
-        # Simulate the logic from optimize.py
-        marked_iap_course_ids = {'6.100A', '18.01'}
-
-        test_cases = [
-            # (semester, course_id, should_block)
-            (2, '6.100A', False),   # IAP, but marked -> allowed
-            (2, '18.01', False),    # IAP, but marked -> allowed
-            (2, '6.006', True),     # IAP, not marked -> blocked
-            (1, '6.006', False),    # Fall, not IAP -> allowed
-            (3, '6.006', False),    # Spring, not IAP -> allowed
-            (5, '6.036', True),     # Sophomore IAP, not marked -> blocked
-        ]
-
-        for semester, course_id, expected_blocked in test_cases:
-            is_iap = semester % 3 == 2
-            is_marked = course_id in marked_iap_course_ids
-            should_block = is_iap and not is_marked
-
-            assert should_block == expected_blocked, \
-                f"Semester {semester}, course {course_id}: expected blocked={expected_blocked}, got {should_block}"
-
     def test_tier_penalties_reasonable(self):
         """
         Test that tier penalties with TIER_BASE=5 are reasonable.
