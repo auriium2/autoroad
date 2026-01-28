@@ -737,7 +737,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'freeze-effect',
     title: 'Frozen Semesters',
     text: `See the <strong style="color: #ef4444">red overlay</strong> on past semesters? That means the optimizer will not place any courses there.<br><br>
-      This is useful if you've already completed some semesters and want to plan the remaining ones.`,
+      For this to work correctly, you <strong style="color: #ef4444">must place the courses you've already taken</strong> in these semesters`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
