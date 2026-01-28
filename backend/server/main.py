@@ -106,7 +106,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Prefetch commonly used data in background to warm caches
     async def prefetch():
         try:
-            # First, fetch core data
             await asyncio.gather(
                 get_courses_data(),
                 get_hydrant_semester_data("latest"),
@@ -114,11 +113,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             )
             logger.info("Core data cache warmup complete")
             
-            # Then fetch all requirements list and prefetch each requirement
             all_reqs = await _fetch_all_requirements()
             logger.info(f"Found {len(all_reqs)} requirements to prefetch")
             
-            # Prefetch all requirements concurrently (both canonical and beta where applicable)
+            # Prefetch all requirements
             tasks = []
             for key, metadata in all_reqs.items():
                 tasks.append(fetch_requirement(key, "canonical"))
@@ -159,6 +157,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization", "sentry-trace", "baggage"],
+    expose_headers=["sentry-trace", "baggage"],
 )
 
 app.include_router(optimize.router, prefix="/api", tags=["optimization"])
