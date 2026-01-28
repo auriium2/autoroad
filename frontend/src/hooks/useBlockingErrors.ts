@@ -26,6 +26,7 @@ export function useBlockingErrors(markers: Marker[]): BlockingErrorsResult {
     for (const marker of markers) {
       if (marker.status === "banish") continue;
       if (VIRTUAL_COURSE_IDS.has(marker.courseId)) continue;
+      if (marker.section === -2) continue; //don't include must take
 
       const count = (courseCounts.get(marker.courseId) || 0) + 1;
       courseCounts.set(marker.courseId, count);
