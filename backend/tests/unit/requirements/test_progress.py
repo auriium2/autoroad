@@ -1,18 +1,17 @@
 """Tests for requirement progress calculation."""
 
-import pytest
 
 from shared.courses.requirements.progress import compute_progress
 from shared.courses.requirements.types import (
     CI,
-    CIThreshold,
     GIR,
-    GIRThreshold,
     HASS,
-    HASSThreshold,
     AllGroup,
     AnyGroup,
+    CIThreshold,
     Course,
+    GIRThreshold,
+    HASSThreshold,
     SubjectThresholdGroup,
     UnitThresholdGroup,
 )
@@ -168,7 +167,7 @@ class TestThresholdNodesInGroups:
         """HASSThreshold should work when nested in an AllGroup."""
         hass_node = HASSThreshold(cutoff=2, category=None)
         root = AllGroup(children=(hass_node,))
-        
+
         id2course = {
             "21L.001": make_course_data("21L.001", hass_attribute="HASS-H"),
             "21M.011": make_course_data("21M.011", hass_attribute="HASS-A"),
@@ -183,7 +182,7 @@ class TestThresholdNodesInGroups:
         ci_node = CIThreshold(cutoff=1, ci_type="CI-H")
         other_course = Course(subject_id="6.100A")
         root = AnyGroup(children=(ci_node, other_course))
-        
+
         id2course = {
             "6.101": make_course_data("6.101", communication_requirement="CI-H"),
         }
@@ -194,7 +193,7 @@ class TestThresholdNodesInGroups:
         """GIRThreshold should work when nested in SubjectThresholdGroup."""
         gir_node = GIRThreshold(cutoff=1, gir_code="REST")
         root = SubjectThresholdGroup(children=(gir_node,), cutoff=1)
-        
+
         id2course = {
             "8.01": make_course_data("8.01", gir_attribute="REST"),
         }
@@ -205,7 +204,7 @@ class TestThresholdNodesInGroups:
         """HASSThreshold should work when nested in UnitThresholdGroup."""
         hass_node = HASSThreshold(cutoff=1, category=None)
         root = UnitThresholdGroup(children=(hass_node,), cutoff=12)
-        
+
         id2course = {
             "21L.001": make_course_data("21L.001", hass_attribute="HASS-H", total_units=12),
         }

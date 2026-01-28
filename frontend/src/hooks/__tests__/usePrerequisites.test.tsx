@@ -51,7 +51,7 @@ vi.mock('@/lib/prerequisites', () => ({
     }
     return [];
   }),
-  evaluatePrerequisites: vi.fn((tree: any, taken: string[], _detailed?: boolean, _checkGir?: boolean, _tags?: Map<string, string[]>) => {
+  evaluatePrerequisites: vi.fn((tree: any, taken: string[], _detailed?: boolean, _checkGir?: boolean, _tags?: Map<string, string[]>, _equivalencies?: Map<string, string[]>) => {
     if (!tree || tree.type === 'course' && !tree.id) {
       return { satisfied: true, unsatisfiedReasons: [], matchedCourses: [] };
     }

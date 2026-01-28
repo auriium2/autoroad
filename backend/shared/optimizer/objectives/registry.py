@@ -17,7 +17,6 @@ from .scheduling import (
     AvoidSpecialTopics,
     MinimumClassesPerSemester,
 )
-
 from .workload import (
     LimitClassesPerSemester,
     LimitFinalsPerSemester,

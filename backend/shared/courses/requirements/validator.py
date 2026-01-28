@@ -254,12 +254,11 @@ def _check_group_feasibility(
         return False
 
     elif isinstance(node, UnitThresholdGroup):
-        # Count total available units (None = unlimited)
-        available_units = _count_available_units(children, courses_df)
+
+        available_units = _count_available_units(children, courses_df) #none = unlimited
         if available_units is not None and available_units < node.cutoff:
-            # Not enough units - but this might be an open-ended elective group
-            # Don't mark as infeasible, just warn
-            warnings.append(
+
+            warnings.append( #not enough units, warn
                 f"Group '{node.title or node.req_id}' is open-ended: "
                 f"requires {node.cutoff} units but only {available_units} units available from listed courses"
             )
@@ -281,7 +280,7 @@ def _count_valid_courses(children: tuple[Node, ...]) -> int | None:
             if not child.was_pruned:
                 count += 1
         elif isinstance(child, (GIR, HASS, CI)):
-            # These can match many courses - effectively unlimited
+            # These can match infinite courses, so return infinite
             if not child.was_pruned:
                 return None
         elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
@@ -313,7 +312,7 @@ def _count_available_units(children: tuple[Node, ...], courses_df: Any) -> int |
                 else:
                     total += 12
         elif isinstance(child, (GIR, HASS, CI)):
-            # These can match many courses - effectively unlimited
+            #also can match infinite
             if not child.was_pruned:
                 return None
         elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):

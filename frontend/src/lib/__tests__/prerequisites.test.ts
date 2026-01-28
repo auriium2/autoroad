@@ -297,5 +297,62 @@ describe('Prerequisites Parser', () => {
         expect(result.satisfied).toBe(false);
       });
     });
+
+    describe('equivalent courses', () => {
+      it('should satisfy prerequisite with equivalent course', () => {
+        const tree = parseFireroad('18.06');
+        const taken = ['18.C06']; // Equivalent to 18.06
+        const tags = new Map<string, string[]>();
+        const equivalencies = new Map([['18.06', ['18.C06']]]);
+        const result = evaluatePrerequisites(tree, taken, true, true, tags, equivalencies);
+        
+        expect(result.satisfied).toBe(true);
+        expect(result.matchedCourses).toContain('18.C06');
+      });
+
+      it('should satisfy prerequisite with reverse equivalency', () => {
+        // If 18.06 lists 18.C06 as equivalent, taking 18.06 should satisfy a 18.C06 prereq
+        const tree = parseFireroad('18.C06');
+        const taken = ['18.06'];
+        const tags = new Map<string, string[]>();
+        const equivalencies = new Map([['18.06', ['18.C06']]]); // Only forward mapping provided
+        const result = evaluatePrerequisites(tree, taken, true, true, tags, equivalencies);
+        
+        expect(result.satisfied).toBe(true);
+        expect(result.matchedCourses).toContain('18.06');
+      });
+
+      it('should not satisfy prerequisite without equivalency mapping', () => {
+        const tree = parseFireroad('18.06');
+        const taken = ['18.C06'];
+        const tags = new Map<string, string[]>();
+        const equivalencies = new Map<string, string[]>(); // No equivalencies
+        const result = evaluatePrerequisites(tree, taken, true, true, tags, equivalencies);
+        
+        expect(result.satisfied).toBe(false);
+      });
+
+      it('should prefer exact match over equivalent', () => {
+        const tree = parseFireroad('18.06');
+        const taken = ['18.06', '18.C06'];
+        const tags = new Map<string, string[]>();
+        const equivalencies = new Map([['18.06', ['18.C06']]]);
+        const result = evaluatePrerequisites(tree, taken, true, true, tags, equivalencies);
+        
+        expect(result.satisfied).toBe(true);
+        expect(result.matchedCourses).toContain('18.06'); // Should match exact first
+      });
+
+      it('should work with complex prerequisites and equivalencies', () => {
+        // Prereq: 18.03 AND 18.06
+        const tree = parseFireroad('18.03,18.06');
+        const taken = ['18.03', '18.C06']; // Have 18.03 and equivalent of 18.06
+        const tags = new Map<string, string[]>();
+        const equivalencies = new Map([['18.06', ['18.C06']]]);
+        const result = evaluatePrerequisites(tree, taken, true, true, tags, equivalencies);
+        
+        expect(result.satisfied).toBe(true);
+      });
+    });
   });
 });

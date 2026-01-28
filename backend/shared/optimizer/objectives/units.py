@@ -9,7 +9,7 @@ from typing import Any
 import polars as pl
 from ortools.sat.python import cp_model
 
-from .base import ObjectiveContext, get_tier_penalty
+from .base import ObjectiveContext
 
 
 class MinimizeUnits:

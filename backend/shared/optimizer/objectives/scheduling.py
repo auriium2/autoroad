@@ -125,10 +125,10 @@ class AvoidClassesWithPrefix:
         penalty = get_tier_penalty(tier, base_cost=1)
 
         subject_ids = (context.extra.get('_subject_ids') if context.extra else None) or context.courses_df['subject_id'].to_list()
-        
+
         # Normalize prefixes to uppercase for case-insensitive matching
         prefixes_upper = [p.upper() for p in self.prefixes]
-        
+
         terms = []
         for (course_idx, semester), var in take_vars.items():
             sid = str(subject_ids[course_idx]).upper()

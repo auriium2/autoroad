@@ -287,18 +287,36 @@ class PrerequisiteEvaluator {
   private minimal: boolean;
   private usedCourses: Set<string>;
   private courseTags: Map<string, string[]>; // courseId -> list of tags like ["GIR:CAL1", "HASS:A"]
+  private equivalencies: Map<string, Set<string>>; // courseId -> set of equivalent courseIds
 
   constructor(
     availableCourses: string[],
     allowReuseAcrossRequirements: boolean = false,
     minimal: boolean = true,
-    courseTags: Map<string, string[]> = new Map()
+    courseTags: Map<string, string[]> = new Map(),
+    equivalencies: Map<string, string[]> = new Map()
   ) {
     this.availableCourses = new Set(availableCourses);
     this.allowReuseAcrossRequirements = allowReuseAcrossRequirements;
     this.minimal = minimal;
     this.courseTags = courseTags;
     this.usedCourses = new Set();
+    
+    // Build symmetric equivalency map
+    this.equivalencies = new Map();
+    for (const [courseId, equivList] of equivalencies) {
+      if (!this.equivalencies.has(courseId)) {
+        this.equivalencies.set(courseId, new Set());
+      }
+      for (const equiv of equivList) {
+        this.equivalencies.get(courseId)!.add(equiv);
+        // Add reverse mapping for symmetry
+        if (!this.equivalencies.has(equiv)) {
+          this.equivalencies.set(equiv, new Set());
+        }
+        this.equivalencies.get(equiv)!.add(courseId);
+      }
+    }
   }
 
   evaluate(prereq: PrereqNode): EvaluationResult {
@@ -341,16 +359,25 @@ class PrerequisiteEvaluator {
       };
     }
 
-    // Regular course ID check
-    const canUse = this.allowReuseAcrossRequirements || !this.usedCourses.has(courseId);
+    // Regular course ID check - also check equivalent courses
+    // Build list of courses to check: the course itself + any equivalents
+    const coursesToCheck = [courseId];
+    const equivalents = this.equivalencies.get(courseId);
+    if (equivalents) {
+      coursesToCheck.push(...equivalents);
+    }
 
-    if (this.availableCourses.has(courseId) && canUse) {
-      this.usedCourses.add(courseId);
-      return {
-        satisfied: true,
-        matchedCourses: [courseId],
-        unsatisfiedReasons: []
-      };
+    // Check if any of the courses (or their equivalents) are available
+    for (const checkCourseId of coursesToCheck) {
+      const canUse = this.allowReuseAcrossRequirements || !this.usedCourses.has(checkCourseId);
+      if (this.availableCourses.has(checkCourseId) && canUse) {
+        this.usedCourses.add(checkCourseId);
+        return {
+          satisfied: true,
+          matchedCourses: [checkCourseId],
+          unsatisfiedReasons: []
+        };
+      }
     }
 
     return {
@@ -486,15 +513,23 @@ class PrerequisiteEvaluator {
 
 /**
  * Evaluate prerequisites against a list of available courses
+ * 
+ * @param prereqTree - The prerequisite tree to evaluate
+ * @param availableCourses - List of course IDs that are available/taken
+ * @param allowReuse - Whether courses can be reused across requirements
+ * @param minimal - Whether to return minimal unsatisfied reasons
+ * @param courseTags - Map of courseId -> tags (for GIR/HASS requirements)
+ * @param equivalencies - Map of courseId -> equivalent courseIds (from Fireroad equivalent_subjects)
  */
 export function evaluatePrerequisites(
   prereqTree: PrereqNode,
   availableCourses: string[],
   allowReuse: boolean = true,
   minimal: boolean = true,
-  courseTags: Map<string, string[]> = new Map()
+  courseTags: Map<string, string[]> = new Map(),
+  equivalencies: Map<string, string[]> = new Map()
 ): EvaluationResult {
-  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse, minimal, courseTags);
+  const evaluator = new PrerequisiteEvaluator(availableCourses, allowReuse, minimal, courseTags, equivalencies);
   return evaluator.evaluate(prereqTree);
 }
 

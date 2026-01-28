@@ -2,7 +2,6 @@
 Core optimization logic for the worker.
 """
 
-import asyncio
 import base64
 import json
 import logging
@@ -442,12 +441,25 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         yield {'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10}
 
+        custom_equivalencies: dict[str, list[str]] | None = None
+        if request.objectives:
+            for obj_config in request.objectives:
+                if obj_config.key == 'discourage_equivalent_courses' and obj_config.parameters:
+                    custom_equivalencies = obj_config.parameters.get('custom_equivalencies')
+                    break
+
+        if custom_equivalencies is None:
+            from shared.optimizer.objectives.registry import get_objective_metadata
+            meta = get_objective_metadata('discourage_equivalent_courses')
+            if meta:
+                custom_equivalencies = meta.default_parameters.get('custom_equivalencies')
+
         # Add prerequisite constraints
         with sentry_sdk.start_span(op="optimizer", name="add_prerequisites") as span:
             perf_start = time.time()
             prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
             override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
-            add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids)
+            add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids, custom_equivalencies)
             perf_timings['prerequisites'] = time.time() - perf_start
             span.set_data("duration_seconds", perf_timings['prerequisites'])
 
@@ -475,7 +487,9 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                 needs_hydrant_data = 'no_schedule_conflicts' in constraint_keys or 'schedule_free_time' in constraint_keys
 
                 if needs_hydrant_data:
-                    from shared.optimizer.constraints.conflicts import fetch_hydrant_data_for_semesters
+                    from shared.optimizer.constraints.conflicts import (
+                        fetch_hydrant_data_for_semesters,
+                    )
 
                     # Get extrapolate parameter from constraints that need hydrant data
                     conflicts_config = next((c for c in constraint_configs if c.key == 'no_schedule_conflicts'), None)

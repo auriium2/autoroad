@@ -395,7 +395,7 @@ def parse_fireroad_file(content: str) -> dict[str, Any]:
 
     # If header has threshold=N, wrap requirements in a SubjectThresholdGroup
     # This ensures the total subject count constraint is enforced.
-    # 
+    #
     # We need to flatten the structure to avoid double-wrapping:
     # - If we have a single AllGroup child, use its children directly
     # - Otherwise wrap the reqs as-is
@@ -403,14 +403,14 @@ def parse_fireroad_file(content: str) -> dict[str, Any]:
         # Check if we have a single requirement that's an AllGroup (implicit top-level)
         # In that case, pull its children up to avoid AllGroup consuming contribution_vars
         inner_reqs = reqs_json
-        if (len(reqs_json) == 1 and 
+        if (len(reqs_json) == 1 and
             isinstance(reqs_json[0], dict) and
             reqs_json[0].get("connection-type") == "all" and
             "reqs" in reqs_json[0] and
             "threshold" not in reqs_json[0]):
             # Use the inner requirements directly
             inner_reqs = reqs_json[0]["reqs"]
-        
+
         reqs_json = [{
             "reqs": inner_reqs,
             "connection-type": "all",

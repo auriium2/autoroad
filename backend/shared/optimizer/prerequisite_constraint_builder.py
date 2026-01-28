@@ -15,14 +15,16 @@ class CourseSchedule:
     """
     _instance: "CourseSchedule | None" = None
     _df_id: int | None = None
+    _custom_equiv_hash: int | None = None
 
     courses_df: pl.DataFrame
     planning_year_start: int
     _course_id_to_index: dict[str, int]
     _gir_to_courses: dict[str, list[int]]
     _hass_to_courses: dict[str, list[int]]
+    _equivalent_courses: dict[str, list[int]]#id -> equivalents
 
-    def __init__(self, courses_df: pl.DataFrame, planning_year_start: int):
+    def __init__(self, courses_df: pl.DataFrame, planning_year_start: int, custom_equivalencies: dict[str, list[str]] | None = None):
         self.courses_df = courses_df
         self.planning_year_start = planning_year_start
 
@@ -50,13 +52,52 @@ class CourseSchedule:
                         self._hass_to_courses[hass] = []
                     self._hass_to_courses[hass].append(i)
 
+
+        self._equivalent_courses = {}
+
+        if "equivalent_subjects" in courses_df.columns:
+            equiv_subjects = courses_df["equivalent_subjects"].to_list()
+            for course_id, equiv_list in zip(subject_ids, equiv_subjects):
+                if equiv_list:
+                    if course_id not in self._equivalent_courses:
+                        self._equivalent_courses[course_id] = set()
+                    self._equivalent_courses[course_id].update(equiv_list)
+
+        if custom_equivalencies:
+            for course_id, equivalents in custom_equivalencies.items():
+                if course_id not in self._equivalent_courses:
+                    self._equivalent_courses[course_id] = set()
+                self._equivalent_courses[course_id].update(equivalents)
+                # Add reverse mappings
+                for equiv_id in equivalents:
+                    if equiv_id not in self._equivalent_courses:
+                        self._equivalent_courses[equiv_id] = set()
+                    self._equivalent_courses[equiv_id].add(course_id)
+
+        # Convert sets to lists of indices (including the course itself)
+        equiv_courses_final: dict[str, list[int]] = {}
+        for course_id, equiv_set in self._equivalent_courses.items():
+            if course_id in self._course_id_to_index:
+                equiv_indices = [self._course_id_to_index[course_id]]  # Include the course itself
+                for equiv_id in equiv_set:
+                    if equiv_id in self._course_id_to_index:
+                        equiv_idx = self._course_id_to_index[equiv_id]
+                        if equiv_idx not in equiv_indices:
+                            equiv_indices.append(equiv_idx)
+                if len(equiv_indices) > 1:
+                    equiv_courses_final[course_id] = equiv_indices
+        self._equivalent_courses = equiv_courses_final
+
     @classmethod
-    def get(cls, courses_df: pl.DataFrame, planning_year_start: int) -> "CourseSchedule":
+    def get(cls, courses_df: pl.DataFrame, planning_year_start: int, custom_equivalencies: dict[str, list[str]] | None = None) -> "CourseSchedule":
         """Get or create a cached CourseSchedule instance."""
         df_id = id(courses_df)
-        if cls._instance is None or cls._df_id != df_id:
-            cls._instance = cls(courses_df, planning_year_start)
+        # Hash custom equivalencies to detect changes
+        equiv_hash = hash(frozenset((k, tuple(v)) for k, v in (custom_equivalencies or {}).items()))
+        if cls._instance is None or cls._df_id != df_id or cls._custom_equiv_hash != equiv_hash:
+            cls._instance = cls(courses_df, planning_year_start, custom_equivalencies)
             cls._df_id = df_id
+            cls._custom_equiv_hash = equiv_hash
         return cls._instance
 
     def get_course_index(self, course_id: str) -> int | None:
@@ -67,6 +108,14 @@ class CourseSchedule:
 
     def get_courses_by_hass(self, hass_code: str) -> list[int]:
         return self._hass_to_courses.get(hass_code, [])
+
+    def get_equivalent_course_indices(self, course_id: str) -> list[int]:
+        """Get indices of all courses equivalent to the given course (including itself)."""
+        if course_id in self._equivalent_courses:
+            return self._equivalent_courses[course_id]
+        # Fall back to just the course itself if no equivalents
+        idx = self._course_id_to_index.get(course_id)
+        return [idx] if idx is not None else []
 
 
 @dataclass
@@ -220,30 +269,33 @@ class PrerequisiteConstraintBuilder:
             hass_code = prereq_course_id.split(':', 1)[1]
             return self._build_hass_prereq(hass_code, semester, course_id)
 
-        # Regular course prerequisite
-        prereq_idx = self.ctx.schedule.get_course_index(prereq_course_id)
+        # Regular course prerequisite - also check equivalent courses
+        # Get all equivalent course indices (includes the prereq itself if it exists)
+        equiv_indices = self.ctx.schedule.get_equivalent_course_indices(prereq_course_id)
 
-        if prereq_idx is None:
-            # course is not found. Since we dont have bugs with strings getting passed down here any more it's likely an out of date course
+        if not equiv_indices:
+            # Course not found and has no equivalents
             self.warnings.append(
                 f"Prerequisite course '{prereq_course_id}' not found for {course_id}"
             )
             return self.ctx.model.NewConstant(0)
 
-        cache_key = (prereq_idx, semester)
+        # Use a cache key that includes all equivalent courses (sorted for consistency)
+        cache_key = (tuple(sorted(equiv_indices)), semester)
         if cache_key in self._prereq_taken_before_cache:
             return self._prereq_taken_before_cache[cache_key]
 
         var_name = self.ctx.fresh_name(f"prereq_{prereq_course_id.replace('.', '_')}_before_s{semester}")
         satisfied_var = self.ctx.model.NewBoolVar(var_name)
 
-        # Prerequisite is satisfied if taken in any earlier semester
+        # Prerequisite is satisfied if the prereq OR any equivalent course is taken in any earlier semester
         # Include special semesters (-2, -1) as they happen before regular semesters
         earlier_semesters = list(range(-2, 0)) + list(range(1, semester))
         taken_vars = [
-            self.ctx.take_vars[prereq_idx, s]
+            self.ctx.take_vars[equiv_idx, s]
+            for equiv_idx in equiv_indices
             for s in earlier_semesters
-            if (prereq_idx, s) in self.ctx.take_vars
+            if (equiv_idx, s) in self.ctx.take_vars
         ]
 
         if taken_vars:
@@ -409,7 +461,8 @@ def add_prerequisite_constraints(
     courses_df: pl.DataFrame,
     planning_year_start: int,
     prereq_trees: dict[int, PrereqNode],
-    override_course_ids: set[str] | None = None
+    override_course_ids: set[str] | None = None,
+    custom_equivalencies: dict[str, list[str]] | None = None
 ) -> tuple[ConstraintResult, PrerequisiteConstraintBuilder]:
     """
     Add prerequisite constraints to a CP-SAT model.
@@ -421,6 +474,7 @@ def add_prerequisite_constraints(
         planning_year_start: The starting year for planning
         prereq_trees: Map from course index to its prerequisite tree
         override_course_ids: Set of course IDs marked as override (skip prerequisite checks)
+        custom_equivalencies: User-defined course equivalencies (e.g., {"18.06": ["18.C06"]})
 
     Returns:
         Tuple of (ConstraintResult, PrerequisiteConstraintBuilder) - result has summary, builder has cache stats
@@ -438,7 +492,7 @@ def add_prerequisite_constraints(
         if course_id not in override_course_ids:
             filtered_prereq_trees[course_idx] = prereq_tree
 
-    schedule = CourseSchedule.get(courses_df, planning_year_start)
+    schedule = CourseSchedule.get(courses_df, planning_year_start, custom_equivalencies)
     ctx = ConstraintContext(model, take_vars, schedule)
     builder = PrerequisiteConstraintBuilder(ctx)
 

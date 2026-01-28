@@ -1,12 +1,13 @@
+import asyncio
 import json
 import logging
 import os
 import subprocess
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
-import asyncio
-import time
+
 
 # local dev stuff
 def get_git_version() -> str:
@@ -26,7 +27,6 @@ def get_git_version() -> str:
 
 
 
-import httpx
 
 logger = logging.getLogger("uvicorn.error")
 logging.getLogger("httpx").handlers = logger.handlers
@@ -40,12 +40,12 @@ except ImportError:
     logger.info("python-dotenv not installed, using environment variables directly")
 
 import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from sentry_sdk.integrations.starlette import StarletteIntegration
-from sentry_sdk.integrations.httpx import HttpxIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.httpx import HttpxIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.starlette import StarletteIntegration
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -96,8 +96,8 @@ cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    from shared.services.cache import get_courses_data, get_hydrant_semester_data
     from server.routes.requirements import _fetch_all_requirements
+    from shared.services.cache import get_courses_data, get_hydrant_semester_data
 
     # Startup: initialize shared HTTP client
     get_http_client()

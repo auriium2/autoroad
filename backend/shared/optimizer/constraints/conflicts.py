@@ -86,7 +86,7 @@ def get_section_type_options(course_data: dict[str, Any]) -> list[list[list[tupl
         sections = course_data.get(key, [])
         if not sections:
             continue
-        
+
         options: list[list[tuple[int, int, int]]] = []
         for section in sections:
             if section and len(section) >= 2:
@@ -100,7 +100,7 @@ def get_section_type_options(course_data: dict[str, Any]) -> list[list[list[tupl
                         slots.append((day, start_minutes, end_minutes))
                 if slots:
                     options.append(slots)
-        
+
         if options:
             section_types.append(options)
 
@@ -250,7 +250,7 @@ async def fetch_hydrant_schedule_data(
             required_slots = get_required_slots_from_course(course_data)
             if required_slots:
                 required_result[course_id] = required_slots
-            
+
             section_options = get_section_type_options(course_data)
             if section_options:
                 options_result[course_id] = section_options
@@ -260,7 +260,7 @@ async def fetch_hydrant_schedule_data(
 
 class HydrantScheduleData:
     """Container for Hydrant schedule data used by constraints."""
-    
+
     def __init__(
         self,
         semester_to_slots: dict[int, dict[str, list[tuple[int, int, int]]]],

@@ -152,10 +152,13 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
 
-          return { node, prereqCourseIds, tags, prereqString };
+          // Extract equivalent courses from Fireroad data
+          const equivalents = courseDetails.equivalent_subjects || [];
+
+          return { node, prereqCourseIds, tags, prereqString, equivalents };
         } catch (error) {
           console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
-          return { node, prereqCourseIds: [], tags: [], prereqString: '' };
+          return { node, prereqCourseIds: [], tags: [], prereqString: '', equivalents: [] };
         }
       });
 
@@ -288,7 +291,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
       // Use the shared fetched data, but get fresh section/status from current nodes
       // (courseDetailsQuery.data may have stale node.section values due to caching)
-      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqString, tags }) => {
+      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqString, tags, equivalents }) => {
         const node = uuid2freshNode.get(cachedNode.uuid) || cachedNode;
 
         // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
@@ -297,7 +300,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
         return {
           node,
           prereqString: skipPrereqCheck ? '' : prereqString,
-          tags
+          tags,
+          equivalents
         };
       });
 
@@ -305,6 +309,14 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       const courseId2tags = new Map<string, string[]>();
       for (const { node, tags } of results) {
         courseId2tags.set(node.courseId, tags);
+      }
+
+      // Build equivalencies map from Fireroad data
+      const equivalencies = new Map<string, string[]>();
+      for (const { node, equivalents } of results) {
+        if (equivalents.length > 0) {
+          equivalencies.set(node.courseId, equivalents);
+        }
       }
 
       // Pre-compute courses taken before each section for O(1) lookup
@@ -340,7 +352,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
           // This includes special semesters: -2 (Must Take), -1 (ASE)
           const takenCourses = coursesBySection.get(node.section) || [];
 
-          const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags);
+          const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags, equivalencies);
 
           if (!result.satisfied) {
             // Store unique missing course IDs

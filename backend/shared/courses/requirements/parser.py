@@ -199,7 +199,6 @@ def parse(
         if threshold is not None:
             cutoff, threshold_type, criterion = _parse_threshold(threshold)
             if criterion == 'subjects':
-                # Create dedicated threshold nodes for attribute types
                 if isinstance(leaf, HASS):
                     return HASSThreshold(
                         cutoff=cutoff,
@@ -225,7 +224,7 @@ def parse(
                         req_id=req_id,
                     )
                 else:
-                    # Regular course with threshold - still use SubjectThresholdGroup
+                    # Regular course with threshold
                     return SubjectThresholdGroup(
                         children=(leaf,),
                         cutoff=cutoff,

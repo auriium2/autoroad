@@ -51,10 +51,10 @@ def _course_has_unavoidable_conflict(
             if not _option_conflicts_with_blocked(option_slots, blocked_slots):
                 all_options_conflict = False
                 break
-        
+
         if all_options_conflict:
             return True
-    
+
     return False
 
 
@@ -121,7 +121,7 @@ class ScheduleFreeTime:
 
             course_id = context.courses_df[course_idx, 'subject_id']
             section_types = course_section_options.get(course_id, [])
-            
+
             if not section_types:
                 continue
 

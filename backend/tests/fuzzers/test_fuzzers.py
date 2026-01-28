@@ -244,15 +244,15 @@ class TestRequirementParserFuzzer:
         from shared.courses.requirements.parser import parse_fireroad_response
         from shared.courses.requirements.types import (
             CI,
-            CIThreshold,
             GIR,
-            GIRThreshold,
             HASS,
-            HASSThreshold,
             AllGroup,
             AnyGroup,
+            CIThreshold,
             Course,
+            GIRThreshold,
             Group,
+            HASSThreshold,
             Node,
             PlainString,
             SubjectThresholdGroup,

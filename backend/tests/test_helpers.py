@@ -620,6 +620,49 @@ def get_semester_distribution(
     return distribution
 
 
+def _build_equivalency_mapping(
+    courses_df: pl.DataFrame,
+    custom_equivalencies: dict[str, list[str]] | None = None
+) -> dict[str, set[str]]:
+    """
+    Build equivalency mapping from Fireroad data and custom equivalencies.
+    
+    Returns a dict mapping course_id -> set of equivalent course_ids (including itself).
+    This mirrors the logic in CourseSchedule from prerequisite_constraint_builder.py.
+    """
+    subject_ids = courses_df['subject_id'].to_list()
+
+    # Collect all equivalencies
+    equivalencies: dict[str, set[str]] = {}
+
+    # First, from Fireroad API data
+    if "equivalent_subjects" in courses_df.columns:
+        equiv_subjects = courses_df["equivalent_subjects"].to_list()
+        for course_id, equiv_list in zip(subject_ids, equiv_subjects):
+            if equiv_list:
+                if course_id not in equivalencies:
+                    equivalencies[course_id] = set()
+                equivalencies[course_id].update(equiv_list)
+
+    # Merge custom equivalencies (symmetric - add both directions)
+    if custom_equivalencies:
+        for course_id, equivalents in custom_equivalencies.items():
+            if course_id not in equivalencies:
+                equivalencies[course_id] = set()
+            equivalencies[course_id].update(equivalents)
+            # Add reverse mappings for symmetry
+            for equiv_id in equivalents:
+                if equiv_id not in equivalencies:
+                    equivalencies[equiv_id] = set()
+                equivalencies[equiv_id].add(course_id)
+
+    # Add each course to its own set (so lookups always include the course itself)
+    for course_id in equivalencies:
+        equivalencies[course_id].add(course_id)
+
+    return equivalencies
+
+
 def verify_prerequisites_satisfied(
     solver: cp_model.CpSolver,
     take_vars: dict[int, dict[int, cp_model.IntVar]],
@@ -632,6 +675,7 @@ def verify_prerequisites_satisfied(
     For each course taken, check that:
     1. All prerequisite courses are taken in earlier semesters
     2. Prerequisite groups satisfy their thresholds
+    3. Equivalent courses can satisfy prerequisites
 
     Args:
         solver: Solved CP-SAT solver
@@ -643,6 +687,19 @@ def verify_prerequisites_satisfied(
         Tuple of (all_satisfied, list of violation messages)
     """
     violations = []
+
+    # Build equivalency mapping with default custom equivalencies
+    from shared.optimizer.objectives.registry import get_objective_metadata
+    custom_equivalencies: dict[str, list[str]] | None = None
+    meta = get_objective_metadata('discourage_equivalent_courses')
+    if meta:
+        custom_equivalencies = meta.default_parameters.get('custom_equivalencies')
+
+    equivalencies = _build_equivalency_mapping(courses_df, custom_equivalencies)
+
+    # Build course_id -> index mapping
+    subject_ids = courses_df['subject_id'].to_list()
+    course_id_to_index = {cid: i for i, cid in enumerate(subject_ids)}
 
     # Build schedule: course_idx -> semester taken
     schedule = {}
@@ -664,7 +721,8 @@ def verify_prerequisites_satisfied(
 
         # Check if prerequisites are satisfied before this semester
         if not _check_prereq_node_satisfied(
-            prereq_tree, schedule, semester_taken, courses_df, course_idx, violations
+            prereq_tree, schedule, semester_taken, courses_df, course_idx, violations,
+            equivalencies, course_id_to_index
         ):
             course_id = courses_df.row(course_idx, named=True)['subject_id']
             violations.append(
@@ -681,7 +739,9 @@ def _check_prereq_node_satisfied(
     semester_taken: int,
     courses_df: pl.DataFrame,
     current_course_idx: int,
-    violations: list[str]
+    violations: list[str],
+    equivalencies: dict[str, set[str]],
+    course_id_to_index: dict[str, int]
 ) -> bool:
     """Helper to recursively check if a prerequisite node is satisfied."""
     if isinstance(node, PrereqCourse):
@@ -723,32 +783,26 @@ def _check_prereq_node_satisfied(
                             return True
             return False
 
-        # Regular course prerequisite
-        course_rows = courses_df.with_row_index().filter(
-            pl.col('subject_id') == course_id
-        )
+        # Regular course prerequisite - check the course OR any equivalent
+        # Get all equivalent course IDs (including the course itself)
+        equiv_course_ids = equivalencies.get(course_id, {course_id})
 
-        if len(course_rows) == 0:
-            # Course doesn't exist - can't be satisfied
-            return False
+        # Check if any of the equivalent courses was taken before this semester
+        for equiv_id in equiv_course_ids:
+            if equiv_id in course_id_to_index:
+                equiv_idx = course_id_to_index[equiv_id]
+                if equiv_idx in schedule and schedule[equiv_idx] < semester_taken:
+                    return True
 
-        prereq_course_idx = course_rows.row(0, named=True)['index']
-
-        # Check if this prerequisite was taken before current course
-        if prereq_course_idx not in schedule:
-            return False
-
-        if schedule[prereq_course_idx] >= semester_taken:
-            return False
-
-        return True
+        return False
 
     elif isinstance(node, PrereqGroup):
         # Check how many children are satisfied
         satisfied_count = 0
         for child in node.items:
             if _check_prereq_node_satisfied(
-                child, schedule, semester_taken, courses_df, current_course_idx, violations
+                child, schedule, semester_taken, courses_df, current_course_idx, violations,
+                equivalencies, course_id_to_index
             ):
                 satisfied_count += 1
 
