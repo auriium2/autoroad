@@ -29,7 +29,7 @@ export function SelectedRequirementCard({
   const hasBothVersions = metadata?.hasBothVersions || false;
 
   return (
-    <div className="relative border border-border rounded overflow-hidden" data-tutorial="requirement-card">
+    <div className="relative border border-border rounded overflow-hidden" data-tutorial="requirement-card" data-requirement-key={requirementKey}>
       <div className={`absolute inset-0 pointer-events-none bg-gradient-to-tr from-transparent ${currentSource === 'beta' ? 'to-cyan-400/15' : 'to-blue-500/15'}`} />
 
       <div className="relative z-10 p-3 space-y-2">

@@ -551,14 +551,62 @@ export const tutorialSteps: StepOptions[] = [
     id: 'convert-to-marker',
     title: 'Keep Suggestions',
     text: `Want to keep an optimizer suggestion for next time?<br><br>
-      <strong>Right-click → "Convert to marker"</strong> gives you a marker node!`,
-    attachTo: { element: '[data-course-id="5.111"]', on: 'left' },
-    scrollTo: false,
+    <strong>Right-click → "Convert to marker"</strong> gives you a marker node!`,
+    attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    modalOverlayOpeningPadding: 5000,
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
-      { text: 'Next', action: function() { return this.next(); } },
+      {
+        text: 'Next',
+        action: function() {
+          const markers = useGraphStore.getState().markers;
+          if (markers.some(m => m.courseId === '5.111')) {
+            return this.next();
+          }
+        },
+        disabled: true,
+      },
+      {
+        text: 'Solution',
+        action: function() {
+          const markers = useGraphStore.getState().markers;
+          if (!markers.some(m => m.courseId === '5.111')) {
+            useGraphStore.getState().addMarker('5.111', 0, 'pin');
+            const optimizerNodes = useGraphStore.getState().optimizerNodes;
+            useGraphStore.setState({
+              optimizerNodes: optimizerNodes.filter(n => n.courseId !== '5.111'),
+            });
+          }
+          return this.next();
+        },
+        secondary: true,
+      },
     ],
     beforeShowPromise: () => panToCourse('5.111'),
+    when: {
+      show: function() {
+        const step = this;
+        const checkInterval = setInterval(() => {
+          const markers = useGraphStore.getState().markers;
+          if (markers.some(m => m.courseId === '5.111')) {
+            clearInterval(checkInterval);
+            const nextBtn = step.el?.querySelector('.shepherd-button:not(.shepherd-button-secondary)') as HTMLButtonElement;
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.classList.remove('shepherd-button-disabled');
+            }
+          }
+        }, 300);
+        (step as unknown as { _checkInterval: ReturnType<typeof setInterval> })._checkInterval = checkInterval;
+      },
+      hide: function() {
+        const step = this as unknown as { _checkInterval?: ReturnType<typeof setInterval> };
+        if (step._checkInterval) {
+          clearInterval(step._checkInterval);
+        }
+      },
+    },
   },
 
   // ==========================================
@@ -680,10 +728,21 @@ export const tutorialSteps: StepOptions[] = [
 
   {
     id: 'class-year',
-    title: 'Class Year & Past Semesters',
-    text: `You can select your class year here, which affects what classes are available in which semesters.<br><br>
-      Try enabling <strong style="color: #ef4444">Freeze Past Semesters</strong> to see what happens.`,
+    title: 'Class Year',
+    text: `Select your graduation year here. This affects which academic year each semester corresponds to, determining what classes are available when.`,
     attachTo: { element: '[data-tutorial="class-year"]', on: 'right' },
+    scrollTo: { behavior: 'smooth', block: 'center' },
+    buttons: [
+      { text: 'Back', action: function() { return this.back(); }, secondary: true },
+      { text: 'Next', action: function() { return this.next(); } },
+    ],
+  },
+
+  {
+    id: 'freeze-past',
+    title: 'Freeze Past Semesters',
+    text: `Try enabling <strong style="color: #ef4444">Freeze Past Semesters</strong> to see what happens!`,
+    attachTo: { element: '[data-tutorial="freeze-past"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     modalOverlayOpeningPadding: 5000,
     buttons: [
@@ -736,7 +795,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'freeze-effect',
     title: 'Frozen Semesters',
-    text: `See the <strong style="color: #ef4444">red overlay</strong> on past semesters? That means the optimizer will not place any courses there.<br><br>
+    text: `See the <strong style="color: #ef4444">red overlay</strong> on past semesters? That overlay represents semesters that have passed (based on your year) and means the optimizer will not place any courses there.<br><br>
       For this to work correctly, you <strong style="color: #ef4444">must place the courses you've already taken</strong> in these semesters`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
@@ -841,7 +900,7 @@ export const tutorialSteps: StepOptions[] = [
       <strong style="color: #22d3ee">Beta</strong>: autoroad-updated requirements. Almost always more accurate and override courseroad's vague manual degree requirements<br>
       <strong>Canonical</strong>: official Fireroad version, stable but may be outdated<br><br>
       <small>Beta may have some incorrectness in edge cases. Switch back anytime with <strong>→C</strong>.</small>`,
-    attachTo: { element: '[data-tutorial="requirement-card"]', on: 'right' },
+    attachTo: { element: '[data-requirement-key="major2a"]', on: 'right' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
       { text: 'Back', action: function() { return this.back(); }, secondary: true },
