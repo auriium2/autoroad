@@ -78,11 +78,13 @@ export async function exportToRoadFormat(
 export interface ImportResult {
   markers: Marker[];
   warnings: string[];
+  coursesOfStudy: string[];
 }
 
 export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
   const markers: Marker[] = [];
   const warnings: string[] = [];
+  const coursesOfStudy = roadData.coursesOfStudy || [];
 
   for (const subject of roadData.selectedSubjects) {
     // Check for generic HASS or GIR placeholders
@@ -120,7 +122,7 @@ export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
     markers.push(marker);
   }
 
-  return { markers, warnings };
+  return { markers, warnings, coursesOfStudy };
 }
 
 export function downloadRoadFile(roadData: RoadFormat, filename = 'autoroad.road'): void {
