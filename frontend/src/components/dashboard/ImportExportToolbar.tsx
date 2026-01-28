@@ -16,6 +16,7 @@ export function ImportExportToolbar() {
   const optimizerNodes = useGraphStore(state => state.optimizerNodes);
   const loadRoadData = useGraphStore(state => state.loadRoadData);
   const selectedRequirements = useOptimizationStore(state => state.selectedRequirements);
+  const setRequirements = useOptimizationStore(state => state.setRequirements);
 
   const handleImport = async () => {
     try {
@@ -27,14 +28,19 @@ export function ImportExportToolbar() {
         return;
       }
 
-      const { markers: importedMarkers, warnings } = importFromRoadFormat(roadData);
+      const { markers: importedMarkers, warnings, coursesOfStudy } = importFromRoadFormat(roadData);
 
       loadRoadData({ markers: importedMarkers });
+      
+      // Set the courses of study (degrees) from the file, clearing existing ones
+      if (coursesOfStudy.length > 0) {
+        setRequirements(coursesOfStudy);
+      }
 
       if (warnings.length > 0) {
         showToast({
           title: "Import completed with warnings",
-          description: `Imported ${importedMarkers.length} courses. ${warnings.length} generic requirement(s) skipped.`,
+          description: `Imported ${importedMarkers.length} courses and ${coursesOfStudy.length} degree(s). ${warnings.length} item(s) skipped.`,
           variant: "destructive",
           duration: 5000,
         });
@@ -43,7 +49,7 @@ export function ImportExportToolbar() {
       } else {
         showToast({
           title: "Import successful",
-          description: `Imported ${importedMarkers.length} courses from .road file`,
+          description: `Imported ${importedMarkers.length} courses and ${coursesOfStudy.length} degree(s) from .road file`,
           duration: 3000,
         });
       }
