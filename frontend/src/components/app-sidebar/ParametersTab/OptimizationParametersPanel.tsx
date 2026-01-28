@@ -87,22 +87,31 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   const uniqueCourseIds = [...new Set(allRequirementCourseIds)];
 
 
-  const [prefetchedCourseIds, setPrefetchedCourseIds] = React.useState<Set<string>>(new Set());
+  // Prefetch courses and track which ones exist in the database
+  const [validCourseIds, setValidCourseIds] = React.useState<Set<string>>(new Set());
   React.useEffect(() => {
-    const newCourseIds = uniqueCourseIds.filter(id => !prefetchedCourseIds.has(id));
-    if (newCourseIds.length > 0) {
-      prefetchCourses(queryClient, newCourseIds).then(() => {
-        setPrefetchedCourseIds(prev => new Set([...prev, ...newCourseIds]));
+    const realCourseIds = uniqueCourseIds.filter(id => 
+      !id.startsWith('GIR:') && !id.startsWith('HASS-') && !id.startsWith('CI-')
+    );
+    
+    const uncachedIds = realCourseIds.filter(id => 
+      queryClient.getQueryData(queryKeys.courses.details(id)) === undefined
+    );
+    
+    const buildValidSet = () => new Set(
+      realCourseIds.filter(id => 
+        queryClient.getQueryData(queryKeys.courses.details(id)) !== undefined
+      )
+    );
+    
+    if (uncachedIds.length > 0) {
+      prefetchCourses(queryClient, uncachedIds).then(() => {
+        setValidCourseIds(buildValidSet());
       });
+    } else {
+      setValidCourseIds(buildValidSet());
     }
   }, [uniqueCourseIds.join(','), queryClient]);
-
-  const validCourseIds = new Set(
-    uniqueCourseIds.filter(id => {
-      if (id.startsWith('GIR:') || id.startsWith('HASS-') || id.startsWith('CI-')) return true;
-      return queryClient.getQueryData(queryKeys.courses.details(id)) !== undefined;
-    })
-  );
   
   React.useEffect(() => {
     if (requirementsList && selectedRequirements.length === 0) {

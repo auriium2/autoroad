@@ -18,7 +18,8 @@ function isActualCourse(courseId: string): boolean {
   if (courseId.startsWith('CI-')) return false;
   if (courseId === 'REST') return false;
   
-  return /^\d+\./.test(courseId);
+  // Match course IDs like "6.100A", "18.01", "21G.111", "WGS.101"
+  return /^[\dA-Z]+\./.test(courseId);
 }
 
 export async function prefetchCourses(
@@ -41,7 +42,6 @@ export async function prefetchCourses(
       }
     }
   } catch {
-    // Silently ignore prefetch failures
   }
 }
 
