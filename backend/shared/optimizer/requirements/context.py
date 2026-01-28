@@ -65,6 +65,15 @@ class Ctx:
         u = self.courses_df[course_idx, "total_units"]
         return int(u) if u is not None else 12
 
+    def get_subject_id(self, course_idx: int) -> str:
+        return self.courses_df[course_idx, "subject_id"]
+
+    def is_half_class(self, course_idx: int) -> bool:
+        if "is_half_class" not in self.courses_df.columns:
+            return False
+        val = self.courses_df[course_idx, "is_half_class"]
+        return bool(val) if val is not None else False
+
     def register_aux_var(self, key: str, var: cp_model.IntVar) -> None:
         self.aux_vars[key] = var
 

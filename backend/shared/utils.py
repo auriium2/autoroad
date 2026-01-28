@@ -54,8 +54,6 @@ def is_valid_class_semester(
     else:
         year_ok = str(academic_year) != str(not_offered_year)
 
-    if not musician and cache.subject_ids[class_idx].lower().startswith("21m"):
-        return False
     return semester_ok and year_ok
 
 
@@ -77,7 +75,7 @@ def find_current_school_year() -> tuple[str, str]:
 def semester_idx_to_hydrant_code(semester_idx: int, planning_year_start: int) -> str:
     """
     Convert 1-based semester index to Hydrant semester code.
-    
+
     Semester 1 = Freshman Fall (f{planning_year_start})
     Semester 2 = Freshman IAP (i{planning_year_start + 1})
     Semester 3 = Freshman Spring (s{planning_year_start + 1})
@@ -98,7 +96,7 @@ def semester_idx_to_hydrant_code(semester_idx: int, planning_year_start: int) ->
 def hydrant_code_to_semester_idx(code: str, planning_year_start: int) -> int:
     """
     Convert Hydrant semester code to 1-based semester index.
-    
+
     f25 with planning_year_start=2025 -> 1 (Freshman Fall)
     i26 with planning_year_start=2025 -> 2 (Freshman IAP)
     s26 with planning_year_start=2025 -> 3 (Freshman Spring)

@@ -2,8 +2,8 @@
 Handlers for HASSThreshold nodes.
 
 Generic HASS (category=None or "HASS") uses pairing logic:
-- Courses >= 9 units count as 1 full credit
-- Courses < 9 units count as 0.5 credit (two = 1 full credit)
+- Courses with is_half_class=True count as 0.5 credit (two = 1 full credit)
+- All other courses count as 1 full credit
 
 Category-specific HASS (HASS-A, HASS-H, HASS-S) counts each course as 1.
 """
@@ -20,8 +20,6 @@ from shared.optimizer.requirements.result import (
     CourseIndicesResult,
     UnitsResult,
 )
-
-HASS_FULL_CREDIT_UNITS = 9
 
 
 def _get_hass_indices(node: HASSThreshold, ctx: Ctx) -> list[int]:
@@ -57,15 +55,13 @@ def _hassthreshold_build(node: HASSThreshold, ctx: Ctx, path: str, need_contribu
     ctx.register_var_name(sat, key)
 
     if _uses_pairing(node):
-        # HASS pairing logic: full-credit vs half-credit
         full_indices: list[int] = []
         half_indices: list[int] = []
         for idx in indices:
-            units = ctx.get_units(idx)
-            if units >= HASS_FULL_CREDIT_UNITS:
-                full_indices.append(idx)
-            else:
+            if ctx.is_half_class(idx):
                 half_indices.append(idx)
+            else:
+                full_indices.append(idx)
 
         full_taken_vars: list[cp_model.IntVar] = []
         for idx in full_indices:
