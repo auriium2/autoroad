@@ -122,7 +122,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
     queryKey: queryKeys.courses.batch(courseIdsKey),
     queryFn: () => fireroadApi.getCourseDetailsBatch(allCourseIds),
     staleTime: 24 * 60 * 60 * 1000,
-    enabled: isNerdMode && allCourseIds.length > 0,
+    enabled: allCourseIds.length > 0,
   });
 
   // Build a map of courseId -> course data
@@ -356,7 +356,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
           const courses = isRegularSemester ? getCoursesForSection(section.id) : [];
           const canInteract = isRegularSemester && hasGraduationYear;
 
-          const stats = isNerdMode && isRegularSemester ? getSectionStats(section.id) : null;
+          const stats = isRegularSemester ? getSectionStats(section.id) : null;
           
           // Get calendar year for regular semesters
           const calendarYear = isRegularSemester && hasGraduationYear 
@@ -417,8 +417,10 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
                 </span>
               )}
               {stats && stats.courseCount > 0 && (
-                <div className="mt-1 text-[10px] text-gray-500 whitespace-nowrap">
-                  {stats.units}u · {stats.hours}h{stats.avgRating && ` · ★${stats.avgRating}`}
+                <div className="mt-1 flex items-center gap-2 text-[10px] text-gray-400 whitespace-nowrap">
+                  <span>{stats.units} units</span>
+                  <span>{stats.hours}h</span>
+                  {stats.avgRating && <span>★{stats.avgRating}</span>}
                 </div>
               )}
             </div>

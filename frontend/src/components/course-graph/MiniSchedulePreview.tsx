@@ -460,13 +460,6 @@ function MiniScheduleGrid({ courseIds, targetSemester, isPast }: { courseIds: st
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="mt-1.5 flex items-center gap-3 text-[10px] text-gray-400">
-        <span>{stats.totalUnits} units</span>
-        <span>{stats.totalHours}h</span>
-        {stats.avgRating && <span>★{stats.avgRating}</span>}
-      </div>
-
       {/* Legend */}
       <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
         {courseIds.map((id) => {
