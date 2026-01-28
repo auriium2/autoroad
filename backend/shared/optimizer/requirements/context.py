@@ -29,6 +29,10 @@ class Ctx:
     # Map from course index to requirement paths it can satisfy (for category rewards)
     course_to_requirements: dict[int, set[str]] = field(default_factory=dict)
 
+    # Cache for course "taken" variables (1 if course taken in any semester, 0 otherwise)
+    # Used to avoid double-counting when same course appears in multiple requirement groups
+    _course_taken_vars: dict[int, cp_model.IntVar] = field(default_factory=dict, init=False)
+
     def __post_init__(self) -> None:
         for idx, sid in enumerate(self.courses_df["subject_id"].to_list()):
             self._subject_id2idx[sid] = idx
@@ -71,3 +75,21 @@ class Ctx:
         if course_idx not in self.course_to_requirements:
             self.course_to_requirements[course_idx] = set()
         self.course_to_requirements[course_idx].add(path)
+
+    def get_or_create_taken_var(self, course_idx: int) -> cp_model.IntVar | None:
+        """
+        Get or create a variable indicating whether the course is taken in any semester.
+        This variable is cached to avoid double-counting when the same course appears
+        in multiple requirement groups.
+        """
+        if course_idx in self._course_taken_vars:
+            return self._course_taken_vars[course_idx]
+
+        takes = self.get_takes(course_idx)
+        if not takes:
+            return None
+
+        taken = self.model.NewBoolVar(self.fresh("taken"))
+        self.model.AddMaxEquality(taken, takes)
+        self._course_taken_vars[course_idx] = taken
+        return taken

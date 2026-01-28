@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from ortools.sat.python import cp_model
 
-from shared.courses.requirements.types import SubjectThresholdGroup
+from shared.courses.requirements.types import Leaf, SubjectThresholdGroup
 from shared.optimizer.requirements import dispatch
 from shared.optimizer.requirements.context import Ctx
 from shared.optimizer.requirements.nodes.common import propagate_children_to_parent
@@ -15,6 +15,27 @@ from shared.optimizer.requirements.result import (
     CourseIndicesResult,
     UnitsResult,
 )
+
+
+def _has_duplicate_courses(node: SubjectThresholdGroup, ctx: Ctx, path: str) -> bool:
+    """
+    Check if children contain duplicate course indices.
+    
+    Returns True if the same course appears in multiple children, meaning
+    we need to deduplicate when counting toward the threshold.
+    """
+    seen: set[int] = set()
+    child_paths = [f"{path}.{i}" for i in range(len(node.children))]
+    
+    for i, child in enumerate(node.children):
+        if child.was_pruned:
+            continue
+        result = dispatch.course_indices(child, ctx, child_paths[i])
+        for idx in result.indices:
+            if idx in seen:
+                return True
+            seen.add(idx)
+    return False
 
 
 @dispatch.propagate.register
@@ -26,10 +47,15 @@ def _subjectthreshold_propagate(node: SubjectThresholdGroup, ctx: Ctx, path: str
 @dispatch.build.register
 def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, need_contribution_vars: bool) -> ContributionResult:
     child_paths = [f"{path}.{i}" for i in range(len(node.children))]
+    
+    # Check if we need to use unique course counting (when the same course
+    # appears in multiple children)
+    use_unique_counting = _has_duplicate_courses(node, ctx, path)
 
-    # SubjectThresholdGroup needs contribution_vars from children to count toward threshold
+    # Build children - we need contribution_vars only if children are leaves
+    # (for the simple case). For unique counting, we use course_indices instead.
     child_results = [
-        dispatch.build(child, ctx, child_paths[i], need_contribution_vars=True)
+        dispatch.build(child, ctx, child_paths[i], need_contribution_vars=(not use_unique_counting))
         for i, child in enumerate(node.children)
         if not child.was_pruned
     ]
@@ -41,11 +67,6 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
 
     child_sats: list[cp_model.IntVar] = [r.sat_var for r in child_results if r.sat_var is not None]
 
-    # Collect contribution_vars from children for threshold calculation
-    child_contribution_vars: list[cp_model.IntVar] = []
-    for r in child_results:
-        child_contribution_vars.extend(r.contribution_vars)
-
     sat = ctx.model.NewBoolVar(ctx.fresh("subj_thresh"))
 
     key = node.req_id or node.title or "SubjectThresholdGroup"
@@ -55,26 +76,66 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
     if not child_results:
         ctx.model.Add(sat == 0)
         errors.append("SubjectThresholdGroup has no valid children")
-        contribution_vars = child_contribution_vars if need_contribution_vars else []
         return ContributionResult(
             sat_var=sat,
-            contribution_vars=contribution_vars,
+            contribution_vars=[],
             has_nontrivial_threshold=node.cutoff > 0,
             warnings=warnings,
             errors=errors
         )
 
-    # Threshold constraint: sum contributions >= cutoff
-    if child_contribution_vars:
-        total = sum(child_contribution_vars)
-        if node.threshold_type == "GTE":
-            ctx.model.Add(total >= node.cutoff).OnlyEnforceIf(sat)
-            ctx.model.Add(total < node.cutoff).OnlyEnforceIf(sat.Not())
+    # Build threshold constraint based on counting method
+    if use_unique_counting:
+        # Collect all course indices from children and deduplicate
+        all_indices: list[int] = []
+        for i, child in enumerate(node.children):
+            if child.was_pruned:
+                continue
+            result = dispatch.course_indices(child, ctx, child_paths[i])
+            all_indices.extend(result.indices)
+            warnings.extend(result.warnings)
+            errors.extend(result.errors)
+        
+        unique_indices = list(set(all_indices))
+        
+        # Create unique taken_vars for threshold counting
+        unique_taken_vars: list[cp_model.IntVar] = []
+        for idx in unique_indices:
+            taken = ctx.get_or_create_taken_var(idx)
+            if taken is not None:
+                unique_taken_vars.append(taken)
+        
+        if unique_taken_vars:
+            total = sum(unique_taken_vars)
+            if node.threshold_type == "GTE":
+                ctx.model.Add(total >= node.cutoff).OnlyEnforceIf(sat)
+                ctx.model.Add(total < node.cutoff).OnlyEnforceIf(sat.Not())
+            else:
+                ctx.model.Add(total <= node.cutoff).OnlyEnforceIf(sat)
+                ctx.model.Add(total > node.cutoff).OnlyEnforceIf(sat.Not())
         else:
-            ctx.model.Add(total <= node.cutoff).OnlyEnforceIf(sat)
-            ctx.model.Add(total > node.cutoff).OnlyEnforceIf(sat.Not())
+            ctx.model.Add(sat == 0)
+        
+        # For contribution_vars, return the unique taken_vars
+        threshold_vars = unique_taken_vars
     else:
-        ctx.model.Add(sat == 0)
+        # Simple case: children are leaves, use contribution_vars directly
+        child_contribution_vars: list[cp_model.IntVar] = []
+        for r in child_results:
+            child_contribution_vars.extend(r.contribution_vars)
+        
+        if child_contribution_vars:
+            total = sum(child_contribution_vars)
+            if node.threshold_type == "GTE":
+                ctx.model.Add(total >= node.cutoff).OnlyEnforceIf(sat)
+                ctx.model.Add(total < node.cutoff).OnlyEnforceIf(sat.Not())
+            else:
+                ctx.model.Add(total <= node.cutoff).OnlyEnforceIf(sat)
+                ctx.model.Add(total > node.cutoff).OnlyEnforceIf(sat.Not())
+        else:
+            ctx.model.Add(sat == 0)
+        
+        threshold_vars = child_contribution_vars
 
     # Connection constraint
     if child_sats:
@@ -112,7 +173,7 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
     # Propagate course-to-requirement mappings from children up to this node
     dispatch.propagate(node, ctx, path)
 
-    contribution_vars = child_contribution_vars if need_contribution_vars else []
+    contribution_vars = threshold_vars if need_contribution_vars else []
     return ContributionResult(
         sat_var=sat,
         contribution_vars=contribution_vars,

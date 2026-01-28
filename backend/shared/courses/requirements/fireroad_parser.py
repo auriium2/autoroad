@@ -297,6 +297,15 @@ def parse_fireroad_file(content: str) -> dict[str, Any]:
     title = header_parts[2] if len(header_parts) > 2 else medium
     title_no_degree = header_parts[3] if len(header_parts) > 3 else title
 
+    # Parse header metadata (e.g., threshold=6, url=...)
+    header_threshold: int | None = None
+    for part in header_parts[4:]:
+        if part.startswith("threshold="):
+            try:
+                header_threshold = int(part.split("=", 1)[1])
+            except ValueError:
+                pass
+
     # Skip empty lines after header to find description
     idx = 1
     while idx < len(lines) and not lines[idx]:
@@ -382,11 +391,42 @@ def parse_fireroad_file(content: str) -> dict[str, Any]:
             top_level_reqs = [list(variables.values())[-1]]
 
     # Convert to JSON format
+    reqs_json = [stmt.to_json() for stmt in top_level_reqs]
+
+    # If header has threshold=N, wrap requirements in a SubjectThresholdGroup
+    # This ensures the total subject count constraint is enforced.
+    # 
+    # We need to flatten the structure to avoid double-wrapping:
+    # - If we have a single AllGroup child, use its children directly
+    # - Otherwise wrap the reqs as-is
+    if header_threshold is not None and header_threshold > 0:
+        # Check if we have a single requirement that's an AllGroup (implicit top-level)
+        # In that case, pull its children up to avoid AllGroup consuming contribution_vars
+        inner_reqs = reqs_json
+        if (len(reqs_json) == 1 and 
+            isinstance(reqs_json[0], dict) and
+            reqs_json[0].get("connection-type") == "all" and
+            "reqs" in reqs_json[0] and
+            "threshold" not in reqs_json[0]):
+            # Use the inner requirements directly
+            inner_reqs = reqs_json[0]["reqs"]
+        
+        reqs_json = [{
+            "reqs": inner_reqs,
+            "connection-type": "all",
+            "threshold": {
+                "type": "GTE",
+                "cutoff": header_threshold,
+                "criterion": "subjects",
+            },
+            "title": title_no_degree,
+        }]
+
     return {
         "short": short,
         "medium": medium,
         "title": title,
         "title_no_degree": title_no_degree,
         "description": description,
-        "reqs": [stmt.to_json() for stmt in top_level_reqs],
+        "reqs": reqs_json,
     }
