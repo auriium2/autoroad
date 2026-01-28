@@ -102,7 +102,41 @@ class UnitThresholdGroup:
     was_pruned: bool = False
 
 
+@dataclass(frozen=True)
+class HASSThreshold:
+    """Threshold requirement for HASS courses (e.g., "take 8 HASS subjects")."""
+    cutoff: int
+    category: HASSCategory | None = None  # None or "HASS" = generic (uses pairing)
+    threshold_type: ThresholdType = "GTE"
+    title: str | None = None
+    req_id: str | None = None
+    was_pruned: bool = False
+
+
+@dataclass(frozen=True)
+class CIThreshold:
+    """Threshold requirement for CI courses (e.g., "take 2 CI-H courses")."""
+    cutoff: int
+    ci_type: CIType
+    threshold_type: ThresholdType = "GTE"
+    title: str | None = None
+    req_id: str | None = None
+    was_pruned: bool = False
+
+
+@dataclass(frozen=True)
+class GIRThreshold:
+    """Threshold requirement for GIR courses (e.g., "take 2 REST subjects")."""
+    cutoff: int
+    gir_code: GIRCode
+    threshold_type: ThresholdType = "GTE"
+    title: str | None = None
+    req_id: str | None = None
+    was_pruned: bool = False
+
+
 # Type unions
-Node = Course | GIR | HASS | CI | PlainString | AllGroup | AnyGroup | SubjectThresholdGroup | UnitThresholdGroup
+Node = Course | GIR | HASS | CI | PlainString | AllGroup | AnyGroup | SubjectThresholdGroup | UnitThresholdGroup | HASSThreshold | CIThreshold | GIRThreshold
 Leaf = Course | GIR | HASS | CI | PlainString
+AttributeThreshold = HASSThreshold | CIThreshold | GIRThreshold
 Group = AllGroup | AnyGroup | SubjectThresholdGroup | UnitThresholdGroup

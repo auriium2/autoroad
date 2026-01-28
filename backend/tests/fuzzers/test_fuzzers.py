@@ -244,8 +244,11 @@ class TestRequirementParserFuzzer:
         from shared.courses.requirements.parser import parse_fireroad_response
         from shared.courses.requirements.types import (
             CI,
+            CIThreshold,
             GIR,
+            GIRThreshold,
             HASS,
+            HASSThreshold,
             AllGroup,
             AnyGroup,
             Course,
@@ -260,8 +263,8 @@ class TestRequirementParserFuzzer:
 
         def check_types(node: Node, path: str = "root") -> None:
             """Recursively check that all nodes are valid types."""
-            valid_types = (AllGroup, AnyGroup, Course, CI, GIR, HASS, PlainString,
-                          SubjectThresholdGroup, UnitThresholdGroup)
+            valid_types = (AllGroup, AnyGroup, Course, CI, CIThreshold, GIR, GIRThreshold,
+                          HASS, HASSThreshold, PlainString, SubjectThresholdGroup, UnitThresholdGroup)
 
             if not isinstance(node, valid_types):
                 invalid_types.append((path, type(node).__name__))

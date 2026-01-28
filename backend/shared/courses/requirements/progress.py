@@ -5,8 +5,11 @@ from typing import Any
 
 from shared.courses.requirements.types import (
     CI,
+    CIThreshold,
     GIR,
+    GIRThreshold,
     HASS,
+    HASSThreshold,
     AllGroup,
     AnyGroup,
     Course,
@@ -52,10 +55,16 @@ def compute_progress(
         return _compute_course_progress(node, selected_subjects, id2course)
     elif isinstance(node, GIR):
         return _compute_gir_progress(node, selected_subjects, id2course)
+    elif isinstance(node, GIRThreshold):
+        return _compute_gir_threshold_progress(node, selected_subjects, id2course)
     elif isinstance(node, HASS):
         return _compute_hass_progress(node, selected_subjects, id2course)
+    elif isinstance(node, HASSThreshold):
+        return _compute_hass_threshold_progress(node, selected_subjects, id2course)
     elif isinstance(node, CI):
         return _compute_ci_progress(node, selected_subjects, id2course)
+    elif isinstance(node, CIThreshold):
+        return _compute_ci_threshold_progress(node, selected_subjects, id2course)
     elif isinstance(node, PlainString):
         return _compute_plainstring_progress(node)
     elif isinstance(node, AllGroup):
@@ -163,6 +172,96 @@ def _compute_ci_progress(
         progress=1 if fulfilled else 0,
         max=1,
         percent_fulfilled=100.0 if fulfilled else 0.0,
+        sat_courses=sat_courses,
+        title=node.title,
+        req_id=node.req_id,
+    )
+
+
+def _compute_gir_threshold_progress(
+    node: GIRThreshold,
+    selected_subjects: set[str],
+    id2course: dict[str, dict[str, Any]],
+) -> ProgressResult:
+    """Threshold requirement for GIR courses (e.g., 'take 2 REST subjects')."""
+    sat_courses: list[str] = []
+    for course_id in selected_subjects:
+        course = id2course.get(course_id, {})
+        if course.get("gir_attribute") == node.gir_code:
+            sat_courses.append(course_id)
+
+    cutoff = node.cutoff
+    progress = min(len(sat_courses), cutoff)
+    fulfilled = len(sat_courses) >= cutoff
+
+    return ProgressResult(
+        fulfilled=fulfilled,
+        progress=progress,
+        max=cutoff,
+        percent_fulfilled=(progress / cutoff * 100) if cutoff > 0 else 100.0,
+        sat_courses=sat_courses,
+        title=node.title,
+        req_id=node.req_id,
+    )
+
+
+def _compute_hass_threshold_progress(
+    node: HASSThreshold,
+    selected_subjects: set[str],
+    id2course: dict[str, dict[str, Any]],
+) -> ProgressResult:
+    """Threshold requirement for HASS courses (e.g., 'take 8 HASS subjects')."""
+    sat_courses: list[str] = []
+    for course_id in selected_subjects:
+        course = id2course.get(course_id, {})
+        hass_attr = course.get("hass_attribute", "")
+        if not hass_attr:
+            continue
+        hass_attrs = hass_attr.split(",") if "," in hass_attr else [hass_attr]
+
+        if node.category is None or node.category == "HASS":
+            # Any HASS course satisfies
+            if any(h.startswith("HASS") for h in hass_attrs):
+                sat_courses.append(course_id)
+        elif node.category in hass_attrs:
+            sat_courses.append(course_id)
+
+    cutoff = node.cutoff
+    progress = min(len(sat_courses), cutoff)
+    fulfilled = len(sat_courses) >= cutoff
+
+    return ProgressResult(
+        fulfilled=fulfilled,
+        progress=progress,
+        max=cutoff,
+        percent_fulfilled=(progress / cutoff * 100) if cutoff > 0 else 100.0,
+        sat_courses=sat_courses,
+        title=node.title,
+        req_id=node.req_id,
+    )
+
+
+def _compute_ci_threshold_progress(
+    node: CIThreshold,
+    selected_subjects: set[str],
+    id2course: dict[str, dict[str, Any]],
+) -> ProgressResult:
+    """Threshold requirement for CI courses (e.g., 'take 2 CI-H courses')."""
+    sat_courses: list[str] = []
+    for course_id in selected_subjects:
+        course = id2course.get(course_id, {})
+        if course.get("communication_requirement") == node.ci_type:
+            sat_courses.append(course_id)
+
+    cutoff = node.cutoff
+    progress = min(len(sat_courses), cutoff)
+    fulfilled = len(sat_courses) >= cutoff
+
+    return ProgressResult(
+        fulfilled=fulfilled,
+        progress=progress,
+        max=cutoff,
+        percent_fulfilled=(progress / cutoff * 100) if cutoff > 0 else 100.0,
         sat_courses=sat_courses,
         title=node.title,
         req_id=node.req_id,

@@ -23,8 +23,11 @@ from typing import Any
 
 from shared.courses.requirements.types import (
     CI,
+    CIThreshold,
     GIR,
+    GIRThreshold,
     HASS,
+    HASSThreshold,
     AllGroup,
     AnyGroup,
     ConnectionType,
@@ -192,19 +195,45 @@ def parse(
         leaf = _parse_leaf(course_id, title, req_id)
 
         # Check if leaf has a threshold (e.g., "select any 8 HASS subjects")
-        # If so, wrap it in a SubjectThresholdGroup
         threshold = req_item.get('threshold')
         if threshold is not None:
             cutoff, threshold_type, criterion = _parse_threshold(threshold)
             if criterion == 'subjects':
-                return SubjectThresholdGroup(
-                    children=(leaf,),
-                    cutoff=cutoff,
-                    threshold_type=threshold_type,
-                    connection_type='any',
-                    title=title,
-                    req_id=req_id,
-                )
+                # Create dedicated threshold nodes for attribute types
+                if isinstance(leaf, HASS):
+                    return HASSThreshold(
+                        cutoff=cutoff,
+                        category=leaf.category,
+                        threshold_type=threshold_type,
+                        title=title,
+                        req_id=req_id,
+                    )
+                elif isinstance(leaf, CI):
+                    return CIThreshold(
+                        cutoff=cutoff,
+                        ci_type=leaf.ci_type,
+                        threshold_type=threshold_type,
+                        title=title,
+                        req_id=req_id,
+                    )
+                elif isinstance(leaf, GIR):
+                    return GIRThreshold(
+                        cutoff=cutoff,
+                        gir_code=leaf.gir_code,
+                        threshold_type=threshold_type,
+                        title=title,
+                        req_id=req_id,
+                    )
+                else:
+                    # Regular course with threshold - still use SubjectThresholdGroup
+                    return SubjectThresholdGroup(
+                        children=(leaf,),
+                        cutoff=cutoff,
+                        threshold_type=threshold_type,
+                        connection_type='any',
+                        title=title,
+                        req_id=req_id,
+                    )
             else:
                 return UnitThresholdGroup(
                     children=(leaf,),
@@ -365,6 +394,16 @@ def node_to_string(node: Node, indent: int = 0, show_ids: bool = False) -> str:
         desc = node.description[:40] + "..." if len(node.description) > 40 else node.description
         title_part = f" ({node.title})" if node.title else ""
         return f"{prefix}PlainString: '{desc}'{title_part}{id_part}{pruned_mark}"
+
+    if isinstance(node, HASSThreshold):
+        cat = node.category or "any"
+        return f"{prefix}HASSThreshold: {cat} >= {node.cutoff}{id_part}{pruned_mark}"
+
+    if isinstance(node, CIThreshold):
+        return f"{prefix}CIThreshold: {node.ci_type} >= {node.cutoff}{id_part}{pruned_mark}"
+
+    if isinstance(node, GIRThreshold):
+        return f"{prefix}GIRThreshold: {node.gir_code} >= {node.cutoff}{id_part}{pruned_mark}"
 
     # Group types
     lines = []
