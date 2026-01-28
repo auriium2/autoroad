@@ -4,10 +4,24 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from shared.services.cache import get_courses_data
+from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup, PrereqNode
+from shared.services.cache import get_courses_data, get_parsed_prerequisites
 
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
+
+
+def _prereq_to_dict(node: PrereqNode) -> dict[str, Any]:
+    """Convert a PrereqNode to a JSON-serializable dict."""
+    if isinstance(node, PrereqCourse):
+        return {"type": "course", "courseId": node.course_id}
+    elif isinstance(node, PrereqGroup):
+        return {
+            "type": "group",
+            "threshold": node.threshold,
+            "items": [_prereq_to_dict(item) for item in node.items]
+        }
+    return {}
 
 # Virtual items for generic requirement markers
 # These appear in search results and can be dragged to semesters
@@ -199,10 +213,16 @@ async def lookup_course(request: Request, course_id: str):
             return item
 
     all_courses = await get_courses_data()
+    parsed_prereqs = await get_parsed_prerequisites()
 
     for course in all_courses:
         if course.get("subject_id") == course_id:
-            return course
+            # Add parsed prereq tree with equivalencies injected
+            result = dict(course)
+            prereq_tree = parsed_prereqs.get(course_id)
+            if prereq_tree:
+                result["prereqTree"] = _prereq_to_dict(prereq_tree)
+            return result
 
     raise HTTPException(status_code=404, detail=f"Course '{course_id}' not found")
 

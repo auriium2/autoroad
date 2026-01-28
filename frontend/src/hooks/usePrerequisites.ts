@@ -4,10 +4,24 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fireroadApi } from '@/services/fireroad';
-import { extractCourseIds, evaluatePrerequisites } from '@/lib/prerequisites';
-import { getCachedPrereqTree } from '@/lib/cache';
+import { extractCourseIds, evaluatePrerequisites, type PrereqNode } from '@/lib/prerequisites';
 import { queryKeys } from '@/lib/queryKeys';
 import type { CourseNode } from '@/types';
+import type { PrereqTreeNode } from '@/types/models/fireroad';
+
+/**
+ * Convert API prereq tree to internal PrereqNode format
+ */
+function apiTreeToPrereqNode(tree: PrereqTreeNode): PrereqNode {
+  if (tree.type === 'course') {
+    return { type: 'course', courseId: tree.courseId! };
+  }
+  return {
+    type: 'group',
+    threshold: tree.threshold!,
+    items: (tree.items || []).map(apiTreeToPrereqNode)
+  };
+}
 
 interface CourseDetailsWithPrereqs {
   node: CourseNode;
@@ -22,13 +36,12 @@ interface CourseDetailsWithPrereqs {
 async function fetchPrerequisitesForCourse(courseId: string): Promise<string[]> {
   try {
     const courseDetails = await fireroadApi.getCourseDetails(courseId);
-    const prereqString = courseDetails.prerequisites || '';
-
-    if (!prereqString) {
+    
+    if (!courseDetails.prereqTree) {
       return [];
     }
 
-    const prereqTree = getCachedPrereqTree(prereqString);
+    const prereqTree = apiTreeToPrereqNode(courseDetails.prereqTree);
     return extractCourseIds(prereqTree);
   } catch (error) {
     console.warn(`Failed to fetch prerequisites for ${courseId}:`, error);
@@ -63,13 +76,12 @@ export function useCheckCoursePlacement(
     queryFn: async () => {
       try {
         const courseDetails = await fireroadApi.getCourseDetails(courseId);
-        const prereqString = courseDetails.prerequisites || '';
 
-        if (!prereqString) {
+        if (!courseDetails.prereqTree) {
           return { satisfied: true, missing: [] };
         }
 
-        const prereqTree = getCachedPrereqTree(prereqString);
+        const prereqTree = apiTreeToPrereqNode(courseDetails.prereqTree);
 
         const takenCourses = allNodes
           .filter(n => n.section < section)
@@ -132,16 +144,14 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
             queryFn: () => fireroadApi.getCourseDetails(node.courseId),
             staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
           });
-          const prereqString = courseDetails.prerequisites || '';
 
+          // Use prereqTree from API (has equivalencies injected)
+          let prereqTree: PrereqNode | null = null;
           let prereqCourseIds: string[] = [];
-          if (prereqString) {
-            try {
-              const prereqTree = getCachedPrereqTree(prereqString);
-              prereqCourseIds = extractCourseIds(prereqTree);
-            } catch {
-              // Ignore parse errors
-            }
+          
+          if (courseDetails.prereqTree) {
+            prereqTree = apiTreeToPrereqNode(courseDetails.prereqTree);
+            prereqCourseIds = extractCourseIds(prereqTree);
           }
 
           const tags: string[] = [];
@@ -152,13 +162,10 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
 
-          // Extract equivalent courses from Fireroad data
-          const equivalents = courseDetails.equivalent_subjects || [];
-
-          return { node, prereqCourseIds, tags, prereqString, equivalents };
+          return { node, prereqCourseIds, tags, prereqTree };
         } catch (error) {
           console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
-          return { node, prereqCourseIds: [], tags: [], prereqString: '', equivalents: [] };
+          return { node, prereqCourseIds: [], tags: [], prereqTree: null };
         }
       });
 
@@ -201,11 +208,11 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
 
       // Use the shared fetched data, but get fresh section from current nodes
       // (courseDetailsQuery.data may have stale node.section values due to caching)
-      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqCourseIds, tags, prereqString }) => ({
+      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqCourseIds, tags, prereqTree }) => ({
         node: uuid2freshNode.get(cachedNode.uuid) || cachedNode,
         prereqCourseIds,
         tags,
-        prereqString,
+        prereqTree,
       }));
 
       // Build tag -> courses map
@@ -220,13 +227,11 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
       }
 
       // Build edges from results - only draw edges to courses that actually satisfy the prerequisites
-      for (const { node, prereqString } of results) {
+      for (const { node, prereqTree } of results) {
         // Skip if no prerequisites
-        if (!prereqString) continue;
+        if (!prereqTree) continue;
 
         try {
-          const prereqTree = getCachedPrereqTree(prereqString);
-
           // Get courses taken before this node
           const takenCourseIds = results
             .filter(r => r.node.section < node.section)
@@ -291,7 +296,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
       // Use the shared fetched data, but get fresh section/status from current nodes
       // (courseDetailsQuery.data may have stale node.section values due to caching)
-      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqString, tags, equivalents }) => {
+      const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqTree, tags }) => {
         const node = uuid2freshNode.get(cachedNode.uuid) || cachedNode;
 
         // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
@@ -299,9 +304,8 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
 
         return {
           node,
-          prereqString: skipPrereqCheck ? '' : prereqString,
-          tags,
-          equivalents
+          prereqTree: skipPrereqCheck ? null : prereqTree,
+          tags
         };
       });
 
@@ -309,14 +313,6 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       const courseId2tags = new Map<string, string[]>();
       for (const { node, tags } of results) {
         courseId2tags.set(node.courseId, tags);
-      }
-
-      // Build equivalencies map from Fireroad data
-      const equivalencies = new Map<string, string[]>();
-      for (const { node, equivalents } of results) {
-        if (equivalents.length > 0) {
-          equivalencies.set(node.courseId, equivalents);
-        }
       }
 
       // Pre-compute courses taken before each section for O(1) lookup
@@ -339,20 +335,19 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       }
 
       // Evaluate prerequisites for each node
-      for (const { node, prereqString } of results) {
-        if (!prereqString) {
+      // Note: prereqTree from API already has equivalencies injected, so no need to pass them separately
+      for (const { node, prereqTree } of results) {
+        if (!prereqTree) {
           uuid2missingPrereqs.set(node.uuid, []);
           continue;
         }
 
         try {
-          const prereqTree = getCachedPrereqTree(prereqString);
-
           // Get courses taken before this node's section (O(1) lookup)
           // This includes special semesters: -2 (Must Take), -1 (ASE)
           const takenCourses = coursesBySection.get(node.section) || [];
 
-          const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags, equivalencies);
+          const result = evaluatePrerequisites(prereqTree, takenCourses, true, true, courseId2tags);
 
           if (!result.satisfied) {
             // Store unique missing course IDs

@@ -61,7 +61,7 @@ const queryClient = new QueryClient({
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== "undefined" ? window.localStorage : ({} as Storage),
-  key: "autoroad_query_cache",
+  key: "autoroad_query_cache_v2", // Bumped version to invalidate old cache without prereqTree
 });
 
 export function Providers({ children }: { children: React.ReactNode }) {

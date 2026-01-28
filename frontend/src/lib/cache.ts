@@ -1,47 +1,12 @@
 /**
  * Caching Utilities
- * Client-side prerequisite cache and course prefetching
+ * Course prefetching and requirement extraction
  */
 
-import QuickLRU from 'quick-lru';
 import { QueryClient } from "@tanstack/react-query";
 import { fireroadApi, type RequirementTree, type RequirementNode } from "@/services/fireroad";
 import { optimizerApi } from "@/services/optimizer";
 import { queryKeys } from "@/lib/queryKeys";
-import { parseFireroad, type PrereqNode } from './prerequisites';
-
-// ============================================================================
-// Client-Side Prerequisite Cache
-// ============================================================================
-
-const prereqTreeCache = new QuickLRU<string, PrereqNode>({ maxSize: 500 });
-
-export function getCachedPrereqTree(prereqString: string): PrereqNode {
-  if (!prereqString || prereqString.trim() === '') {
-    return { type: 'group', threshold: 0, items: [] };
-  }
-
-  const cached = prereqTreeCache.get(prereqString);
-  if (cached) {
-    return cached;
-  }
-
-  const parsed = parseFireroad(prereqString);
-  prereqTreeCache.set(prereqString, parsed);
-  
-  return parsed;
-}
-
-export function clearPrereqCache(): void {
-  prereqTreeCache.clear();
-}
-
-export function getPrereqCacheStats() {
-  return {
-    size: prereqTreeCache.size,
-    maxSize: 500,
-  };
-}
 
 // ============================================================================
 // Course Prefetching

@@ -3,12 +3,20 @@
  * Used by both client-side services and Next.js API routes
  */
 
+export interface PrereqTreeNode {
+  type: 'course' | 'group';
+  courseId?: string;  // for type === 'course'
+  threshold?: number;  // for type === 'group'
+  items?: PrereqTreeNode[];  // for type === 'group'
+}
+
 export interface FireroadCourse {
   subject_id: string;
   title: string;
   total_units: number;
   description?: string;
   prerequisites?: string;
+  prereqTree?: PrereqTreeNode;  // Parsed prereq tree with equivalencies injected
   corequisites?: string;
   is_variable_units?: boolean;
   is_historical?: boolean;

@@ -75,9 +75,57 @@ def _calculate_imdb_rating(rating: float | None, enrollment: int | None) -> floa
     return round(weighted, 1)
 
 
+def _build_equivalency_map(courses: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Build a symmetric equivalency map from course data."""
+    equivalencies: dict[str, set[str]] = {}
+    
+    for course in courses:
+        course_id = course.get("subject_id")
+        equiv_list = course.get("equivalent_subjects")
+        if course_id and equiv_list:
+            if course_id not in equivalencies:
+                equivalencies[course_id] = set()
+            equivalencies[course_id].update(equiv_list)
+            # Add reverse mappings for symmetry
+            for equiv_id in equiv_list:
+                if equiv_id not in equivalencies:
+                    equivalencies[equiv_id] = set()
+                equivalencies[equiv_id].add(course_id)
+    
+    return {k: list(v) for k, v in equivalencies.items()}
+
+
+def _inject_equivalencies(node: PrereqNode, equivalencies: dict[str, list[str]]) -> PrereqNode:
+    """
+    Recursively inject equivalent courses into a prereq tree.
+    
+    Transforms PrereqCourse("18.06") into PrereqGroup(threshold=1, items=(PrereqCourse("18.06"), PrereqCourse("18.C06")))
+    when 18.06 has equivalents.
+    """
+    from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
+    
+    if isinstance(node, PrereqCourse):
+        equiv_list = equivalencies.get(node.course_id)
+        if equiv_list:
+            # Create OR group: original course OR any equivalent
+            items = [node] + [PrereqCourse(course_id=equiv_id) for equiv_id in equiv_list]
+            return PrereqGroup(threshold=1, items=tuple(items))
+        return node
+    
+    elif isinstance(node, PrereqGroup):
+        # Recursively process children
+        new_items = tuple(_inject_equivalencies(item, equivalencies) for item in node.items)
+        return PrereqGroup(threshold=node.threshold, items=new_items, was_pruned=node.was_pruned)
+    
+    return node
+
+
 def _parse_prerequisites(courses: list[dict[str, Any]]) -> dict[str, PrereqNode]:
     """Parse all prerequisites and return a map from subject_id to PrereqNode."""
     from shared.courses.prerequisites.parser import parse_fireroad
+
+    # Build equivalency map first
+    equivalencies = _build_equivalency_map(courses)
 
     id2prereq: dict[str, PrereqNode] = {}
     for course in courses:
@@ -86,6 +134,8 @@ def _parse_prerequisites(courses: list[dict[str, Any]]) -> dict[str, PrereqNode]
             try:
                 tree = parse_fireroad(prereq_str)
                 if tree is not None:
+                    # Inject equivalencies into the tree
+                    tree = _inject_equivalencies(tree, equivalencies)
                     id2prereq[course["subject_id"]] = tree
             except Exception:
                 pass

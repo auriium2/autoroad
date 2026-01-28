@@ -19,10 +19,11 @@ export function OptimizeButton() {
   const cancelOptimization = useGraphStore(state => state.cancelOptimization);
   const optimizationProgress = useGraphStore(state => state.optimizationProgress);
   const markers = useGraphStore(state => state.markers);
+  const optimizerNodes = useGraphStore(state => state.optimizerNodes);
   const isOptimizing = useGraphStore(state => state.isOptimizing);
   const lastOptimizationStatus = useGraphStore(state => state.lastOptimizationStatus);
 
-  const { storeNodes } = useStoreNodes(markers, []);
+  const { storeNodes } = useStoreNodes(markers, optimizerNodes);
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(storeNodes);
   const { hasWrongSemester, hasDuplicateCourses, duplicateCourseIds, hasFreshmanFallOverload, freshmanFallUnits } = useBlockingErrors(markers);
 

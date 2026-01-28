@@ -1,14 +1,11 @@
 /**
  * Tests for cache utilities
- * Tests prerequisite caching, course prefetching, and requirement extraction
+ * Tests course prefetching and requirement extraction
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
 import {
-  getCachedPrereqTree,
-  clearPrereqCache,
-  getPrereqCacheStats,
   prefetchCourses,
   extractCoursesFromRequirement,
 } from '../cache';
@@ -21,97 +18,7 @@ vi.mock('@/services/fireroad', () => ({
   },
 }));
 
-vi.mock('@/lib/prerequisites', () => ({
-  parseFireroad: vi.fn((str: string) => {
-    // Simple mock parser
-    if (!str) return { type: 'group', threshold: 0, items: [] };
-    return { type: 'course', id: str };
-  }),
-}));
-
 import { fireroadApi } from '@/services/fireroad';
-import { parseFireroad } from '@/lib/prerequisites';
-
-describe('Prerequisite Cache', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    clearPrereqCache();
-  });
-
-  describe('getCachedPrereqTree', () => {
-    it('should return empty group for empty string', () => {
-      const result = getCachedPrereqTree('');
-      expect(result).toEqual({ type: 'group', threshold: 0, items: [] });
-      expect(parseFireroad).not.toHaveBeenCalled();
-    });
-
-    it('should return empty group for whitespace string', () => {
-      const result = getCachedPrereqTree('   ');
-      expect(result).toEqual({ type: 'group', threshold: 0, items: [] });
-    });
-
-    it('should parse and cache prerequisite string', () => {
-      const result = getCachedPrereqTree('6.100A');
-      
-      expect(parseFireroad).toHaveBeenCalledWith('6.100A');
-      expect(result).toEqual({ type: 'course', id: '6.100A' });
-    });
-
-    it('should return cached result on second call', () => {
-      getCachedPrereqTree('6.100A');
-      getCachedPrereqTree('6.100A');
-      
-      // Parser should only be called once
-      expect(parseFireroad).toHaveBeenCalledTimes(1);
-    });
-
-    it('should cache different strings separately', () => {
-      getCachedPrereqTree('6.100A');
-      getCachedPrereqTree('18.01');
-      
-      expect(parseFireroad).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe('clearPrereqCache', () => {
-    it('should clear the cache', () => {
-      getCachedPrereqTree('6.100A');
-      expect(getPrereqCacheStats().size).toBe(1);
-      
-      clearPrereqCache();
-      
-      expect(getPrereqCacheStats().size).toBe(0);
-    });
-
-    it('should require re-parsing after clear', () => {
-      getCachedPrereqTree('6.100A');
-      clearPrereqCache();
-      getCachedPrereqTree('6.100A');
-      
-      expect(parseFireroad).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe('getPrereqCacheStats', () => {
-    it('should return cache size and max size', () => {
-      const stats = getPrereqCacheStats();
-      
-      expect(stats).toHaveProperty('size');
-      expect(stats).toHaveProperty('maxSize');
-      expect(stats.maxSize).toBe(500);
-    });
-
-    it('should track cache size correctly', () => {
-      expect(getPrereqCacheStats().size).toBe(0);
-      
-      getCachedPrereqTree('6.100A');
-      expect(getPrereqCacheStats().size).toBe(1);
-      
-      getCachedPrereqTree('18.01');
-      expect(getPrereqCacheStats().size).toBe(2);
-    });
-  });
-});
 
 describe('Course Prefetching', () => {
   let queryClient: QueryClient;

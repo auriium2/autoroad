@@ -23,71 +23,63 @@ vi.mock('@/services/fireroad', () => ({
   },
 }));
 
-vi.mock('@/lib/cache', () => ({
-  getCachedPrereqTree: vi.fn((str: string) => {
-    // Simple mock parser that returns the string as a course reference
-    if (!str) return { type: 'course', id: '' };
-    if (str.includes('/')) {
-      const parts = str.split('/');
-      return { type: 'or', children: parts.map(p => ({ type: 'course', id: p.trim() })) };
-    }
-    if (str.includes(',')) {
-      const parts = str.split(',');
-      return { type: 'and', children: parts.map(p => ({ type: 'course', id: p.trim() })) };
-    }
-    return { type: 'course', id: str.trim() };
-  }),
-}));
-
 vi.mock('@/lib/prerequisites', () => ({
   extractCourseIds: vi.fn((tree: any) => {
     if (!tree) return [];
-    if (tree.type === 'course' && tree.id) return [tree.id];
-    if (tree.children) {
-      return tree.children.flatMap((c: any) => {
-        if (c.type === 'course' && c.id) return [c.id];
+    const id = tree.id || tree.courseId;
+    if (tree.type === 'course' && id) return [id];
+    const children = tree.children || tree.items;
+    if (children) {
+      return children.flatMap((c: any) => {
+        const cid = c.id || c.courseId;
+        if (c.type === 'course' && cid) return [cid];
         return [];
       });
     }
     return [];
   }),
   evaluatePrerequisites: vi.fn((tree: any, taken: string[], _detailed?: boolean, _checkGir?: boolean, _tags?: Map<string, string[]>, _equivalencies?: Map<string, string[]>) => {
-    if (!tree || tree.type === 'course' && !tree.id) {
+    const getId = (node: any) => node.id || node.courseId;
+    const getChildren = (node: any) => node.children || node.items;
+    
+    if (!tree || (tree.type === 'course' && !getId(tree))) {
       return { satisfied: true, unsatisfiedReasons: [], matchedCourses: [] };
     }
     
     if (tree.type === 'course') {
-      const satisfied = taken.includes(tree.id);
+      const id = getId(tree);
+      const satisfied = taken.includes(id);
       return {
         satisfied,
-        unsatisfiedReasons: satisfied ? [] : [tree.id],
-        matchedCourses: satisfied ? [tree.id] : [],
+        unsatisfiedReasons: satisfied ? [] : [id],
+        matchedCourses: satisfied ? [id] : [],
       };
     }
     
-    if (tree.type === 'and') {
-      const results = tree.children.map((c: any) => {
+    const children = getChildren(tree);
+    if (tree.type === 'and' || (tree.type === 'group' && tree.threshold === children?.length)) {
+      const results = children.map((c: any) => {
         if (c.type === 'course') {
-          return taken.includes(c.id);
+          return taken.includes(getId(c));
         }
         return true;
       });
       const satisfied = results.every(Boolean);
-      const missing = tree.children
-        .filter((c: any) => c.type === 'course' && !taken.includes(c.id))
-        .map((c: any) => c.id);
-      const matched = tree.children
-        .filter((c: any) => c.type === 'course' && taken.includes(c.id))
-        .map((c: any) => c.id);
+      const missing = children
+        .filter((c: any) => c.type === 'course' && !taken.includes(getId(c)))
+        .map((c: any) => getId(c));
+      const matched = children
+        .filter((c: any) => c.type === 'course' && taken.includes(getId(c)))
+        .map((c: any) => getId(c));
       return { satisfied, unsatisfiedReasons: missing, matchedCourses: matched };
     }
     
-    if (tree.type === 'or') {
-      const matched = tree.children
-        .filter((c: any) => c.type === 'course' && taken.includes(c.id))
-        .map((c: any) => c.id);
+    if (tree.type === 'or' || (tree.type === 'group' && tree.threshold === 1)) {
+      const matched = children
+        .filter((c: any) => c.type === 'course' && taken.includes(getId(c)))
+        .map((c: any) => getId(c));
       const satisfied = matched.length > 0;
-      const missing = satisfied ? [] : tree.children.map((c: any) => c.id);
+      const missing = satisfied ? [] : children.map((c: any) => getId(c));
       return { satisfied, unsatisfiedReasons: missing, matchedCourses: matched };
     }
     
@@ -121,6 +113,7 @@ describe('usePrerequisiteCourseIds', () => {
       subject_id: '6.006',
       title: 'Intro to Algorithms',
       prerequisites: '6.100A',
+      prereqTree: { type: 'course', courseId: '6.100A' },
     } as any);
 
     const { result } = renderHook(() => usePrerequisiteCourseIds('6.006'), {
@@ -196,6 +189,7 @@ describe('useCheckCoursePlacement', () => {
     vi.mocked(fireroadApi.getCourseDetails).mockResolvedValue({
       subject_id: '6.006',
       prerequisites: '6.100A',
+      prereqTree: { type: 'course', courseId: '6.100A' },
     } as any);
 
     const allNodes: CourseNode[] = [
@@ -217,6 +211,7 @@ describe('useCheckCoursePlacement', () => {
     vi.mocked(fireroadApi.getCourseDetails).mockResolvedValue({
       subject_id: '6.006',
       prerequisites: '6.100A',
+      prereqTree: { type: 'course', courseId: '6.100A' },
     } as any);
 
     const allNodes: CourseNode[] = [
@@ -263,6 +258,7 @@ describe('usePrerequisiteEdges', () => {
       .mockResolvedValueOnce({
         subject_id: '6.006',
         prerequisites: '6.100A',
+        prereqTree: { type: 'course', courseId: '6.100A' },
       } as any);
 
     const nodes: CourseNode[] = [
@@ -299,6 +295,7 @@ describe('usePrerequisiteEdges', () => {
       .mockResolvedValueOnce({
         subject_id: '6.006',
         prerequisites: '6.100A',
+        prereqTree: { type: 'course', courseId: '6.100A' },
       } as any);
 
     const nodes: CourseNode[] = [
@@ -327,6 +324,7 @@ describe('useMissingPrerequisites', () => {
       .mockResolvedValueOnce({
         subject_id: '6.006',
         prerequisites: '6.100A',
+        prereqTree: { type: 'course', courseId: '6.100A' },
       } as any);
 
     const nodes: CourseNode[] = [
@@ -352,6 +350,7 @@ describe('useMissingPrerequisites', () => {
       .mockResolvedValueOnce({
         subject_id: '6.006',
         prerequisites: '6.100A',
+        prereqTree: { type: 'course', courseId: '6.100A' },
       } as any);
 
     const nodes: CourseNode[] = [
