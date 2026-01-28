@@ -30,13 +30,18 @@ export async function prefetchCourses(
   if (uniqueCourseIds.length === 0) return;
   
   try {
-    const courseId2details = await fireroadApi.getCourseDetailsBatch(uniqueCourseIds);
-    
-    // Populate the individual query cache entries for each course
-    for (const [courseId, details] of Object.entries(courseId2details)) {
-      queryClient.setQueryData(queryKeys.courses.details(courseId), details);
+    // Backend has 200 course limit, so chunk if needed
+    const CHUNK_SIZE = 200;
+    for (let i = 0; i < uniqueCourseIds.length; i += CHUNK_SIZE) {
+      const chunk = uniqueCourseIds.slice(i, i + CHUNK_SIZE);
+      const courseId2details = await fireroadApi.getCourseDetailsBatch(chunk);
+      
+      for (const [courseId, details] of Object.entries(courseId2details)) {
+        queryClient.setQueryData(queryKeys.courses.details(courseId), details);
+      }
     }
   } catch {
+    // Silently ignore prefetch failures
   }
 }
 

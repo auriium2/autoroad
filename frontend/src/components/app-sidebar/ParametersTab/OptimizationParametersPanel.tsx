@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { optimizerApi } from "@/services/optimizer";
 import { fireroadApi, type RequirementNode } from "@/services/fireroad";
 import { parametersApi } from "@/services/parameters";
@@ -14,7 +14,7 @@ import { SelectedRequirementCard } from "./SelectedRequirementCard";
 import { SelectedObjectiveCard } from "./SelectedObjectiveCard";
 import { SelectedConstraintCard } from "./SelectedConstraintCard";
 import { useRequirementProgressBatch } from "@/hooks/useRequirementProgress";
-import { useCourseDetailsBatch } from "@/hooks/useCourseData";
+import { prefetchCourses } from "@/lib/cache";
 
 interface OptimizationParametersPanelProps {
   viewMode?: string;
@@ -73,10 +73,9 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
     staleTime: 5000,
   });
 
-  // Batch fetch requirement progress for all selected requirements
   const { data: requirementProgressMap, isLoading: progressLoading } = useRequirementProgressBatch(selectedRequirements);
 
-  // Extract all course IDs from requirement trees and batch fetch to determine valid ones
+  const queryClient = useQueryClient();
   const allRequirementCourseIds: string[] = [];
   const traverse = (node: RequirementNode) => {
     if (node.req) allRequirementCourseIds.push(node.req);
@@ -87,14 +86,24 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   });
   const uniqueCourseIds = [...new Set(allRequirementCourseIds)];
 
-  const { data: courseDetailsMap } = useCourseDetailsBatch(uniqueCourseIds);
-  const validCourseIds = new Set(Object.keys(courseDetailsMap));
-  
-  // Debug: log what we're getting
-  console.log('uniqueCourseIds count:', uniqueCourseIds.length, 'validCourseIds count:', validCourseIds.size);
-  console.log('6.7201 in uniqueCourseIds:', uniqueCourseIds.includes('6.7201'));
-  console.log('6.7201 in validCourseIds:', validCourseIds.has('6.7201'));
 
+  const [prefetchedCourseIds, setPrefetchedCourseIds] = React.useState<Set<string>>(new Set());
+  React.useEffect(() => {
+    const newCourseIds = uniqueCourseIds.filter(id => !prefetchedCourseIds.has(id));
+    if (newCourseIds.length > 0) {
+      prefetchCourses(queryClient, newCourseIds).then(() => {
+        setPrefetchedCourseIds(prev => new Set([...prev, ...newCourseIds]));
+      });
+    }
+  }, [uniqueCourseIds.join(','), queryClient]);
+
+  const validCourseIds = new Set(
+    uniqueCourseIds.filter(id => {
+      if (id.startsWith('GIR:') || id.startsWith('HASS-') || id.startsWith('CI-')) return true;
+      return queryClient.getQueryData(queryKeys.courses.details(id)) !== undefined;
+    })
+  );
+  
   React.useEffect(() => {
     if (requirementsList && selectedRequirements.length === 0) {
       addRequirement('girs');
