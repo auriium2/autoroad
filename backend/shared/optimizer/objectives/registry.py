@@ -17,7 +17,7 @@ from .scheduling import (
     AvoidSpecialTopics,
     MinimumClassesPerSemester,
 )
-from .units import AvoidSmallClasses
+
 from .workload import (
     LimitClassesPerSemester,
     LimitFinalsPerSemester,
@@ -43,18 +43,6 @@ class ObjectiveMetadata:
 
 
 OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
-    "avoid_small_classes": ObjectiveMetadata(
-        key="avoid_small_classes",
-        class_ref=AvoidSmallClasses,
-        name="Avoid Small Classes",
-        short_description="(Legacy) Discourage taking classes with few (<3) units",
-        description="Legacy objective penalizing taking classes with very few units. This was meant to keep the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements, but improvements to the optimizer mean this objective is no longer required to get normal looking results. If you get problems with 0 unit classes being selected, investigate using this constraint.",
-        has_parameters=True,
-        default_parameters={"min_units": 3},
-        parameter_types={"min_units": int},
-        category="units",
-        default_tier=4,
-    ),
     "limit_hours_per_semester": ObjectiveMetadata(
         key="limit_hours_per_semester",
         class_ref=LimitHoursPerSemester,

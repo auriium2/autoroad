@@ -11,6 +11,7 @@ from ortools.sat.python import cp_model
 
 from .base import ObjectiveContext, get_tier_penalty
 
+
 class AvoidIAP:
     def __init__(self):
         pass
