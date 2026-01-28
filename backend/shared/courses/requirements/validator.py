@@ -266,19 +266,31 @@ def _check_group_feasibility(
 
 
 def _count_valid_courses(children: tuple[Node, ...]) -> int:
-    """Count valid (non-pruned) courses in a subtree."""
+    """
+    Count valid (non-pruned) courses in a subtree.
+
+    """
     count = 0
     for child in children:
-        if isinstance(child, (Course, GIR, HASS, CI)):
+        if isinstance(child, Course):
             if not child.was_pruned:
                 count += 1
+        elif isinstance(child, (GIR, HASS, CI)):
+            # nuclear bomb tier hack
+            if not child.was_pruned:
+                count += 1000  # Large number to indicate "effectively unlimited"
         elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
             count += _count_valid_courses(child.children)
     return count
 
 
 def _count_available_units(children: tuple[Node, ...], courses_df: Any) -> int:
-    """Count available units from valid courses in a subtree."""
+    """
+    Count available units from valid courses in a subtree.
+    
+    Special nodes (GIR, HASS, CI) represent categories that can match
+    many courses, so we return a large number to indicate "satisfiable".
+    """
     total = 0
     for child in children:
         if isinstance(child, Course):
@@ -293,8 +305,9 @@ def _count_available_units(children: tuple[Node, ...], courses_df: Any) -> int:
                 else:
                     total += 12
         elif isinstance(child, (GIR, HASS, CI)):
+            # These are wildcards that match many courses - always satisfiable
             if not child.was_pruned:
-                total += 12  # Default units for special requirements
+                total += 10000  # Large number to indicate "effectively unlimited"
         elif isinstance(child, (AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup)):
             total += _count_available_units(child.children, courses_df)
     return total

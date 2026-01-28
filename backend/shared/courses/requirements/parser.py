@@ -189,7 +189,32 @@ def parse(
         if is_plain_string:
             return PlainString(description=course_id, title=title, req_id=req_id)
 
-        return _parse_leaf(course_id, title, req_id)
+        leaf = _parse_leaf(course_id, title, req_id)
+
+        # Check if leaf has a threshold (e.g., "select any 8 HASS subjects")
+        # If so, wrap it in a SubjectThresholdGroup
+        threshold = req_item.get('threshold')
+        if threshold is not None:
+            cutoff, threshold_type, criterion = _parse_threshold(threshold)
+            if criterion == 'subjects':
+                return SubjectThresholdGroup(
+                    children=(leaf,),
+                    cutoff=cutoff,
+                    threshold_type=threshold_type,
+                    connection_type='any',
+                    title=title,
+                    req_id=req_id,
+                )
+            else:
+                return UnitThresholdGroup(
+                    children=(leaf,),
+                    cutoff=cutoff,
+                    threshold_type=threshold_type,
+                    title=title,
+                    req_id=req_id,
+                )
+
+        return leaf
 
     # Case 2: Group node with 'reqs'
     if 'reqs' not in req_item:
