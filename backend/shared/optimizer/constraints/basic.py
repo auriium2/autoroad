@@ -51,10 +51,11 @@ def create_take_vars(
     """
     start = time.time()
 
-    take_vars = {}
+    take_vars: dict[tuple[int, int], cp_model.IntVar] = {}
 
-    ase_courses = set()
-    must_take_courses = set()
+    ase_courses: set[str] = set()
+    must_take_courses: set[str] = set()
+    override_semesters: dict[str, set[int]] = {} # Override markers force creation of take_vars for specific semesters, so you can add historical classes
 
     if markers:
         for marker in markers:
@@ -62,13 +63,19 @@ def create_take_vars(
                 ase_courses.add(marker.courseId)
             elif marker.section == -2:  # Must Take
                 must_take_courses.add(marker.courseId)
+            elif marker.status == "override" and marker.section >= 0: #override
+                semester = marker.section + 1
+                if marker.courseId not in override_semesters:
+                    override_semesters[marker.courseId] = set()
+                override_semesters[marker.courseId].add(semester)
 
     for course_idx in range(len(courses_df)):
         subject_id = courses_df[course_idx, 'subject_id']
+        forced_semesters = override_semesters.get(subject_id, set())
 
         # For regular semesters (1 to max_semesters)
         for semester in range(1, max_semesters + 1):
-            if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start):
+            if is_valid_class_semester(course_idx, semester, courses_df, planning_year_start) or semester in forced_semesters:
                 var_name = f"take_{subject_id.replace('.', '_')}_s{semester}"
                 take_vars[(course_idx, semester)] = model.NewBoolVar(var_name)
 

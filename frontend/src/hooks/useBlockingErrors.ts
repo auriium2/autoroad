@@ -20,7 +20,8 @@ export function useBlockingErrors(markers: Marker[]): BlockingErrorsResult {
     (m) =>
       !VIRTUAL_COURSE_IDS.has(m.courseId) &&
       m.section >= 0 &&
-      m.status !== "banish"
+      m.status !== "banish" &&
+      m.status !== "override"
   );
 
   // Fetch course details for each marker

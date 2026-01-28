@@ -279,17 +279,12 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
                   backgroundColor: canDrop 
                     ? 'rgba(34, 197, 94, 0.08)' 
                     : 'rgba(234, 179, 8, 0.08)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                 }}
               >
                 <div
                   style={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: `calc(${index * COLUMN_WIDTH}px * ${viewport.zoom} + ${viewport.x}px + ${COLUMN_WIDTH * viewport.zoom / 2}px)`,
-                    transform: 'translate(-50%, -50%)',
+                    position: 'sticky',
+                    top: '50vh',
                     fontSize: '14px',
                     fontWeight: 500,
                     color: canDrop 

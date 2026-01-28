@@ -68,7 +68,7 @@ export function NodeContextMenu({
             title={isInMustTake ? "Override not available in Must Take - move to a specific semester" : undefined}
           >
             <Unlink className="w-3 h-3" />
-            <span>Ignore prerequisites</span>
+            <span>Ignore prerequisites / semester</span>
             {currentStatus === 'override' && (
               <span className="ml-auto text-[10px] text-muted-foreground">✓</span>
             )}

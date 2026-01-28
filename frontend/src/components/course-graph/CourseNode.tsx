@@ -55,7 +55,7 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Special semesters (-2 for Must Take, -1 for ASE) are always valid
   // Regular semesters: 0,3,6,9 = Fall; 1,4,7,10 = IAP; 2,5,8,11 = Spring
   let isWrongSemester = false;
-  if (section >= 0 && courseDetails) {
+  if (section >= 0 && courseDetails && !isOverride) {
     const semesterType = section % 3; // 0=Fall, 1=IAP, 2=Spring
     
     const isWrongTerm = 

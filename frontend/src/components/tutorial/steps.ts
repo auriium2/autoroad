@@ -418,7 +418,7 @@ export const tutorialSteps: StepOptions[] = [
     id: 'override-prereq',
     title: 'Fix #2: Override',
     text: `Let's reset and try the other method.<br><br>
-      <strong>Right-click</strong> on 6.1010 and select <strong>Ignore Prerequisites</strong> to skip the prereq check.`,
+      <strong>Right-click</strong> on 6.1010 and select <strong>Ignore Prerequisites / Semester</strong> to skip the prereq check.`,
     attachTo: { element: '[data-course-id="6.1010"]', on: 'left' },
     scrollTo: false,
     modalOverlayOpeningPadding: 5000,
