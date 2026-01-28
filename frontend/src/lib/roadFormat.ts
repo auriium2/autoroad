@@ -26,11 +26,12 @@ function sectionToSemester(section: number): number {
   return section + 1;
 }
 
-function semesterToSection(semester: number): number {
+function semesterToSection(semester: number): number | null {
   // ASE: semester 0 -> section -1
   // Regular: semester 1-12 -> section 0-11
   if (semester === 0) return -1; // ASE
   if (semester < 0) return 0; // Fallback for invalid semesters
+  if (semester > 12) return null; // Grad semesters not supported
   return semester - 1;
 }
 
@@ -97,13 +98,22 @@ export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
         `Generic requirement "${subjectId}" (${subject.title}) cannot be imported. ` +
         `Please select a specific course that fulfills this requirement.`
       );
-      continue; // Skip this subject
+      continue;
+    }
+
+    // Skip grad semesters (13+)
+    const section = semesterToSection(subject.semester);
+    if (section === null) {
+      warnings.push(
+        `"${subjectId}" (${subject.title}) is in a grad semester and was skipped.`
+      );
+      continue;
     }
 
     const marker: Marker = {
       uuid: `marker_${subject.subject_id}_${Date.now()}_${Math.random()}`,
       courseId: subject.subject_id,
-      section: semesterToSection(subject.semester),
+      section,
       status: subject.overrideWarnings ? 'override' : 'pin',
     };
 

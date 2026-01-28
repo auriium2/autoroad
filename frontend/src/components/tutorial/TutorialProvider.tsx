@@ -14,7 +14,7 @@ interface TutorialContextValue {
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
 
-const STORAGE_KEY = 'autoroad-tutorial-completed';
+const STORAGE_KEY = 'autoroad-tutorial-completed-v2';
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const tourRef = useRef<InstanceType<typeof Shepherd.Tour> | null>(null);
@@ -60,7 +60,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
     tourRef.current = tour;
 
-    // Auto-start tutorial for first-time visitors (desktop only)
+    // Auto-start tutorial for first-time visitors
     const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
     const isMobile = window.innerWidth < 768;
     if (!hasCompletedTutorial && !isMobile) {

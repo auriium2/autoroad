@@ -11,7 +11,7 @@ export interface RoadData {
   availableNodes: AvailableNode[];
 }
 
-const STORAGE_KEY = 'autoroad_data';
+const STORAGE_KEY = 'autoroad_data_v2';
 const STORAGE_VERSION = 1;
 
 interface StorageData {

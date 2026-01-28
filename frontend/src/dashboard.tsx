@@ -118,7 +118,7 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold tracking-tight">
                   Autoroad
                   <sub className="ml-1 text-xs font-normal text-muted-foreground align-baseline">
-                    <span className="font-serif italic">Alfa</span> {__APP_VERSION__}
+                    <span className="font-serif">Alfa</span> {__APP_VERSION__}
                   </sub>
                 </h1>
               </div>
