@@ -16,19 +16,7 @@ vi.mock('@/services/optimizer', () => ({
   },
 }));
 
-vi.mock('@/services/fireroad', () => ({
-  fireroadApi: {},
-}));
-
-vi.mock('@/lib/storage', () => ({
-  storage: {
-    load: vi.fn(),
-    save: vi.fn(),
-  },
-}));
-
 import { optimizerApi } from '@/services/optimizer';
-import { storage } from '@/lib/storage';
 
 // Helper to reset store state
 function resetStore() {
@@ -322,42 +310,7 @@ describe('useGraphStore', () => {
   });
 
   describe('fetchRoadData', () => {
-    it('should set success state after fetching with no cached data', async () => {
-      vi.mocked(storage.load).mockReturnValue(null);
-      
-      await useGraphStore.getState().fetchRoadData();
-      
-      expect(useGraphStore.getState().loadingState).toBe('success');
-    });
-
-    it('should load cached data from storage', async () => {
-      const cachedData = {
-        nodes: [
-          { uuid: 'node_1', courseId: '6.100A', section: 3, userControlled: true, nodeStatus: 'pin' },
-          { uuid: 'node_2', courseId: '18.01', section: 1, userControlled: true },
-        ],
-        sections: [{ id: 1, title: 'Fall 1' }],
-        availableNodes: [],
-      };
-      vi.mocked(storage.load).mockReturnValue(cachedData as any);
-      
-      await useGraphStore.getState().fetchRoadData();
-      
-      const state = useGraphStore.getState();
-      expect(state.markers).toHaveLength(2);
-      expect(state.markers[0]).toMatchObject({
-        uuid: 'node_1',
-        courseId: '6.100A',
-        section: 3,
-        status: 'pin',
-      });
-      expect(state.markers[1].status).toBe('pin'); // Default when nodeStatus not set
-      expect(state.loadingState).toBe('success');
-    });
-
-    it('should set success state when no cached data', async () => {
-      vi.mocked(storage.load).mockReturnValue(null);
-      
+    it('should set success state after fetching', async () => {
       await useGraphStore.getState().fetchRoadData();
       
       expect(useGraphStore.getState().loadingState).toBe('success');
@@ -365,7 +318,6 @@ describe('useGraphStore', () => {
 
     it('should clear error state when fetching', async () => {
       useGraphStore.setState({ error: 'Previous error' });
-      vi.mocked(storage.load).mockReturnValue(null);
       
       await useGraphStore.getState().fetchRoadData();
       

@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { storage } from '@/lib/storage';
-import { fireroadApi } from '@/services/fireroad';
+import { persist } from 'zustand/middleware';
 import type { CourseNode, Edge, Section, AvailableNode, LoadingState, Marker, OptimizerNode } from '@/types';
 import { optimizerApi } from '@/services/optimizer';
 import { useOptimizationStore } from '@/stores/optimizationStore';
@@ -72,7 +71,9 @@ interface GraphStore {
   clearError: () => void;
 }
 
-export const useGraphStore = create<GraphStore>((set, get) => ({
+export const useGraphStore = create<GraphStore>()(
+  persist(
+    (set, get) => ({
   // Initial state
   markers: [],
   optimizerNodes: [],
@@ -139,36 +140,9 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
     if (data.availableNodes) set({ availableNodes: data.availableNodes });
   },
 
-  // Load road data from localStorage
+  // Initialize loading state (markers are restored by persist middleware)
   fetchRoadData: async () => {
-    set({ loadingState: 'loading', error: null });
-
-    // Load from localStorage
-    const cached = storage.load();
-
-    if (cached) {
-      // Convert old format if needed
-      const markers = cached.nodes
-        ?.filter((n: CourseNode) => n.userControlled)
-        .map((n: CourseNode) => ({
-          uuid: n.uuid,
-          courseId: n.courseId,
-          section: n.section,
-          status: n.nodeStatus || 'pin',
-        })) || [];
-
-      set({
-        markers,
-        optimizerNodes: [],
-        sections: cached.sections,
-        availableNodes: cached.availableNodes,
-        loadingState: 'success',
-      });
-    } else {
-      // If no cached data, load initial/demo data
-      get().loadInitialData();
-      set({ loadingState: 'success' });
-    }
+    set({ loadingState: 'success', error: null });
   },
 
   // Save is no longer needed - state is ephemeral or will be saved via API
@@ -356,4 +330,12 @@ export const useGraphStore = create<GraphStore>((set, get) => ({
   loadInitialData: () => {
 
   },
-}));
+}),
+    {
+      name: 'road-storage',
+      partialize: (state) => ({
+        markers: state.markers,
+      }),
+    }
+  )
+);

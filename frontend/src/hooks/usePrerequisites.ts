@@ -119,8 +119,8 @@ export function usePrerequisiteString(courseId: string | null) {
  */
 function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
   const queryClient = useQueryClient();
-  
-  const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}`).sort().join(',');
+
+  const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}`).sort().join(','); //cache cleaning attempt
 
   return useQuery({
     queryKey: ['courseDetails', 'batch', courseKey],
@@ -133,7 +133,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
             staleTime: 24 * 60 * 60 * 1000, // Course details are static - cache for 24 hours
           });
           const prereqString = courseDetails.prerequisites || '';
-          
+
           let prereqCourseIds: string[] = [];
           if (prereqString) {
             try {
@@ -143,7 +143,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
               // Ignore parse errors
             }
           }
-          
+
           const tags: string[] = [];
           if (courseDetails.gir_attribute) {
             tags.push(`GIR:${courseDetails.gir_attribute}`);
@@ -151,7 +151,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
           if (courseDetails.hass_attribute) {
             tags.push(`HASS:${courseDetails.hass_attribute}`);
           }
-          
+
           return { node, prereqCourseIds, tags, prereqString };
         } catch (error) {
           console.warn(`Failed to fetch course details for ${node.courseId}:`, error);
@@ -171,7 +171,7 @@ function useCourseDetailsWithPrereqs(nodes: CourseNode[]) {
  */
 export function usePrerequisiteEdges(nodes: CourseNode[]) {
   const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
-  
+
   // Include sections in cache key - edges depend on section ordering
   const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}`).sort().join(',');
 
@@ -223,7 +223,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
 
         try {
           const prereqTree = getCachedPrereqTree(prereqString);
-          
+
           // Get courses taken before this node
           const takenCourseIds = results
             .filter(r => r.node.section < node.section)
@@ -268,7 +268,7 @@ export function usePrerequisiteEdges(nodes: CourseNode[]) {
  */
 export function useMissingPrerequisites(nodes: CourseNode[]) {
   const courseDetailsQuery = useCourseDetailsWithPrereqs(nodes);
-  
+
   const courseKey = nodes.map(n => `${n.courseId}:${n.uuid}:${n.section}:${n.nodeStatus || ''}`).sort().join(',');
 
   // Build uuid -> fresh node map (React Compiler will memoize this)
@@ -290,10 +290,10 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       // (courseDetailsQuery.data may have stale node.section values due to caching)
       const results = courseDetailsQuery.data.map(({ node: cachedNode, prereqString, tags }) => {
         const node = uuid2freshNode.get(cachedNode.uuid) || cachedNode;
-        
+
         // Skip prerequisite checking for Must Take (-2), ASEs (-1), and override nodes
         const skipPrereqCheck = node.section === -2 || node.section === -1 || node.nodeStatus === 'override';
-        
+
         return {
           node,
           prereqString: skipPrereqCheck ? '' : prereqString,
@@ -311,7 +311,7 @@ export function useMissingPrerequisites(nodes: CourseNode[]) {
       const minSection = Math.min(...nodes.map(n => n.section));
       const maxSection = Math.max(...nodes.map(n => n.section));
       const coursesBySection = new Map<number, string[]>();
-      
+
       for (const { node } of results) {
         // For each course, add it to all sections that come AFTER it
         // This way, when we look up section N, we get all courses from sections < N
