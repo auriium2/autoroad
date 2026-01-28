@@ -1,9 +1,12 @@
 import { createContext, useContext, useRef, useState, useEffect, type ReactNode } from 'react';
 import Shepherd from 'shepherd.js';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import 'shepherd.js/dist/css/shepherd.css';
 import './tutorial.css';
 import { tutorialSteps, restoreState, setQueryClient } from './steps';
+import { queryKeys } from '@/lib/queryKeys';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 interface TutorialContextValue {
   startTutorial: () => void;
@@ -20,6 +23,22 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const tourRef = useRef<InstanceType<typeof Shepherd.Tour> | null>(null);
   const [isActive, setIsActive] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check backend health before starting tutorial
+  const { data: healthData, isSuccess: isHealthy } = useQuery({
+    queryKey: queryKeys.health.backend(),
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Health check failed');
+      return response.json();
+    },
+    staleTime: 30000,
+    retry: 2,
+  });
+
+  const backendHealthy = isHealthy && healthData?.services?.backend?.status === 'healthy';
 
   // Set query client reference for steps.ts to use
   useEffect(() => {
@@ -60,28 +79,6 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
     tourRef.current = tour;
 
-    // Auto-start tutorial for first-time visitors
-    const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
-    const isMobile = window.matchMedia('(max-width: 767px)').matches;
-    if (isMobile) {
-      localStorage.setItem(STORAGE_KEY, 'true');
-      return () => {
-        tour.complete();
-      };
-    }
-    if (!hasCompletedTutorial) {
-      const timeoutId = setTimeout(() => {
-        tour.start();
-      }, 500);
-      return () => {
-        clearTimeout(timeoutId);
-        if (tour.isActive()) {
-          restoreState();
-        }
-        tour.complete();
-      };
-    }
-
     return () => {
       if (tour.isActive()) {
         restoreState();
@@ -89,6 +86,29 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       tour.complete();
     };
   }, []);
+
+  // Auto-start tutorial for first-time visitors once backend is healthy
+  useEffect(() => {
+    if (!tourRef.current) return;
+
+    const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    if (isMobile) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+      return;
+    }
+
+    // Wait for backend to be healthy before starting tutorial
+    if (!backendHealthy) return;
+
+    if (!hasCompletedTutorial && !tourRef.current.isActive()) {
+      const timeoutId = setTimeout(() => {
+        tourRef.current?.start();
+      }, 500);
+      return () => clearTimeout(timeoutId);
+    }
+
+  }, [backendHealthy]);
 
   const startTutorial = () => {
     // Don't start tutorial on mobile
