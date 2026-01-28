@@ -1,21 +1,17 @@
 /**
  * Tests for cache utilities
- * Tests course prefetching and requirement extraction
+ * Tests course prefetching
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import {
-  prefetchCourses,
-  extractCoursesFromRequirement,
-} from '../cache';
+import { prefetchCourses } from '../cache';
 
 // Mock dependencies
 vi.mock('@/services/fireroad', () => ({
   fireroadApi: {
     getCourseDetails: vi.fn(),
     getCourseDetailsBatch: vi.fn(),
-    getRequirementProgress: vi.fn(),
   },
 }));
 
@@ -124,88 +120,5 @@ describe('Course Prefetching', () => {
         title: 'Calculus',
       });
     });
-  });
-});
-
-describe('extractCoursesFromRequirement', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('should extract courses from requirement tree', async () => {
-    vi.mocked(fireroadApi.getRequirementProgress).mockResolvedValue({
-      reqs: [
-        { req: '6.100A' },
-        { req: '6.042' },
-        {
-          reqs: [
-            { req: '6.006' },
-            { req: '6.046' },
-          ],
-        },
-      ],
-    } as any);
-
-    const result = await extractCoursesFromRequirement('major6-3new');
-
-    expect(result).toContain('6.100A');
-    expect(result).toContain('6.042');
-    expect(result).toContain('6.006');
-    expect(result).toContain('6.046');
-    expect(fireroadApi.getRequirementProgress).toHaveBeenCalledWith('major6-3new', []);
-  });
-
-  it('should deduplicate courses', async () => {
-    vi.mocked(fireroadApi.getRequirementProgress).mockResolvedValue({
-      reqs: [
-        { req: '6.100A' },
-        { req: '6.100A' },
-        { req: '6.042' },
-      ],
-    } as any);
-
-    const result = await extractCoursesFromRequirement('test');
-
-    expect(result.filter(c => c === '6.100A')).toHaveLength(1);
-  });
-
-  it('should handle nested requirement trees', async () => {
-    vi.mocked(fireroadApi.getRequirementProgress).mockResolvedValue({
-      reqs: [
-        {
-          reqs: [
-            {
-              reqs: [
-                { req: '6.100A' },
-              ],
-            },
-          ],
-        },
-      ],
-    } as any);
-
-    const result = await extractCoursesFromRequirement('test');
-
-    expect(result).toContain('6.100A');
-  });
-
-  it('should return empty array on error', async () => {
-    vi.mocked(fireroadApi.getRequirementProgress).mockRejectedValue(
-      new Error('Network error')
-    );
-
-    const result = await extractCoursesFromRequirement('invalid');
-
-    expect(result).toEqual([]);
-  });
-
-  it('should handle empty requirement tree', async () => {
-    vi.mocked(fireroadApi.getRequirementProgress).mockResolvedValue({
-      reqs: [],
-    } as any);
-
-    const result = await extractCoursesFromRequirement('empty');
-
-    expect(result).toEqual([]);
   });
 });

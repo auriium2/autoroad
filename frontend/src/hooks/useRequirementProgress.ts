@@ -1,8 +1,8 @@
 /**
- * Hook for fetching requirement progress in batch
+ * Hook for fetching requirement progress with individual caching per requirement
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { fireroadApi, type RequirementTree } from '@/services/fireroad';
 import { queryKeys } from '@/lib/queryKeys';
 import { useGraphStore } from '@/stores/roadStore';
@@ -27,26 +27,32 @@ export function useRequirementProgressBatch(requirementKeys: string[]): Requirem
   const courseIds = Array.from(courseIdSet).sort();
   const courseIdsKey = courseIds.join(',');
 
-  const requirements = requirementKeys.map(key => ({
-    key,
-    source: (requirementSources[key] || 'canonical') as 'canonical' | 'beta',
-  }));
-
-  // Create stable key for requirements (includes source info)
-  const requirementsKey = requirements
-    .map(r => `${r.key}:${r.source}`)
-    .sort()
-    .join(',');
-
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.requirements.batchProgress(requirementsKey, courseIdsKey),
-    queryFn: () => fireroadApi.getRequirementProgressBatch(requirements, courseIds),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    enabled: requirementKeys.length > 0 && !isOptimizing,
+  // Create individual queries for each requirement
+  const queries = useQueries({
+    queries: requirementKeys.map(key => {
+      const source = (requirementSources[key] || 'canonical') as 'canonical' | 'beta';
+      return {
+        queryKey: queryKeys.requirements.progress(key, courseIdsKey, source),
+        queryFn: () => fireroadApi.getRequirementProgress(key, courseIds, source),
+        staleTime: 10 * 60 * 1000, // 10 minutes
+        enabled: !isOptimizing,
+      };
+    }),
   });
 
+  // Combine results into a map
+  const data: Record<string, RequirementTree> = {};
+  for (let i = 0; i < requirementKeys.length; i++) {
+    const query = queries[i];
+    if (query.data) {
+      data[requirementKeys[i]] = query.data;
+    }
+  }
+
+  const isLoading = queries.some(q => q.isLoading);
+
   return {
-    data: data || {},
+    data,
     isLoading,
   };
 }

@@ -11,7 +11,6 @@ interface SelectedRequirementCardProps {
   viewMode?: string;
   requirementProgress?: RequirementTree;
   isProgressLoading?: boolean;
-  validCourseIds?: Set<string>;
 }
 
 export function SelectedRequirementCard({
@@ -20,7 +19,6 @@ export function SelectedRequirementCard({
   viewMode,
   requirementProgress,
   isProgressLoading,
-  validCourseIds,
 }: SelectedRequirementCardProps) {
   const expandedRequirements = useOptimizationStore((state) => state.expandedRequirements);
   const toggleRequirementExpanded = useOptimizationStore((state) => state.toggleRequirementExpanded);
@@ -81,7 +79,7 @@ export function SelectedRequirementCard({
               viewMode={viewMode}
               requirement={requirementProgress}
               isLoading={isProgressLoading}
-              validCourseIds={validCourseIds}
+
             />
           </div>
         )}

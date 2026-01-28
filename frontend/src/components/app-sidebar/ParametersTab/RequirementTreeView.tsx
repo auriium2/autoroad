@@ -14,7 +14,6 @@ interface RequirementTreeViewProps {
   viewMode?: string;
   requirement?: RequirementTree;
   isLoading?: boolean;
-  validCourseIds?: Set<string>;
 }
 
 export function RequirementTreeView({
@@ -22,7 +21,6 @@ export function RequirementTreeView({
   viewMode = "default",
   requirement,
   isLoading = false,
-  validCourseIds,
 }: RequirementTreeViewProps) {
   const isOptimizing = useGraphStore((state) => state.isOptimizing);
   const lastCostBreakdown = useGraphStore((state) => state.lastCostBreakdown);
@@ -119,26 +117,17 @@ export function RequirementTreeView({
             {!hasChildren && <div className="w-3" />}
 
             {req.req ? (
-              (() => {
-                // Virtual/placeholder IDs are always valid (they're not real courses)
-                const isPlaceholder = req.req.startsWith('GIR:') || req.req.startsWith('HASS-') || req.req.startsWith('CI-');
-                // Mark as invalid only if it's a real course ID, validCourseIds has data, and this course isn't in it
-                const isInvalidCourse = !isPlaceholder && validCourseIds && validCourseIds.size > 0 && !validCourseIds.has(req.req);
-                if (isInvalidCourse) {
-                  return (
-                    <span className="text-xs truncate font-mono text-red-400/60 line-through decoration-red-500">
-                      {title}
-                    </span>
-                  );
-                }
-                return (
-                  <CourseTooltip courseId={req.req}>
-                    <span className="text-xs truncate font-mono">
-                      {title}
-                    </span>
-                  </CourseTooltip>
-                );
-              })()
+              req.invalid ? (
+                <span className="text-xs truncate font-mono text-red-400/60 line-through decoration-red-500">
+                  {title}
+                </span>
+              ) : (
+                <CourseTooltip courseId={req.req}>
+                  <span className="text-xs truncate font-mono">
+                    {title}
+                  </span>
+                </CourseTooltip>
+              )
             ) : (
               <span className="text-xs truncate">
                 {title}

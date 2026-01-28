@@ -107,6 +107,7 @@ export interface RequirementNode {
   percent_fulfilled?: number;
   sat_courses?: string[];
   is_bypassed?: boolean;
+  invalid?: boolean;  // True if course doesn't exist in catalog
 }
 
 export interface RequirementTree {

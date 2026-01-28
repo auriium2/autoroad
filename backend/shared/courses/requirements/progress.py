@@ -527,7 +527,11 @@ def _find_satisfying_courses(
     return satisfied
 
 
-def progress_to_json(result: ProgressResult, node: Node) -> dict[str, Any]:
+def progress_to_json(
+    result: ProgressResult, 
+    node: Node, 
+    id2course: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """
     Convert a ProgressResult to JSON format matching Fireroad's API response.
     """
@@ -545,6 +549,9 @@ def progress_to_json(result: ProgressResult, node: Node) -> dict[str, Any]:
     # Add node-specific fields
     if isinstance(node, Course):
         output["req"] = node.subject_id
+        # Mark as invalid if the course doesn't exist in the catalog
+        if id2course is not None and node.subject_id not in id2course:
+            output["invalid"] = True
     elif isinstance(node, GIR):
         output["req"] = f"GIR:{node.gir_code}"
     elif isinstance(node, HASS):
@@ -557,7 +564,7 @@ def progress_to_json(result: ProgressResult, node: Node) -> dict[str, Any]:
     else:  # Group types
         if result.children:
             output["reqs"] = [
-                progress_to_json(child_result, child_node)
+                progress_to_json(child_result, child_node, id2course)
                 for child_result, child_node in zip(result.children, node.children)
             ]
 

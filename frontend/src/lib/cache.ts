@@ -4,7 +4,7 @@
  */
 
 import { QueryClient } from "@tanstack/react-query";
-import { fireroadApi, type RequirementTree, type RequirementNode } from "@/services/fireroad";
+import { fireroadApi } from "@/services/fireroad";
 import { optimizerApi } from "@/services/optimizer";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -69,29 +69,4 @@ export function prefetchStaticData(queryClient: QueryClient): void {
   });
 }
 
-export async function extractCoursesFromRequirement(
-  requirementKey: string
-): Promise<string[]> {
-  try {
-    const requirement = await fireroadApi.getRequirementProgress(requirementKey, []);
-    
-    const courseIds: string[] = [];
-    
-    function traverseRequirement(node: RequirementTree | RequirementNode) {
-      if ('req' in node && node.req) {
-        courseIds.push(node.req);
-      }
-      
-      if ('reqs' in node && node.reqs && Array.isArray(node.reqs)) {
-        node.reqs.forEach(traverseRequirement);
-      }
-    }
-    
-    traverseRequirement(requirement);
-    
-    return Array.from(new Set(courseIds));
-  } catch (error) {
-    console.error(`Failed to extract courses from requirement ${requirementKey}:`, error);
-    return [];
-  }
-}
+

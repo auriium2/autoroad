@@ -172,7 +172,7 @@ async def get_requirement_progress(request: Request, key: str, body: ProgressReq
         result = compute_progress(root_node, selected_set, id2course)
 
         # Convert to JSON format
-        output = progress_to_json(result, root_node)
+        output = progress_to_json(result, root_node, id2course)
 
         # Add top-level metadata
         for field in ["title", "medium-title", "short-title", "title-no-degree", "description"]:
@@ -210,7 +210,7 @@ async def get_requirement_progress_batch(request: Request, body: BatchProgressRe
             root_node = parse_fireroad_response(req_data)
 
             result = compute_progress(root_node, selected_set, id2course)
-            output = progress_to_json(result, root_node)
+            output = progress_to_json(result, root_node, id2course)
 
             for field in ["title", "medium-title", "short-title", "title-no-degree", "description"]:
                 if field in req_data:

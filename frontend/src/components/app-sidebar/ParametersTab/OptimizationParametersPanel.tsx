@@ -1,8 +1,8 @@
 
 import * as React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { optimizerApi } from "@/services/optimizer";
-import { fireroadApi, type RequirementNode } from "@/services/fireroad";
+import { fireroadApi } from "@/services/fireroad";
 import { parametersApi } from "@/services/parameters";
 import { queryKeys } from "@/lib/queryKeys";
 import { Search } from "lucide-react";
@@ -14,7 +14,6 @@ import { SelectedRequirementCard } from "./SelectedRequirementCard";
 import { SelectedObjectiveCard } from "./SelectedObjectiveCard";
 import { SelectedConstraintCard } from "./SelectedConstraintCard";
 import { useRequirementProgressBatch } from "@/hooks/useRequirementProgress";
-import { prefetchCourses } from "@/lib/cache";
 
 interface OptimizationParametersPanelProps {
   viewMode?: string;
@@ -74,44 +73,6 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
   });
 
   const { data: requirementProgressMap, isLoading: progressLoading } = useRequirementProgressBatch(selectedRequirements);
-
-  const queryClient = useQueryClient();
-  const allRequirementCourseIds: string[] = [];
-  const traverse = (node: RequirementNode) => {
-    if (node.req) allRequirementCourseIds.push(node.req);
-    if (node.reqs) node.reqs.forEach(traverse);
-  };
-  Object.values(requirementProgressMap).forEach(tree => {
-    traverse(tree as RequirementNode);
-  });
-  const uniqueCourseIds = [...new Set(allRequirementCourseIds)];
-
-
-  // Prefetch courses and track which ones exist in the database
-  const [validCourseIds, setValidCourseIds] = React.useState<Set<string>>(new Set());
-  React.useEffect(() => {
-    const realCourseIds = uniqueCourseIds.filter(id => 
-      !id.startsWith('GIR:') && !id.startsWith('HASS-') && !id.startsWith('CI-')
-    );
-    
-    const uncachedIds = realCourseIds.filter(id => 
-      queryClient.getQueryData(queryKeys.courses.details(id)) === undefined
-    );
-    
-    const buildValidSet = () => new Set(
-      realCourseIds.filter(id => 
-        queryClient.getQueryData(queryKeys.courses.details(id)) !== undefined
-      )
-    );
-    
-    if (uncachedIds.length > 0) {
-      prefetchCourses(queryClient, uncachedIds).then(() => {
-        setValidCourseIds(buildValidSet());
-      });
-    } else {
-      setValidCourseIds(buildValidSet());
-    }
-  }, [uniqueCourseIds.join(','), queryClient]);
   
   React.useEffect(() => {
     if (requirementsList && selectedRequirements.length === 0) {
@@ -235,7 +196,7 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
                   viewMode={viewMode}
                   requirementProgress={requirementProgressMap[item.key]}
                   isProgressLoading={progressLoading}
-                  validCourseIds={validCourseIds}
+
                 />
               );
             } else if (item.type === 'objective') {
