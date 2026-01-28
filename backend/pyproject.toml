@@ -97,4 +97,5 @@ reportUnnecessaryComparison = false
 [dependency-groups]
 dev = [
     "pytest-xdist>=3.8.0",
+    "requests>=2.32.5",
 ]

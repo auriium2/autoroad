@@ -49,6 +49,79 @@ logger = logging.getLogger("uvicorn.error")
 ATTRIBUTE_COLUMNS = ('hass_attribute', 'gir_attribute', 'communication_requirement')
 
 
+def _log_infeasibility_to_sentry(
+    request: "OptimizationRequest",
+    marker_errors: list[str],
+    marker_warnings: list[str],
+    planning_year_start: int,
+    perf_timings: dict[str, float],
+) -> None:
+    from shared.utils import get_current_semester_index
+
+    # Build markers data in a format similar to .road file
+    markers_data = [
+        {
+            "courseId": m.courseId,
+            "section": m.section,
+            "status": m.status,
+        }
+        for m in (request.markers or [])
+    ]
+
+    # Compute current semester for context
+    current_semester = get_current_semester_index(planning_year_start)
+
+    # Group markers by type for easier analysis
+    pinned_markers = [m for m in markers_data if m["status"] == "pin"]
+    banished_markers = [m for m in markers_data if m["status"] == "banish"]
+    override_markers = [m for m in markers_data if m["status"] == "override"]
+
+    # Count markers in past vs future semesters
+    past_pins = [m for m in pinned_markers if 0 <= m["section"] < current_semester]
+    future_pins = [m for m in pinned_markers if m["section"] >= current_semester]
+
+    sentry_sdk.set_context("infeasibility_debug", {
+        "planning_year": request.planningYear,
+        "planning_year_start": planning_year_start,
+        "current_semester": current_semester,
+        "lock_past_semesters": request.lockPastSemesters,
+        "max_semesters": request.maxSemesters,
+        "requirements": request.requirements,
+        "num_markers_total": len(markers_data),
+        "num_pinned": len(pinned_markers),
+        "num_banished": len(banished_markers),
+        "num_override": len(override_markers),
+        "num_past_pins": len(past_pins),
+        "num_future_pins": len(future_pins),
+        "marker_errors": marker_errors,
+        "marker_warnings": marker_warnings,
+        "perf_timings": perf_timings,
+    })
+
+    # Set the full markers as an attachment-like context
+    sentry_sdk.set_context("markers_full", {
+        "pinned": pinned_markers,
+        "banished": banished_markers,
+        "override": override_markers,
+    })
+
+    # Set objectives and constraints context
+    sentry_sdk.set_context("optimization_config", {
+        "objectives": [{"key": o.key, "parameters": o.parameters} for o in (request.objectives or [])],
+        "hard_constraints": [{"key": c.key, "parameters": c.parameters} for c in (request.hardConstraints or [])],
+        "requirement_tiers": request.requirementTiers,
+        "objective_tiers": request.objectiveTiers,
+        "requirement_sources": request.requirementSources,
+    })
+
+    # Capture the event
+    sentry_sdk.capture_message(
+        f"Optimization INFEASIBLE: {len(markers_data)} markers, {len(request.requirements)} requirements, "
+        f"lockPast={request.lockPastSemesters}, year={request.planningYear}",
+        level="error",
+    )
+
+
 @dataclass
 class VariableInfo:
     var_index: int
@@ -535,6 +608,15 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
             warnings.append("No feasible solution found. Markers or constraints may be too strict.")
             if marker_result.errors:
                 warnings.extend(marker_result.errors[:3])
+
+            # Log infeasibility to Sentry with full context for debugging
+            _log_infeasibility_to_sentry(
+                request=request,
+                marker_errors=marker_result.errors,
+                marker_warnings=marker_result.warnings,
+                planning_year_start=planning_year_start,
+                perf_timings=perf_timings,
+            )
 
         yield {
             'type': 'complete',
