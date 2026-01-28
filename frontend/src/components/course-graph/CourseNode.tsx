@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import type { CourseNode } from "@/stores/roadStore";
+import { useGraphStore } from "@/stores/roadStore";
 import { CourseTooltip } from "@/components/CourseTooltip";
 import { getNodeStyle, getTermBorderHighlight } from "@/lib/graph";
 import { useCourseDetails } from "@/hooks/useCourseData";
@@ -39,6 +40,14 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const categoryTier = getCourseCategoryTier(courseId);
   const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
+
+  // Check if this course is a duplicate (appears multiple times in markers)
+  const markers = useGraphStore((state) => state.markers);
+  const isDuplicate = React.useMemo(() => {
+    const nonBanishedMarkers = markers.filter(m => m.status !== 'banish');
+    const count = nonBanishedMarkers.filter(m => m.courseId === courseId).length;
+    return count > 1;
+  }, [markers, courseId]);
 
   // Check if this is a virtual/generic marker (HASS-A, etc.)
   const isVirtual = courseId.startsWith('HASS-');
@@ -81,7 +90,13 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   });
 
   // Override styling based on node state
-  if (satisfiesHassMarker && !isBanished) {
+  if (isDuplicate && !isBanished) {
+    // Pink glow for duplicate courses - highest priority error
+    borderColor = 'border-pink-500';
+    bgColor = 'bg-pink-500/10';
+    textColor = 'text-pink-400';
+    boxShadow = "0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(236, 72, 153, 0.3)";
+  } else if (satisfiesHassMarker && !isBanished) {
     borderColor = 'border-amber-600/50';
     bgColor = 'bg-amber-900/20';
     textColor = 'text-amber-200/80';
@@ -222,7 +237,9 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
                   r="16"
                   fill="none"
                   stroke={
-                    isWrongSemester
+                    isDuplicate
+                      ? "rgba(236, 72, 153, 0.9)" // Pink for duplicate courses
+                      : isWrongSemester
                       ? "rgba(234, 179, 8, 0.9)" // Yellow for wrong semester
                       : hasUnsatisfiedPrereqs
                       ? "rgba(239, 68, 68, 0.8)" // Red for any node with errors

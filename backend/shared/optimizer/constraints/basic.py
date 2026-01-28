@@ -4,7 +4,7 @@ Basic constraint builders for course scheduling.
 These constraints are always applied and form the foundation of the optimization:
 - Create decision variables (take_vars)
 - At-most-once constraint (can't take same course twice)
-- Freshman Fall unit limit (48 units max)
+- Freshman Fall unit limit (54 units max)
 - IAP unit limit (12 units max)
 - Lock past semesters (can't schedule courses in the past)
 """
@@ -135,7 +135,7 @@ def add_freshman_fall_limit(
     courses_df: pl.DataFrame
 ) -> int:
     """
-    Add constraint: hard limit of 48 units for first semester (Freshman Fall).
+    Add constraint: hard limit of 54 units for first semester (Freshman Fall).
 
     This is an MIT policy constraint.
 
@@ -154,7 +154,7 @@ def add_freshman_fall_limit(
     ]
 
     if semester_1_takes:
-        model.Add(sum(semester_1_takes) <= 48)
+        model.Add(sum(semester_1_takes) <= 54)
         return 1
 
     return 0

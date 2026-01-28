@@ -24,7 +24,7 @@ export function OptimizeButton() {
 
   const { storeNodes } = useStoreNodes(markers, []);
   const { data: uuid2missingPrereqs } = useMissingPrerequisites(storeNodes);
-  const { hasWrongSemester } = useBlockingErrors(markers);
+  const { hasWrongSemester, hasDuplicateCourses, duplicateCourseIds, hasFreshmanFallOverload, freshmanFallUnits } = useBlockingErrors(markers);
 
   const hasBlockingPrereqErrors = React.useMemo(() => {
     if (!uuid2missingPrereqs || !(uuid2missingPrereqs instanceof Map)) return false;
@@ -39,7 +39,7 @@ export function OptimizeButton() {
     return false;
   }, [uuid2missingPrereqs, markers]);
 
-  const hasBlockingErrors = hasBlockingPrereqErrors || hasWrongSemester;
+  const hasBlockingErrors = hasBlockingPrereqErrors || hasWrongSemester || hasDuplicateCourses || hasFreshmanFallOverload;
 
   // Show toast on optimization status change
   const prevStatusRef = React.useRef<string | null>(null);
@@ -174,7 +174,11 @@ export function OptimizeButton() {
         {hasBlockingErrors && (
           <TooltipContent>
             <p>
-              {hasBlockingPrereqErrors && hasWrongSemester
+              {hasDuplicateCourses
+                ? `Remove duplicate courses: ${[...duplicateCourseIds].join(", ")}`
+                : hasFreshmanFallOverload
+                ? `Freshman Fall has ${freshmanFallUnits} units (max 54)`
+                : hasBlockingPrereqErrors && hasWrongSemester
                 ? "Fix missing prerequisites (red) and wrong semester placements (yellow)"
                 : hasBlockingPrereqErrors
                 ? "Fix missing prerequisites (red) before optimizing"
