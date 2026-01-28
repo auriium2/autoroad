@@ -44,17 +44,33 @@ class AvoidIAP:
 
 
 class AvoidSpecialClasses:
+    """
+    Penalize special classes that most students don't take.
+    
+    Includes:
+    - ES. (Experimental Study Group)
+    - CC. (Concourse)
+    - STS. (Science, Technology, and Society)
+    - X.UR (Undergraduate Research)
+    - X.URG (Graduate Research)
+    - X.THU (Undergraduate Thesis)
+    - X.THG (Graduate Thesis)
+    """
     SPECIAL_PREFIXES: tuple[str, ...] = ("ES.", "CC.", "STS.")
+    # Patterns that can appear after the department number (e.g., 6.UR, 18.THU)
+    SPECIAL_SUFFIXES: tuple[str, ...] = (".UR", ".URG", ".THU", ".THG")
 
     def __init__(self):
         pass
 
     def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
         subject_ids = courses_df['subject_id'].to_list()
-        is_special = [
-            any(str(sid).startswith(prefix) for prefix in self.SPECIAL_PREFIXES)
-            for sid in subject_ids
-        ]
+        is_special = []
+        for sid in subject_ids:
+            sid_str = str(sid).upper()
+            is_prefix_match = any(sid_str.startswith(prefix.upper()) for prefix in self.SPECIAL_PREFIXES)
+            is_suffix_match = any(suffix.upper() in sid_str for suffix in self.SPECIAL_SUFFIXES)
+            is_special.append(is_prefix_match or is_suffix_match)
         return {'_is_special_class': is_special, '_subject_ids': subject_ids}
 
     def add_to_model(
@@ -81,6 +97,141 @@ class AvoidSpecialClasses:
 
         if terms:
             return cp_model.LinearExpr.Sum(terms)  # type: ignore[return-value]
+        return cp_model.LinearExpr.constant(0)
+
+
+class AvoidClassesWithPrefix:
+    def __init__(self, prefixes: list[str] | None = None):
+        self.prefixes: list[str] = prefixes or []
+
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        subject_ids = courses_df['subject_id'].to_list()
+        return {'_subject_ids': subject_ids}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        if not self.prefixes:
+            return cp_model.LinearExpr.constant(0)
+
+        tier = 2
+        if context.objective_tiers and 'avoid_classes_with_prefix' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_classes_with_prefix']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
+        subject_ids = (context.extra.get('_subject_ids') if context.extra else None) or context.courses_df['subject_id'].to_list()
+        
+        # Normalize prefixes to uppercase for case-insensitive matching
+        prefixes_upper = [p.upper() for p in self.prefixes]
+        
+        terms = []
+        for (course_idx, semester), var in take_vars.items():
+            sid = str(subject_ids[course_idx]).upper()
+            if any(sid.startswith(prefix) for prefix in prefixes_upper):
+                terms.append(var * penalty)
+
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)
+        return cp_model.LinearExpr.constant(0)
+
+
+class AvoidHASSClasses:
+    """
+    Penalize HASS classes to prefer technical courses when possible.
+    
+    Useful for students who want to minimize humanities/arts/social science
+    courses and focus on technical requirements.
+    """
+
+    def __init__(self):
+        pass
+
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        hass_attr = courses_df['hass_attribute'].to_list() if 'hass_attribute' in courses_df.columns else [None] * len(courses_df)
+        is_hass = [
+            bool(attr) and attr in ('HASS-A', 'HASS-H', 'HASS-S', 'HASS-E')
+            for attr in hass_attr
+        ]
+        return {'_is_hass': is_hass}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        tier = 2
+        if context.objective_tiers and 'avoid_hass_classes' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_hass_classes']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
+        if context.extra is None or '_is_hass' not in context.extra:
+            return cp_model.LinearExpr.constant(0)
+
+        is_hass = context.extra['_is_hass']
+        terms = []
+
+        for (course_idx, semester), var in take_vars.items():
+            if is_hass[course_idx]:
+                terms.append(var * penalty)
+
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)
+        return cp_model.LinearExpr.constant(0)
+
+
+class AvoidSpecialTopics:
+    """
+    Penalize special topics courses (X.SYYY pattern like 6.S040, 18.S097).
+    
+    These are typically one-off experimental courses that may not be offered
+    regularly. Not enabled by default since some students specifically want
+    to take these courses.
+    """
+
+    def __init__(self):
+        pass
+
+    def preprocess(self, courses_df: pl.DataFrame) -> dict[str, Any]:
+        import re
+        subject_ids = courses_df['subject_id'].to_list()
+        # Pattern: department number, dot, S, then digits (e.g., 6.S040, 18.S097)
+        special_topics_pattern = re.compile(r'^\d+\.S\d+', re.IGNORECASE)
+        is_special_topics = [
+            bool(special_topics_pattern.match(str(sid)))
+            for sid in subject_ids
+        ]
+        return {'_is_special_topics': is_special_topics}
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ObjectiveContext
+    ) -> cp_model.LinearExpr:
+        tier = 2
+        if context.objective_tiers and 'avoid_special_topics' in context.objective_tiers:
+            tier = context.objective_tiers['avoid_special_topics']
+
+        penalty = get_tier_penalty(tier, base_cost=1)
+
+        if context.extra is None or '_is_special_topics' not in context.extra:
+            return cp_model.LinearExpr.constant(0)
+
+        is_special_topics = context.extra['_is_special_topics']
+        terms = []
+
+        for (course_idx, semester), var in take_vars.items():
+            if is_special_topics[course_idx]:
+                terms.append(var * penalty)
+
+        if terms:
+            return cp_model.LinearExpr.Sum(terms)
         return cp_model.LinearExpr.constant(0)
 
 

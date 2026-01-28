@@ -7,7 +7,7 @@ from typing import Any
 
 from .base import HardConstraint
 from .conflicts import NoScheduleConflicts
-from .scheduling import BanIAP, BanPrefix, ScheduleFreeTime
+from .scheduling import BanIAP, ScheduleFreeTime
 
 
 @dataclass
@@ -48,18 +48,6 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         default_parameters={"extrapolate": False},
         parameter_types={"extrapolate": bool},
         beta=True,
-    ),
-    "ban_prefix": ConstraintMetadata(
-        key="ban_prefix",
-        class_ref=BanPrefix,
-        name="Ban Classes by Prefix",
-        short_description="Prevent classes with a course number prefix",
-        description="Hard constraint: prevents taking any classes with a specific course number prefix.",
-        category="scheduling",
-        default_enabled=False,
-        has_parameters=True,
-        default_parameters={"prefix": "21M"},
-        parameter_types={"prefix": str},
     ),
     "schedule_free_time": ConstraintMetadata(
         key="schedule_free_time",
