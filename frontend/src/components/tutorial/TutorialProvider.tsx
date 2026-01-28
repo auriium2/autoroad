@@ -62,9 +62,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
     // Auto-start tutorial for first-time visitors
     const hasCompletedTutorial = localStorage.getItem(STORAGE_KEY);
-    const isMobile = window.innerWidth < 768;
-    if (!hasCompletedTutorial && !isMobile) {
-      // Small delay to ensure the UI is fully rendered
+    const isMobile = window.matchMedia('(max-width: 767px)').matches;
+    if (isMobile) {
+      localStorage.setItem(STORAGE_KEY, 'true');
+      return () => {
+        tour.complete();
+      };
+    }
+    if (!hasCompletedTutorial) {
       const timeoutId = setTimeout(() => {
         tour.start();
       }, 500);
@@ -87,7 +92,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
   const startTutorial = () => {
     // Don't start tutorial on mobile
-    if (window.innerWidth < 768) return;
+    if (window.matchMedia('(max-width: 767px)').matches) return;
     tourRef.current?.start();
   };
 
