@@ -12,7 +12,6 @@ import {
 import { Monitor } from "lucide-react";
 import { HealthIndicator } from "@/components/ui/health-indicator";
 import { CourseGraphFlow } from "@/components/course-graph/CourseGraphFlow";
-
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { useGraphStore } from "@/stores/roadStore";
 import { Toaster } from "@/components/ui/toaster";
@@ -99,7 +98,6 @@ export default function Dashboard() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-
       <div className="flex w-screen h-screen">
         <AppSidebar viewMode={viewMode} />
         <SidebarInset className="flex-1 min-w-0 z-0 flex flex-col">

@@ -194,7 +194,6 @@ async def get_requirement_progress(request: Request, key: str, body: ProgressReq
 @router.post("/requirements/batch-progress")
 @limiter.limit("20/minute")
 async def get_requirement_progress_batch(request: Request, body: BatchProgressRequest):
-
     if len(body.requirements) > 20:
         raise HTTPException(status_code=400, detail="Maximum 20 requirements per batch request")
 

@@ -79,7 +79,6 @@ export function SelectedRequirementCard({
               viewMode={viewMode}
               requirement={requirementProgress}
               isLoading={isProgressLoading}
-
             />
           </div>
         )}

@@ -196,7 +196,6 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
                   viewMode={viewMode}
                   requirementProgress={requirementProgressMap[item.key]}
                   isProgressLoading={progressLoading}
-
                 />
               );
             } else if (item.type === 'objective') {

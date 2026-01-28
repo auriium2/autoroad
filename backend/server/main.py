@@ -97,7 +97,7 @@ cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from server.routes.requirements import _fetch_all_requirements
-    from shared.services.cache import get_courses_data, get_hydrant_semester_data
+    from shared.services.cache import get_courses_data, get_hydrant_semester_data, fetch_requirement
 
     # Startup: initialize shared HTTP client
     get_http_client()
@@ -106,13 +106,27 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Prefetch commonly used data in background to warm caches
     async def prefetch():
         try:
+            # First, fetch core data
             await asyncio.gather(
                 get_courses_data(),
                 get_hydrant_semester_data("latest"),
-                _fetch_all_requirements(),
                 return_exceptions=True,
             )
-            logger.info("Cache warmup complete")
+            logger.info("Core data cache warmup complete")
+            
+            # Then fetch all requirements list and prefetch each requirement
+            all_reqs = await _fetch_all_requirements()
+            logger.info(f"Found {len(all_reqs)} requirements to prefetch")
+            
+            # Prefetch all requirements concurrently (both canonical and beta where applicable)
+            tasks = []
+            for key, metadata in all_reqs.items():
+                tasks.append(fetch_requirement(key, "canonical"))
+                if metadata.get("hasBothVersions"):
+                    tasks.append(fetch_requirement(key, "beta"))
+            
+            await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info("Requirements cache warmup complete")
         except Exception as e:
             logger.warning("Cache warmup failed: %s", e)
 
