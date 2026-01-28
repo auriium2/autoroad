@@ -44,8 +44,8 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         key="avoid_small_classes",
         class_ref=AvoidSmallClasses,
         name="Avoid Small Classes",
-        short_description="Penalize classes with very few (<3) units",
-        description="Penalize taking classes with very few units. This keeps the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements.",
+        short_description="(Legacy) Penalize classes with very few (<3) units",
+        description="Legacy objective penalizing taking classes with very few units. This was meant to keep the optimizer from taking hundreds of 0 or 3 unit classes in order to 'satisfy' degree requirements, but improvements to the optimizer mean this objective is no longer required to get normal looking results. If you get problems with 0 unit classes being selected, investigate using this constraint.",
         has_parameters=True,
         default_parameters={"min_units": 3},
         parameter_types={"min_units": int},
@@ -177,34 +177,18 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
 
 
 def get_objective_metadata(key: str) -> ObjectiveMetadata | None:
-    """Get metadata for an objective by key."""
     return OBJECTIVES_REGISTRY.get(key)
 
 
 def get_all_objectives() -> list[ObjectiveMetadata]:
-    """Get all available objectives."""
     return list(OBJECTIVES_REGISTRY.values())
 
 
 def get_objectives_by_category(category: str) -> list[ObjectiveMetadata]:
-    """Get objectives by category."""
     return [obj for obj in OBJECTIVES_REGISTRY.values() if obj.category == category]
 
 
 def instantiate_objective(key: str, parameters: dict[str, Any] | None = None) -> ObjectiveComponent:
-    """
-    Create an instance of an objective by key.
-
-    Args:
-        key: Objective key (e.g., "minimize_units")
-        parameters: Optional parameters to pass to constructor
-
-    Returns:
-        Instantiated objective
-
-    Raises:
-        ValueError: If key not found or parameters invalid
-    """
     metadata = get_objective_metadata(key)
     if not metadata:
         raise ValueError(f"Unknown objective: {key}")
@@ -234,7 +218,7 @@ def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
     """
     return [
         ("limit_classes_per_semester", {"max_classes": 4}),
-        ("avoid_small_classes", {"min_units": 3}),
+       # ("avoid_small_classes", {"min_units": 3}),
         ("avoid_special_classes", {}),
         ("category_rewards", {"max_courses_per_category": 20, "decay_rate": 0.70}),
         ("discourage_equivalent_courses", {"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}}),
