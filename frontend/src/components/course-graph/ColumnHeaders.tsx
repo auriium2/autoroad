@@ -5,7 +5,7 @@ import type { Section } from "@/stores/roadStore";
 import { useGraphStore } from "@/stores/roadStore";
 import { useOptimizationStore } from "@/stores/optimizationStore";
 import { useDragStore } from "@/stores/dragStore";
-import { isPastSemesterById, sectionIdToTargetSemester, sectionIdToAcademicYear } from "@/lib/semesterUtils";
+import { sectionIdToTargetSemester, sectionIdToCalendarYear } from "@/lib/semesterUtils";
 import { generateHydrantUrl } from "@/lib/hydrant";
 import { COLUMN_WIDTH } from "@/lib/graphConstants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -35,7 +35,6 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
     };
   }, []);
 
-  const lockPastSemesters = useOptimizationStore((state) => state.lockPastSemesters);
   const selectedYear = useOptimizationStore((state) => state.selectedYear);
   const graduationYear = selectedYear ? parseInt(selectedYear) : 0;
 
@@ -56,12 +55,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
     if (sectionId < 0) {
       return { canDrop: true, message: 'add class' };
     }
-    
-    // Check if semester is locked (in the past)
-    if (lockPastSemesters && graduationYear && isPastSemesterById(sectionId, graduationYear)) {
-      return { canDrop: false, message: 'semester locked' };
-    }
-    
+
     // Check if course is not offered this academic year
     if (notOfferedYear && graduationYear) {
       const academicYear = sectionIdToAcademicYear(sectionId, graduationYear);
@@ -364,6 +358,11 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
           const canInteract = isRegularSemester && hasGraduationYear;
 
           const stats = isNerdMode && isRegularSemester ? getSectionStats(section.id) : null;
+          
+          // Get calendar year for regular semesters
+          const calendarYear = isRegularSemester && hasGraduationYear 
+            ? sectionIdToCalendarYear(section.id, graduationYear) 
+            : null;
 
           return (
             <div
@@ -386,6 +385,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
                       data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : section.id === 0 ? 'semester-header' : undefined}
                     >
                       {section.title}
+                      {calendarYear && <span className="text-[10px] text-gray-500 font-normal">{calendarYear}</span>}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
@@ -414,6 +414,7 @@ export function ColumnHeaders({ sections, viewport, viewMode = "default" }: Colu
                   data-tutorial={section.id === -2 ? 'must-take-column' : section.id === -1 ? 'ase-column' : section.id === 0 ? 'semester-header' : undefined}
                 >
                   {section.title}
+                  {calendarYear && <span className="text-[10px] text-gray-500 font-normal">{calendarYear}</span>}
                 </span>
               )}
               {stats && stats.courseCount > 0 && (

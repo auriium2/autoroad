@@ -97,6 +97,28 @@ export function getGraduationYearOptions(): Array<{ value: string; label: string
 }
 
 /**
+ * Gets the actual calendar year for a section.
+ * Fall is in the academic year start, IAP and Spring are in the following calendar year.
+ */
+export function sectionIdToCalendarYear(
+  sectionId: number,
+  graduationYear: number
+): number | null {
+  if (sectionId < 0 || sectionId > 11) return null;
+
+  const termInYear = sectionId % 3; // 0=Fall, 1=IAP, 2=Spring
+  const yearLevel = Math.floor(sectionId / 3); // 0=Freshman, 1=Sophomore, etc.
+  
+  const academicYearStart = graduationYear - 4 + yearLevel;
+  
+  if (termInYear === 0) { // Fall
+    return academicYearStart;
+  } else { // IAP or Spring
+    return academicYearStart + 1;
+  }
+}
+
+/**
  * Converts a section ID (0-11) to the target Hydrant semester code.
  * This is the actual semester the section represents (e.g., "s27" for Spring 2027).
  * 
