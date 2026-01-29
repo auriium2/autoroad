@@ -494,9 +494,9 @@ export const tutorialSteps: StepOptions[] = [
   // ==========================================
   {
     id: 'all-fixed',
-    title: 'Ready to Optimize!',
+    title: 'Handling blockers',
     text: `Now you know both ways to fix red nodes.
-      The key is: <strong style="color: #ef4444">no red</strong> or <strong style="color: #eab308">yellow</strong> nodes must be present for the optimizer to work.`,
+      The key is: <strong style="color: #ef4444">no red</strong> or <strong style="color: #eab308">yellow</strong> nodes must be present for the optimizer to work. <br><br>Other things can stop the optimizer from running, including having duplicate classes or having classes in the wrong spot.`,
     attachTo: { element: '[data-tutorial="graph"]', on: 'left' },
     scrollTo: { behavior: 'smooth', block: 'center' },
     buttons: [
@@ -516,7 +516,7 @@ export const tutorialSteps: StepOptions[] = [
   // ==========================================
   {
     id: 'ready-to-optimize',
-    title: 'Optimization',
+    title: 'Optimization, Part 1',
     text: `Your markers look good! Click <strong>Optimize</strong> to have Autoroad fill in the rest of your schedule.<br><br>
       <small><i>In our current configuration, Autoroad will just try to make sure you have the GIRs by the end of your 4 years. We'll explain how to ask for a degree and more in the next steps.</i></small>`,
     attachTo: { element: '[data-tutorial="optimize-button"]', on: 'bottom' },
@@ -529,7 +529,7 @@ export const tutorialSteps: StepOptions[] = [
 
   {
     id: 'optimized',
-    title: 'Optimization Complete!',
+    title: 'Optimization, Part 1',
     text: `<strong style="color: #d1d5db">White nodes</strong> are the optimizer's suggestions.
       When a marker contains a <strong style="color: #22c55e">green inner ring</strong>, this means the optimizer agreed with the marker you placed.<br><br>
       <small>By default, autoroad can suggest classes even in semesters in the past. We'll show how to handle this later.</small>`,
