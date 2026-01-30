@@ -1,0 +1,23 @@
+6#,#6 Minor#,#Minor in Computer Science#,#Computer Science#,#threshold=6
+Computational thinking is an essential skill in all engineering and scientific disciplines. The Minor in Computer Science provides both depth and breadth in the field, as well as the opportunity to explore areas of your interest.\n\nThe Minor in Computer Science requires taking at least 6 subjects totaling 72 units. 6-unit subjects count as half-subjects.
+
+introductory
+
+basic
+
+advanced
+
+additional
+
+
+introductory, "Introductory Level" := 6.100A/6.100B/6.100L/16.C20/6.1903/6.1904/6.9080{<=12u}
+
+basic, "Basic Level" := 6.1010/6.1200/6.1210/6.1910/6.3700/6.3800/18.200/18.200A/18.211{<=63u}
+
+advanced, "Advanced Level" := 6.1020/6.1040/6.1060/6.1100/6.1120/6.1220/6.1400/6.1420/6.1600/6.1800/6.1810/6.1820/6.1920/6.3730/6.3900/6.4200/6.4110/6.4120/6.4140/6.4210/6.4300/6.4400/6.4450/6.4500/6.5081/6.5151/6.5831/6.8391/6.8611/6.8701/6.8711/6.8731/6.C01/6.C011/18.404{>=1}
+
+sw_intensive, "Software-Intensive" := 6.1010/6.1020/6.1100/6.4200/6.1040/6.1060/6.1920/6.809/6.5081{>=1}
+
+algo_intensive, "Algorithms-Intensive" := 6.1210/6.1220{>=1}
+
+additional, "Additional Requirements" := sw_intensive, algo_intensive
