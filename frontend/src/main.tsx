@@ -28,6 +28,7 @@ if (import.meta.env.VITE_SENTRY_DSN) {
         maskAllText: false,
         blockAllMedia: false,
         networkDetailAllowUrls: [/\/api\//],
+        networkCaptureBodies: true,
       }),
     ],
     tracesSampleRate: 1.0,

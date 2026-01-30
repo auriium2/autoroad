@@ -175,11 +175,9 @@ function CourseGraphFlowInner({
   const nodesToValidate = isOptimizing ? [] : debouncedNodes;
   const { edges: storeEdges, missing: uuid2missingPrereqs } = usePrerequisiteValidation(nodesToValidate);
 
-  // Batch fetch course details for all nodes
   const courseIds = storeNodes.map(n => n.courseId);
   const { data: courseId2details } = useCourseDetailsBatch(courseIds);
 
-  // Convert to React Flow format
   const { flowNodes, flowEdges } = useFlowConversion(
     storeNodes,
     storeEdges,
@@ -309,6 +307,7 @@ function CourseGraphFlowInner({
         nodesDraggable={!isOptimizing}
         nodesConnectable={false}
         elementsSelectable={true}
+        deleteKeyCode={null}
         zoomOnScroll={false}
         panOnScroll
         panOnDrag

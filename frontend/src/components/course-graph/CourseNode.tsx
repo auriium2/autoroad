@@ -45,15 +45,14 @@ function CourseNodeComponent(props: CourseNodeComponentProps) {
   // Check if this course is a duplicate (appears multiple times in markers)
   const markers = useGraphStore((state) => state.markers);
   const isDuplicate = React.useMemo(() => {
-    const nonBanishedMarkers = markers.filter(m => m.status !== 'banish');
-    const count = nonBanishedMarkers.filter(m => m.courseId === courseId).length;
+    const placedMarkers = markers.filter(m => m.status !== 'banish' && m.section !== -2);
+    const count = placedMarkers.filter(m => m.courseId === courseId).length;
     return count > 1;
   }, [markers, courseId]);
 
   // Check if this is a virtual/generic marker (HASS-A, etc.)
   const isVirtual = courseId.startsWith('HASS-');
 
-  // Course details passed from parent (batch-fetched)
   const courseDetails = node.courseDetails;
   const units = courseDetails?.total_units || 12; // Default to 12 if not available
   const hasFinal = courseDetails?.has_final ?? false;
