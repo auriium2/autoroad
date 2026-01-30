@@ -228,7 +228,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'must-take-nodes',
     title: 'Must Take Nodes',
-    text: `<strong style="color: #a78bfa">Normal markers</strong> placed here mean "I want this course, but the optimizer can pick the best semester for it."<br><br><strong style="color: #ef4444">Banish</strong> markers placed here tell autoroad to avoid ever taking this class.`,
+    text: `<strong style="color: #a78bfa">Normal markers</strong> placed here mean "I want this course, but the optimizer can pick the best semester for it. <strong>Don't put your class requirements here</strong>. This is for classes <i>you want to take</i>."<br><br><strong style="color: #ef4444">Banish</strong> markers placed here tell autoroad to avoid ever taking this class.`,
     attachTo: { element: '[data-course-id="8.01"]', on: 'right' },
     scrollTo: false,
     buttons: [
