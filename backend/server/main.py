@@ -44,7 +44,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.httpx import HttpxIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration, ignore_logger
 from sentry_sdk.integrations.starlette import StarletteIntegration
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -64,6 +64,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 if os.environ.get("FASTAPI_SENTRY_DSN"):
+    # Ignore noisy loggers
+    ignore_logger("uvicorn.access")
+    ignore_logger("httpx")
+    ignore_logger("httpcore")
+    
     sentry_sdk.init(
         dsn=os.environ["FASTAPI_SENTRY_DSN"],
         environment=os.environ.get("FASTAPI_ENVIRONMENT", "development"),
@@ -72,14 +77,16 @@ if os.environ.get("FASTAPI_SENTRY_DSN"):
         profiles_sample_rate=1.0,
         # Attach request data (IPs, headers, bodies) - disable in prod if PII is a concern
         send_default_pii=True,
-        # Attach all log levels as breadcrumbs, send ERROR+ as events
+        # Enable Sentry Logs feature
+        enable_logs=True,
         integrations=[
             FastApiIntegration(transaction_style="endpoint"),
             StarletteIntegration(transaction_style="endpoint"),
             HttpxIntegration(),  # Auto-instrument httpx calls to Fireroad/Hydrant
             LoggingIntegration(
                 level=logging.DEBUG,  # Capture DEBUG+ as breadcrumbs
-                event_level=None,  # Don't send log messages as events, only use for breadcrumbs
+                event_level=logging.WARNING,  # Send WARNING+ as error events
+                sentry_logs_level=logging.INFO,  # Send INFO+ to Sentry Logs
             ),
         ],
         # Filter out health check noise

@@ -607,14 +607,46 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         perf_timings['solving'] = time.time() - solve_start_time
         perf_timings['total'] = time.time() - perf_start_total
 
-        # Send completion
+        # Emit metrics to Sentry
         status_map = {
             cp_model.OPTIMAL: "OPTIMAL",
             cp_model.FEASIBLE: "FEASIBLE",
             cp_model.INFEASIBLE: "INFEASIBLE",
             cp_model.MODEL_INVALID: "MODEL_INVALID"
         }
+        solve_status = status_map.get(result, 'MODEL_INVALID')
+        
+        sentry_sdk.metrics.distribution(
+            "optimization.solve_time",
+            perf_timings['solving'],
+            unit="second",
+            tags={"status": solve_status}
+        )
+        sentry_sdk.metrics.distribution(
+            "optimization.total_time",
+            perf_timings['total'],
+            unit="second",
+            tags={"status": solve_status}
+        )
+        sentry_sdk.metrics.gauge(
+            "optimization.solution_count",
+            callback.solution_count,
+            tags={"status": solve_status}
+        )
+        sentry_sdk.metrics.gauge(
+            "optimization.num_requirements",
+            len(request.requirements),
+        )
+        sentry_sdk.metrics.gauge(
+            "optimization.num_markers",
+            len(request.markers) if request.markers else 0,
+        )
+        sentry_sdk.metrics.incr(
+            "optimization.completed",
+            tags={"status": solve_status}
+        )
 
+        # Send completion
         warnings = []
         if result == cp_model.FEASIBLE:
             warnings.append("Solution found but may not be optimal (time limit reached)")
