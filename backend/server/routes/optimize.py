@@ -257,7 +257,7 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                     "POST",
                     f"{SOLVER_URL}/solve",
                     content=serialized.to_json(),
-                    headers={"Content-Type": "application/json", "Connection": "close", "X-Worker-Secret": worker_secret}
+                    headers={"Content-Type": "application/json", "X-Worker-Secret": worker_secret}
                 ) as response:
                     timings["worker_connect"] = time.time() - t0
                     worker_span.set_data("connect_time_seconds", timings["worker_connect"])

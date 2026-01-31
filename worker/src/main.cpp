@@ -164,7 +164,6 @@ int main(int argc, char* argv[]) {
         
         active_solves++;
         update_activity();
-        res.set_header("Connection", "close");
         res.set_header("Cache-Control", "no-cache");
         res.set_header("Access-Control-Allow-Origin", "*");
 
