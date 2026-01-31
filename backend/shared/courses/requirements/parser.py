@@ -356,14 +356,15 @@ def parse_fireroad_response(data: dict[str, Any]) -> Node:
     Returns:
         Parsed requirement tree
     """
-    if 'reqs' not in data:
+    reqs = data.get('reqs')
+    if not reqs:
         raise ParseError("Fireroad response missing 'reqs' field")
 
     title = data.get('title', data.get('medium-title', 'requirement'))
     slug = _slugify(title)
     # Ensure we have a non-empty root title
     root_title = slug if slug else "requirement"
-    return parse_requirement_list(data['reqs'], root_title=root_title)
+    return parse_requirement_list(reqs, root_title=root_title)
 
 
 def node_to_string(node: Node, indent: int = 0, show_ids: bool = False) -> str:

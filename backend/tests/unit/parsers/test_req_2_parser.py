@@ -443,6 +443,75 @@ class TestParseFireroadResponse:
         with pytest.raises(ParseError, match="missing 'reqs' field"):
             parse_fireroad_response(data)
 
+    def test_req_list_key_not_accepted(self):
+        """Fireroad API uses 'reqs', not 'req-list'. Ensure we don't silently accept 'req-list'."""
+        data = {
+            "title": "Test Major",
+            "req-list": [
+                {"req": "6.100A"},
+                {"req": "6.1200"}
+            ]
+        }
+        with pytest.raises(ParseError, match="missing 'reqs' field"):
+            parse_fireroad_response(data)
+
+    def test_req_list_key_not_accepted_in_nested(self):
+        """Nested items must also use 'reqs', not 'req-list'."""
+        data = {
+            "title": "Test Major",
+            "reqs": [
+                {
+                    "title": "Section",
+                    "connection-type": "all",
+                    "req-list": [
+                        {"req": "6.100A"},
+                        {"req": "6.1200"}
+                    ]
+                }
+            ]
+        }
+        with pytest.raises(ParseError, match="must have 'req' or 'reqs' field"):
+            parse_fireroad_response(data)
+
+
+class TestFireroadFileFormat:
+    """Tests that local .fireroad files produce 'reqs' format."""
+
+    def test_local_fireroad_parser_uses_reqs_key(self):
+        """The local .fireroad parser must produce 'reqs', not 'req-list'."""
+        from shared.courses.requirements.fireroad_parser import parse_fireroad_file
+
+        content = (
+            "6#,#6 Minor#,#Minor in CS#,#Computer Science\n"
+            "Description\n"
+            "\n"
+            "intro\n"
+            "\n"
+            'intro, "Introductory" := 6.100A/6.100B{<=12u}\n'
+        )
+        result = parse_fireroad_file(content)
+        assert "reqs" in result
+        assert "req-list" not in result
+
+    def test_local_fireroad_parser_nested_reqs_key(self):
+        """Nested children in .fireroad output must also use 'reqs'."""
+        from shared.courses.requirements.fireroad_parser import parse_fireroad_file
+
+        content = (
+            "6#,#6 Minor#,#Minor in CS#,#Computer Science\n"
+            "Description\n"
+            "\n"
+            "section\n"
+            "\n"
+            'section, "Section" := 6.100A, 6.100B\n'
+        )
+        result = parse_fireroad_file(content)
+        reqs = result["reqs"]
+        assert len(reqs) == 1
+        child = reqs[0]
+        assert "reqs" in child
+        assert "req-list" not in child
+
 
 class TestRealWorldStructures:
     """Tests based on real Fireroad requirement structures."""

@@ -25,6 +25,33 @@ from shared.services.cache import (
 
 @pytest.mark.e2e
 @pytest.mark.slow
+def test_hass_marker_in_frozen_past_semester():
+    """
+    Regression: HASS marker pinned to a past semester with freeze_past_semesters
+    caused infeasibility because add_past_semester_constraints locked all HASS
+    courses in that semester to 0, contradicting the HASS pin constraint.
+    """
+    from ortools.sat.python import cp_model as cpm
+    from tests.test_helpers import build_optimizer_model, solve_model
+
+    markers = [
+        Marker(courseId='HASS-A', status='pin', section=0),  # Freshman Fall
+    ]
+
+    result = build_optimizer_model(
+        requirement_keys=('girs',),
+        markers=markers,
+        start_year=2024,
+        freeze_past_semesters=True,
+    )
+
+    solver, status = solve_model(result.model, 30.0)
+    assert status in [cpm.OPTIMAL, cpm.FEASIBLE], \
+        f"HASS marker in frozen past semester should be feasible, got status {status}"
+
+
+@pytest.mark.e2e
+@pytest.mark.slow
 def test_feasibility_bug_major_6_3_with_markers():
     """
     Reproduce bug where optimizer says FEASIBLE but Fireroad says INFEASIBLE.

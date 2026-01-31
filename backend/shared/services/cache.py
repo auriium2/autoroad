@@ -272,7 +272,7 @@ async def get_requirements(
         return {}
 
     sources = requirement_sources or {}
-    default_source = "canonical"
+    default_source = "beta"
 
 
     async def fetch_one(key: str) -> tuple[str, dict[str, object]]:

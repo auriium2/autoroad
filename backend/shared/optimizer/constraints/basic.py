@@ -16,6 +16,7 @@ import polars as pl
 from ortools.sat.python import cp_model
 
 from shared.models.requests import Marker
+from shared.optimizer.marker_constraint_builder import get_virtual_marker_attr
 from shared.optimizer.semesters import ALL_SEMESTERS
 from shared.utils import get_current_semester_index, is_valid_class_semester
 
@@ -321,11 +322,19 @@ def add_past_semester_constraints(
 
         for marker in markers:
             if (marker.status == "pin" or marker.status == "override") and marker.section >= 0:
-                course_idx = course_id_to_idx.get(marker.courseId)
-                if course_idx is not None:
-                    semester = marker.section + 1
-                    if semester <= current_semester:
+                semester = marker.section + 1
+                if semester <= current_semester:
+                    course_idx = course_id_to_idx.get(marker.courseId)
+                    if course_idx is not None:
                         pinned_past_courses.add((course_idx, semester))
+                    else:
+                        attr = get_virtual_marker_attr(marker.courseId)
+                        if attr is not None:
+                            col, val = attr
+                            if col in courses_df.columns:
+                                for idx in range(len(courses_df)):
+                                    if courses_df[idx, col] == val:
+                                        pinned_past_courses.add((idx, semester))
 
     constraints_added = 0
 

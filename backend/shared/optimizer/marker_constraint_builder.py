@@ -25,12 +25,33 @@ class MarkerConstraintResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
-# Virtual course IDs that represent generic requirement categories
-VIRTUAL_COURSE_IDS = {"HASS-A", "HASS-H", "HASS-S", "HASS-E"}
+# Maps marker courseId -> (df_column, attr_value)
+VIRTUAL_MARKER_ATTRS: dict[str, tuple[str, str]] = {
+    "HASS-A": ("hass_attribute", "HASS-A"),
+    "HASS-H": ("hass_attribute", "HASS-H"),
+    "HASS-S": ("hass_attribute", "HASS-S"),
+    "HASS-E": ("hass_attribute", "HASS-E"),
+    "GIR:BIOL": ("gir_attribute", "BIOL"),
+    "GIR:CAL1": ("gir_attribute", "CAL1"),
+    "GIR:CAL2": ("gir_attribute", "CAL2"),
+    "GIR:CHEM": ("gir_attribute", "CHEM"),
+    "GIR:LAB":  ("gir_attribute", "LAB"),
+    "GIR:LAB2": ("gir_attribute", "LAB2"),
+    "GIR:PHY1": ("gir_attribute", "PHY1"),
+    "GIR:PHY2": ("gir_attribute", "PHY2"),
+    "GIR:REST": ("gir_attribute", "REST"),
+}
+
+VIRTUAL_COURSE_IDS = set(VIRTUAL_MARKER_ATTRS.keys())
 
 
 def is_virtual_marker(course_id: str) -> bool:
     return course_id in VIRTUAL_COURSE_IDS
+
+
+def get_virtual_marker_attr(course_id: str) -> tuple[str, str] | None:
+    """Return (column_name, attr_value) for a virtual marker, or None if not virtual."""
+    return VIRTUAL_MARKER_ATTRS.get(course_id)
 
 
 def add_marker_constraints(
@@ -69,23 +90,23 @@ def add_marker_constraints(
         course_id_to_idx[subject_id] = idx
     build_idx_time = time.time() - t0
 
+    # Build index lookup for all virtual marker types
     t0 = time.time()
-    hass_attr_to_indices: dict[str, list[int]] = {
-        "HASS-A": [],
-        "HASS-H": [],
-        "HASS-S": [],
-        "HASS-E": [],
-    }
-    if "hass_attribute" in courses_df.columns:
-        for idx in range(len(courses_df)):
-            hass_attr = courses_df[idx, "hass_attribute"]
-            if hass_attr in hass_attr_to_indices:
-                hass_attr_to_indices[hass_attr].append(idx)
+    virtual_id_to_indices: dict[str, list[int]] = {}
+    for marker_id, (col, val) in VIRTUAL_MARKER_ATTRS.items():
+        if col in courses_df.columns:
+            indices = []
+            for idx in range(len(courses_df)):
+                if courses_df[idx, col] == val:
+                    indices.append(idx)
+            virtual_id_to_indices[marker_id] = indices
+        else:
+            virtual_id_to_indices[marker_id] = []
     build_hass_time = time.time() - t0
 
-    # Count HASS markers by (category, section) to handle multiple markers of same type
-    hass_pin_counts: Counter[tuple[str, int]] = Counter()
-    hass_banish_markers: list[tuple[str, int]] = []
+    # Count virtual pin markers by (marker_id, section)
+    virtual_pin_counts: Counter[tuple[str, int]] = Counter()
+    virtual_banish_markers: list[tuple[str, int]] = []
 
     for marker in markers:
         if is_virtual_marker(marker.courseId):
@@ -93,23 +114,22 @@ def add_marker_constraints(
                 if marker.section == -2:
                     errors.append(f"{marker.courseId} markers cannot be placed in Must Take section")
                 else:
-                    hass_pin_counts[(marker.courseId, marker.section)] += 1
+                    virtual_pin_counts[(marker.courseId, marker.section)] += 1
             elif marker.status == "banish":
-                hass_banish_markers.append((marker.courseId, marker.section))
+                virtual_banish_markers.append((marker.courseId, marker.section))
             elif marker.status == "override":
                 errors.append(f"Override is not supported for generic {marker.courseId} markers")
             continue
 
-    # Add constraints for HASS pin markers (grouped by category and section)
-    for (hass_category, section), count in hass_pin_counts.items():
-        matching_indices = hass_attr_to_indices.get(hass_category, [])
+    # Add constraints for virtual pin markers (grouped by marker_id and section)
+    for (marker_id, section), count in virtual_pin_counts.items():
+        matching_indices = virtual_id_to_indices.get(marker_id, [])
 
         if not matching_indices:
-            errors.append(f"No courses found with {hass_category} attribute")
+            errors.append(f"No courses found with {marker_id} attribute")
             continue
 
         if section == -1:
-            # ASE semester
             semester_vars = [
                 take_vars[(idx, -1)]
                 for idx in matching_indices
@@ -119,9 +139,8 @@ def add_marker_constraints(
                 model.Add(sum(semester_vars) >= count)
                 constraints_added += 1
             else:
-                errors.append(f"No {hass_category} courses available in ASE semester")
+                errors.append(f"No {marker_id} courses available in ASE semester")
         elif section >= 0:
-            # Specific semester: require `count` courses of this category
             semester = section + 1
             semester_vars = [
                 take_vars[(idx, semester)]
@@ -132,14 +151,14 @@ def add_marker_constraints(
                 model.Add(sum(semester_vars) >= count)
                 constraints_added += 1
             else:
-                errors.append(f"No {hass_category} courses available in semester {semester}")
+                errors.append(f"No {marker_id} courses available in semester {semester}")
 
-    # Add constraints for HASS banish markers
-    for hass_category, section in hass_banish_markers:
-        matching_indices = hass_attr_to_indices.get(hass_category, [])
+    # Add constraints for virtual banish markers
+    for marker_id, section in virtual_banish_markers:
+        matching_indices = virtual_id_to_indices.get(marker_id, [])
 
         if section < 0:
-            errors.append(f"Cannot banish {hass_category} from special semesters")
+            errors.append(f"Cannot banish {marker_id} from special semesters")
             continue
 
         semester = section + 1
