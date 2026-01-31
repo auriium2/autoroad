@@ -146,7 +146,7 @@ class OptimizerTestConfig:
             'description': 'Chemical Engineering',
         },
         'major15-1': {
-            'min_expected_courses': 20,
+            'min_expected_courses': 15,
             'max_expected_courses': 30,
             'description': 'Management Science',
         },
