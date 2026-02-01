@@ -151,7 +151,7 @@ async def _fetch_courses_from_fireroad() -> list[dict[str, Any]]:
     return [c for c in response.json() if not c.get("is_historical")]
 
 
-@cache(ttl="1h", lock=True)
+@cache.soft(ttl="24h", soft_ttl="4h")
 async def get_courses_data() -> list[dict[str, Any]]:
     """
     Fetch all courses from Fireroad API with caching.
@@ -171,7 +171,7 @@ async def get_courses_data() -> list[dict[str, Any]]:
     return courses
 
 
-@cache(ttl="1h", lock=True)
+@cache.soft(ttl="24h", soft_ttl="4h")
 async def get_parsed_prerequisites() -> dict[str, PrereqNode]:
     """
     Get parsed prerequisite trees for all courses.
@@ -229,7 +229,7 @@ async def _fetch_requirement_from_fireroad(key: str) -> dict[str, object]:
     return resp.json()
 
 
-@cache(ttl="1h", lock=True, key="{key}:{source}")
+@cache.soft(ttl="24h", soft_ttl="4h", key="{key}:{source}")
 async def fetch_requirement(key: str, source: str = "beta") -> dict[str, object]:
     """
     Fetch a single requirement by key.
@@ -310,13 +310,13 @@ async def _fetch_hydrant_data(url: str) -> dict[str, Any]:
     return response.json()
 
 
-@cache(ttl="1h", lock=True, key="hydrant:latest")
+@cache.soft(ttl="24h", soft_ttl="4h", key="hydrant:latest")
 async def _get_hydrant_latest() -> dict[str, Any]:
     """Fetch latest.json from Hydrant."""
     return await _fetch_hydrant_data(f"{HYDRANT_BASE_URL}/latest.json")
 
 
-@cache(ttl="1h", lock=True, key="hydrant:{semester}")
+@cache.soft(ttl="24h", soft_ttl="4h", key="hydrant:{semester}")
 async def get_hydrant_semester_data(semester: str) -> dict[str, Any]:
     url = f"{HYDRANT_BASE_URL}/latest.json" if semester == "latest" else f"{HYDRANT_BASE_URL}/{semester}.json"
     return await _fetch_hydrant_data(url)

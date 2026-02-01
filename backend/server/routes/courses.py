@@ -11,6 +11,20 @@ from shared.services.cache import get_courses_data, get_parsed_prerequisites
 limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
+_course_map_cache: dict[str, dict[str, Any]] | None = None
+_course_map_source_id: int | None = None
+
+
+async def _get_course_map() -> dict[str, dict[str, Any]]:
+    """Get a cached subject_id -> course dict, rebuilt only when course data changes."""
+    global _course_map_cache, _course_map_source_id
+    all_courses = await get_courses_data()
+    source_id = id(all_courses)
+    if _course_map_cache is None or _course_map_source_id != source_id:
+        _course_map_cache = {c.get("subject_id"): c for c in all_courses}
+        _course_map_source_id = source_id
+    return _course_map_cache
+
 
 def _prereq_to_dict(node: PrereqNode) -> dict[str, Any]:
     """Convert a PrereqNode to a JSON-serializable dict."""
@@ -240,10 +254,8 @@ async def batch_lookup_courses(
     if len(course_ids) > 200:
         raise HTTPException(status_code=400, detail="Maximum 200 courses per batch request")
 
-    all_courses = await get_courses_data()
+    course_map = await _get_course_map()
     parsed_prereqs = await get_parsed_prerequisites()
-
-    course_map = {c.get("subject_id"): c for c in all_courses}
 
     virtual_map = {item["subject_id"]: item for item in VIRTUAL_ITEMS}
 
@@ -393,10 +405,8 @@ async def validate_prerequisites(
     if len(body.placements) > 500:
         raise HTTPException(status_code=400, detail="Maximum 500 placements per request")
 
-    all_courses = await get_courses_data()
+    course_map = await _get_course_map()
     parsed_prereqs = await get_parsed_prerequisites()
-
-    course_map = {c.get("subject_id"): c for c in all_courses}
 
     tags: dict[str, list[str]] = {}
     for placement in body.placements:
