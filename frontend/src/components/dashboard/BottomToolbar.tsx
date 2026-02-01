@@ -24,10 +24,10 @@ export function BottomToolbar() {
           variant="ghost"
           size="sm"
           onClick={() => setShowBugReport(true)}
-          className="text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100 transition-opacity"
+          className="text-muted-foreground hover:text-foreground opacity-80 hover:opacity-100 transition-opacity"
         >
           <Bug className="h-4 w-4 mr-1" />
-          Send Feedback
+          Bug Report
         </Button>
       </div>
       <BugReportDialog open={showBugReport} onOpenChange={setShowBugReport} />
