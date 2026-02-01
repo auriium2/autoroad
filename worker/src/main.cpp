@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
     std::cout.flush();
 
     //Begin autosuspend
-    std::thread suspend_thread(fly_suspend_thread, 3);
+    std::thread suspend_thread(fly_suspend_thread, 10);
     suspend_thread.detach();
 
     // Short keep-alive timeout
