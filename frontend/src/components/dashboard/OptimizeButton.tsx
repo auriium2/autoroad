@@ -8,6 +8,8 @@ import { useStoreNodes } from "@/hooks/useStoreNodes";
 import { usePrerequisiteValidation } from "@/hooks/usePrerequisiteValidation";
 import { useBlockingErrors } from "@/hooks/useBlockingErrors";
 import { toast as showToast } from "@/hooks/useToast";
+import { useBugReportStore } from "@/stores/bugReportStore";
+import { ToastAction } from "@/components/ui/toast";
 
 const SOLVER_TIMEOUT_SECONDS = 30;
 
@@ -45,17 +47,24 @@ export function OptimizeButton() {
   // Show toast on optimization status change
   const prevStatusRef = React.useRef<string | null>(null);
   React.useEffect(() => {
+    const feedbackAction = (
+      <ToastAction altText="Send Feedback" onClick={() => useBugReportStore.getState().setOpen(true)}>
+        Give Feedback
+      </ToastAction>
+    );
     if (lastOptimizationStatus === 'OPTIMAL' && prevStatusRef.current !== 'OPTIMAL') {
       showToast({
-        title: "Optimal solution found!",
-        description: "The schedule generated could not be improved further!",
-        duration: 3000,
+        title: "Optimization finished!",
+        description: "Something look weird? Send feedback!",
+        action: feedbackAction,
+        duration: 8000,
       });
     } else if (lastOptimizationStatus === 'FEASIBLE' && prevStatusRef.current !== 'FEASIBLE') {
       showToast({
-        title: "Feasible solution found...",
-        description: "The schedule generated satisfies the constraints you placed but is not the most optimal. This usually happens when the solver runs out of time or you make the problem too complex. If it keeps happening please email mlui2@mit.edu.",
-        duration: 3000,
+        title: "Optimization terminated!",
+        description: "Something look weird? Send feedback!",
+        action: feedbackAction,
+        duration: 8000,
       });
     }
     prevStatusRef.current = lastOptimizationStatus;
