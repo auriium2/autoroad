@@ -56,9 +56,9 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
     "limit_classes_per_semester": ObjectiveMetadata(
         key="limit_classes_per_semester",
         class_ref=LimitClassesPerSemester,
-        name="Limit Classes Per Semester",
+        name="Average Classes Per Semester",
         short_description="Discourages taking more than n classes per semester",
-        description="Discourages taking more than n classes per semester. Play around with this to shape your MIT degree!",
+        description="Discourages taking more than n classes per semester. Tells the optimizer what a normal semester should look like, though the optimizer can and wil exceed this number to achieve your degree. Not recommended to set this higher than 4 or 5.",
         has_parameters=True,
         default_parameters={"max_classes": 4},
         parameter_types={"max_classes": int},
