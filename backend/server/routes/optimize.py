@@ -245,35 +245,49 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
 
         yield f"data: {json.dumps({'type': 'progress', 'message': 'Connecting to solver...', 'step': 8, 'totalSteps': 10, 'waiting': True})}\n\n"
 
-        # Send to C++ worker and stream results
         worker_secret = os.getenv("WORKER_SECRET", "")
         t0 = time.time()
         logger.info("Connecting to C++ worker at %s", SOLVER_URL)
+        max_retries = 3
+        payload = serialized.to_json()
+        headers = {"Content-Type": "application/json", "X-Worker-Secret": worker_secret}
 
         with sentry_sdk.start_span(op="http.client", name="cpp_worker_solve") as worker_span:
             worker_span.set_data("solver_url", SOLVER_URL)
             async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=30.0)) as client:
-                async with client.stream(
-                    "POST",
-                    f"{SOLVER_URL}/solve",
-                    content=serialized.to_json(),
-                    headers={"Content-Type": "application/json", "X-Worker-Secret": worker_secret}
-                ) as response:
+                response_ctx = None
+                response = None
+                for attempt in range(max_retries):
+                    response_ctx = client.stream("POST", f"{SOLVER_URL}/solve", content=payload, headers=headers)
+                    response = await response_ctx.__aenter__()
                     timings["worker_connect"] = time.time() - t0
-                    worker_span.set_data("connect_time_seconds", timings["worker_connect"])
-                    logger.info("Worker connected in %.2fs, status=%d", timings["worker_connect"], response.status_code)
+                    logger.info("Worker connected in %.2fs, status=%d (attempt %d)", timings["worker_connect"], response.status_code, attempt + 1)
 
-                    if response.status_code != 200:
-                        logger.error("Worker returned error status %d", response.status_code)
+                    if response.status_code != 502:
+                        break
+
+                    # 502 = Fly proxy couldn't reach app (cold start). Close and retry.
+                    await response_ctx.__aexit__(None, None, None)
+                    response_ctx = None
+                    response = None
+                    if attempt < max_retries - 1:
+                        logger.warning("Worker returned 502 (cold start), retrying in 2s...")
+                        await asyncio.sleep(2)
+
+                try:
+                    if response is None or response.status_code != 200:
+                        status = response.status_code if response else 0
+                        logger.error("Worker returned error status %d after %d attempts", status, max_retries)
                         worker_span.set_status("error")
-                        yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {response.status_code}'})}\n\n"
+                        yield f"data: {json.dumps({'type': 'error', 'error': f'Solver returned {status}'})}\n\n"
                         return
+
+                    worker_span.set_data("connect_time_seconds", timings["worker_connect"])
 
                     solution_count = 0
                     async for line in response.aiter_lines():
                         if line.startswith("data: "):
                             yield f"{line}\n\n"
-                            # Count solutions for logging
                             try:
                                 event = json.loads(line[6:])
                                 if event.get("type") == "solution":
@@ -292,6 +306,9 @@ async def event_stream_cpp_worker(request: OptimizationRequest):
                                     )
                             except json.JSONDecodeError:
                                 pass
+                finally:
+                    if response_ctx is not None:
+                        await response_ctx.__aexit__(None, None, None)
 
     except httpx.ConnectError as e:
         logger.error("Failed to connect to C++ worker: %s", e)
@@ -310,6 +327,13 @@ async def optimize(request: Request, opt_request: OptimizationRequest):
     If SOLVER_URL is set, builds model locally and sends to C++ worker.
     Otherwise, runs the full optimization in-process (development mode).
     """
+    scope = sentry_sdk.get_current_scope()
+    scope.add_attachment(
+        bytes=opt_request.model_dump_json(indent=2).encode(),
+        filename="request.aroad",
+        content_type="application/json",
+    )
+
     if SOLVER_URL:
         stream_func = event_stream_cpp_worker(opt_request)
     else:
@@ -351,6 +375,7 @@ async def get_objectives():
             "parameterTypes": {k: v.__name__ if hasattr(v, '__name__') else str(v) for k, v in obj.parameter_types.items()},
             "defaultTier": obj.default_tier,
             "unremovable": obj.unremovable,
+            "recommendation": obj.recommendation,
         })
 
     defaults = get_default_objectives()
