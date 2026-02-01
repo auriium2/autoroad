@@ -136,7 +136,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'welcome',
     title: 'Welcome to Autoroad',
-    text: `Autoroad helps you complete your degree by picking the easiest classes that satisfies it.</br></br>Let's learn how to use it! <strong>It's highly recommended you complete the tutorial to prevent simple errors!</strong> Autoroad has a learning curve beyond Courseroad.`,
+    text: `Do the tutorial so things make sense<br><br>thanks`,
     buttons: [
       { text: 'Skip', action: function() { restoreState(); return this.complete(); }, secondary: true },
       { text: 'Start', action: function() { return this.next(); } },
