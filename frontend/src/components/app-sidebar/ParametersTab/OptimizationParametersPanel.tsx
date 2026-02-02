@@ -13,6 +13,7 @@ import { ParameterSearchDropdown } from "./ParameterSearchDropdown";
 import { SelectedRequirementCard } from "./SelectedRequirementCard";
 import { SelectedObjectiveCard } from "./SelectedObjectiveCard";
 import { SelectedConstraintCard } from "./SelectedConstraintCard";
+import { EquivalenciesCard } from "./EquivalenciesCard";
 import { useRequirementProgressBatch } from "@/hooks/useRequirementProgress";
 
 interface OptimizationParametersPanelProps {
@@ -92,10 +93,6 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
     }
   }, [objectivesData, selectedObjectives.length, setObjectives, objectiveTiers, setObjectiveTier]);
 
-  const isRecommended = (key: string) => {
-    return objectivesData?.defaultConfiguration.some(d => d.key === key) ?? false;
-  };
-
   const toggleObjectiveExpanded = (key: string) => {
     setExpandedObjectives(prev => {
       const next = new Set(prev);
@@ -126,12 +123,20 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
     );
   }
 
+  const recommendationOrder: Record<string, number> = { builtin: 0, suggested: 1 };
+  const sortedObjectives = [...selectedObjectives]
+    .filter(o => o.key !== 'category_rewards')
+    .sort((a, b) => {
+      const aRec = objectivesData?.objectives.find(o => o.key === a.key)?.recommendation;
+      const bRec = objectivesData?.objectives.find(o => o.key === b.key)?.recommendation;
+      return (recommendationOrder[aRec ?? ''] ?? 2) - (recommendationOrder[bRec ?? ''] ?? 2);
+    });
+
   const allSelectedItems = [
     ...selectedRequirements.map(key => ({ type: 'degree' as const, key })),
-    ...selectedObjectives
-      .filter(o => o.key !== 'category_rewards')
-      .map(o => ({ type: 'objective' as const, key: o.key })),
+    ...sortedObjectives.map(o => ({ type: 'objective' as const, key: o.key })),
     ...selectedHardConstraints.map(c => ({ type: 'constraint' as const, key: c.key })),
+    { type: 'equivalencies' as const, key: 'equivalencies' },
     ...selectedObjectives
       .filter(o => o.key === 'category_rewards')
       .map(o => ({ type: 'objective' as const, key: o.key })),
@@ -207,12 +212,13 @@ export function OptimizationParametersPanel({ viewMode }: OptimizationParameters
                   key={`selected-${item.type}-${item.key}`}
                   objectiveKey={item.key}
                   objective={objective}
-                  isRecommended={isRecommended(item.key)}
                   isExpanded={expandedObjectives.has(item.key)}
                   onToggleExpanded={() => toggleObjectiveExpanded(item.key)}
                   viewMode={viewMode}
                 />
               );
+            } else if (item.type === 'equivalencies') {
+              return <EquivalenciesCard key="equivalencies" />;
             } else if (item.type === 'constraint') {
               const constraintMetadata = constraintsData?.constraints.find(c => c.key === item.key);
               const constraintConfig = selectedHardConstraints.find(c => c.key === item.key);

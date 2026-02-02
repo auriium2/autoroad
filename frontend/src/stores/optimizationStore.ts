@@ -41,6 +41,18 @@ interface OptimizationState {
 
   setCourseCategories: (categories: Record<string, string[]>) => void;
   getCourseCategoryTier: (courseId: string) => number;
+
+  loadOptimizationState: (state: {
+    selectedObjectives?: ObjectiveConfig[];
+    objectiveTiers?: Record<string, number>;
+    requirementTiers?: Record<string, number>;
+    requirementSources?: Record<string, string>;
+    selectedHardConstraints?: ConstraintConfig[];
+    customEquivalencies?: Record<string, string[]>;
+    selectedYear?: string;
+    lockPastSemesters?: boolean;
+    selectedRequirements?: string[];
+  }) => void;
 }
 
 function getDefaultYear(): string {
@@ -261,9 +273,24 @@ export const useOptimizationStore = create<OptimizationState>()(
 
     return maxTier;
   },
+
+  loadOptimizationState: (incoming) => {
+    markOptimizationAsStale();
+    set({
+      ...(incoming.selectedObjectives !== undefined && { selectedObjectives: incoming.selectedObjectives }),
+      ...(incoming.objectiveTiers !== undefined && { objectiveTiers: incoming.objectiveTiers }),
+      ...(incoming.requirementTiers !== undefined && { requirementTiers: incoming.requirementTiers }),
+      ...(incoming.requirementSources !== undefined && { requirementSources: incoming.requirementSources as Record<string, 'canonical' | 'beta'> }),
+      ...(incoming.selectedHardConstraints !== undefined && { selectedHardConstraints: incoming.selectedHardConstraints }),
+      ...(incoming.customEquivalencies !== undefined && { customEquivalencies: incoming.customEquivalencies }),
+      ...(incoming.selectedYear !== undefined && { selectedYear: incoming.selectedYear }),
+      ...(incoming.lockPastSemesters !== undefined && { lockPastSemesters: incoming.lockPastSemesters }),
+      ...(incoming.selectedRequirements !== undefined && { selectedRequirements: incoming.selectedRequirements }),
+    });
+  },
 }),
     {
-      name: 'optimization-storage',
+      name: 'optimization_storage',
       partialize: (state) => ({
         selectedObjectives: state.selectedObjectives,
         selectedRequirements: state.selectedRequirements,

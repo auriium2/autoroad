@@ -17,7 +17,7 @@ interface TutorialContextValue {
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
 
-const STORAGE_KEY = 'autoroad-tutorial-completed-v2';
+const STORAGE_KEY = 'autoroad_tutorial_completed_v3';
 
 export function TutorialProvider({ children }: { children: ReactNode }) {
   const tourRef = useRef<InstanceType<typeof Shepherd.Tour> | null>(null);

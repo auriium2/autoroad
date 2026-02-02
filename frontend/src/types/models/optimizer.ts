@@ -14,6 +14,7 @@ export interface ObjectiveMetadata {
   parameterTypes: Record<string, string>;
   defaultTier: number;
   unremovable?: boolean;
+  recommendation?: "builtin" | "suggested" | null;
 }
 
 export interface ObjectiveConfig {

@@ -57,14 +57,14 @@ export function OptimizeButton() {
         title: "Optimization finished!",
         description: "Something look weird? Send feedback!",
         action: feedbackAction,
-        duration: 8000,
+        duration: 5000,
       });
     } else if (lastOptimizationStatus === 'FEASIBLE' && prevStatusRef.current !== 'FEASIBLE') {
       showToast({
         title: "Optimization terminated!",
         description: "Something look weird? Send feedback!",
         action: feedbackAction,
-        duration: 8000,
+        duration: 5000,
       });
     }
     prevStatusRef.current = lastOptimizationStatus;

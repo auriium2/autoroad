@@ -40,7 +40,7 @@ from shared.services.cache import (
     get_parsed_prerequisites_by_index,
     get_requirements,
 )
-from shared.utils import find_current_school_year
+from shared.utils import find_current_school_year, get_current_semester_index
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -441,18 +441,7 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
         yield {'type': 'progress', 'message': 'Adding prerequisites...', 'step': 4, 'totalSteps': 10}
 
-        custom_equivalencies: dict[str, list[str]] | None = None
-        if request.objectives:
-            for obj_config in request.objectives:
-                if obj_config.key == 'discourage_equivalent_courses' and obj_config.parameters:
-                    custom_equivalencies = obj_config.parameters.get('custom_equivalencies')
-                    break
-
-        if custom_equivalencies is None:
-            from shared.optimizer.objectives.registry import get_objective_metadata
-            meta = get_objective_metadata('discourage_equivalent_courses')
-            if meta:
-                custom_equivalencies = meta.default_parameters.get('custom_equivalencies')
+        custom_equivalencies: dict[str, list[str]] | None = request.customEquivalencies or None
 
         # Add prerequisite constraints
         with sentry_sdk.start_span(op="optimizer", name="add_prerequisites") as span:
@@ -551,12 +540,15 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
 
             marked_course_ids = {m.courseId for m in request.markers} if request.markers else set()
 
+            current_semester = get_current_semester_index(planning_year_start) if request.lockPastSemesters else 0
             objective = builder.build(
                 model, take_vars, courses_df, planning_year_start,
                 objective_tiers=request.objectiveTiers,
                 requirement_tiers=request.requirementTiers,
                 marked_course_ids=marked_course_ids,
-                course_to_requirements=course_to_requirements
+                course_to_requirements=course_to_requirements,
+                lock_past_semesters=request.lockPastSemesters,
+                current_semester=current_semester
             )
             model.Minimize(objective)
             perf_timings['objective_building'] = time.time() - perf_start
@@ -607,7 +599,6 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         perf_timings['solving'] = time.time() - solve_start_time
         perf_timings['total'] = time.time() - perf_start_total
 
-        # Emit metrics to Sentry
         status_map = {
             cp_model.OPTIMAL: "OPTIMAL",
             cp_model.FEASIBLE: "FEASIBLE",
@@ -615,36 +606,6 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
             cp_model.MODEL_INVALID: "MODEL_INVALID"
         }
         solve_status = status_map.get(result, 'MODEL_INVALID')
-        
-        sentry_sdk.metrics.distribution(
-            "optimization.solve_time",
-            perf_timings['solving'],
-            unit="second",
-            tags={"status": solve_status}
-        )
-        sentry_sdk.metrics.distribution(
-            "optimization.total_time",
-            perf_timings['total'],
-            unit="second",
-            tags={"status": solve_status}
-        )
-        sentry_sdk.metrics.gauge(
-            "optimization.solution_count",
-            callback.solution_count,
-            tags={"status": solve_status}
-        )
-        sentry_sdk.metrics.gauge(
-            "optimization.num_requirements",
-            len(request.requirements),
-        )
-        sentry_sdk.metrics.gauge(
-            "optimization.num_markers",
-            len(request.markers) if request.markers else 0,
-        )
-        sentry_sdk.metrics.incr(
-            "optimization.completed",
-            tags={"status": solve_status}
-        )
 
         # Send completion
         warnings = []

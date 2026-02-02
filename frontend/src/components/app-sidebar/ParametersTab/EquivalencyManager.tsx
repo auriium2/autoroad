@@ -1,5 +1,4 @@
 import * as React from "react";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -10,9 +9,18 @@ interface EquivalencyManagerProps {
   onChange: (newEquiv: Record<string, string[]>) => void;
 }
 
+type EquivalencyDirection = "bidirectional" | "unidirectional";
+
+interface EquivalencyEntry {
+  courseA: string;
+  courseB: string;
+  direction: "bidirectional" | "a_to_b" | "b_to_a";
+}
+
 export function EquivalencyManager({ customEquivalencies, onChange }: EquivalencyManagerProps) {
   const [courseA, setCourseA] = React.useState("");
   const [courseB, setCourseB] = React.useState("");
+  const [direction, setDirection] = React.useState<EquivalencyDirection>("bidirectional");
   const [showDropdownA, setShowDropdownA] = React.useState(false);
   const [showDropdownB, setShowDropdownB] = React.useState(false);
 
@@ -25,7 +33,6 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
   const dropdownRefA = React.useRef<HTMLDivElement>(null);
   const dropdownRefB = React.useRef<HTMLDivElement>(null);
 
-  // Close dropdowns when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRefA.current && !dropdownRefA.current.contains(event.target as Node)) {
@@ -40,36 +47,42 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const addCustomEquivalency = (courseA: string, courseB: string) => {
+  const addEquivalency = (a: string, b: string, dir: EquivalencyDirection) => {
     const newEquiv = { ...customEquivalencies };
-    
-    // Add bidirectional equivalencies
-    if (!newEquiv[courseA]) newEquiv[courseA] = [];
-    if (!newEquiv[courseB]) newEquiv[courseB] = [];
-    
-    if (!newEquiv[courseA].includes(courseB)) {
-      newEquiv[courseA] = [...newEquiv[courseA], courseB];
+
+    // A counts as B: add A -> [B]
+    if (!newEquiv[a]) newEquiv[a] = [];
+    if (!newEquiv[a].includes(b)) {
+      newEquiv[a] = [...newEquiv[a], b];
     }
-    if (!newEquiv[courseB].includes(courseA)) {
-      newEquiv[courseB] = [...newEquiv[courseB], courseA];
+
+    if (dir === "bidirectional") {
+      // B also counts as A: add B -> [A]
+      if (!newEquiv[b]) newEquiv[b] = [];
+      if (!newEquiv[b].includes(a)) {
+        newEquiv[b] = [...newEquiv[b], a];
+      }
     }
-    
+
     onChange(newEquiv);
   };
 
-  const removeCustomEquivalency = (courseA: string, courseB: string) => {
+  const removeEquivalency = (a: string, b: string, entryDirection: EquivalencyEntry["direction"]) => {
     const newEquiv = { ...customEquivalencies };
-    
-    // Remove bidirectional equivalencies
-    if (newEquiv[courseA]) {
-      newEquiv[courseA] = newEquiv[courseA].filter(c => c !== courseB);
-      if (newEquiv[courseA].length === 0) delete newEquiv[courseA];
+
+    if (entryDirection === "bidirectional" || entryDirection === "a_to_b") {
+      if (newEquiv[a]) {
+        newEquiv[a] = newEquiv[a].filter(c => c !== b);
+        if (newEquiv[a].length === 0) delete newEquiv[a];
+      }
     }
-    if (newEquiv[courseB]) {
-      newEquiv[courseB] = newEquiv[courseB].filter(c => c !== courseA);
-      if (newEquiv[courseB].length === 0) delete newEquiv[courseB];
+    if (entryDirection === "bidirectional" || entryDirection === "b_to_a") {
+      if (newEquiv[b]) {
+        newEquiv[b] = newEquiv[b].filter(c => c !== a);
+        if (newEquiv[b].length === 0) delete newEquiv[b];
+      }
     }
-    
+
     onChange(newEquiv);
   };
 
@@ -80,7 +93,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
     if (!trimmedA || !trimmedB) return;
     if (trimmedA === trimmedB) return;
 
-    addCustomEquivalency(trimmedA, trimmedB);
+    addEquivalency(trimmedA, trimmedB, direction);
     setCourseA("");
     setCourseB("");
     setShowDropdownA(false);
@@ -93,45 +106,46 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
     }
   };
 
-  const handleSelectCourseA = (courseId: string) => {
-    setCourseA(courseId);
-    setShowDropdownA(false);
-  };
-
-  const handleSelectCourseB = (courseId: string) => {
-    setCourseB(courseId);
-    setShowDropdownB(false);
-  };
-
-  // Get all unique pairs (to avoid showing both A→B and B→A)
-  const equivalencyPairs = (() => {
-    const pairs: Array<{ courseA: string; courseB: string }> = [];
+  // Build display entries, deduplicating bidirectional pairs
+  const equivalencyEntries: EquivalencyEntry[] = (() => {
+    const entries: EquivalencyEntry[] = [];
     const seen = new Set<string>();
 
-    Object.entries(customEquivalencies).forEach(([courseId, equivalents]: [string, string[]]) => {
-      equivalents.forEach((equiv: string) => {
-        const key1 = `${courseId}:${equiv}`;
-        const key2 = `${equiv}:${courseId}`;
+    for (const [courseId, equivalents] of Object.entries(customEquivalencies)) {
+      for (const equiv of equivalents) {
+        const forwardKey = `${courseId}:${equiv}`;
+        const reverseKey = `${equiv}:${courseId}`;
 
-        if (!seen.has(key1) && !seen.has(key2)) {
-          pairs.push({ courseA: courseId, courseB: equiv });
-          seen.add(key1);
-          seen.add(key2);
+        if (seen.has(forwardKey) || seen.has(reverseKey)) continue;
+
+        const hasReverse = customEquivalencies[equiv]?.includes(courseId) ?? false;
+
+        if (hasReverse) {
+          entries.push({ courseA: courseId, courseB: equiv, direction: "bidirectional" });
+          seen.add(forwardKey);
+          seen.add(reverseKey);
+        } else {
+          entries.push({ courseA: courseId, courseB: equiv, direction: "a_to_b" });
+          seen.add(forwardKey);
         }
-      });
-    });
+      }
+    }
 
-    return pairs.sort((a, b) => a.courseA.localeCompare(b.courseA));
+    return entries.sort((a, b) => a.courseA.localeCompare(b.courseA));
   })();
 
   const filteredCoursesA = courseA.length > 0 ? coursesA.slice(0, 10) : [];
   const filteredCoursesB = courseB.length > 0 ? coursesB.slice(0, 10) : [];
 
+  const directionSymbol = direction === "bidirectional" ? "≡" : "→";
+  const directionTooltip = direction === "bidirectional"
+    ? "Bidirectional: A and B count as each other"
+    : "Unidirectional: left counts as right";
+
   return (
     <div className="space-y-2" data-tutorial="equivalency-manager">
       {/* Add new equivalency */}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-1.5 items-center">
-        {/* Course A Input with Autocomplete */}
         <div ref={dropdownRefA} className="relative">
           <Input
             placeholder="6.100A"
@@ -146,7 +160,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
               {filteredCoursesA.map((course) => (
                 <button
                   key={course.subject_id}
-                  onClick={() => handleSelectCourseA(course.subject_id)}
+                  onClick={() => { setCourseA(course.subject_id); setShowDropdownA(false); }}
                   className="w-full px-2 py-1.5 text-left hover:bg-accent transition-colors"
                 >
                   <div className="font-medium text-xs">{course.subject_id}</div>
@@ -157,9 +171,14 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
           )}
         </div>
 
-        <span className="text-xs text-muted-foreground">≡</span>
+        <button
+          onClick={() => setDirection(d => d === "bidirectional" ? "unidirectional" : "bidirectional")}
+          className="text-xs font-mono border border-border rounded px-1.5 py-0.5 hover:bg-accent transition-colors"
+          title={directionTooltip}
+        >
+          {directionSymbol}
+        </button>
 
-        {/* Course B Input with Autocomplete */}
         <div ref={dropdownRefB} className="relative">
           <Input
             placeholder="6.100L"
@@ -174,7 +193,7 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
               {filteredCoursesB.map((course) => (
                 <button
                   key={course.subject_id}
-                  onClick={() => handleSelectCourseB(course.subject_id)}
+                  onClick={() => { setCourseB(course.subject_id); setShowDropdownB(false); }}
                   className="w-full px-2 py-1.5 text-left hover:bg-accent transition-colors"
                 >
                   <div className="font-medium text-xs">{course.subject_id}</div>
@@ -191,25 +210,28 @@ export function EquivalencyManager({ customEquivalencies, onChange }: Equivalenc
       </Button>
 
       {/* List of existing equivalencies */}
-      {equivalencyPairs.length > 0 && (
+      {equivalencyEntries.length > 0 && (
         <div className="space-y-1.5">
-          {equivalencyPairs.map(({ courseA, courseB }) => (
-            <div
-              key={`${courseA}:${courseB}`}
-              className="flex items-center justify-between p-2 rounded-md border border-border bg-card hover:bg-accent/50 transition-colors"
-            >
-              <span className="text-xs font-mono">
-                {courseA} ≡ {courseB}
-              </span>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive" onClick={() => removeCustomEquivalency(courseA, courseB)}>
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
+          {equivalencyEntries.map((entry) => {
+            const symbol = entry.direction === "bidirectional" ? "≡" : "→";
+            return (
+              <div
+                key={`${entry.courseA}:${entry.courseB}:${entry.direction}`}
+                className="flex items-center justify-between p-2 rounded-md border border-border bg-card hover:bg-accent/50 transition-colors"
+              >
+                <span className="text-xs font-mono">
+                  {entry.courseA} {symbol} {entry.courseB}
+                </span>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive" onClick={() => removeEquivalency(entry.courseA, entry.courseB, entry.direction)}>
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {equivalencyPairs.length === 0 && (
+      {equivalencyEntries.length === 0 && (
         <div className="text-center py-3 text-xs text-muted-foreground">
           No custom equivalencies
         </div>

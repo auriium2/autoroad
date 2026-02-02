@@ -44,6 +44,10 @@ class ObjectiveContext:
     objective_tiers: dict[str, int] | None = None  # Tier (1-4) for each objective key
     requirement_tiers: dict[str, int] | None = None  # Tier (0-3) for each requirement tree path
 
+    # Frozen semester info (for objectives that need to skip past semesters)
+    lock_past_semesters: bool = False
+    current_semester: int = 0  # 1-indexed; semesters <= this are frozen when lock_past_semesters is True
+
     # Marker data (set of course_ids that have user markers)
     marked_course_ids: set[str] | None = None
 

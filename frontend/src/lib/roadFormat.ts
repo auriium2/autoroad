@@ -1,4 +1,5 @@
-import type { Marker } from '@/types';
+import type { Marker, OptimizerNode } from '@/types';
+import type { ObjectiveConfig, ConstraintConfig } from '@/types/models/optimizer';
 
 // handle imports from courseroad and general .road file format, which we must use to be Compatible
 
@@ -17,9 +18,35 @@ export interface RoadFormat {
   progressAssertions: Record<string, unknown>;
 }
 
+export interface AroadFormat extends RoadFormat {
+  autoroad: {
+    version: "1";
+    objectives: ObjectiveConfig[];
+    objectiveTiers: Record<string, number>;
+    requirementTiers: Record<string, number>;
+    requirementSources: Record<string, string>;
+    hardConstraints: ConstraintConfig[];
+    customEquivalencies: Record<string, string[]>;
+    selectedYear: string;
+    lockPastSemesters: boolean;
+    mustTakeSubjects: RoadFormatSubject[];
+    optimizerNodes: RoadFormatSubject[];
+  };
+}
+
+export interface OptimizationStateSnapshot {
+  selectedObjectives: ObjectiveConfig[];
+  objectiveTiers: Record<string, number>;
+  requirementTiers: Record<string, number>;
+  requirementSources: Record<string, string>;
+  selectedHardConstraints: ConstraintConfig[];
+  customEquivalencies: Record<string, string[]>;
+  selectedYear: string;
+  lockPastSemesters: boolean;
+}
+
 function sectionToSemester(section: number): number {
   // ASE: section -1 -> semester 0
-  // Must Take: section -2 -> not exported (handled by filtering banish)
   // Regular: section 0-11 -> semester 1-12
   if (section === -1) return 0; // ASE
   if (section < 0) return 1; // Fallback for other negative sections
@@ -35,15 +62,18 @@ function semesterToSection(semester: number): number | null {
   return semester - 1;
 }
 
+type CourseDetailsFetcher = (courseId: string) => Promise<{ title: string; total_units: number }>;
+
 export async function exportToRoadFormat(
   markers: Marker[],
   selectedRequirements: string[],
-  getCourseDetails: (courseId: string) => Promise<{ title: string; total_units: number }>
+  getCourseDetails: CourseDetailsFetcher
 ): Promise<RoadFormat> {
   const selectedSubjects: RoadFormatSubject[] = [];
 
   for (const marker of markers) {
     if (marker.status === 'banish') continue;
+    if (marker.section === -2) continue; // Must Take markers don't exist in .road format
 
     try {
       const details = await getCourseDetails(marker.courseId);
@@ -75,10 +105,90 @@ export async function exportToRoadFormat(
   };
 }
 
+export async function exportToAroadFormat(
+  markers: Marker[],
+  optimizerNodes: OptimizerNode[],
+  selectedRequirements: string[],
+  optimizationState: OptimizationStateSnapshot,
+  getCourseDetails: CourseDetailsFetcher
+): Promise<AroadFormat> {
+  // selectedSubjects = user markers only (no must-take, no banish)
+  const roadBase = await exportToRoadFormat(markers, selectedRequirements, getCourseDetails);
+
+  // Serialize must-take markers into autoroad block
+  const mustTakeSubjects: RoadFormatSubject[] = [];
+  for (const marker of markers) {
+    if (marker.section !== -2) continue;
+    if (marker.status === 'banish') continue;
+
+    try {
+      const details = await getCourseDetails(marker.courseId);
+      mustTakeSubjects.push({
+        overrideWarnings: marker.status === 'override',
+        semester: -2,
+        title: details.title,
+        subject_id: marker.courseId,
+        units: details.total_units,
+      });
+    } catch {
+      mustTakeSubjects.push({
+        overrideWarnings: marker.status === 'override',
+        semester: -2,
+        title: marker.courseId,
+        subject_id: marker.courseId,
+        units: 0,
+      });
+    }
+  }
+
+  // Serialize optimizer nodes separately
+  const optimizerNodeSubjects: RoadFormatSubject[] = [];
+  for (const node of optimizerNodes) {
+    try {
+      const details = await getCourseDetails(node.courseId);
+      optimizerNodeSubjects.push({
+        semester: sectionToSemester(node.section),
+        title: details.title,
+        subject_id: node.courseId,
+        units: details.total_units,
+      });
+    } catch {
+      optimizerNodeSubjects.push({
+        semester: sectionToSemester(node.section),
+        title: node.courseId,
+        subject_id: node.courseId,
+        units: node.units ?? 0,
+      });
+    }
+  }
+
+  return {
+    ...roadBase,
+    autoroad: {
+      version: "1",
+      objectives: optimizationState.selectedObjectives,
+      objectiveTiers: optimizationState.objectiveTiers,
+      requirementTiers: optimizationState.requirementTiers,
+      requirementSources: optimizationState.requirementSources,
+      hardConstraints: optimizationState.selectedHardConstraints,
+      customEquivalencies: optimizationState.customEquivalencies,
+      selectedYear: optimizationState.selectedYear,
+      lockPastSemesters: optimizationState.lockPastSemesters,
+      mustTakeSubjects,
+      optimizerNodes: optimizerNodeSubjects,
+    },
+  };
+}
+
 export interface ImportResult {
   markers: Marker[];
   warnings: string[];
   coursesOfStudy: string[];
+}
+
+export interface AroadImportResult extends ImportResult {
+  optimizationState?: OptimizationStateSnapshot;
+  optimizerNodes?: OptimizerNode[];
 }
 
 export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
@@ -125,8 +235,59 @@ export function importFromRoadFormat(roadData: RoadFormat): ImportResult {
   return { markers, warnings, coursesOfStudy };
 }
 
-export function downloadRoadFile(roadData: RoadFormat, filename = 'autoroad.road'): void {
-  const jsonStr = JSON.stringify(roadData);
+export function importFromAroadFormat(data: AroadFormat): AroadImportResult {
+  const baseResult = importFromRoadFormat(data);
+
+  if (!data.autoroad) {
+    return baseResult;
+  }
+
+  const aroad = data.autoroad;
+
+  // Reconstruct must-take markers
+  if (aroad.mustTakeSubjects) {
+    for (const subject of aroad.mustTakeSubjects) {
+      baseResult.markers.push({
+        uuid: `marker_${subject.subject_id}_${Date.now()}_${Math.random()}`,
+        courseId: subject.subject_id,
+        section: -2,
+        status: subject.overrideWarnings ? 'override' : 'pin',
+      });
+    }
+  }
+
+  // Reconstruct optimizer nodes
+  const optimizerNodes: OptimizerNode[] = [];
+  if (aroad.optimizerNodes) {
+    for (const subject of aroad.optimizerNodes) {
+      const section = semesterToSection(subject.semester);
+      if (section === null) continue;
+      optimizerNodes.push({
+        courseId: subject.subject_id,
+        section,
+        units: subject.units,
+      });
+    }
+  }
+
+  return {
+    ...baseResult,
+    optimizerNodes,
+    optimizationState: {
+      selectedObjectives: aroad.objectives || [],
+      objectiveTiers: aroad.objectiveTiers || {},
+      requirementTiers: aroad.requirementTiers || {},
+      requirementSources: (aroad.requirementSources || {}) as Record<string, string>,
+      selectedHardConstraints: aroad.hardConstraints || [],
+      customEquivalencies: aroad.customEquivalencies || {},
+      selectedYear: aroad.selectedYear || String(new Date().getFullYear() + 4),
+      lockPastSemesters: aroad.lockPastSemesters ?? false,
+    },
+  };
+}
+
+export function downloadFile(data: RoadFormat | AroadFormat, filename: string): void {
+  const jsonStr = JSON.stringify(data);
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
@@ -140,11 +301,14 @@ export function downloadRoadFile(roadData: RoadFormat, filename = 'autoroad.road
   URL.revokeObjectURL(url);
 }
 
-export function uploadRoadFile(): Promise<RoadFormat | null> {
+// Keep old name for backwards compat with any other callers
+export const downloadRoadFile = downloadFile;
+
+export function uploadFile(): Promise<RoadFormat | AroadFormat | null> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.road,application/json';
+    input.accept = '.road,.aroad,application/json';
 
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
@@ -155,10 +319,10 @@ export function uploadRoadFile(): Promise<RoadFormat | null> {
 
       try {
         const text = await file.text();
-        const data = JSON.parse(text) as RoadFormat;
+        const data = JSON.parse(text);
         resolve(data);
       } catch (error) {
-        reject(new Error('Failed to parse .road file: ' + (error instanceof Error ? error.message : 'Unknown error')));
+        reject(new Error('Failed to parse file: ' + (error instanceof Error ? error.message : 'Unknown error')));
       }
     };
 
@@ -169,3 +333,6 @@ export function uploadRoadFile(): Promise<RoadFormat | null> {
     input.click();
   });
 }
+
+// Keep old name for backwards compat
+export const uploadRoadFile = uploadFile;

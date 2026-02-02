@@ -136,7 +136,7 @@ export const tutorialSteps: StepOptions[] = [
   {
     id: 'welcome',
     title: 'Welcome to Autoroad',
-    text: `Do the full tutorial so things make sense<br><br>thanks`,
+    text: `dont do the tutorial its broken rn Autoroad is designed to solve optimization problems of the following form:<br><br><strong>Minimize units taken</strong><br>Subject to <strong>the requirements in your degree</strong> and <strong>all prerequisites of your classes</strong><br><br>As a result, it has a higher learning curve than CourseRoad. <strong>Completing the whole tutorial</strong> is highly recommended!`,
     buttons: [
       { text: 'Skip', action: function() { restoreState(); return this.complete(); }, secondary: true },
       { text: 'Start', action: function() { return this.next(); } },

@@ -55,7 +55,9 @@ class ObjectiveBuilder:
         objective_tiers: dict[str, int] | None = None,
         requirement_tiers: dict[str, int] | None = None,
         marked_course_ids: set[str] | None = None,
-        course_to_requirements: dict[int, set[str]] | None = None
+        course_to_requirements: dict[int, set[str]] | None = None,
+        lock_past_semesters: bool = False,
+        current_semester: int = 0
     ) -> cp_model.LinearExpr:
         """
         Build the combined objective function.
@@ -93,6 +95,8 @@ class ObjectiveBuilder:
             courses_df=courses_df,
             objective_tiers=objective_tiers,
             requirement_tiers=requirement_tiers,
+            lock_past_semesters=lock_past_semesters,
+            current_semester=current_semester,
             marked_course_ids=marked_course_ids,
             extra=extra_data
         )

@@ -59,11 +59,8 @@ class AvoidLowRatings:
         for course_idx in range(len(context.courses_df)):
             rating = context.courses_df[course_idx, rating_column]
 
-            # Skip courses without rating data
-            if rating is None:
-                continue
-
-            rating_float = float(rating)
+            # Treat unrated courses as having an average rating of 5.0
+            rating_float = float(rating) if rating is not None else 5.0
             if rating_float >= self.threshold:
                 continue
 

@@ -42,7 +42,7 @@ class MinimizeUnits:
 
         for (course_idx, semester), var in take_vars.items():
             units = units_list[course_idx]
-            if units is None or units == 0: # 0 unit classes are never free lol
+            if units is None or units <= 3:  # 0 and 3 unit classes are never free lol
                 units = 12
             terms.append(var * int(units))
 

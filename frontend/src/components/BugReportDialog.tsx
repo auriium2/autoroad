@@ -65,39 +65,57 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
     const graphStore = useGraphStore.getState();
     const optimizationStore = useOptimizationStore.getState();
 
-    // Build .road format data for markers
-    const markersRoadData = {
-      coursesOfStudy: optimizationStore.selectedRequirements.length > 0
-        ? optimizationStore.selectedRequirements
-        : ['girs'],
-      progressOverrides: {},
-      selectedSubjects: graphStore.markers
-        .filter(m => m.status !== 'banish')
-        .map(m => ({
-          overrideWarnings: m.status === 'override',
-          semester: m.section === -1 ? 0 : m.section < 0 ? 1 : m.section + 1,
-          title: m.courseId,
-          subject_id: m.courseId,
-          units: 0,
-        })),
-      progressAssertions: {},
-    };
+    // Build .aroad format snapshot for Sentry attachment
+    const requirements = optimizationStore.selectedRequirements.length > 0
+      ? optimizationStore.selectedRequirements
+      : ['girs'];
 
-    // Build .road format data for optimizer nodes (if any)
-    const optimizerRoadData = graphStore.optimizerNodes.length > 0 ? {
-      coursesOfStudy: optimizationStore.selectedRequirements.length > 0
-        ? optimizationStore.selectedRequirements
-        : ['girs'],
+    const markerSubjects = graphStore.markers
+      .filter(m => m.status !== 'banish' && m.section !== -2)
+      .map(m => ({
+        overrideWarnings: m.status === 'override',
+        semester: m.section === -1 ? 0 : m.section < 0 ? 1 : m.section + 1,
+        title: m.courseId,
+        subject_id: m.courseId,
+        units: 0,
+      }));
+
+    const optimizerNodeSubjects = graphStore.optimizerNodes.map(n => ({
+      semester: n.section === -1 ? 0 : n.section < 0 ? 1 : n.section + 1,
+      title: n.courseId,
+      subject_id: n.courseId,
+      units: n.units || 0,
+    }));
+
+    const mustTakeSubjects = graphStore.markers
+      .filter(m => m.section === -2 && m.status !== 'banish')
+      .map(m => ({
+        overrideWarnings: m.status === 'override',
+        semester: -2,
+        title: m.courseId,
+        subject_id: m.courseId,
+        units: 0,
+      }));
+
+    const aroadData = {
+      coursesOfStudy: requirements,
       progressOverrides: {},
-      selectedSubjects: graphStore.optimizerNodes.map(n => ({
-        overrideWarnings: false,
-        semester: n.section === -1 ? 0 : n.section < 0 ? 1 : n.section + 1,
-        title: n.courseId,
-        subject_id: n.courseId,
-        units: n.units || 0,
-      })),
+      selectedSubjects: markerSubjects,
       progressAssertions: {},
-    } : null;
+      autoroad: {
+        version: "1" as const,
+        objectives: optimizationStore.selectedObjectives,
+        objectiveTiers: optimizationStore.objectiveTiers,
+        requirementTiers: optimizationStore.requirementTiers,
+        requirementSources: optimizationStore.requirementSources,
+        hardConstraints: optimizationStore.selectedHardConstraints,
+        customEquivalencies: optimizationStore.customEquivalencies,
+        selectedYear: optimizationStore.selectedYear ?? "",
+        lockPastSemesters: optimizationStore.lockPastSemesters,
+        mustTakeSubjects,
+        optimizerNodes: optimizerNodeSubjects,
+      },
+    };
 
     return {
       version: APP_VERSION,
@@ -106,20 +124,10 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
       url: window.location.href,
       markers: graphStore.markers,
       optimizerNodes: graphStore.optimizerNodes,
-      objectives: optimizationStore.selectedObjectives,
-      objectiveTiers: optimizationStore.objectiveTiers,
-      requirements: optimizationStore.selectedRequirements,
-      requirementTiers: optimizationStore.requirementTiers,
-      requirementSources: optimizationStore.requirementSources,
-      hardConstraints: optimizationStore.selectedHardConstraints,
-      customEquivalencies: optimizationStore.customEquivalencies,
-      selectedYear: optimizationStore.selectedYear,
-      lockPastSemesters: optimizationStore.lockPastSemesters,
       lastOptimizationStatus: graphStore.lastOptimizationStatus,
       lastCostBreakdown: graphStore.lastCostBreakdown,
       consoleLogs: [...consoleLogs],
-      markersRoadData,
-      optimizerRoadData,
+      aroadData,
     };
   };
 

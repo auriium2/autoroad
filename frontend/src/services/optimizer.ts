@@ -100,7 +100,8 @@ export const optimizerApi = {
     lockPastSemesters?: boolean,
     requirementTiers?: Record<string, number>,
     objectiveTiers?: Record<string, number>,
-    requirementSources?: Record<string, 'canonical' | 'beta'>
+    requirementSources?: Record<string, 'canonical' | 'beta'>,
+    customEquivalencies?: Record<string, string[]>
   ): AsyncGenerator<OptimizationProgress> {
     const requestBody = {
       markers: markers.map(m => ({
@@ -117,6 +118,7 @@ export const optimizerApi = {
       requirementTiers: requirementTiers || {},
       objectiveTiers: objectiveTiers || {},
       requirementSources: requirementSources || {},
+      customEquivalencies: customEquivalencies || {},
     };
 
     const response = await fetch(`${API_BASE_URL}/api/optimize`, {

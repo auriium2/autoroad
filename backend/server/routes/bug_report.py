@@ -41,23 +41,15 @@ async def create_bug_report(request: Request, body: BugReportRequest) -> BugRepo
                 "version": body.debug_info.get("version"),
                 "user_agent": body.debug_info.get("userAgent"),
                 "timestamp": body.debug_info.get("timestamp"),
-                "requirements": body.debug_info.get("requirements"),
-                "requirement_sources": body.debug_info.get("requirementSources"),
                 "last_optimization_status": body.debug_info.get("lastOptimizationStatus"),
                 "last_cost_breakdown": body.debug_info.get("lastCostBreakdown"),
             })
 
-            # Markers and objectives as contexts
+            # Markers and optimizer nodes as contexts
             if body.debug_info.get("markers"):
                 scope.set_context("markers", {"data": body.debug_info["markers"]})
             if body.debug_info.get("optimizerNodes"):
                 scope.set_context("optimizer_nodes", {"data": body.debug_info["optimizerNodes"]})
-            if body.debug_info.get("objectives"):
-                scope.set_context("objectives", {"data": body.debug_info["objectives"]})
-            if body.debug_info.get("hardConstraints"):
-                scope.set_context("hard_constraints", {"data": body.debug_info["hardConstraints"]})
-            if body.debug_info.get("customEquivalencies"):
-                scope.set_context("custom_equivalencies", {"data": body.debug_info["customEquivalencies"]})
 
             # Console logs as breadcrumbs
             if body.debug_info.get("consoleLogs"):
@@ -69,17 +61,11 @@ async def create_bug_report(request: Request, body: BugReportRequest) -> BugRepo
                         timestamp=log.get("timestamp"),
                     )
 
-            # Attach road data as JSON files
-            if body.debug_info.get("markersRoadData"):
+            # Attach full .aroad snapshot
+            if body.debug_info.get("aroadData"):
                 scope.add_attachment(
-                    bytes=json.dumps(body.debug_info["markersRoadData"], indent=2).encode(),
-                    filename="markers.road.json",
-                    content_type="application/json",
-                )
-            if body.debug_info.get("optimizerRoadData"):
-                scope.add_attachment(
-                    bytes=json.dumps(body.debug_info["optimizerRoadData"], indent=2).encode(),
-                    filename="generated.road.json",
+                    bytes=json.dumps(body.debug_info["aroadData"], indent=2).encode(),
+                    filename="snapshot.aroad",
                     content_type="application/json",
                 )
 

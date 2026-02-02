@@ -7,7 +7,6 @@ from typing import Any
 
 from .base import ObjectiveComponent
 from .categories import CategoryRewards
-from .equivalents import DiscourageEquivalentCourses
 from .ratings import AvoidLowRatings
 from .scheduling import (
     AvoidClassesWithPrefix,
@@ -22,6 +21,7 @@ from .workload import (
     LimitFinalsPerSemester,
     LimitHoursPerSemester,
     LimitUnitsPerSemester,
+    PreferEarlierSemesters,
 )
 
 
@@ -39,6 +39,7 @@ class ObjectiveMetadata:
     category: str
     default_tier: int = 2  # Default tier for this objective
     unremovable: bool = False  # If True, user cannot remove this objective
+    recommendation: str | None = None  # "builtin", "suggested", or None
 
 
 OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
@@ -52,6 +53,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         default_parameters={"hours_threshold": 60.0, "fallback_hours": 12.0, "penalty_interval": 3},
         parameter_types={"hours_threshold": float, "fallback_hours": float, "penalty_interval": int},
         category="workload",
+        recommendation=None,
     ),
     "limit_classes_per_semester": ObjectiveMetadata(
         key="limit_classes_per_semester",
@@ -64,6 +66,21 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={"max_classes": int},
         category="workload",
         default_tier=4,
+        recommendation="builtin",
+    ),
+
+    "prefer_earlier_semesters": ObjectiveMetadata(
+        key="prefer_earlier_semesters",
+        class_ref=PreferEarlierSemesters,
+        name="Prefer Earlier Semesters",
+        short_description="Tiny cost for later placement, biases toward taking classes earlier",
+        description="Each class placed in year Y costs tier × Y. Intentionally weak — serves as a tiebreaker that gently biases toward earlier placement without overriding other objectives.",
+        has_parameters=False,
+        default_parameters={},
+        parameter_types={},
+        category="scheduling",
+        default_tier=1,
+        recommendation="builtin",
     ),
     "limit_units_per_semester": ObjectiveMetadata(
         key="limit_units_per_semester",
@@ -72,10 +89,11 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         short_description="Discourages semesters with more than n units per semester",
         description="Discourages semesters with more than n units per semester. Applies a fractional penalty for every 3 units over the threshold.",
         has_parameters=True,
-        default_parameters={"max_units": 60},
+        default_parameters={"max_units": 54},
         parameter_types={"max_units": int},
         category="workload",
-        default_tier=3,
+        default_tier=1,
+        recommendation="suggested",
     ),
     "limit_finals_per_semester": ObjectiveMetadata(
         key="limit_finals_per_semester",
@@ -88,6 +106,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={"max_finals": int},
         category="workload",
         default_tier=1,
+        recommendation=None,
     ),
     "avoid_iap": ObjectiveMetadata(
         key="avoid_iap",
@@ -100,6 +119,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={},
         category="scheduling",
         default_tier=2,
+        recommendation="builtin",
     ),
     "avoid_special_classes": ObjectiveMetadata(
         key="avoid_special_classes",
@@ -112,6 +132,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={},
         category="scheduling",
         default_tier=2,
+        recommendation="builtin",
     ),
     "avoid_special_topics": ObjectiveMetadata(
         key="avoid_special_topics",
@@ -124,6 +145,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         parameter_types={},
         category="scheduling",
         default_tier=2,
+        recommendation=None,
     ),
     "avoid_hass_classes": ObjectiveMetadata(
         key="avoid_hass_classes",
@@ -173,19 +195,7 @@ OBJECTIVES_REGISTRY: dict[str, ObjectiveMetadata] = {
         category="categories",
         default_tier=2,
         unremovable=True,
-    ),
-    "discourage_equivalent_courses": ObjectiveMetadata(
-        key="discourage_equivalent_courses",
-        class_ref=DiscourageEquivalentCourses,
-        name="Discourage Equivalent Courses",
-        short_description="Penalize taking multiple equivalent courses",
-        description="Discourage taking multiple equivalent courses using tier-based penalties. Functionally causes classes to behave equivalently as prerequisites. Built-in objective of autoroad to allow the user to handle petitions.",
-        has_parameters=True,
-        default_parameters={"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}},
-        parameter_types={"custom_equivalencies": dict},
-        category="scheduling",
-        default_tier=4,
-        unremovable=True,
+        recommendation="builtin",
     ),
     "avoid_low_ratings": ObjectiveMetadata(
         key="avoid_low_ratings",
@@ -244,7 +254,9 @@ def get_default_objectives() -> list[tuple[str, dict[str, Any]]]:
     """
     return [
         ("limit_classes_per_semester", {"max_classes": 4}),
+        ("limit_units_per_semester", {"max_units": 60}),
+        ("prefer_earlier_semesters", {}),
         ("avoid_special_classes", {}),
+        ("avoid_iap", {}),
         ("category_rewards", {"max_courses_per_category": 20, "decay_rate": 0.70}),
-        ("discourage_equivalent_courses", {"custom_equivalencies": {"6.100A": ["6.100L"], "6.100L": ["6.100A"]}}),
     ]

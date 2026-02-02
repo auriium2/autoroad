@@ -53,13 +53,14 @@ class AvoidSpecialClasses:
     - CC. (Concourse)
     - STS. (Science, Technology, and Society)
     - X.UR (Undergraduate Research)
+    - X.UAR (Undergraduate Advanced Research)
     - X.URG (Graduate Research)
     - X.THU (Undergraduate Thesis)
     - X.THG (Graduate Thesis)
     """
     SPECIAL_PREFIXES: tuple[str, ...] = ("ES.", "CC.", "STS.")
     # Patterns that can appear after the department number (e.g., 6.UR, 18.THU)
-    SPECIAL_SUFFIXES: tuple[str, ...] = (".UR", ".URG", ".THU", ".THG")
+    SPECIAL_SUFFIXES: tuple[str, ...] = (".UR", ".UAR", ".URG", ".THU", ".THG")
 
     def __init__(self):
         pass
@@ -175,15 +176,26 @@ class AvoidHASSClasses:
             return cp_model.LinearExpr.constant(0)
 
         is_hass = context.extra['_is_hass']
-        terms = []
 
+        # Collect one take-var per HASS course (deduplicate across semesters)
+        course2var: dict[int, cp_model.IntVar] = {}
         for (course_idx, semester), var in take_vars.items():
-            if is_hass[course_idx]:
-                terms.append(var * penalty)
+            if is_hass[course_idx] and course_idx not in course2var:
+                course_vars = [v for (ci, s), v in take_vars.items() if ci == course_idx]
+                taken = model.NewBoolVar(f'hass_taken_{course_idx}')
+                model.AddMaxEquality(taken, course_vars)
+                course2var[course_idx] = taken
 
-        if terms:
-            return cp_model.LinearExpr.Sum(terms)
-        return cp_model.LinearExpr.constant(0)
+        if not course2var:
+            return cp_model.LinearExpr.constant(0)
+
+        hass_count = model.NewIntVar(0, len(course2var), 'hass_count')
+        model.Add(hass_count == sum(course2var.values()))
+
+        excess = model.NewIntVar(0, len(course2var), 'excess_hass')
+        model.AddMaxEquality(excess, [hass_count - 8, 0])
+
+        return excess * penalty
 
 
 class AvoidSpecialTopics:
@@ -252,9 +264,10 @@ class MinimumClassesPerSemester:
         """
         Add tier-based penalty for semesters with too few classes.
 
-        For each semester with at least 1 class, penalize if class count < min_classes.
+        For each non-frozen, non-IAP semester, penalize if class count < min_classes.
+        This includes completely empty semesters (0 classes gets full penalty).
+        Frozen past semesters (when lock_past_semesters is enabled) are skipped.
         """
-        # Get tier for this objective (default tier 3 if not set)
         tier = 3
         if context.objective_tiers and 'minimum_classes_per_semester' in context.objective_tiers:
             tier = context.objective_tiers['minimum_classes_per_semester']
@@ -271,32 +284,25 @@ class MinimumClassesPerSemester:
         terms = []
 
         for semester, vars_in_semester in semesters_with_vars.items():
-            # Skip IAP semesters (2, 5, 8, 11) - it's normal to have 0-1 classes during IAP
-            # Also skip ASE (semester -1) which also has -1 % 3 == 2 in Python
-            if semester >= 1 and semester % 3 == 2:
-                continue
-            # Skip ASE explicitly
+            # Skip ASE
             if semester < 1:
                 continue
+            # Skip IAP semesters (2, 5, 8, 11)
+            if semester >= 1 and semester % 3 == 2:
+                continue
+            # Skip frozen past semesters
+            if context.lock_past_semesters and semester <= context.current_semester:
+                continue
 
-            # Count how many classes are taken in this semester
             class_count = model.NewIntVar(0, len(vars_in_semester), f'class_count_s{semester}')
             model.Add(class_count == cp_model.LinearExpr.Sum(vars_in_semester))
 
-            # Check if semester is active (has at least 1 class)
-            semester_active = model.NewBoolVar(f'semester_active_s{semester}')
-            model.Add(class_count >= 1).OnlyEnforceIf(semester_active)
-            model.Add(class_count == 0).OnlyEnforceIf(semester_active.Not())
-
-            # If semester is active and has fewer than min_classes, incur penalty
-            # Penalty = (min_classes - class_count) for active semesters with < min_classes
-            for target_count in range(1, self.min_classes):
-                # If semester has exactly target_count classes (which is < min_classes)
+            # Penalize each count from 0 to min_classes-1
+            for target_count in range(0, self.min_classes):
                 has_target_count = model.NewBoolVar(f'semester_s{semester}_has_{target_count}')
                 model.Add(class_count == target_count).OnlyEnforceIf(has_target_count)
                 model.Add(class_count != target_count).OnlyEnforceIf(has_target_count.Not())
 
-                # Penalty = (min_classes - target_count) * penalty
                 shortage = self.min_classes - target_count
                 terms.append(has_target_count * shortage * penalty)
 

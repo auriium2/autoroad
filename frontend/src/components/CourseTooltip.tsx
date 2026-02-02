@@ -212,7 +212,7 @@ export function CourseTooltip({ courseId, children, disabled = false, tutorialId
                   )}
                   {courseDetails.hass_attribute && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-200/80">
-                      HASS
+                      {courseDetails.hass_attribute}
                     </span>
                   )}
                   {courseDetails.has_final && (

@@ -7,7 +7,7 @@ from typing import Any
 
 from .base import HardConstraint
 from .conflicts import NoScheduleConflicts
-from .scheduling import ScheduleFreeTime
+from .scheduling import BanIAPClasses, ScheduleFreeTime
 
 
 @dataclass
@@ -39,6 +39,18 @@ CONSTRAINTS_REGISTRY: dict[str, ConstraintMetadata] = {
         default_parameters={"extrapolate": False},
         parameter_types={"extrapolate": bool},
         beta=True,
+    ),
+    "ban_iap_classes": ConstraintMetadata(
+        key="ban_iap_classes",
+        class_ref=BanIAPClasses,
+        name="Ban IAP Classes",
+        short_description="Prevent the optimizer from placing classes in IAP",
+        description="Prevents the optimizer from placing any courses in IAP semesters. Courses you've manually pinned to IAP are still allowed. Courses only offered during IAP are also exempt.",
+        category="scheduling",
+        default_enabled=True,
+        has_parameters=False,
+        default_parameters={},
+        parameter_types={},
     ),
     "schedule_free_time": ConstraintMetadata(
         key="schedule_free_time",

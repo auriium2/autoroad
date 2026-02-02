@@ -220,7 +220,8 @@ export const useGraphStore = create<GraphStore>()(
         lockPastSemesters,
         requirementTiers,
         objectiveTiers,
-        requirementSources
+        requirementSources,
+        useOptimizationStore.getState().customEquivalencies
       )) {
         // Handle completion status
         if (progress.isComplete && progress.status) {
@@ -332,7 +333,7 @@ export const useGraphStore = create<GraphStore>()(
   },
 }),
     {
-      name: 'road-storage',
+      name: 'road_storage',
       partialize: (state) => ({
         markers: state.markers,
       }),

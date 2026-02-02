@@ -12,6 +12,90 @@ if TYPE_CHECKING:
     from .base import ConstraintContext
 
 
+IAP_SEMESTERS: set[int] = {2, 5, 8, 11}
+
+
+class BanIAPClasses:
+    """
+    Hard constraint: prevent the optimizer from placing any courses in IAP semesters.
+
+    Courses that the user has explicitly pinned/overridden to IAP are exempt to
+    prevent infeasibility. Courses only offered during IAP that have no marker
+    are also exempt (banning them would silently make them unschedulable).
+    """
+
+    def add_to_model(
+        self,
+        model: cp_model.CpModel,
+        take_vars: dict[tuple[int, int], cp_model.IntVar],
+        context: ConstraintContext
+    ) -> None:
+        import time
+        start = time.time()
+
+        from shared.optimizer.marker_constraint_builder import VIRTUAL_MARKER_ATTRS, is_virtual_marker
+
+        # Build set of (course_idx, semester) that the user explicitly placed in IAP
+        marked_iap: set[tuple[int, int]] = set()
+        course_id_to_idx: dict[str, int] = {}
+        for idx in range(len(context.courses_df)):
+            course_id_to_idx[context.courses_df[idx, 'subject_id']] = idx
+
+        if context.markers:
+            for marker in context.markers:
+                semester = marker.section + 1  # 0-indexed -> 1-indexed
+                if semester not in IAP_SEMESTERS:
+                    continue
+                if marker.status not in ("pin", "override"):
+                    continue
+
+                if is_virtual_marker(marker.courseId):
+                    # Virtual markers (HASS-A, GIR:PHY1, etc.) match by attribute
+                    attr = VIRTUAL_MARKER_ATTRS.get(marker.courseId)
+                    if attr is not None:
+                        col, val = attr
+                        if col in context.courses_df.columns:
+                            for idx in range(len(context.courses_df)):
+                                if context.courses_df[idx, col] == val:
+                                    marked_iap.add((idx, semester))
+                else:
+                    course_idx = course_id_to_idx.get(marker.courseId)
+                    if course_idx is not None:
+                        marked_iap.add((course_idx, semester))
+
+        # Find courses that are ONLY offered in IAP (no regular semester vars exist)
+        iap_only_courses: set[int] = set()
+        courses_with_regular: set[int] = set()
+        for (course_idx, semester) in take_vars:
+            if semester >= 1 and semester not in IAP_SEMESTERS:
+                courses_with_regular.add(course_idx)
+        for (course_idx, semester) in take_vars:
+            if semester in IAP_SEMESTERS and course_idx not in courses_with_regular:
+                iap_only_courses.add(course_idx)
+
+        constraints_added = 0
+        for (course_idx, semester), var in take_vars.items():
+            if semester not in IAP_SEMESTERS:
+                continue
+            if (course_idx, semester) in marked_iap:
+                continue
+            if course_idx in iap_only_courses:
+                continue
+            model.Add(var == 0)
+            constraints_added += 1
+
+        print(f"[BanIAPClasses] Banned {constraints_added} IAP placements in {time.time() - start:.3f}s")
+
+    def get_name(self) -> str:
+        return "Ban IAP Classes"
+
+    def get_description(self) -> str:
+        return "Prevents the optimizer from placing courses in IAP semesters."
+
+    def get_category(self) -> str:
+        return "scheduling"
+
+
 def _slots_overlap(slot1: tuple[int, int, int], slot2: tuple[int, int, int]) -> bool:
     """Check if two time slots overlap (same day and overlapping time)."""
     day1, start1, end1 = slot1
