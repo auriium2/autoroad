@@ -19,6 +19,7 @@ As both a fake mechanical engineer and a fake CS major, trying to solve this con
 
 ## How does it work?
 See [TECHNICAL.md](TECHNICAL.md) for details on the optimization system.
+- the smell of human written md files in this repo is overwhelming and pungent, we can do better
 
 ## What next?
 - Autoroad's integer programming design could be expanded to use a more generic api than fireroad, allowing other schools to integrate
