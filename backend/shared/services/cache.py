@@ -210,7 +210,15 @@ def _parse_local_requirement(content: str) -> dict[str, object]:
 
 def _load_local_requirement(key: str) -> dict[str, object] | None:
     for ext in [".fireroad", ".txt"]:
-        path = REQUIREMENTS_DIR / f"{key}{ext}"
+        try:
+            # Prevent path traversal by resolving and checking relative path
+            path = (REQUIREMENTS_DIR / f"{key}{ext}").resolve()
+            if not path.is_relative_to(REQUIREMENTS_DIR.resolve()):
+                logger.warning("Blocked potential path traversal attempt: %s", key)
+                return None
+        except Exception:
+            return None
+
         if path.exists():
             try:
                 content = path.read_text()
