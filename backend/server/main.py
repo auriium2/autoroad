@@ -208,6 +208,9 @@ async def sentry_tunnel(request: Request):
             return Response(status_code=400)
 
         project_id = parsed.path.strip("/")
+        if not project_id.isdigit():
+            return Response(status_code=400)
+
         sentry_host = f"https://{parsed.hostname}"
 
         # Forward to Sentry
