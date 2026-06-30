@@ -243,3 +243,14 @@ def test_create_bug_report_validation():
     }
     response = client.post("/api/bug-report", json=payload_long_desc)
     assert response.status_code == 422
+
+    # Invalid debug_info structure (e.g. consoleLogs is not a list)
+    payload_invalid_debug = {
+        "title": "Valid Title",
+        "description": "Valid Description",
+        "debug_info": {
+            "consoleLogs": "not-a-list"
+        }
+    }
+    response = client.post("/api/bug-report", json=payload_invalid_debug)
+    assert response.status_code == 422

@@ -11,10 +11,28 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 
+class ConsoleLogEntry(BaseModel):
+    message: str = Field(default="", max_length=1000)
+    level: str = Field(default="info", max_length=50)
+    timestamp: str | float | int | None = Field(default=None)
+
+
+class DebugInfo(BaseModel):
+    version: str | None = Field(default=None, max_length=100)
+    userAgent: str | None = Field(default=None, max_length=1000)
+    timestamp: str | float | int | None = Field(default=None)
+    lastOptimizationStatus: str | None = Field(default=None, max_length=100)
+    lastCostBreakdown: dict[str, Any] | None = Field(default=None)
+    markers: list[Any] | None = Field(default=None)
+    optimizerNodes: list[Any] | None = Field(default=None)
+    consoleLogs: list[ConsoleLogEntry] | None = Field(default=None)
+    aroadData: dict[str, Any] | None = Field(default=None)
+
+
 class BugReportRequest(BaseModel):
     title: str = Field(default="Bug Report", min_length=1, max_length=256)
     description: str = Field(..., min_length=1, max_length=10000)
-    debug_info: dict[str, Any]
+    debug_info: DebugInfo
 
 
 class BugReportResponse(BaseModel):
@@ -38,33 +56,33 @@ async def create_bug_report(request: Request, body: BugReportRequest) -> BugRepo
 
             # App state
             scope.set_context("app_state", {
-                "version": body.debug_info.get("version"),
-                "user_agent": body.debug_info.get("userAgent"),
-                "timestamp": body.debug_info.get("timestamp"),
-                "last_optimization_status": body.debug_info.get("lastOptimizationStatus"),
-                "last_cost_breakdown": body.debug_info.get("lastCostBreakdown"),
+                "version": body.debug_info.version,
+                "user_agent": body.debug_info.userAgent,
+                "timestamp": body.debug_info.timestamp,
+                "last_optimization_status": body.debug_info.lastOptimizationStatus,
+                "last_cost_breakdown": body.debug_info.lastCostBreakdown,
             })
 
             # Markers and optimizer nodes as contexts
-            if body.debug_info.get("markers"):
-                scope.set_context("markers", {"data": body.debug_info["markers"]})
-            if body.debug_info.get("optimizerNodes"):
-                scope.set_context("optimizer_nodes", {"data": body.debug_info["optimizerNodes"]})
+            if body.debug_info.markers:
+                scope.set_context("markers", {"data": body.debug_info.markers})
+            if body.debug_info.optimizerNodes:
+                scope.set_context("optimizer_nodes", {"data": body.debug_info.optimizerNodes})
 
             # Console logs as breadcrumbs
-            if body.debug_info.get("consoleLogs"):
-                for log in body.debug_info["consoleLogs"][-50:]:
+            if body.debug_info.consoleLogs:
+                for log in body.debug_info.consoleLogs[-50:]:
                     scope.add_breadcrumb(
                         category="console",
-                        message=log.get("message", "")[:500],
-                        level=log.get("level", "info"),
-                        timestamp=log.get("timestamp"),
+                        message=log.message[:500],
+                        level=log.level,
+                        timestamp=log.timestamp,
                     )
 
             # Attach full .aroad snapshot
-            if body.debug_info.get("aroadData"):
+            if body.debug_info.aroadData:
                 scope.add_attachment(
-                    bytes=json.dumps(body.debug_info["aroadData"], indent=2).encode(),
+                    bytes=json.dumps(body.debug_info.aroadData, indent=2).encode(),
                     filename="snapshot.aroad",
                     content_type="application/json",
                 )
