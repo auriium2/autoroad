@@ -4,12 +4,12 @@ Requirements API routes - provides parsed requirement trees and progress calcula
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 from cashews import cache
-from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Path as FastApiPath, Query, Request
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -31,10 +31,10 @@ FIREROAD_BASE_URL = "https://fireroad.mit.edu"
 
 
 class SelectedSubject(BaseModel):
-    subject_id: str
-    title: str | None = None
-    units: int | None = None
-    semester: int | None = None
+    subject_id: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9.\-_:]+$")
+    title: str | None = Field(default=None, max_length=200)
+    units: int | None = Field(default=None, ge=0, le=100)
+    semester: int | None = Field(default=None, ge=-2, le=11)
 
 
 class ProgressRequest(BaseModel):
@@ -44,13 +44,13 @@ class ProgressRequest(BaseModel):
 
 
 class RequirementSource(BaseModel):
-    key: str
-    source: str = "canonical"  # "canonical" or "beta"
+    key: str = Field(..., min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9.\-_]+$")
+    source: Literal["canonical", "beta"] = Field(default="canonical")
 
 
 class BatchProgressRequest(BaseModel):
-    requirements: list[RequirementSource]
-    courseIds: list[str] = []
+    requirements: list[RequirementSource] = Field(..., max_length=20)
+    courseIds: list[str] = Field(default_factory=list, max_length=1000)
 
 
 def _load_local_requirements() -> dict[str, dict[str, str]]:
@@ -129,7 +129,11 @@ async def list_requirements(request: Request):
 
 @router.get("/requirements/get/{key}")
 @limiter.limit("60/minute")
-async def get_requirement_json(request: Request, key: str, source: str = "canonical"):
+async def get_requirement_json(
+    request: Request,
+    key: str = FastApiPath(..., min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9.\-_]+$"),
+    source: Literal["canonical", "beta"] = Query("canonical"),
+):
     """Get a parsed requirement definition."""
     from shared.services.cache import fetch_requirement
 
@@ -148,7 +152,12 @@ async def get_requirement_json(request: Request, key: str, source: str = "canoni
 
 @router.post("/requirements/progress/{key}")
 @limiter.limit("30/minute")
-async def get_requirement_progress(request: Request, key: str, body: ProgressRequest, source: str = "canonical"):
+async def get_requirement_progress(
+    request: Request,
+    body: ProgressRequest,
+    key: str = FastApiPath(..., min_length=1, max_length=100, pattern=r"^[a-zA-Z0-9.\-_]+$"),
+    source: Literal["canonical", "beta"] = Query("canonical"),
+):
     """
     Get requirement progress for a list of selected subjects.
 
@@ -234,11 +243,11 @@ async def get_requirement_progress_batch(request: Request, body: BatchProgressRe
 @limiter.limit("60/minute")
 async def search_parameters(
     request: Request,
-    q: str = Query("", description="Search query"),
+    q: str = Query("", max_length=100, description="Search query"),
     limit: int = Query(30, ge=1, le=100),
-    exclude_requirements: str = Query("", description="Comma-separated requirement keys to exclude"),
-    exclude_objectives: str = Query("", description="Comma-separated objective keys to exclude"),
-    exclude_constraints: str = Query("", description="Comma-separated constraint keys to exclude"),
+    exclude_requirements: str = Query("", max_length=1000, description="Comma-separated requirement keys to exclude"),
+    exclude_objectives: str = Query("", max_length=1000, description="Comma-separated objective keys to exclude"),
+    exclude_constraints: str = Query("", max_length=1000, description="Comma-separated constraint keys to exclude"),
 ):
     """
     Unified search across requirements, objectives, and constraints.

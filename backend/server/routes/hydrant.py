@@ -2,7 +2,7 @@
 Hydrant API routes for schedule data.
 """
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Path, Query, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -16,8 +16,8 @@ router = APIRouter()
 @limiter.limit("60/minute")
 async def get_schedule(
     request: Request,
-    target_semester: str,
-    course_ids: str = Query(..., description="Comma-separated list of course IDs"),
+    target_semester: str = Path(..., pattern=r"^[sfi]\d{2}$", description="Semester code (e.g., 's24', 'f23', 'i25')"),
+    course_ids: str = Query(..., min_length=1, max_length=1000, description="Comma-separated list of course IDs"),
 ):
     """
     Get parsed schedule blocks for courses in a semester.

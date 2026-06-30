@@ -3,7 +3,7 @@ from typing import Any
 
 import sentry_sdk
 from fastapi import APIRouter, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -12,8 +12,8 @@ router = APIRouter()
 
 
 class BugReportRequest(BaseModel):
-    title: str = "Bug Report"
-    description: str
+    title: str = Field(default="Bug Report", min_length=1, max_length=256)
+    description: str = Field(..., min_length=1, max_length=10000)
     debug_info: dict[str, Any]
 
 

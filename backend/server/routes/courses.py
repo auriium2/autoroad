@@ -1,7 +1,7 @@
 from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Path, Query, Request
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -140,10 +140,10 @@ def _matches_filters(
 @limiter.limit("60/minute")
 async def search_courses(
     request: Request,
-    q: str = Query(..., description="Search query, use '*' for all courses"),
+    q: str = Query(..., min_length=1, max_length=100, description="Search query, use '*' for all courses"),
     offset: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=2000),
-    department: str | None = Query(None, description="Filter by department (e.g., '6', '18')"),
+    department: str | None = Query(None, min_length=1, max_length=20, description="Filter by department (e.g., '6', '18')"),
     search_type: Literal["contains", "starts"] = Query("contains"),
     sort: Literal[
         "imdb-rating-asc", "imdb-rating-desc",
@@ -221,7 +221,10 @@ async def search_courses(
 
 @router.get("/courses/lookup/{course_id:path}")
 @limiter.limit("120/minute")
-async def lookup_course(request: Request, course_id: str):
+async def lookup_course(
+    request: Request,
+    course_id: str = Path(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9.\-_:]+$"),
+):
     # Check virtual items first
     for item in VIRTUAL_ITEMS:
         if item["subject_id"] == course_id:
@@ -246,7 +249,7 @@ async def lookup_course(request: Request, course_id: str):
 @limiter.limit("30/minute")
 async def batch_lookup_courses(
     request: Request,
-    ids: str = Query(..., description="Comma-separated course IDs"),
+    ids: str = Query(..., min_length=1, max_length=1000, description="Comma-separated course IDs"),
 ):
     """Batch lookup multiple courses by ID. Returns a dict mapping course_id -> course data."""
     course_ids = [cid.strip() for cid in ids.split(",") if cid.strip()]
@@ -278,13 +281,13 @@ async def batch_lookup_courses(
 
 
 class CoursePlacement(BaseModel):
-    courseId: str
-    section: int
-    status: str | None = None  # "pin", "override", etc.
+    courseId: str = Field(..., min_length=1, max_length=50, pattern=r"^[a-zA-Z0-9.\-_:]+$")
+    section: int = Field(..., ge=-2, le=11)
+    status: Literal["pin", "banish", "override"] | None = Field(default=None)
 
 
 class ValidatePrerequisitesRequest(BaseModel):
-    placements: list[CoursePlacement]
+    placements: list[CoursePlacement] = Field(..., max_length=1000)
 
 
 class PrereqEdge(BaseModel):
@@ -472,7 +475,7 @@ async def validate_prerequisites(
 @limiter.limit("60/minute")
 async def get_courses_by_department(
     request: Request,
-    dept: str,
+    dept: str = Path(..., min_length=1, max_length=20, pattern=r"^[a-zA-Z0-9]+$"),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ):
