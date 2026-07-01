@@ -105,7 +105,10 @@ def test_aus_bug_with_exact_solution():
     planning_year_start = 2024
     max_semesters = 12
 
-    take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, markers)
+    take_vars = create_take_vars(
+        model, courses_df, planning_year_start, max_semesters, markers,
+        requirements_data=requirements_data, prereq_trees=prereq_trees
+    )
     add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
     print(f"\nCreated {len(take_vars)} decision variables")

@@ -109,7 +109,10 @@ def test_feasibility_bug_major_6_3_with_markers():
     planning_year_start = 2024
     max_semesters = 12
 
-    take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, markers)
+    take_vars = create_take_vars(
+        model, courses_df, planning_year_start, max_semesters, markers,
+        requirements_data=requirements_data, prereq_trees=prereq_trees
+    )
     add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
     # Add past semester constraints (freeze past semesters mode enabled)

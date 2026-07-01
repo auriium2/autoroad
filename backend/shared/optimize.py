@@ -387,6 +387,7 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
                 requirement_sources=request.requirementSources
             )
             courses_df = pl.DataFrame(courses_data, infer_schema_length=None)
+            prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
             perf_timings['data_fetch'] = time.time() - perf_start
             span.set_data("num_courses", len(courses_data))
             span.set_data("num_requirements", len(requirements_data))
@@ -405,7 +406,10 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         with sentry_sdk.start_span(op="optimizer", name="create_model") as span:
             perf_start = time.time()
             model = cp_model.CpModel()
-            take_vars = create_take_vars(model, courses_df, planning_year_start, max_semesters, request.markers)
+            take_vars = create_take_vars(
+                model, courses_df, planning_year_start, max_semesters, request.markers,
+                requirements_data=requirements_data, prereq_trees=prereq_trees
+            )
             add_basic_constraints(model, take_vars, courses_df, max_semesters)
 
             if request.lockPastSemesters:
@@ -446,7 +450,6 @@ async def run_optimization(request: OptimizationRequest) -> AsyncIterator[dict[s
         # Add prerequisite constraints
         with sentry_sdk.start_span(op="optimizer", name="add_prerequisites") as span:
             perf_start = time.time()
-            prereq_trees = await get_parsed_prerequisites_by_index(courses_df)
             override_course_ids = {m.courseId for m in request.markers if m.status == 'override'}
             add_prerequisite_constraints(model, take_vars, courses_df, planning_year_start, prereq_trees, override_course_ids, custom_equivalencies)
             perf_timings['prerequisites'] = time.time() - perf_start

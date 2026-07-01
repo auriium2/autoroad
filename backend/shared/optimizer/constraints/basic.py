@@ -11,6 +11,7 @@ These constraints are always applied and form the foundation of the optimization
 
 import time
 from collections.abc import Sequence
+from typing import Any
 
 import polars as pl
 from ortools.sat.python import cp_model
@@ -21,12 +22,40 @@ from shared.optimizer.semesters import ALL_SEMESTERS
 from shared.utils import get_current_semester_index, is_valid_class_semester
 
 
+def _extract_courses_from_req_node(node) -> set[str]:
+    from shared.courses.requirements.types import Course, AllGroup, AnyGroup, SubjectThresholdGroup, UnitThresholdGroup
+    
+    if hasattr(node, "subject_id"):
+        return {node.subject_id}
+    
+    res = set()
+    if hasattr(node, "children") and node.children:
+        for child in node.children:
+            res.update(_extract_courses_from_req_node(child))
+    return res
+
+
+def _extract_courses_from_prereq_node(node) -> set[str]:
+    from shared.courses.prerequisites.types import PrereqCourse, PrereqGroup
+    
+    if isinstance(node, PrereqCourse):
+        return {node.course_id}
+    elif isinstance(node, PrereqGroup):
+        res = set()
+        for item in node.items:
+            res.update(_extract_courses_from_prereq_node(item))
+        return res
+    return set()
+
+
 def create_take_vars(
     model: cp_model.CpModel,
     courses_df: pl.DataFrame,
     planning_year_start: int,
     max_semesters: int,
-    markers: Sequence[Marker] | None = None
+    markers: Sequence[Marker] | None = None,
+    requirements_data: dict[str, Any] | None = None,
+    prereq_trees: dict[int, Any] | None = None,
 ) -> dict[tuple[int, int], cp_model.IntVar]:
     """
     Create decision variables for taking courses.
@@ -42,13 +71,8 @@ def create_take_vars(
         planning_year_start: Starting year for planning (e.g., 2024)
         max_semesters: Maximum number of regular semesters to plan
         markers: Optional list of markers (pin, override, banish) for courses
-
-    Returns:
-        Dictionary mapping (course_idx, semester) to boolean decision variables
-        Semester can be:
-        - -2: Must Take (course must be taken in some regular semester)
-        - -1: ASE (Advanced Standing Exam credit)
-        - 1 to max_semesters: Regular semesters
+        requirements_data: Optional requirements dictionary for pruning irrelevant courses
+        prereq_trees: Optional prerequisite trees map for pruning recursive prerequisites
     """
     start = time.time()
 
@@ -70,7 +94,72 @@ def create_take_vars(
                     override_semesters[marker.courseId] = set()
                 override_semesters[marker.courseId].add(semester)
 
+    # Pruning logic: identify relevant course indices
+    relevant_indices: set[int] = set()
+    subject_ids = courses_df['subject_id'].to_list()
+    subject_id2idx = {sid: i for i, sid in enumerate(subject_ids)}
+
+    if requirements_data is not None:
+        relevant_subject_ids: set[str] = set()
+
+        # 1. Always include courses in markers (pin, override, banish)
+        if markers:
+            for marker in markers:
+                relevant_subject_ids.add(marker.courseId)
+
+        # 2. Extract course leaves from requirement trees
+        from shared.courses.requirements.parser import parse_fireroad_response
+        from shared.courses.requirements.validator import validate_and_prune
+
+        for req_key, req_data in requirements_data.items():
+            if isinstance(req_data, dict):
+                try:
+                    req_tree = parse_fireroad_response(req_data)
+                    validation = validate_and_prune(req_tree, courses_df, remove_invalid=False)
+                    if validation.pruned_tree is not None:
+                        relevant_subject_ids.update(_extract_courses_from_req_node(validation.pruned_tree))
+                except Exception:
+                    pass
+
+        # 3. Add all courses with HASS, GIR, or Communication attributes
+        for col in ('hass_attribute', 'gir_attribute', 'communication_requirement'):
+            if col in courses_df.columns:
+                col_vals = courses_df[col].to_list()
+                for i, val in enumerate(col_vals):
+                    if val is not None:
+                        relevant_subject_ids.add(subject_ids[i])
+
+        # 4. Recursively include prerequisites of any included course
+        if prereq_trees is not None:
+            added = True
+            while added:
+                added_subject_ids = set()
+                for subj_id in relevant_subject_ids:
+                    idx = subject_id2idx.get(subj_id)
+                    if idx is not None and idx in prereq_trees:
+                        try:
+                            p_courses = _extract_courses_from_prereq_node(prereq_trees[idx])
+                            for pc in p_courses:
+                                if pc not in relevant_subject_ids:
+                                    added_subject_ids.add(pc)
+                        except Exception:
+                            pass
+                if added_subject_ids:
+                    relevant_subject_ids.update(added_subject_ids)
+                    added = True
+                else:
+                    added = False
+
+        # Map to DataFrame indices
+        for subj_id in relevant_subject_ids:
+            idx = subject_id2idx.get(subj_id)
+            if idx is not None:
+                relevant_indices.add(idx)
+
     for course_idx in range(len(courses_df)):
+        if requirements_data is not None and course_idx not in relevant_indices:
+            continue
+
         subject_id = courses_df[course_idx, 'subject_id']
         forced_semesters = override_semesters.get(subject_id, set())
 

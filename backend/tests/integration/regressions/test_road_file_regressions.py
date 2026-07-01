@@ -177,7 +177,8 @@ class TestRoadFileRegressions:
 
         take_vars = create_take_vars(
             model, courses_df, start_year,
-            max_semesters=max_semesters, markers=markers
+            max_semesters=max_semesters, markers=markers,
+            requirements_data=requirements_data, prereq_trees=prereq_trees
         )
         add_basic_constraints(model, take_vars, courses_df, max_semesters=max_semesters)
 
