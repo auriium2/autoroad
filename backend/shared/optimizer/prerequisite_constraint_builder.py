@@ -107,7 +107,8 @@ class CourseSchedule:
         return self._gir_to_courses.get(gir_code, [])
 
     def get_courses_by_hass(self, hass_code: str) -> list[int]:
-        return self._hass_to_courses.get(hass_code, [])
+        normalized = hass_code if hass_code.startswith("HASS-") else f"HASS-{hass_code}"
+        return self._hass_to_courses.get(normalized, [])
 
     def get_equivalent_course_indices(self, course_id: str) -> list[int]:
         """Get indices of all courses equivalent to the given course (including itself)."""

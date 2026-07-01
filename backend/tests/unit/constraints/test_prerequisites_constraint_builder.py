@@ -151,6 +151,36 @@ class TestPrerequisiteConstraintBuilder:
         assert result.constraints_added == 3
         assert not result.has_issues
 
+    def test_hass_prereq_short_code(self):
+        """Test a HASS prerequisite with short code: course requires HASS:A."""
+        df = pl.DataFrame({
+            'subject_id': ['6.UAT', '21M.011', '21H.102'],
+            'gir_attribute': [None, None, None],
+            'hass_attribute': [None, 'HASS-A', 'HASS-H'],
+        })
+
+        model = cp_model.CpModel()
+        take_vars = {}
+
+        for course_idx in range(3):
+            for semester in range(1, 4):
+                take_vars[(course_idx, semester)] = model.NewBoolVar(
+                    f"take_{df[course_idx, 'subject_id']}_s{semester}"
+                )
+
+        schedule = CourseSchedule(df, 2024)
+        ctx = ConstraintContext(model, take_vars, schedule)
+        builder = PrerequisiteConstraintBuilder(ctx)
+
+        # Course 0 requires HASS:A
+        prereq_tree = PrereqCourse("HASS:A")
+        prereq_trees = {0: prereq_tree}
+
+        result = builder.add_all_prerequisite_constraints(prereq_trees)
+
+        assert result.constraints_added == 3
+        assert not result.has_issues
+
     def test_and_prereq(self):
         """Test AND prerequisite: course requires A AND B."""
         df = pl.DataFrame({
