@@ -81,25 +81,49 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
 
     if use_unique_counting:
         all_indices: list[int] = []  # deduplicate
+        child_idx_to_indices = {}
         for i, child in enumerate(node.children):
             if child.was_pruned:
                 continue
             result = dispatch.course_indices(child, ctx, child_paths[i])
             all_indices.extend(result.indices)
+            child_idx_to_indices[i] = set(result.indices)
             warnings.extend(result.warnings)
             errors.extend(result.errors)
 
         unique_indices = list(set(all_indices))
 
-        # threshold counting
-        unique_taken_vars: list[cp_model.IntVar] = []
+        # threshold counting with structural validation
+        contrib_vars: list[cp_model.IntVar] = []
         for idx in unique_indices:
             taken = ctx.get_or_create_taken_var(idx)
-            if taken is not None:
-                unique_taken_vars.append(taken)
+            if taken is None:
+                continue
+            
+            # Find all children of this SubjectThresholdGroup that contain this course
+            containing_sats = []
+            for i, child_result in enumerate(child_results):
+                # Map the index in child_results back to the original node.children index
+                # since pruned children are skipped in child_results
+                orig_i = [index for index, c in enumerate(node.children) if not c.was_pruned][i]
+                if idx in child_idx_to_indices.get(orig_i, set()):
+                    if child_result.sat_var is not None:
+                        containing_sats.append(child_result.sat_var)
+            
+            if containing_sats:
+                # The course contributes if it is taken AND at least one of the children containing it is satisfied
+                any_sat = ctx.model.NewBoolVar(ctx.fresh("any_sat"))
+                if len(containing_sats) == 1:
+                    ctx.model.Add(any_sat == containing_sats[0])
+                else:
+                    ctx.model.AddMaxEquality(any_sat, containing_sats)
+                
+                contrib = ctx.model.NewBoolVar(ctx.fresh("course_contrib"))
+                ctx.model.AddMinEquality(contrib, [taken, any_sat])
+                contrib_vars.append(contrib)
 
-        if unique_taken_vars:
-            total = sum(unique_taken_vars)
+        if contrib_vars:
+            total = sum(contrib_vars)
             if node.threshold_type == "GTE":
                 ctx.model.Add(total >= node.cutoff).OnlyEnforceIf(sat)
                 ctx.model.Add(total < node.cutoff).OnlyEnforceIf(sat.Not())
@@ -109,7 +133,7 @@ def _subjectthreshold_build(node: SubjectThresholdGroup, ctx: Ctx, path: str, ne
         else:
             ctx.model.Add(sat == 0)
 
-        threshold_vars = unique_taken_vars
+        threshold_vars = contrib_vars
     else:
         # Simple case: children are leaves, use contribution_vars directly
         child_contribution_vars: list[cp_model.IntVar] = []
