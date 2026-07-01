@@ -28,8 +28,8 @@ def parse_time_to_minutes(time_str: str, is_evening: str) -> int | None:
 
         # Handle evening times like "5.30 PM"
         if 'PM' in time_str or 'AM' in time_str:
-            time_str = time_str.replace('PM', '').replace('AM', '').strip()
             is_pm = 'PM' in time_str
+            time_str = time_str.replace('PM', '').replace('AM', '').strip()
         else:
             is_pm = is_evening == "1"
 
