@@ -69,10 +69,14 @@ class Ctx:
         return self.courses_df[course_idx, "subject_id"]
 
     def is_half_class(self, course_idx: int) -> bool:
-        if "is_half_class" not in self.courses_df.columns:
-            return False
-        val = self.courses_df[course_idx, "is_half_class"]
-        return bool(val) if val is not None else False
+        if "is_half_class" in self.courses_df.columns:
+            val = self.courses_df[course_idx, "is_half_class"]
+            if val is not None:
+                return bool(val)
+        
+        # Fallback: check units
+        units = self.get_units(course_idx)
+        return units is not None and 0 < units <= 6
 
     def register_aux_var(self, key: str, var: cp_model.IntVar) -> None:
         self.aux_vars[key] = var
