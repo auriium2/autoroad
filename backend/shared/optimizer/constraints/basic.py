@@ -148,11 +148,13 @@ def add_freshman_fall_limit(
     Returns:
         Number of constraints added (0 or 1)
     """
-    semester_1_takes = [
-        take_vars[(c, 1)] * courses_df[c, 'total_units']
-        for c in range(len(courses_df))
-        if (c, 1) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
-    ]
+    semester_1_takes = []
+    for c in range(len(courses_df)):
+        if (c, 1) in take_vars:
+            units = courses_df[c, 'total_units'] if 'total_units' in courses_df.columns else 12
+            if units is None or units <= 3:
+                units = 12
+            semester_1_takes.append(take_vars[(c, 1)] * int(units))
 
     if semester_1_takes:
         model.Add(sum(semester_1_takes) <= 54)
@@ -190,11 +192,13 @@ def add_iap_limits(
         # IAP semesters: (semester - 2) % 3 == 0, for semesters 2, 5, 8, 11
         is_iap = (semester - 2) % 3 == 0 and semester >= 2 and semester <= 11
         if is_iap:
-            semester_takes = [
-                take_vars[(c, semester)] * courses_df[c, 'total_units']
-                for c in range(len(courses_df))
-                if (c, semester) in take_vars and 'total_units' in courses_df.columns and courses_df[c, 'total_units'] is not None
-            ]
+            semester_takes = []
+            for c in range(len(courses_df)):
+                if (c, semester) in take_vars:
+                    units = courses_df[c, 'total_units'] if 'total_units' in courses_df.columns else 12
+                    if units is None or units <= 3:
+                        units = 12
+                    semester_takes.append(take_vars[(c, semester)] * int(units))
             if semester_takes:
                 model.Add(sum(semester_takes) <= 12)
                 constraints_added += 1
