@@ -54,6 +54,36 @@ def get_virtual_marker_attr(course_id: str) -> tuple[str, str] | None:
     return VIRTUAL_MARKER_ATTRS.get(course_id)
 
 
+class MarkerCache:
+    _instance_id: int | None = None
+    _course_id_to_idx: dict[str, int] = {}
+    _virtual_id_to_indices: dict[str, list[int]] = {}
+
+    @classmethod
+    def get(cls, courses_df: pl.DataFrame) -> tuple[dict[str, int], dict[str, list[int]]]:
+        df_id = id(courses_df)
+        if cls._instance_id != df_id:
+            course_id_to_idx = {}
+            subject_ids = courses_df['subject_id'].to_list()
+            for idx, subject_id in enumerate(subject_ids):
+                course_id_to_idx[subject_id] = idx
+
+            virtual_id_to_indices = {}
+            for marker_id, (col, val) in VIRTUAL_MARKER_ATTRS.items():
+                if col in courses_df.columns:
+                    col_vals = courses_df[col].to_list()
+                    indices = [idx for idx, v in enumerate(col_vals) if v == val]
+                    virtual_id_to_indices[marker_id] = indices
+                else:
+                    virtual_id_to_indices[marker_id] = []
+
+            cls._course_id_to_idx = course_id_to_idx
+            cls._virtual_id_to_indices = virtual_id_to_indices
+            cls._instance_id = df_id
+
+        return cls._course_id_to_idx, cls._virtual_id_to_indices
+
+
 def add_marker_constraints(
     model: cp_model.CpModel,
     take_vars: dict[tuple[int, int], cp_model.IntVar],
@@ -83,26 +113,7 @@ def add_marker_constraints(
     warnings = []
     errors = []
 
-    t0 = time.time()
-    course_id_to_idx = {}
-    for idx in range(len(courses_df)):
-        subject_id = courses_df[idx, 'subject_id']
-        course_id_to_idx[subject_id] = idx
-    build_idx_time = time.time() - t0
-
-    # Build index lookup for all virtual marker types
-    t0 = time.time()
-    virtual_id_to_indices: dict[str, list[int]] = {}
-    for marker_id, (col, val) in VIRTUAL_MARKER_ATTRS.items():
-        if col in courses_df.columns:
-            indices = []
-            for idx in range(len(courses_df)):
-                if courses_df[idx, col] == val:
-                    indices.append(idx)
-            virtual_id_to_indices[marker_id] = indices
-        else:
-            virtual_id_to_indices[marker_id] = []
-    build_hass_time = time.time() - t0
+    course_id_to_idx, virtual_id_to_indices = MarkerCache.get(courses_df)
 
     # Count virtual pin markers by (marker_id, section)
     virtual_pin_counts: Counter[tuple[str, int]] = Counter()
@@ -305,8 +316,7 @@ def add_marker_constraints(
             warnings.append(f"Unknown marker status: {marker.status}")
 
     total_time = time.time() - start
-    print(f"[Markers] Added {constraints_added} constraints in {total_time:.3f}s "
-          f"(build_idx={build_idx_time:.3f}s, build_hass={build_hass_time:.3f}s)")
+    print(f"[Markers] Added {constraints_added} constraints in {total_time:.3f}s")
 
     return MarkerConstraintResult(
         constraints_added=constraints_added,
